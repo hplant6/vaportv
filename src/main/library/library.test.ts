@@ -9,6 +9,7 @@ import { loadRecents, pickRecent, toRecentItem } from './recents'
 import { loadSteamTab } from './steamTab'
 import { scanDreamcast } from './dreamcast'
 import { dreamcastContent } from './dreamcastTab'
+import { parseEmuDeckSettings, shortcutAppId } from './emudeck'
 import { scanGameCube } from './gamecube'
 import { cleanPs3Title, parseSfo, scanPs3 } from './ps3'
 import { rpcs3Args } from './ps3Tab'
@@ -266,11 +267,16 @@ describe('collections', () => {
     const { layout, rows } = await loadSteamTab({ steamRoot: root })
     expect(layout).toBe('rows')
     expect(rows.map((r) => [r.name, r.items.map((i) => i.title), r.notInstalled])).toEqual([
+      // Recently played first (installed games, newest first; Proton is a tool, not a game).
+      ['Recently played', ['Dead Island 2', 'Old Game'], 0],
       // Default selection is Favorites; most recently played first; app 99 isn't installed.
       ['Favorites', ['Dead Island 2', 'Old Game'], 1]
     ])
     const { rows: both } = await loadSteamTab({ steamRoot: root, steamCollections: ['favorite', 'uc-x'] })
-    expect(both.map((r) => r.name)).toEqual(['Favorites', 'Other'])
+    expect(both.map((r) => r.name)).toEqual(['Recently played', 'Favorites', 'Other'])
+    // With no collections chosen, the tab still shows what was played.
+    const { rows: none } = await loadSteamTab({ steamRoot: root, steamCollections: [] })
+    expect(none.map((r) => r.name)).toEqual(['Recently played'])
   })
 })
 
@@ -482,5 +488,27 @@ describe.skipIf(!existsSync(snapshot))('box snapshot', () => {
     expect(recents.some((r) => /steamtv|EmulationStation/i.test(r.title))).toBe(false)
     const games = recents.filter((r) => r.platform === 'steam')
     expect(games.filter((r) => r.cover).length / games.length).toBeGreaterThan(0.7)
+  })
+})
+
+describe('EmuDeck', () => {
+  it('reads paths from its settings, quotes and $HOME included', () => {
+    const paths = parseEmuDeckSettings(
+      [
+        'emulationPath="/run/media/deck/SATA"/Emulation',
+        'romsPath="/run/media/deck/SATA"/Emulation/roms',
+        'toolsPath="$HOME/Emulation/tools"',
+        'doRetroArch=true'
+      ].join('\n')
+    )
+    expect(paths.romsPath).toBe('/run/media/deck/SATA/Emulation/roms')
+    expect(paths.toolsPath).toMatch(/\/Emulation\/tools$/)
+    expect(paths.toolsPath).not.toContain('$HOME')
+  })
+
+  it("derives Xenia's prefix id the way EmuDeck does", () => {
+    const exe = '"/usr/bin/env bash" "/run/media/deck/SATA/Emulation/tools/launchers/xenia.sh"'
+    // The prefix EmuDeck created on a real box for this layout.
+    expect(shortcutAppId(exe, 'Xenia')).toBe(2832997896)
   })
 })

@@ -3,9 +3,12 @@
 # Run by steamtv-autostart.service; does nothing if steamtv is already open.
 set -u
 
-# steamtv's non-Steam shortcut: (appid << 32) | 0x02000000. The appid comes from the
-# shortcut's exe and name, so it stays the same unless the shortcut is recreated.
-GAME_ID=${STEAMTV_GAME_ID:-17864395694370979840}
+# vaporTV's non-Steam shortcut ids. vaporTV writes them to steam-shortcut.env each time
+# Steam starts it (Steam passes them in), so this works whatever the shortcut's id is.
+SHORTCUT_ENV="$HOME/.config/steamtv/steam-shortcut.env"
+# shellcheck source=/dev/null
+[ -f "$SHORTCUT_ENV" ] && . "$SHORTCUT_ENV"
+GAME_ID=${STEAMTV_GAME_ID:-}
 STEAM_UI_APPID=769
 ATTEMPTS=3
 
@@ -13,8 +16,8 @@ log() { echo "steamtv-autostart: $*"; }
 
 steamtv_running() { pgrep -x steamtv >/dev/null; }
 
-# The shortcut's 32-bit app id (GAME_ID >> 32; too big for bash arithmetic).
-STEAMTV_APPID=${STEAMTV_APPID:-4159378748}
+# The shortcut's 32-bit app id (GAME_ID >> 32), for telling what's on screen.
+STEAMTV_APPID=${STEAMTV_APPID:-}
 
 # What's drawn on screen. (GAMESCOPE_FOCUSED_APP can stay on Steam's UI while
 # steamtv is the app actually showing.)
@@ -45,6 +48,11 @@ steam_ui_ready() {
 
 if steamtv_running; then
   log "already running"
+  exit 0
+fi
+
+if [ -z "$GAME_ID" ] || [ -z "$STEAMTV_APPID" ]; then
+  log "vaporTV hasn't been opened from Steam yet, so its shortcut id isn't known; open it once from the library"
   exit 0
 fi
 

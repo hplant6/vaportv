@@ -1,28 +1,57 @@
-import type { LibraryTab } from '../../shared/types'
-import type { Config } from '../config'
+import type { LibraryTab, RecentItem } from '../../shared/types'
+import { recentsLayout, type Config } from '../config'
 import { artUrl } from './art'
 import { collectionGames, isSupported, readCollections } from './collections'
 import { isoDate } from './dates'
 import { steamRoot } from './recents'
-import { activeUserDir, steamGameArt, steamGames } from './steam'
+import { activeUserDir, steamGameArt, steamGames, type SteamGame } from './steam'
 
 export const DEFAULT_STEAM_COLLECTIONS = ['favorite']
+/** How many games the Recently played row shows. */
+const RECENT_LIMIT = 20
+
+async function steamItem(root: string, userDir: string, game: SteamGame): Promise<RecentItem> {
+  const art = await steamGameArt(root, userDir, game.appid)
+  return {
+    id: `steam:${game.appid}`,
+    title: game.title,
+    platform: 'steam',
+    lastPlayed: game.lastPlayed ? isoDate(game.lastPlayed) : undefined,
+    cover: art.portrait && artUrl(art.portrait),
+    wide: art.wide && artUrl(art.wide)
+  }
+}
 
 /**
- * One row per collection chosen in Settings, in the Settings order. Rows hold the
- * collection's installed games, most recently played first, then by name.
+ * Recently played first, then one row per collection chosen in Settings, in the
+ * Settings order. Collection rows hold its installed games, most recently played
+ * first, then by name.
  */
 export async function loadSteamTab(config: Config): Promise<LibraryTab> {
   const layout = config.steamLayout ?? 'rows'
+  const recents = recentsLayout(config, 'steam')
   const root = steamRoot(config)
   const userDir = await activeUserDir(root)
-  if (!userDir) return { layout, recentsLayout: layout, rows: [] }
+  if (!userDir) return { layout, recentsLayout: recents, rows: [] }
   const chosen = new Set(config.steamCollections ?? DEFAULT_STEAM_COLLECTIONS)
   const collections = (await readCollections(userDir)).filter((c) => chosen.has(c.id) && isSupported(c))
-  if (!collections.length) return { layout, recentsLayout: layout, rows: [] }
 
   const games = await steamGames(root, userDir)
-  const rows = await Promise.all(
+  const played = games
+    .filter((g) => g.lastPlayed)
+    .sort((a, b) => b.lastPlayed - a.lastPlayed)
+    .slice(0, RECENT_LIMIT)
+  const recentRow = played.length
+    ? [
+        {
+          id: 'recent',
+          name: 'Recently played',
+          notInstalled: 0,
+          items: await Promise.all(played.map((game) => steamItem(root, userDir, game)))
+        }
+      ]
+    : []
+  const collectionRows = await Promise.all(
     collections.map(async (collection) => {
       const installed = collectionGames(collection, games).sort(
         (a, b) => b.lastPlayed - a.lastPlayed || a.title.localeCompare(b.title)
@@ -32,21 +61,9 @@ export async function loadSteamTab(config: Config): Promise<LibraryTab> {
         name: collection.name,
         // Dynamic collections only ever cover installed games here.
         notInstalled: collection.dynamic ? 0 : collection.appids.length - installed.length,
-        items: await Promise.all(
-          installed.map(async (game) => {
-            const art = await steamGameArt(root, userDir, game.appid)
-            return {
-              id: `steam:${game.appid}`,
-              title: game.title,
-              platform: 'steam',
-              lastPlayed: game.lastPlayed ? isoDate(game.lastPlayed) : undefined,
-              cover: art.portrait && artUrl(art.portrait),
-              wide: art.wide && artUrl(art.wide)
-            }
-          })
-        )
+        items: await Promise.all(installed.map((game) => steamItem(root, userDir, game)))
       }
     })
   )
-  return { layout, recentsLayout: layout, rows }
+  return { layout, recentsLayout: recents, rows: [...recentRow, ...collectionRows] }
 }

@@ -20,10 +20,15 @@ const EMULATOR_GRACE_MS = 1500
 
 /** Steam's own UI in gamescope's app list. */
 const STEAM_UI_APPID = 769
-// The steamtv shortcut's 32-bit app id; Steam passes the 64-bit game id as SteamGameId.
-const STEAMTV_APPID = process.env.SteamGameId
-  ? Number(BigInt(process.env.SteamGameId) >> 32n)
-  : 4159378748
+/**
+ * vaporTV's own Steam shortcut's 32-bit app id, from what Steam passes when it launches
+ * it (SteamAppId, or the 64-bit SteamGameId). Null when not started from Steam.
+ */
+export const STEAMTV_APPID: number | null = process.env.SteamAppId && process.env.SteamAppId !== '0'
+  ? Number(process.env.SteamAppId)
+  : process.env.SteamGameId
+    ? Number(BigInt(process.env.SteamGameId) >> 32n)
+    : null
 
 type Log = (line: string) => void
 
@@ -168,13 +173,15 @@ async function launchedBySteamtv(): Promise<number[]> {
     if ((await readlink(`/proc/${pid}/exe`).catch(() => '')) === process.execPath) ours.add(pid)
   }
   for (let pid = parents.get(process.pid); pid; pid = parents.get(pid)) ours.add(pid)
-  const candidates = (await steamLaunchProcesses(STEAMTV_APPID)).filter((pid) => !ours.has(pid))
+  // Under Steam, everything in vaporTV's Steam session; without it (development), its children.
+  const session = STEAMTV_APPID === null ? descendants(process.pid, parents) : await steamLaunchProcesses(STEAMTV_APPID)
+  const candidates = session.filter((pid) => !ours.has(pid))
   // The AppImage runtime sits beside steamtv in the session and keeps its files
   // mounted; closing it pulls steamtv's own files away and crashes it.
   const runtime = new Set<number>()
   for (const pid of candidates) {
     const program = (await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).split('\0')[0]
-    if (/\/steamtv[^/]*\.AppImage$/.test(program)) {
+    if (/\/(steamtv|vaportv)[^/]*\.AppImage$/i.test(program)) {
       runtime.add(pid)
       for (const child of descendants(pid, parents)) runtime.add(child)
     }

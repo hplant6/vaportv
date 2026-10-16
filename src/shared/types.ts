@@ -70,7 +70,7 @@ export type SteamLayout = 'rows' | 'grid'
 export type LayoutTab = 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast'
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -211,6 +211,8 @@ export interface SteamTvApi {
   /** Power menu: exit to desktop or Steam, sleep, power off. Resolves false if it couldn't. */
   power(action: PowerAction): Promise<boolean>
   getSettings(): Promise<Settings>
+  /** Which optional tabs have something to show (no Steam, or no games for a console, hides it). */
+  getAvailableTabs(): Promise<Record<LayoutTab, boolean>>
   /** The Steam tab: the collections chosen in Settings, and how to lay them out. */
   getSteamTab(): Promise<LibraryTab>
   /** The Switch tab: Ryujinx games found on the ROM drive. */

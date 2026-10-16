@@ -3,10 +3,11 @@ import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
 import { scanGameCube, type GameCubeGame } from './gamecube'
-import { DEFAULT_ROM_ROOT } from './switchTab'
+import { romRoot } from './emudeck'
+import { DOLPHIN } from './emulators'
 
 export function gamecubeRoot(config: Config): string {
-  return process.env.STEAMTV_GAMECUBE_ROMS ?? join(config.romRoot ?? process.env.STEAMTV_ROM_ROOT ?? DEFAULT_ROM_ROOT, 'gc')
+  return process.env.STEAMTV_GAMECUBE_ROMS ?? join(romRoot(config), 'gc')
 }
 
 export async function loadGameCubeGames(config: Config): Promise<GameCubeGame[]> {
@@ -34,6 +35,6 @@ export function fillGameCubeArt(config: Config, onUpdate: () => void): void {
  * game stops. Full-screen and no "are you sure?" come from Dolphin's own settings.
  */
 export function dolphinCommand(config: Config, game: GameCubeGame): { command: string; args: string[] } {
-  const [command, ...args] = config.dolphin ?? ['flatpak', 'run', 'org.DolphinEmu.dolphin-emu']
+  const [command, ...args] = config.dolphin ?? DOLPHIN
   return { command, args: [...args, '-b', '-e', game.path] }
 }

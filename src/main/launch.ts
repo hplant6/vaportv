@@ -8,6 +8,7 @@ import { recordPlay } from './history'
 import { steamRoot } from './library/recents'
 import { activeUserDir } from './library/steam'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
+import { rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
 import { loadPs3Games, rpcs3Args } from './library/ps3Tab'
 import { loadSwitchGames } from './library/switchTab'
@@ -18,9 +19,9 @@ import { childObject, childString, parseBinaryVdf } from './library/vdf'
 // and Gaming Mode's window switching behave as they would from Steam's own library.
 // Emulated games (Switch, PS3, Xbox 360, GameCube, Dreamcast) open in their emulator directly.
 
-// Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive).
-// Override or extend with `favorites` in config.json.
-const DEFAULT_FAVORITES: Record<string, string> = {
+// Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
+// the first of several names that exists). Override or extend with `favorites` in config.json.
+const DEFAULT_FAVORITES: Record<string, string | string[]> = {
   youtube: 'VacuumTube',
   netflix: 'Netflix',
   disney: 'Disney+',
@@ -33,7 +34,9 @@ const DEFAULT_FAVORITES: Record<string, string> = {
   paramount: 'Paramount+',
   peacock: 'Peacock',
   tubi: 'Tubi',
-  jellyfin: 'Jellyfin'
+  jellyfin: 'Jellyfin',
+  // EmuDeck names its shortcut EmulationStationDE; added by hand it's usually ES-DE.
+  esde: ['EmulationStationDE', 'ES-DE', 'EmulationStation-DE']
 }
 
 // Tiles that open part of Steam itself rather than a shortcut.
@@ -67,9 +70,12 @@ export async function launchUrl(config: Config, kind: LaunchKind, id: string): P
     return null
   }
   if (STEAM_PAGES[id]) return STEAM_PAGES[id]
-  const name = config.favorites?.[id] ?? DEFAULT_FAVORITES[id]
-  const appid = name ? await shortcutAppId(config, name) : null
-  return appid ? `steam://rungameid/${shortcutGameId(appid)}` : null
+  const names = [config.favorites?.[id] ?? DEFAULT_FAVORITES[id] ?? []].flat()
+  for (const name of names) {
+    const appid = await shortcutAppId(config, name)
+    if (appid) return `steam://rungameid/${shortcutGameId(appid)}`
+  }
+  return null
 }
 
 // What steamtv launched, for naming it in the closing animation.
@@ -104,7 +110,7 @@ function run(command: string, args: string[], env: Record<string, string> = {}):
 async function launchSwitch(config: Config, id: string): Promise<boolean> {
   const game = (await loadSwitchGames(config)).find((g) => g.id === id)
   if (!game) return false
-  const ryujinx = config.ryujinx ?? join(homedir(), 'Applications', 'publish', 'Ryujinx.sh')
+  const ryujinx = ryujinxPath(config)
   console.log(`steamtv: launching ${game.path} in ${ryujinx}`)
   run(ryujinx, ['--fullscreen', game.path])
   emulatorGame = game.title
@@ -116,7 +122,7 @@ async function launchSwitch(config: Config, id: string): Promise<boolean> {
 async function launchPs3(config: Config, id: string): Promise<boolean> {
   const game = (await loadPs3Games(config)).find((g) => g.id === id)
   if (!game) return false
-  const rpcs3 = config.rpcs3 ?? join(homedir(), 'Applications', 'rpcs3.AppImage')
+  const rpcs3 = rpcs3Path(config)
   console.log(`steamtv: launching ${game.titleId} in ${rpcs3}`)
   run(rpcs3, rpcs3Args(game))
   emulatorGame = game.title

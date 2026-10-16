@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAvailableTabs } from '../availableTabs'
 import pillBottom from '../assets/nav-pill-bottom.svg'
 import pillTop from '../assets/nav-pill-top.svg'
 import { GearIcon, PowerIcon } from './icons'
@@ -22,6 +23,8 @@ export const TAB_ORDER: Screen[] = [...TABS.map((t) => t.id), 'settings']
 
 export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) {
   const [powerOpen, setPowerOpen] = useState(false)
+  // Tabs with nothing to show (no Steam, or no games for a console) are left out.
+  const shown = useAvailableTabs()
   const tab = (id: Screen, content: React.ReactNode, label: string, icon = false) => (
     <button
       key={id}
@@ -41,7 +44,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
       <img className="pill-top" src={pillTop} alt="" />
       <img className="pill-bottom" src={pillBottom} alt="" />
       <div className="nav-tabs" data-focus-memory="nav">
-        {TABS.map((t) => tab(t.id, t.label, t.label))}
+        {TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}
         {tab('settings', <GearIcon />, 'Settings', true)}
         <div className="power">
           <button

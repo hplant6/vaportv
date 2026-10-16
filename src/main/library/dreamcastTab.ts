@@ -5,16 +5,14 @@ import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { scanDreamcast, type DreamcastGame } from './dreamcast'
 import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
-import { DEFAULT_ROM_ROOT } from './switchTab'
+import { romRoot } from './emudeck'
+import { FLYCAST_CORE, RETROARCH } from './emulators'
 
 // Disc lists vaporTV writes for multi-disc games (the ROM folders are left alone).
 const DISC_LISTS = join(homedir(), '.local', 'share', 'steamtv', 'disc-lists')
-const FLYCAST_CORE = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores', 'flycast_libretro.so')
 
 export function dreamcastRoot(config: Config): string {
-  return (
-    process.env.STEAMTV_DREAMCAST_ROMS ?? join(config.romRoot ?? process.env.STEAMTV_ROM_ROOT ?? DEFAULT_ROM_ROOT, 'dreamcast')
-  )
+  return process.env.STEAMTV_DREAMCAST_ROMS ?? join(romRoot(config), 'dreamcast')
 }
 
 export async function loadDreamcastGames(config: Config): Promise<DreamcastGame[]> {
@@ -51,6 +49,6 @@ export async function dreamcastContent(game: DreamcastGame): Promise<string> {
 
 /** RetroArch (Flatpak) with the Flycast core, full-screen. */
 export function flycastCommand(config: Config, content: string): { command: string; args: string[] } {
-  const [command, ...args] = config.retroarch ?? ['flatpak', 'run', 'org.libretro.RetroArch']
+  const [command, ...args] = config.retroarch ?? RETROARCH
   return { command, args: [...args, '-L', config.flycastCore ?? FLYCAST_CORE, '-f', content] }
 }

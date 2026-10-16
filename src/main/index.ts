@@ -7,20 +7,21 @@ import { sunTimes, type SunTimes } from '../shared/sun'
 import type { BackdropStyle, DriveFolder, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
-import { ensureSteamtvInFront, startHotkey } from './hotkey'
+import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { launch, launchedName } from './launch'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
-import { fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
-import { fillGameCubeArt, loadGameCubeTab } from './library/gamecubeTab'
-import { fillPs3Art, loadPs3Tab, ps3Folders } from './library/ps3Tab'
+import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
+import { emulatorInstalled } from './library/emulators'
+import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
+import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
 import { ART_CACHE } from './library/steamgriddb'
 import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
-import { fillSwitchArt, loadSwitchTab } from './library/switchTab'
-import { fillXbox360Art, loadXbox360Tab } from './library/xbox360Tab'
+import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
+import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation } from './location'
 import { currentMusic, musicFolder, musicTracks } from './music'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
@@ -99,7 +100,41 @@ function backdropStyle(config: Config): BackdropStyle {
   return config.backdrop === 'rain' ? 'rain' : 'sea'
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'switch', 'ps3', 'xbox360', 'gamecube', 'dreamcast']
+/**
+ * Notes the Steam shortcut vaporTV was launched from (Steam passes its ids), so the
+ * Gaming Mode autostart script can relaunch it without knowing them in advance.
+ */
+async function recordSteamShortcut(): Promise<void> {
+  const gameId = process.env.SteamGameId
+  if (!gameId || STEAMTV_APPID === null) return
+  const dir = join(homedir(), '.config', 'steamtv')
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, 'steam-shortcut.env'), `STEAMTV_GAME_ID=${gameId}\nSTEAMTV_APPID=${STEAMTV_APPID}\n`).catch(() => {})
+}
+
+/** Tabs with nothing in them stay out of the nav; worked out at most this often. */
+const TABS_TTL = 60 * 1000
+let tabsCache: { at: number; tabs: Record<LayoutTab, boolean> } | null = null
+
+async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>> {
+  if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
+  const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
+    load(config).then((games) => games.length > 0, () => false)
+  const [sw, ps3, x360, gc, dc] = await Promise.all([switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames].map(has))
+  // A console tab needs its emulator as well as games.
+  const tabs = {
+    steam: hasSteam(config),
+    switch: sw && emulatorInstalled(config, 'switch'),
+    ps3: ps3 && emulatorInstalled(config, 'ps3'),
+    xbox360: x360 && emulatorInstalled(config, 'xbox360'),
+    gamecube: gc && emulatorInstalled(config, 'gamecube'),
+    dreamcast: dc && emulatorInstalled(config, 'dreamcast')
+  }
+  tabsCache = { at: Date.now(), tabs }
+  return tabs
+}
+
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps3', 'xbox360', 'gamecube', 'dreamcast']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -108,6 +143,7 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
   return { ...home, recents, recentsLayout: recentsLayout(config, 'home'), favoritesLayout: config.favoritesLayout ?? 'rows' }
 })
 ipcMain.handle('weather:get', () => getWeather())
+ipcMain.handle('tabs:available', async () => availableTabs(await loadConfig()))
 ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   const location = await getLocation()
   return location ? sunTimes(new Date(), location.latitude, location.longitude) : null
@@ -249,6 +285,7 @@ ipcMain.handle('quit', () => setTimeout(() => app.quit(), 400))
 ipcMain.handle('power', (_event, action: PowerAction) => power(action))
 
 app.whenReady().then(async () => {
+  void recordSteamShortcut()
   const config = await loadConfig()
   const root = steamRoot(config)
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.

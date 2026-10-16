@@ -156,7 +156,9 @@ button {
   width: 1177px;
   padding: 0 8px;
   display: flex;
-  justify-content: space-between;
+  /* Centred with a fixed gap, so leaving out tabs (no emulator, no games) doesn't spread the rest apart. */
+  justify-content: center;
+  gap: 40px;
 }
 
 .nav-tab {

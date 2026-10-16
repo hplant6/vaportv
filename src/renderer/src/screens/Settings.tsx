@@ -432,7 +432,10 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           <h3 className="settings-heading display">Steam tab layout</h3>
           <p className="settings-help">How the Steam tab shows each collection.</p>
           {settings && (
-            <LayoutChoice tab="steam" value={settings.steamLayout} onChoose={chooseLayout} />
+            <>
+              <LayoutChoice tab="steam" value={settings.steamLayout} onChoose={chooseLayout} />
+              <RecentsChoice tab="steam" value={settings.recentsLayouts.steam} onChoose={chooseRecentsLayout} />
+            </>
           )}
         </div>
 

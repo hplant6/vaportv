@@ -5,6 +5,7 @@ import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
 import { BACK_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
+import { tabShown } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { Screensaver } from './components/Screensaver'
@@ -89,8 +90,10 @@ export function App() {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail
       setScreen((current) => {
-        const i = TAB_ORDER.indexOf(current)
-        return TAB_ORDER[(i + step + TAB_ORDER.length) % TAB_ORDER.length]
+        // Only the tabs on show, so L1/R1 skips empty ones.
+        const order = TAB_ORDER.filter((s) => tabShown(s) || s === current)
+        const i = order.indexOf(current)
+        return order[(i + step + order.length) % order.length]
       })
     }
     window.addEventListener(TAB_EVENT, onTab)
@@ -132,7 +135,7 @@ export function App() {
           screen="switch"
           load={window.steamtv.getSwitchTab}
           onFavorite={window.steamtv.toggleFavorite}
-          empty="No Switch games found. They're read from the switch folder on the ROM drive."
+          empty="No Switch games found. vaporTV looks in your EmuDeck roms/switch folder."
           logos={home.platformLogos}
           onNavigate={setScreen}
         />
@@ -151,7 +154,7 @@ export function App() {
         <Library
           screen="xbox360"
           load={window.steamtv.getXbox360Tab}
-          empty="No Xbox 360 games found. They're read from roms/xbox360/roms on the ROM drive."
+          empty="No Xbox 360 games found. vaporTV looks in your EmuDeck roms/xbox360/roms folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}
@@ -161,7 +164,7 @@ export function App() {
         <Library
           screen="gamecube"
           load={window.steamtv.getGameCubeTab}
-          empty="No GameCube games found. They're read from roms/gc on the ROM drive."
+          empty="No GameCube games found. vaporTV looks in your EmuDeck roms/gc folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}
@@ -171,7 +174,7 @@ export function App() {
         <Library
           screen="dreamcast"
           load={window.steamtv.getDreamcastTab}
-          empty="No Dreamcast games found. They're read from roms/dreamcast on the ROM drive."
+          empty="No Dreamcast games found. vaporTV looks in your EmuDeck roms/dreamcast folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}

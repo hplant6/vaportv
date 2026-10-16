@@ -1,29 +1,126 @@
 {
   "recents": [
-    { "id": "emby:the-thing", "title": "The Thing", "platform": "emby", "lastPlayed": "2026-11-02", "cover": "fixtures/covers/the-thing.jpg" },
-    { "id": "switch:super-mario-3d-world", "title": "Super Mario 3D World", "platform": "switch", "lastPlayed": "2026-11-02", "cover": "fixtures/covers/mario-3d-world.jpg" },
-    { "id": "steam:pragmata", "title": "Pragmata", "platform": "steam", "lastPlayed": "2026-11-02", "cover": "fixtures/covers/pragmata.jpg" },
-    { "id": "youtube:pragmata-video", "title": "Pragmata", "platform": "youtube", "lastPlayed": "2026-11-02", "wide": "fixtures/wide/pragmata-video.jpg" },
-    { "id": "netflix:the-below", "title": "The Below", "platform": "netflix", "lastPlayed": "2026-11-02", "cover": "fixtures/covers/the-below.jpg" },
-    { "id": "netflix:the-below-2", "title": "The Below", "platform": "netflix", "lastPlayed": "2026-11-02", "cover": "fixtures/covers/the-below.jpg" }
+    {
+      "id": "emby:the-thing",
+      "title": "The Thing",
+      "platform": "emby",
+      "lastPlayed": "2026-11-02",
+      "cover": "fixtures/covers/the-thing.jpg"
+    },
+    {
+      "id": "switch:super-mario-3d-world",
+      "title": "Super Mario 3D World",
+      "platform": "switch",
+      "lastPlayed": "2026-11-02",
+      "cover": "fixtures/covers/mario-3d-world.jpg"
+    },
+    {
+      "id": "steam:pragmata",
+      "title": "Pragmata",
+      "platform": "steam",
+      "lastPlayed": "2026-11-02",
+      "cover": "fixtures/covers/pragmata.jpg"
+    },
+    {
+      "id": "youtube:pragmata-video",
+      "title": "Pragmata",
+      "platform": "youtube",
+      "lastPlayed": "2026-11-02",
+      "wide": "fixtures/wide/pragmata-video.jpg"
+    },
+    {
+      "id": "netflix:the-below",
+      "title": "The Below",
+      "platform": "netflix",
+      "lastPlayed": "2026-11-02",
+      "cover": "fixtures/covers/the-below.jpg"
+    },
+    {
+      "id": "netflix:the-below-2",
+      "title": "The Below",
+      "platform": "netflix",
+      "lastPlayed": "2026-11-02",
+      "cover": "fixtures/covers/the-below.jpg"
+    }
   ],
   "apps": [
-    { "id": "youtube", "name": "YouTube Premium", "tile": "fixtures/tiles/youtube.webp" },
-    { "id": "netflix", "name": "Netflix", "tile": "fixtures/tiles/netflix.webp" },
-    { "id": "jme", "name": "Jme", "tile": "fixtures/tiles/jme.webp" },
-    { "id": "disney", "name": "Disney+", "tile": "fixtures/tiles/disney.webp" },
-    { "id": "emby", "name": "Emby", "tile": "fixtures/tiles/emby.webp" },
-    { "id": "steam", "name": "Steam", "tile": "fixtures/tiles/steam.webp" },
-    { "id": "doki", "name": "Doki", "tile": "fixtures/tiles/doki.webp" },
-    { "id": "prime", "name": "Prime Video", "tile": "fixtures/tiles/prime.webp" }
+    {
+      "id": "youtube",
+      "name": "YouTube Premium",
+      "tile": "fixtures/tiles/youtube.webp"
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "tile": "fixtures/tiles/netflix.webp"
+    },
+    {
+      "id": "jme",
+      "name": "Jme",
+      "tile": "fixtures/tiles/jme.webp"
+    },
+    {
+      "id": "disney",
+      "name": "Disney+",
+      "tile": "fixtures/tiles/disney.webp"
+    },
+    {
+      "id": "emby",
+      "name": "Emby",
+      "tile": "fixtures/tiles/emby.webp"
+    },
+    {
+      "id": "steam",
+      "name": "Steam",
+      "tile": "fixtures/tiles/steam.webp"
+    },
+    {
+      "id": "doki",
+      "name": "Doki",
+      "tile": "fixtures/tiles/doki.webp"
+    },
+    {
+      "id": "prime",
+      "name": "Prime Video",
+      "tile": "fixtures/tiles/prime.webp"
+    }
   ],
   "moreApps": [
-    { "id": "max", "name": "Max", "tile": "fixtures/tiles/max.webp" },
-    { "id": "hulu", "name": "Hulu", "tile": "fixtures/tiles/hulu.webp" },
-    { "id": "paramount", "name": "Paramount+", "tile": "fixtures/tiles/paramount.webp" },
-    { "id": "peacock", "name": "Peacock", "tile": "fixtures/tiles/peacock.webp" },
-    { "id": "tubi", "name": "Tubi", "tile": "fixtures/tiles/tubi.webp" },
-    { "id": "jellyfin", "name": "Jellyfin", "tile": "fixtures/tiles/jellyfin.webp" }
+    {
+      "id": "max",
+      "name": "Max",
+      "tile": "fixtures/tiles/max.webp"
+    },
+    {
+      "id": "hulu",
+      "name": "Hulu",
+      "tile": "fixtures/tiles/hulu.webp"
+    },
+    {
+      "id": "paramount",
+      "name": "Paramount+",
+      "tile": "fixtures/tiles/paramount.webp"
+    },
+    {
+      "id": "peacock",
+      "name": "Peacock",
+      "tile": "fixtures/tiles/peacock.webp"
+    },
+    {
+      "id": "tubi",
+      "name": "Tubi",
+      "tile": "fixtures/tiles/tubi.webp"
+    },
+    {
+      "id": "jellyfin",
+      "name": "Jellyfin",
+      "tile": "fixtures/tiles/jellyfin.webp"
+    },
+    {
+      "id": "esde",
+      "name": "ES-DE",
+      "tile": "fixtures/tiles/esde.webp"
+    }
   ],
   "platformLogos": {
     "emby": "fixtures/logos/emby.png",

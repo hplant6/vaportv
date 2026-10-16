@@ -1,12 +1,11 @@
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
+import { romRoot } from './emudeck'
 import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
 import { scanSwitch, type SwitchGame } from './switch'
 
-export const DEFAULT_ROM_ROOT = '/run/media/deck/SATA/Emulation/roms'
-
 export function switchRoot(config: Config): string {
-  return `${config.romRoot ?? process.env.STEAMTV_ROM_ROOT ?? DEFAULT_ROM_ROOT}/switch`
+  return `${romRoot(config)}/switch`
 }
 
 export async function loadSwitchGames(config: Config): Promise<SwitchGame[]> {

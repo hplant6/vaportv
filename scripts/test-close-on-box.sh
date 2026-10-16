@@ -5,7 +5,7 @@
 # Select+Start close path (SIGUSR2), then report whether it closed and steamtv is back.
 set -a; . /run/user/1000/gamescope-environment; set +a
 export DISPLAY=:0
-STEAMTV=4159378748
+STEAMTV=$(. ~/.config/steamtv/steam-shortcut.env && echo "$STEAMTV_APPID")
 on_screen() { xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -oE '[0-9]+$'; }
 reaper_alive() { pgrep -f "^/home/deck/.local/share/Steam/ubuntu12_32/reaper SteamLaunch AppId=$1 " >/dev/null; }
 test_app() {

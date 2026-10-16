@@ -10,6 +10,8 @@ scp -q dist/steamtv.AppImage "$HOST:Applications/steamtv.AppImage.new"
 scp -q session/steamtv-autostart.sh "$HOST:.local/bin/steamtv-autostart"
 ssh "$HOST" bash -s <<'EOF'
 set -euo pipefail
+# vaporTV's Steam shortcut id, which it records each time Steam starts it.
+APPID=$(. ~/.config/steamtv/steam-shortcut.env 2>/dev/null && echo "${STEAMTV_APPID:-}")
 mv ~/Applications/steamtv.AppImage.new ~/Applications/steamtv.AppImage
 chmod +x ~/Applications/steamtv.AppImage ~/.local/bin/steamtv-autostart
 if ! pgrep -x gamescope-wl >/dev/null; then
@@ -18,14 +20,14 @@ if ! pgrep -x gamescope-wl >/dev/null; then
 fi
 # Don't pull steamtv out from under someone: restart only if it's what's on screen
 # and it hasn't launched an emulator (which runs inside steamtv's Steam session).
-reaper=$(pgrep -f '^/home/deck/.local/share/Steam/ubuntu12_32/reaper SteamLaunch AppId=4159378748' || true)
+reaper=$( [ -n "$APPID" ] && pgrep -f "^$HOME/.local/share/Steam/ubuntu12_32/reaper SteamLaunch AppId=$APPID" || true)
 if [ -n "$reaper" ] && pgrep -P "$reaper" | xargs -r ps -o comm= -p | grep -qv steamtv; then
   echo "Installed. An emulator is running inside steamtv; the update applies next time steamtv starts."
   exit 0
 fi
-# On screen is fine as steamtv (4159378748) or Steam's own UI (769); anything else is
+# On screen is fine as steamtv ($APPID) or Steam's own UI (769); anything else is
 # a game or app in use.
-if pgrep -x steamtv >/dev/null && ! DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qwE '4159378748|769'; then
+if pgrep -x steamtv >/dev/null && ! DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qwE "${APPID:-none}|769"; then
   echo "Installed. A game or app is on screen; the update applies next time steamtv starts."
   exit 0
 fi
@@ -41,5 +43,5 @@ fi
 systemctl --user start steamtv-autostart.service
 journalctl --user -u steamtv-autostart --since -1min -o cat --no-pager | grep steamtv-autostart: | tail -3
 sleep 2
-DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qw 4159378748 && echo "steamtv is on screen" || echo "WARNING: steamtv is not on screen"
+DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qw "${APPID:-none}" && echo "steamtv is on screen" || echo "WARNING: steamtv is not on screen"
 EOF

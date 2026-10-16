@@ -9,6 +9,7 @@ const api: SteamTvApi = {
   quit: () => ipcRenderer.invoke('quit'),
   power: (action) => ipcRenderer.invoke('power', action),
   getSettings: () => ipcRenderer.invoke('settings:get'),
+  getAvailableTabs: () => ipcRenderer.invoke('tabs:available'),
   getSteamTab: () => ipcRenderer.invoke('steam-tab:get'),
   setSteamCollections: (ids) => ipcRenderer.invoke('settings:steamCollections', ids),
   setTabLayout: (tab, layout) => ipcRenderer.invoke('settings:tabLayout', tab, layout),

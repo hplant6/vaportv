@@ -31,7 +31,7 @@ export interface Config {
   steamLayout?: SteamLayout
   /** How the Switch tab lays out its games (default rows). Set from Settings. */
   switchLayout?: SteamLayout
-  /** Folder holding a subfolder per system (switch/, ...). Defaults to EmuDeck's on the SATA drive. */
+  /** Folder holding a subfolder per system (switch/, ...). Defaults to EmuDeck's (see emudeck.ts). */
   romRoot?: string
   /** Name overrides for Switch games, by folder (or file) name. */
   switchTitles?: Record<string, string>
@@ -49,6 +49,8 @@ export interface Config {
   xbox360Titles?: Record<string, string>
   /** Xenia Canary's Windows exe (default romRoot/xbox360/xenia_canary.exe). */
   xenia?: string
+  /** Proton prefix for Xenia (default: EmuDeck's Xenia prefix, or vaporTV's own). */
+  xeniaPrefix?: string
   /** Proton used to run Xenia (default Steam's "Proton - Experimental"). */
   proton?: string
   /** How the GameCube tab lays out its games (default rows). Set from Settings. */
@@ -127,5 +129,6 @@ export async function saveConfig(patch: Partial<Config>): Promise<void> {
 
 /** A screen's Recents layout: as chosen, else its tab's own layout (Rows on Home). */
 export function recentsLayout(config: Config, tab: RecentsTab): SteamLayout {
-  return config.recentsLayouts?.[tab] ?? (tab === 'home' ? 'rows' : (config[`${tab}Layout`] ?? 'rows'))
+  // Home's and Steam's recents are a carousel by default; the consoles' follow their tab.
+  return config.recentsLayouts?.[tab] ?? (tab === 'home' || tab === 'steam' ? 'rows' : (config[`${tab}Layout`] ?? 'rows'))
 }
