@@ -211,6 +211,16 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'arcade' && home && (
+        <Library
+          screen="arcade"
+          load={window.steamtv.getArcadeTab}
+          empty="No arcade games to show. vaporTV looks in your EmuDeck roms folders (atomiswave, naomi, naomi2, cps, neogeo and arcade), and shows the carousels turned on in Settings → Consoles."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
       <LaunchOverlay />
       <SleepPrompt />

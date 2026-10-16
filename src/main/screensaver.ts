@@ -11,6 +11,7 @@ import { hasSteam, steamRoot } from './library/recents'
 import { activeUserDir, steamGameHero, steamGames } from './library/steam'
 import { cachedArt } from './library/steamgriddb'
 import { switchGames } from './library/switchTab'
+import { arcadeGames } from './library/arcade'
 import { xbox360Games } from './library/xbox360Tab'
 
 // Chromium can show these; HEIC (the iPhone default) it can't.
@@ -63,7 +64,7 @@ async function gameArt(config: Config): Promise<ScreensaverPhoto[]> {
       }
     }
   }
-  const loaders = [switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames]
+  const loaders = [switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames]
   const emulated = (await Promise.all(loaders.map((load) => load(config).catch(() => [])))).flat()
   for (const game of emulated) {
     const { hero } = await cachedArt(game.artKey)

@@ -19,6 +19,8 @@ import { cleanXbox360Title, scanXbox360 } from './xbox360'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
 import { parseWpctlVolume } from '../volume'
 import { assignButton, DEFAULT_CONTROLS, resolveControls } from '../../shared/controls'
+import { arcadeGames, arcadeTitle, loadArcadeTab } from './arcade'
+import type { Config } from '../config'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -564,5 +566,56 @@ describe('controls', () => {
   it('fills saved choices over the defaults and drops unusable ones', () => {
     expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8 })
     expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
+  })
+})
+
+describe('arcade', () => {
+  it('shortens MAME names to the game', () => {
+    expect(arcadeTitle('Street Fighter II: The World Warrior (World 910522)')).toBe('Street Fighter II: The World Warrior')
+    expect(arcadeTitle('Metal Slug - Super Vehicle-001')).toBe('Metal Slug - Super Vehicle-001')
+    expect(arcadeTitle('Samurai Shodown II / Shin Samurai Spirits - Haohmaru Jigokuhen')).toBe('Samurai Shodown II')
+  })
+
+  it('finds sets across the boards, names them and leaves BIOS out', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-arcade-'))
+    const files: Record<string, string[]> = {
+      naomi: ['cvs2.zip', 'naomi.zip'],
+      cps: ['sf2ua.zip', 'dino.nv'],
+      cps2: ['sfa3.zip'],
+      neogeo: ['mslug.zip', 'neogeo.zip'],
+      arcade: ['victlapw.zip', 'cpzn1.zip', 'mystery1.zip', '720.zip']
+    }
+    for (const [dir, names] of Object.entries(files)) {
+      await mkdir(join(root, dir), { recursive: true })
+      for (const name of names) await writeFile(join(root, dir, name), '')
+    }
+    await mkdir(join(root, 'naomi', 'cvs2'))
+    await writeFile(join(root, 'naomi', 'cvs2', 'gdl-0008.chd'), '')
+    process.env.STEAMTV_ARCADE_ROMS = root
+    try {
+      const games = await arcadeGames({ arcadeTitles: { mystery1: 'Mystery Game' } } as Config)
+      const byId = Object.fromEntries(games.map((g) => [g.id, g]))
+      expect(Object.keys(byId).sort()).toEqual([
+        'arcade:arcade/720',
+        'arcade:arcade/mystery1',
+        'arcade:arcade/victlapw',
+        'arcade:cps/sf2ua',
+        'arcade:cps2/sfa3',
+        'arcade:naomi/cvs2',
+        'arcade:neogeo/mslug'
+      ])
+      expect(byId['arcade:naomi/cvs2']).toMatchObject({ system: 'naomi', core: 'flycast', title: 'Capcom Vs. SNK 2: Mark Of The Millennium 2001' })
+      // A clone searches for (and shares) its parent's art.
+      expect(byId['arcade:cps/sf2ua']).toMatchObject({ system: 'cps', core: 'fbneo', artTitle: 'Street Fighter II: The World Warrior' })
+      expect(byId['arcade:arcade/victlapw'].title).toBe('Ace Driver: Victory Lap')
+      expect(byId['arcade:arcade/mystery1'].title).toBe('Mystery Game')
+      expect(byId['arcade:arcade/720']).toMatchObject({ system: 'arcade', core: 'mame' })
+
+      // Carousels turned off are left out of the tab.
+      const tab = await loadArcadeTab({ arcadeRowsHidden: ['neogeo', 'cps'] } as Config)
+      expect(tab.rows.map((row) => row.id)).toEqual(['naomi', 'arcade'])
+    } finally {
+      delete process.env.STEAMTV_ARCADE_ROMS
+    }
   })
 })

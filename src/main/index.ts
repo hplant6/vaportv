@@ -3,6 +3,7 @@ import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import home from '../../fixtures/home.json'
+import type { ArcadeRow } from '../shared/arcade'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
 import type { AppItem, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
@@ -21,6 +22,7 @@ import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
+import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
 import { ART_CACHE, chooseArt, gameCovers, resetArt, searchGames } from './library/steamgriddb'
 import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
@@ -131,7 +133,7 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
-  const [sw, ps3, x360, gc, dc] = await Promise.all([switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames].map(has))
+  const [sw, ps3, x360, gc, dc, arc] = await Promise.all([switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames].map(has))
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
@@ -139,7 +141,8 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
     ps3: ps3 && emulatorInstalled(config, 'ps3'),
     xbox360: x360 && emulatorInstalled(config, 'xbox360'),
     gamecube: gc && emulatorInstalled(config, 'gamecube'),
-    dreamcast: dc && emulatorInstalled(config, 'dreamcast')
+    dreamcast: dc && emulatorInstalled(config, 'dreamcast'),
+    arcade: arc && emulatorInstalled(config, 'arcade')
   }
   tabsCache = { at: Date.now(), tabs }
   return tabs
@@ -160,7 +163,7 @@ async function setupRun(sender: Electron.WebContents, job: (report: (line: strin
 
 /** The console game behind a card id (Recents or a console tab), for the Artwork window. */
 async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | undefined> {
-  const loaders = [switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames]
+  const loaders = [switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames]
   for (const load of loaders) {
     const game = (await load(config).catch(() => [])).find((g) => g.id === id)
     if (game) return game
@@ -184,7 +187,7 @@ function favoriteAppIds(config: Config): string[] {
   return config.favoriteApps ?? home.apps.map((app) => app.id)
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps3', 'xbox360', 'gamecube', 'dreamcast']
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps3', 'xbox360', 'gamecube', 'dreamcast', 'arcade']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -213,7 +216,7 @@ ipcMain.handle('apps:favorite', async (_event, id: string) => {
 ipcMain.handle('weather:get', () => getWeather())
 ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
   const { key, game } = await artGame(id)
-  return { title: game.title, matches: await searchGames(key, query ?? game.title) }
+  return { title: game.title, matches: await searchGames(key, query ?? game.artTitle ?? game.title) }
 })
 ipcMain.handle('art:covers', async (_event, id: string, gameId: number) => gameCovers((await artGame(id)).key, gameId))
 ipcMain.handle('art:choose', async (_event, id: string, gameId: number, cover: string) => {
@@ -261,6 +264,8 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     xbox360Layout: config.xbox360Layout ?? 'rows',
     gamecubeLayout: config.gamecubeLayout ?? 'rows',
     dreamcastLayout: config.dreamcastLayout ?? 'rows',
+    arcadeLayout: config.arcadeLayout ?? 'rows',
+    arcadeRowsHidden: config.arcadeRowsHidden ?? [],
     favoritesLayout: config.favoritesLayout ?? 'rows',
     recentsLayouts: Object.fromEntries(RECENTS_TABS.map((tab) => [tab, recentsLayout(config, tab)])) as Record<RecentsTab, SteamLayout>,
     musicTracks: await musicTracks(config),
@@ -305,6 +310,7 @@ ipcMain.handle('backdrop:get', async () => {
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
 ipcMain.handle('settings:sleepOnControllerOff', (_event, on: boolean) => saveConfig({ sleepOnControllerOff: on }))
+ipcMain.handle('settings:arcadeRowsHidden', (_event, rows: ArcadeRow[]) => saveConfig({ arcadeRowsHidden: rows }))
 ipcMain.handle('settings:controls', (_event, controls: Controls) => saveConfig({ controls: resolveControls(controls) }))
 ipcMain.handle('settings:sleepWarning', (_event, on: boolean) => saveConfig({ sleepWarning: on }))
 ipcMain.handle('settings:screensaverStyle', (_event, style: ScreensaverStyle) => saveConfig({ screensaverStyle: style }))
@@ -338,7 +344,7 @@ function fillArt(): void {
       const updated = (): void => {
         if (win && !win.isDestroyed()) win.webContents.send('art:updated')
       }
-      ;[fillSwitchArt, fillPs3Art, fillXbox360Art, fillGameCubeArt, fillDreamcastArt].forEach((fill) => fill(config, updated))
+      ;[fillSwitchArt, fillPs3Art, fillXbox360Art, fillGameCubeArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
     }
   )
@@ -354,6 +360,11 @@ ipcMain.handle('xbox360-tab:get', async () => {
   const config = await loadConfig()
   fillArt()
   return loadXbox360Tab(config)
+})
+ipcMain.handle('arcade-tab:get', async () => {
+  const config = await loadConfig()
+  fillArt()
+  return loadArcadeTab(config)
 })
 ipcMain.handle('dreamcast-tab:get', async () => {
   const config = await loadConfig()

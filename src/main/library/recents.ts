@@ -5,6 +5,7 @@ import type { RecentItem } from '../../shared/types'
 import type { Config } from '../config'
 import { artUrl } from './art'
 import { isoDate } from './dates'
+import { arcadeGames } from './arcade'
 import { dreamcastGames } from './dreamcastTab'
 import { playedEmulated, type EmulatedGame } from './emulated'
 import { gamecubeGames } from './gamecubeTab'
@@ -112,7 +113,8 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await ps3Games(config)),
       ...(await xbox360Games(config)),
       ...(await gamecubeGames(config)),
-      ...(await dreamcastGames(config))
+      ...(await dreamcastGames(config)),
+      ...(await arcadeGames(config))
     ])
   ])
   const days = config.recentDays ?? DEFAULT_RECENT_DAYS

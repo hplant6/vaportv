@@ -156,9 +156,22 @@ button {
   width: 1177px;
   padding: 0 8px;
   display: flex;
-  /* Centred with a fixed gap, so leaving out tabs (no emulator, no games) doesn't spread the rest apart. */
+  gap: 40px;
+}
+
+/* Centred in the room left of the icons, with a fixed gap, so leaving out tabs (no emulator, no games) doesn't spread the rest apart. */
+.nav-text-tabs {
+  flex: 1;
+  display: flex;
   justify-content: center;
   gap: 40px;
+}
+
+/* Settings and power: together, and always at the right end. */
+.nav-icons {
+  flex: none;
+  display: flex;
+  gap: 20px;
 }
 
 .nav-tab {

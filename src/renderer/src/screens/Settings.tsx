@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverSources, ScreensaverStyle, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
+import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
@@ -345,6 +346,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setSleepOnControllerOff(on).then(() => window.dispatchEvent(new Event(SLEEP_SETTING_EVENT)))
   }
 
+  const toggleArcadeRow = (id: ArcadeRow): void => {
+    if (!settings) return
+    const hidden = settings.arcadeRowsHidden.includes(id)
+      ? settings.arcadeRowsHidden.filter((row) => row !== id)
+      : [...settings.arcadeRowsHidden, id]
+    setSettings({ ...settings, arcadeRowsHidden: hidden })
+    window.steamtv.setArcadeRowsHidden(hidden)
+  }
+
   const toggleSleepWarning = (): void => {
     if (!settings) return
     const on = !settings.sleepWarning
@@ -504,6 +514,29 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           {settings && (
             <RecentsChoice tab="dreamcast" value={settings.recentsLayouts.dreamcast} onChoose={chooseRecentsLayout} />
           )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Arcade tab layout</h3>
+          <p className="settings-help">How the Arcade tab shows each board's games.</p>
+          {settings && <LayoutChoice tab="arcade" value={settings.arcadeLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="arcade" value={settings.recentsLayouts.arcade} onChoose={chooseRecentsLayout} />}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Arcade tab carousels</h3>
+          <p className="settings-help">Which rows the Arcade tab shows.</p>
+          <div className="setting-list" data-focus-memory="settings-arcade-rows">
+            {settings &&
+              ARCADE_ROWS.map((row) => (
+                <ToggleRow
+                  key={row.id}
+                  label={row.name}
+                  on={!settings.arcadeRowsHidden.includes(row.id)}
+                  onToggle={() => toggleArcadeRow(row.id)}
+                />
+              ))}
+          </div>
         </div>
       </>
     ),

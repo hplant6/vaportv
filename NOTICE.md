@@ -16,6 +16,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Litter decal (`debris/`) | `src/renderer/public/backdrops/rain/debris/` | vaporTV, drawn by `scripts/make-debris-decal.mjs` (replaced the demo's Megascans decal) | GPL-3.0, as vaporTV |
 | Rain splash flipbook (`Splash.png`) | `src/renderer/public/backdrops/rain/` | Faraz Shaikh (rain demo) | GPL-3.0 |
 | Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |
+| Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
 | UI sounds | `src/renderer/src/assets/sounds/` | alpha-es-de theme for ES-DE | CC0 1.0 |
 | ES-DE logo (Apps tile) | `src/renderer/public/fixtures/tiles/esde.webp` | ES-DE (Northwestern Software AB, Leon Styhre) | MIT |
 | IBM Plex Mono | npm `@fontsource/ibm-plex-mono` | IBM | SIL Open Font License 1.1 |

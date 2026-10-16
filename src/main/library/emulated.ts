@@ -17,6 +17,8 @@ export interface EmulatedGame {
   platform: string
   /** SteamGridDB cache key. */
   artKey: string
+  /** What to search SteamGridDB for, when not the title (an arcade clone: its parent's). */
+  artTitle?: string
   /** Local 16:9-ish art to fall back on when SteamGridDB has none (a file path). */
   localWide?: string
 }
@@ -87,7 +89,7 @@ export function fillEmulatedArt(name: string, key: string | undefined, load: () 
     for (let i = 0; i < games.length; i += 4) {
       const results = await Promise.all(
         games.slice(i, i + 4).map((game) =>
-          fetchArt(key, game.artKey, game.title).catch((err) => {
+          fetchArt(key, game.artKey, game.artTitle ?? game.title).catch((err) => {
             console.error(`steamtv: art for ${game.title}:`, err.message)
             return false
           })

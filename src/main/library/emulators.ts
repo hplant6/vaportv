@@ -24,7 +24,16 @@ export const protonPath = (config: Config): string =>
 
 export const DOLPHIN = ['flatpak', 'run', 'org.DolphinEmu.dolphin-emu']
 export const RETROARCH = ['flatpak', 'run', 'org.libretro.RetroArch']
-export const FLYCAST_CORE = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores', 'flycast_libretro.so')
+const CORES = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores')
+export const FLYCAST_CORE = join(CORES, 'flycast_libretro.so')
+
+/** The RetroArch cores the Arcade tab uses, by board family. */
+export type ArcadeCore = 'flycast' | 'fbneo' | 'mame'
+
+export function arcadeCoreFile(config: Config, core: ArcadeCore): string {
+  const configured = config.arcadeCores?.[core] ?? (core === 'flycast' ? config.flycastCore : undefined)
+  return configured ?? join(CORES, `${core}_libretro.so`)
+}
 
 /** A Flatpak app installed for this user or system-wide. */
 function flatpakInstalled(id: string): boolean {
@@ -54,5 +63,7 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return canRun(config.dolphin ?? DOLPHIN)
     case 'dreamcast':
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.flycastCore ?? FLYCAST_CORE)
+    case 'arcade':
+      return canRun(config.retroarch ?? RETROARCH) && (['flycast', 'fbneo', 'mame'] as const).some((core) => existsSync(arcadeCoreFile(config, core)))
   }
 }

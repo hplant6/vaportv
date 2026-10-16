@@ -5,7 +5,7 @@ import pillTop from '../assets/nav-pill-top.svg'
 import { GearIcon, PowerIcon } from './icons'
 import { PowerMenu } from './PowerMenu'
 
-export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'settings'
+export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade' | 'settings'
 
 const TABS: { id: Screen; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -15,7 +15,8 @@ const TABS: { id: Screen; label: string }[] = [
   { id: 'ps3', label: 'PS3' },
   { id: 'xbox360', label: 'Xbox 360' },
   { id: 'gamecube', label: 'GameCube' },
-  { id: 'dreamcast', label: 'Dreamcast' }
+  { id: 'dreamcast', label: 'Dreamcast' },
+  { id: 'arcade', label: 'Arcade' }
 ]
 
 /** Screens in the order L1/R1 step through them: the tabs, then Settings. */
@@ -44,23 +45,25 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
       <img className="pill-top" src={pillTop} alt="" />
       <img className="pill-bottom" src={pillBottom} alt="" />
       <div className="nav-tabs" data-focus-memory="nav">
-        {TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}
-        {tab('settings', <GearIcon />, 'Settings', true)}
-        <div className="power">
-          <button
-            id="power-button"
-            className={`nav-tab display nav-icon-tab${powerOpen ? ' open' : ''}`}
-            tabIndex={-1}
-            aria-label="Power"
-            aria-haspopup="menu"
-            aria-expanded={powerOpen}
-            data-focusable=""
-            data-select-sound="move"
-            onClick={() => setPowerOpen(true)}
-          >
-            <PowerIcon />
-          </button>
-          {powerOpen && <PowerMenu onClose={() => setPowerOpen(false)} />}
+        <div className="nav-text-tabs">{TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}</div>
+        <div className="nav-icons">
+          {tab('settings', <GearIcon />, 'Settings', true)}
+          <div className="power">
+            <button
+              id="power-button"
+              className={`nav-tab display nav-icon-tab${powerOpen ? ' open' : ''}`}
+              tabIndex={-1}
+              aria-label="Power"
+              aria-haspopup="menu"
+              aria-expanded={powerOpen}
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => setPowerOpen(true)}
+            >
+              <PowerIcon />
+            </button>
+            {powerOpen && <PowerMenu onClose={() => setPowerOpen(false)} />}
+          </div>
         </div>
       </div>
     </nav>

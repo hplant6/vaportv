@@ -29,6 +29,7 @@ const api: SteamTvApi = {
   setScreensaverSources: (sources) => ipcRenderer.invoke('settings:screensaverSources', sources),
   setSleepOnControllerOff: (on) => ipcRenderer.invoke('settings:sleepOnControllerOff', on),
   toggleFavoriteApp: (id) => ipcRenderer.invoke('apps:favorite', id),
+  setArcadeRowsHidden: (rows) => ipcRenderer.invoke('settings:arcadeRowsHidden', rows),
   setControls: (controls) => ipcRenderer.invoke('settings:controls', controls),
   setSleepWarning: (on) => ipcRenderer.invoke('settings:sleepWarning', on),
   art: {
@@ -72,6 +73,7 @@ const api: SteamTvApi = {
   getXbox360Tab: () => ipcRenderer.invoke('xbox360-tab:get'),
   getGameCubeTab: () => ipcRenderer.invoke('gamecube-tab:get'),
   getDreamcastTab: () => ipcRenderer.invoke('dreamcast-tab:get'),
+  getArcadeTab: () => ipcRenderer.invoke('arcade-tab:get'),
   toggleFavorite: (id) => ipcRenderer.invoke('favorite:toggle', id),
   onClosing: (callback) => {
     const listener = (_event: unknown, state: { active: boolean; name?: string }): void => callback(state)

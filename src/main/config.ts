@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
 import type { BackdropStyle, BackdropTime, MusicVolume, RecentsTab, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
@@ -66,6 +67,14 @@ export interface Config {
   dolphin?: string[]
   /** How the Dreamcast tab lays out its games (default rows). Set from Settings. */
   dreamcastLayout?: SteamLayout
+  /** How the Arcade tab lays out its games (default rows). Set from Settings. */
+  arcadeLayout?: SteamLayout
+  /** Arcade game names by ROM set (e.g. "ngfrog": "Frog Feast"), for sets MAME's list doesn't know. */
+  arcadeTitles?: Record<string, string>
+  /** Arcade tab carousels turned off in Settings. */
+  arcadeRowsHidden?: ArcadeRow[]
+  /** RetroArch cores for the Arcade tab, by family (default the Flatpak's cores/<name>_libretro.so). */
+  arcadeCores?: Partial<Record<'flycast' | 'fbneo' | 'mame', string>>
   /** Recents layout per screen, where chosen; see recentsLayout(). */
   recentsLayouts?: Partial<Record<RecentsTab, SteamLayout>>
   /** Home's Favorite Apps: a sideways row (default) or the grid. */

@@ -1,3 +1,4 @@
+import type { ArcadeRow } from './arcade'
 import type { Controls } from './controls'
 import type { SunTimes } from './sun'
 
@@ -70,10 +71,10 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast'
+export type LayoutTab = 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -109,6 +110,9 @@ export interface Settings {
   xbox360Layout: SteamLayout
   gamecubeLayout: SteamLayout
   dreamcastLayout: SteamLayout
+  arcadeLayout: SteamLayout
+  /** Arcade tab carousels turned off. */
+  arcadeRowsHidden: ArcadeRow[]
   /** Each screen's Recents layout (by default, its tab's layout; Rows on Home). */
   recentsLayouts: Record<RecentsTab, SteamLayout>
   favoritesLayout: SteamLayout
@@ -266,6 +270,8 @@ export interface SteamTvApi {
   getGameCubeTab(): Promise<LibraryTab>
   /** The Dreamcast tab: Flycast disc images. */
   getDreamcastTab(): Promise<LibraryTab>
+  /** The Arcade tab: ROM sets from the Atomiswave, NAOMI, CPS, Neo Geo and arcade folders. */
+  getArcadeTab(): Promise<LibraryTab>
   /** Adds or removes a Switch game from Favorites; resolves with whether it's now a favourite. */
   toggleFavorite(id: string): Promise<boolean>
   /** Calls back when new art has been downloaded; returns an unsubscribe. */
@@ -290,6 +296,8 @@ export interface SteamTvApi {
   setSleepOnControllerOff(on: boolean): Promise<void>
   /** Saves the button for each action (Settings → Controller). */
   setControls(controls: Controls): Promise<void>
+  /** Saves which Arcade tab carousels are turned off. */
+  setArcadeRowsHidden(rows: ArcadeRow[]): Promise<void>
   /** Adds an app to Home's Favorite Apps or takes it off; resolves with whether it's now a favorite. */
   toggleFavoriteApp(id: string): Promise<boolean>
   setSleepWarning(on: boolean): Promise<void>

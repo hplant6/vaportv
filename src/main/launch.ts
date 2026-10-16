@@ -7,6 +7,7 @@ import type { Config } from './config'
 import { recordPlay } from './history'
 import { steamRoot } from './library/recents'
 import { activeUserDir } from './library/steam'
+import { arcadeCommand, arcadeGames } from './library/arcade'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
 import { rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
@@ -17,7 +18,7 @@ import { childObject, childString, parseBinaryVdf } from './library/vdf'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
-// Emulated games (Switch, PS3, Xbox 360, GameCube, Dreamcast) open in their emulator directly.
+// Emulated games (Switch, PS3, Xbox 360, GameCube, Dreamcast, arcade) open in their emulator directly.
 
 // Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
 // the first of several names that exists). Override or extend with `favorites` in config.json.
@@ -167,6 +168,18 @@ async function launchDreamcast(config: Config, id: string): Promise<boolean> {
   return true
 }
 
+/** Arcade games open in RetroArch with their board's core (Flycast, FBNeo or MAME). */
+async function launchArcade(config: Config, id: string): Promise<boolean> {
+  const game = (await arcadeGames(config)).find((g) => g.id === id)
+  if (!game) return false
+  const { command, args } = arcadeCommand(config, game)
+  console.log(`steamtv: launching ${game.path} in RetroArch (${game.core})`)
+  run(command, args)
+  emulatorGame = game.title
+  await recordPlay(id)
+  return true
+}
+
 /** Hands the URL to the running Steam client. Returns false if there is nothing to launch. */
 export async function launch(config: Config, kind: LaunchKind, id: string, name?: string): Promise<boolean> {
   if (id.startsWith('switch:')) return launchSwitch(config, id)
@@ -174,6 +187,7 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('xbox360:')) return launchXbox360(config, id)
   if (id.startsWith('gamecube:')) return launchGameCube(config, id)
   if (id.startsWith('dreamcast:')) return launchDreamcast(config, id)
+  if (id.startsWith('arcade:')) return launchArcade(config, id)
   const url = await launchUrl(config, kind, id)
   if (!url) {
     console.error(`steamtv: nothing to launch for ${kind} ${id}`)
