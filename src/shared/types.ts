@@ -1,3 +1,4 @@
+import type { Controls } from './controls'
 import type { SunTimes } from './sun'
 
 export interface RecentItem {
@@ -18,14 +19,16 @@ export interface AppItem {
   id: string
   name: string
   tile: string
+  /** On Home's Favorite Apps (set on the Apps tab's list). */
+  favorite?: boolean
 }
 
 export interface HomeData {
   recents: RecentItem[]
-  /** Favorite Apps on Home (also first on the Apps tab). */
+  /** Favorite Apps on Home, in the order they were added. */
   apps: AppItem[]
-  /** Apps shown only on the Apps tab. */
-  moreApps: AppItem[]
+  /** Every app, for the Apps tab, favorites marked. */
+  allApps: AppItem[]
   platformLogos: Record<string, string>
   recentsLayout: SteamLayout
   /** Favorite Apps: one sideways row ('rows') or the grid. */
@@ -122,6 +125,8 @@ export interface Settings {
   sleepOnControllerOff: boolean
   /** With sleepOnControllerOff: a few seconds' warning first, cancelled by switching it back on. */
   sleepWarning: boolean
+  /** What each controller button does. */
+  controls: Controls
   /** Screensaver delay in minutes (0 = off), and where it reads photos. */
   screensaverDelay: number
   screensaverStyle: ScreensaverStyle
@@ -197,6 +202,25 @@ export interface GooglePhotosProgress {
   error?: string
 }
 
+/** What's set up, as the Desktop Mode setup window sees it. */
+export interface InstallStatus {
+  /** The AppImage this window was opened from, if any. */
+  running: string | null
+  /** The AppImage vaporTV's Steam shortcut runs, if there is one. */
+  appImage: string | null
+  shortcut: boolean
+  autostart: boolean
+  wake: boolean
+  steamRunning: boolean
+}
+
+export interface InstallOptions {
+  /** Open vaporTV when Gaming Mode starts. */
+  autostart: boolean
+  /** Let a controller wake the box (needs the admin password). */
+  wake: boolean
+}
+
 export interface SteamTvApi {
   getHome(): Promise<HomeData>
   getWeather(): Promise<Weather | null>
@@ -210,7 +234,24 @@ export interface SteamTvApi {
   quit(): Promise<void>
   /** Power menu: exit to desktop or Steam, sleep, power off. Resolves false if it couldn't. */
   power(action: PowerAction): Promise<boolean>
+  /** Raises (1) or lowers (-1) the system volume a step; the new level (0–100), or null if it couldn't. */
+  stepVolume(direction: 1 | -1): Promise<{ level: number; muted: boolean } | null>
   getSettings(): Promise<Settings>
+  /** Artwork window for console games: SteamGridDB matches, covers, and choosing one by hand. */
+  art: {
+    search(id: string, query?: string): Promise<{ title: string; matches: { id: number; name: string; year?: number }[] }>
+    covers(id: string, gameId: number): Promise<{ url: string; thumb: string }[]>
+    choose(id: string, gameId: number, cover: string): Promise<void>
+    reset(id: string): Promise<void>
+  }
+  /** Desktop Mode setup. Install and uninstall resolve with an error message, or null when done. */
+  setup: {
+    status(): Promise<InstallStatus>
+    install(options: InstallOptions): Promise<string | null>
+    uninstall(): Promise<string | null>
+    gamingMode(): Promise<void>
+    onProgress(callback: (line: string) => void): () => void
+  }
   /** Which optional tabs have something to show (no Steam, or no games for a console, hides it). */
   getAvailableTabs(): Promise<Record<LayoutTab, boolean>>
   /** The Steam tab: the collections chosen in Settings, and how to lay them out. */
@@ -247,6 +288,10 @@ export interface SteamTvApi {
   setScreensaverStyle(style: ScreensaverStyle): Promise<void>
   setScreensaverSources(sources: ScreensaverSources): Promise<void>
   setSleepOnControllerOff(on: boolean): Promise<void>
+  /** Saves the button for each action (Settings → Controller). */
+  setControls(controls: Controls): Promise<void>
+  /** Adds an app to Home's Favorite Apps or takes it off; resolves with whether it's now a favorite. */
+  toggleFavoriteApp(id: string): Promise<boolean>
   setSleepWarning(on: boolean): Promise<void>
   /** Google Photos add-on (screensaver photos). */
   googlePhotos: {

@@ -17,7 +17,9 @@ import { cleanTitle, scanSwitch } from './switch'
 import { normalizeName } from './steamgriddb'
 import { cleanXbox360Title, scanXbox360 } from './xbox360'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
-import { parseBinaryVdf, parseTextVdf } from './vdf'
+import { parseWpctlVolume } from '../volume'
+import { assignButton, DEFAULT_CONTROLS, resolveControls } from '../../shared/controls'
+import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
 type Bin = { [key: string]: string | number | Bin }
@@ -510,5 +512,57 @@ describe('EmuDeck', () => {
     const exe = '"/usr/bin/env bash" "/run/media/deck/SATA/Emulation/tools/launchers/xenia.sh"'
     // The prefix EmuDeck created on a real box for this layout.
     expect(shortcutAppId(exe, 'Xenia')).toBe(2832997896)
+  })
+})
+
+describe('installer', () => {
+  it("updates an existing vaporTV shortcut in place, keeping its id", async () => {
+    const { upsertShortcut } = await import('../installer')
+    const real = 'fixtures/box/Steam/userdata/19236920/config/shortcuts.vdf'
+    if (!existsSync(real)) return
+    const vdf = parseBinaryVdf(await readFile(real))
+    const before = Object.keys(childObject(vdf, 'shortcuts') ?? {}).length
+    const { appid, updated } = upsertShortcut(vdf, '/home/deck/Applications/steamtv.AppImage')
+    expect(updated).toBe(true)
+    expect(appid).toBe(4159378748)
+    expect(Object.keys(childObject(vdf, 'shortcuts') ?? {}).length).toBe(before)
+    // Still writes back as valid binary VDF.
+    expect(parseBinaryVdf(dumpBinaryVdf(vdf))).toEqual(vdf)
+  })
+
+  it('adds a new shortcut with the id Steam would give it', async () => {
+    const { upsertShortcut } = await import('../installer')
+    const vdf: VdfObject = { shortcuts: {} }
+    const { appid, updated } = upsertShortcut(vdf, '/home/deck/Applications/vaporTV.AppImage')
+    expect(updated).toBe(false)
+    expect(appid).toBe(shortcutAppId('"/home/deck/Applications/vaporTV.AppImage"', 'vaporTV'))
+    const entry = childObject(vdf, 'shortcuts', '0')
+    expect(childString(entry, 'AppName')).toBe('vaporTV')
+    expect(childString(entry, 'LaunchOptions')).toBe('LD_PRELOAD= %command%')
+    expect(childString(entry, 'Exe')).toBe('"/home/deck/Applications/vaporTV.AppImage"')
+  })
+})
+
+describe('wpctl volume', () => {
+  it('reads the level and mute state', () => {
+    expect(parseWpctlVolume('Volume: 0.45\n')).toEqual({ level: 45, muted: false })
+    expect(parseWpctlVolume('Volume: 1.00 [MUTED]\n')).toEqual({ level: 100, muted: true })
+    expect(parseWpctlVolume('nothing')).toBeNull()
+  })
+})
+
+describe('controls', () => {
+  it('swaps a button another action had', () => {
+    const next = assignButton(DEFAULT_CONTROLS, 'select', 1)
+    expect(next.select).toBe(1)
+    expect(next.back).toBe(0)
+  })
+  it('takes a free button without touching the others', () => {
+    const next = assignButton(DEFAULT_CONTROLS, 'favorite', 9)
+    expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 9 })
+  })
+  it('fills saved choices over the defaults and drops unusable ones', () => {
+    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8 })
+    expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
   })
 })

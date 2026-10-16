@@ -1,4 +1,4 @@
-import { activate, back, favorite, move, switchTab, type Direction } from './focus'
+import { activate, back, favorite, move, options, switchTab, type Direction } from './focus'
 import { noteInput } from './idle'
 
 const DIRECTIONS: Record<string, Direction> = {
@@ -64,6 +64,9 @@ export function startKeyboard(): void {
     } else if (event.key === 'PageUp' || event.key === 'PageDown') {
       event.preventDefault()
       if (!event.repeat) switchTab(event.key === 'PageUp' ? -1 : 1)
+    } else if (event.key === 'x' || event.key === 'X') {
+      event.preventDefault()
+      if (!event.repeat) options()
     } else if (event.key === 'f' || event.key === 'F') {
       event.preventDefault()
       if (!event.repeat) favorite()

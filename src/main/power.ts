@@ -4,7 +4,7 @@ import { app } from 'electron'
 import type { PowerAction } from '../shared/types'
 
 /** Only act on the box itself; on a dev machine these would sleep or switch off the PC. */
-function onSteamOS(): boolean {
+export function onSteamOS(): boolean {
   try {
     return /^ID=steamos$/m.test(readFileSync('/etc/os-release', 'utf8'))
   } catch {

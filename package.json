@@ -49,6 +49,10 @@
   "license": "GPL-3.0-or-later",
   "build": {
     "appId": "me.itshenry.steamtv",
+    "extraResources": [
+      { "from": "session", "to": "session" },
+      { "from": "build/library-art", "to": "library-art", "filter": ["*.png"] }
+    ],
     "productName": "vaporTV",
     "directories": {
       "output": "dist"

@@ -143,6 +143,16 @@ export function switchTab(step: -1 | 1): void {
   window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: step }))
 }
 
+/** X on a controller, the X key on a keyboard: options for the focused card (its artwork). */
+export const OPTIONS_EVENT = 'steamtv:options'
+
+export function options(): void {
+  // Menus that hold the cursor stay put.
+  if (trap()) return
+  const el = current()
+  if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: el }))
+}
+
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'
 

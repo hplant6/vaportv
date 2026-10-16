@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverSources, ScreensaverStyle, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
+import { ControlsSettings } from '../components/ControlsSettings'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { SLEEP_SETTING_EVENT } from '../components/SleepPrompt'
@@ -692,6 +693,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             )}
           </div>
         </div>
+
+        {settings && <ControlsSettings controls={settings.controls} onChange={(controls) => setSettings({ ...settings, controls })} />}
       </>
     ),
     artwork: (

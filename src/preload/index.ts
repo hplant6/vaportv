@@ -8,6 +8,7 @@ const api: SteamTvApi = {
   launch: (kind, id, name) => ipcRenderer.invoke('launch', kind, id, name),
   quit: () => ipcRenderer.invoke('quit'),
   power: (action) => ipcRenderer.invoke('power', action),
+  stepVolume: (direction) => ipcRenderer.invoke('volume:step', direction),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   getAvailableTabs: () => ipcRenderer.invoke('tabs:available'),
   getSteamTab: () => ipcRenderer.invoke('steam-tab:get'),
@@ -27,7 +28,26 @@ const api: SteamTvApi = {
   setScreensaverStyle: (style) => ipcRenderer.invoke('settings:screensaverStyle', style),
   setScreensaverSources: (sources) => ipcRenderer.invoke('settings:screensaverSources', sources),
   setSleepOnControllerOff: (on) => ipcRenderer.invoke('settings:sleepOnControllerOff', on),
+  toggleFavoriteApp: (id) => ipcRenderer.invoke('apps:favorite', id),
+  setControls: (controls) => ipcRenderer.invoke('settings:controls', controls),
   setSleepWarning: (on) => ipcRenderer.invoke('settings:sleepWarning', on),
+  art: {
+    search: (id, query) => ipcRenderer.invoke('art:search', id, query),
+    covers: (id, gameId) => ipcRenderer.invoke('art:covers', id, gameId),
+    choose: (id, gameId, cover) => ipcRenderer.invoke('art:choose', id, gameId, cover),
+    reset: (id) => ipcRenderer.invoke('art:reset', id)
+  },
+  setup: {
+    status: () => ipcRenderer.invoke('setup:status'),
+    install: (options) => ipcRenderer.invoke('setup:install', options),
+    uninstall: () => ipcRenderer.invoke('setup:uninstall'),
+    gamingMode: () => ipcRenderer.invoke('setup:gamingMode'),
+    onProgress: (callback) => {
+      const listener = (_event: Electron.IpcRendererEvent, line: string): void => callback(line)
+      ipcRenderer.on('setup:progress', listener)
+      return () => ipcRenderer.removeListener('setup:progress', listener)
+    }
+  },
   googleDrive: {
     status: () => ipcRenderer.invoke('gdrive:status'),
     folders: () => ipcRenderer.invoke('gdrive:folders'),

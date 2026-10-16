@@ -93,6 +93,30 @@ export function parseBinaryVdf(data: Buffer): VdfObject {
   return object()
 }
 
+/** Writes binary VDF, the reverse of parseBinaryVdf: numbers as uint32, strings, nested objects. */
+export function dumpBinaryVdf(obj: VdfObject): Buffer {
+  const parts: Buffer[] = []
+  const write = (o: VdfObject): void => {
+    for (const [key, value] of Object.entries(o)) {
+      const name = Buffer.from(`${key}\0`, 'utf8')
+      if (typeof value === 'object') {
+        parts.push(Buffer.from([0x00]), name)
+        write(value)
+        parts.push(Buffer.from([0x08]))
+      } else if (typeof value === 'number') {
+        const n = Buffer.alloc(4)
+        n.writeUInt32LE(value >>> 0)
+        parts.push(Buffer.from([0x02]), name, n)
+      } else {
+        parts.push(Buffer.from([0x01]), name, Buffer.from(`${value}\0`, 'utf8'))
+      }
+    }
+  }
+  write(obj)
+  parts.push(Buffer.from([0x08]))
+  return Buffer.concat(parts)
+}
+
 /** Case-insensitive child lookup, for keys Steam spells inconsistently (AppName/appname, Software/software). */
 export function child(obj: VdfObject | undefined, ...path: string[]): VdfValue | undefined {
   let cur: VdfValue | undefined = obj

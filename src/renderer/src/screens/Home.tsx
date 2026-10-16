@@ -46,7 +46,9 @@ function FavoriteApps({ data, variant }: { data: HomeData; variant?: 'no-recents
   return (
     <section className={`favorites${variant ? ` ${variant}` : ''}`}>
       <h2 className="section-label display">Favorite Apps</h2>
-      {data.favoritesLayout === 'grid' ? (
+      {data.apps.length === 0 ? (
+        <p className="empty-note">Press Y on an app in the Apps tab to add it here.</p>
+      ) : data.favoritesLayout === 'grid' ? (
         <div className="favorites-grid">
           {data.apps.map((app, index) => (
             <AppTile key={app.id} app={app} isDefault={variant === 'no-recents' && index === 0} />

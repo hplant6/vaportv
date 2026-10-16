@@ -3,15 +3,18 @@ import type { BackdropStyle } from '../../shared/types'
 import type { HomeData } from '../../shared/types'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
-import { BACK_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
+import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
+import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabShown } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
+import { ArtworkDialog } from './components/ArtworkDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
 import { TAB_ORDER, type Screen } from './components/NavBar'
-import { Toast } from './components/Toast'
+import { toast, Toast } from './components/Toast'
+import { VolumeOsd } from './components/VolumeOsd'
 import { Apps } from './screens/Apps'
 import { Home } from './screens/Home'
 import { Settings } from './screens/Settings'
@@ -72,6 +75,34 @@ export function App() {
     }
   }, [])
 
+  // Y on an app tile (Apps tab or Home) adds it to Favorite Apps or takes it off.
+  useEffect(() => {
+    const onFavorite = (event: Event): void => {
+      const tile = (event as CustomEvent<HTMLElement>).detail
+      const id = tile.dataset.appId
+      if (!id) return
+      const name = tile.getAttribute('aria-label') ?? 'App'
+      // Taken off Home, its tile goes: the cursor moves to a neighbour.
+      const neighbour = (tile.nextElementSibling ?? tile.previousElementSibling) as HTMLElement | null
+      const neighbourId = neighbour?.dataset.appId
+      window.steamtv.toggleFavoriteApp(id).then((on) => {
+        play(on ? 'favorite' : 'move')
+        toast(on ? `Added ${name} to Favorite Apps` : `Removed ${name} from Favorite Apps`)
+        window.steamtv.getHome().then((data) => {
+          setHome(data)
+          requestAnimationFrame(() => {
+            if (tile.isConnected) return
+            const next = neighbourId && document.querySelector<HTMLElement>(`.app-tile[data-app-id="${neighbourId}"]`)
+            if (next) focus(next)
+            else focusDefault()
+          })
+        })
+      })
+    }
+    window.addEventListener(FAVORITE_EVENT, onFavorite)
+    return () => window.removeEventListener(FAVORITE_EVENT, onFavorite)
+  }, [])
+
   // Back from any other screen returns Home.
   useEffect(() => {
     const onBack = (): void => {
@@ -129,7 +160,7 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
-      {screen === 'apps' && home && <Apps apps={[...home.apps, ...home.moreApps]} onNavigate={setScreen} />}
+      {screen === 'apps' && home && <Apps apps={home.allApps} onNavigate={setScreen} />}
       {screen === 'switch' && home && (
         <Library
           screen="switch"
@@ -183,8 +214,10 @@ export function App() {
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
       <LaunchOverlay />
       <SleepPrompt />
+      <ArtworkDialog />
       <Screensaver />
       <BackgroundMusic />
+      <VolumeOsd />
       <Toast />
     </div>
   )

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 
@@ -34,6 +34,8 @@ interface IndexEntry {
   wide?: string | null
   hero?: string | null
   checkedAt: number
+  /** Chosen by hand in the Artwork window: automatic lookups leave it alone. */
+  manual?: boolean
 }
 
 let index: Record<string, IndexEntry> | null = null
@@ -93,7 +95,10 @@ async function download(url: string, cacheKey: string, kind: ArtKind): Promise<s
   const res = await fetch(url, { signal: AbortSignal.timeout(20000) })
   if (!res.ok) return null
   const ext = extname(new URL(url).pathname) || '.jpg'
-  const file = join(ART_CACHE, `${createHash('sha1').update(cacheKey).digest('hex').slice(0, 16)}-${kind}${ext}`)
+  const hash = (s: string, n: number): string => createHash('sha1').update(s).digest('hex').slice(0, n)
+  // The source's hash in the name: a different picture gets a different file (and URL), so
+  // the page shows the new one rather than the cached old one.
+  const file = join(ART_CACHE, `${hash(cacheKey, 16)}-${kind}-${hash(url, 6)}${ext}`)
   await mkdir(ART_CACHE, { recursive: true })
   await writeFile(file, Buffer.from(await res.arrayBuffer()))
   return basename(file)
@@ -140,6 +145,7 @@ export async function cachedArt(cacheKey: string): Promise<{ portrait?: string; 
 export async function fetchArt(key: string, cacheKey: string, title: string): Promise<boolean> {
   const all = await loadIndex()
   const entry = all[cacheKey]
+  if (entry?.manual) return false
   const recentMiss = entry?.gameId === null && Date.now() - entry.checkedAt < RETRY_MISSES
   // Entries from before heroes were fetched just get their hero added.
   const complete = entry?.gameId != null && entry.portrait !== undefined && entry.wide !== undefined && entry.hero !== undefined
@@ -161,4 +167,69 @@ export async function fetchArt(key: string, cacheKey: string, title: string): Pr
   all[cacheKey] = next
   await saveIndex()
   return gameId !== null
+}
+
+/** A SteamGridDB game, as the Artwork window lists it. */
+export interface ArtMatch {
+  id: number
+  name: string
+  /** Release year, when SteamGridDB knows it. */
+  year?: number
+}
+
+/** SteamGridDB games matching `query`, best first. */
+export async function searchGames(key: string, query: string): Promise<ArtMatch[]> {
+  const results = await api<{ id: number; name: string; release_date?: number }[]>(key, `/search/autocomplete/${encodeURIComponent(query)}`)
+  return (results ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    year: r.release_date ? new Date(r.release_date * 1000).getFullYear() : undefined
+  }))
+}
+
+/** A game's static portrait covers on SteamGridDB: full image and thumbnail URLs. */
+export async function gameCovers(key: string, gameId: number): Promise<{ url: string; thumb: string }[]> {
+  const grids = await api<{ url: string; thumb: string }[]>(
+    key,
+    `/grids/game/${gameId}?dimensions=${DIMENSIONS.portrait}&types=static&nsfw=false&humor=false&epilepsy=false`
+  )
+  return (grids ?? []).map((g) => ({ url: g.url, thumb: g.thumb }))
+}
+
+/**
+ * Art chosen by hand: `cover` from SteamGridDB game `gameId`, with that game's first wide
+ * art and hero. Saved as manual, so automatic lookups never replace it.
+ */
+export async function chooseArt(key: string, cacheKey: string, gameId: number, cover: string): Promise<void> {
+  const all = await loadIndex()
+  const old = all[cacheKey]
+  const first = async (kind: 'wide' | 'hero'): Promise<string | null> => {
+    const grids = await api<{ url: string }[]>(
+      key,
+      `/${ENDPOINT[kind]}/game/${gameId}?dimensions=${DIMENSIONS[kind]}&types=static&nsfw=false&humor=false&epilepsy=false`
+    )
+    return grids?.[0] ? download(grids[0].url, cacheKey, kind) : null
+  }
+  const next: IndexEntry = {
+    gameId,
+    checkedAt: Date.now(),
+    manual: true,
+    portrait: await download(cover, cacheKey, 'portrait'),
+    wide: await first('wide'),
+    hero: await first('hero')
+  }
+  all[cacheKey] = next
+  await saveIndex()
+  // The pictures this replaces.
+  for (const kind of ['portrait', 'wide', 'hero'] as const) {
+    const file = old?.[kind]
+    if (file && file !== next[kind]) await rm(join(ART_CACHE, basename(file)), { force: true })
+  }
+}
+
+/** Back to automatic: forgets the game's art so the next lookup finds it afresh. */
+export async function resetArt(cacheKey: string): Promise<void> {
+  const all = await loadIndex()
+  delete all[cacheKey]
+  await saveIndex()
 }

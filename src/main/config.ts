@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import type { Controls } from '../shared/controls'
 import type { BackdropStyle, BackdropTime, MusicVolume, RecentsTab, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
@@ -8,6 +9,10 @@ export interface Config {
   sleepOnControllerOff?: boolean
   /** Count down before that sleep (default on). */
   sleepWarning?: boolean
+  /** Buttons moved from their defaults in Settings → Controller (action → button index). */
+  controls?: Partial<Controls>
+  /** Home's Favorite Apps, by app id, in the order added (unset: the built-in eight). */
+  favoriteApps?: string[]
   /**
    * Google Photos add-on: your Google Cloud OAuth client ("Desktop app") and, once
    * signed in, the refresh token. Never committed; it lives only in config.json.
