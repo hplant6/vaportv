@@ -1,0 +1,486 @@
+import { existsSync } from 'node:fs'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { launchUrl, shortcutGameId } from '../launch'
+import { collectionGames, isSupported, readCollections } from './collections'
+import { loadRecents, pickRecent, toRecentItem } from './recents'
+import { loadSteamTab } from './steamTab'
+import { scanDreamcast } from './dreamcast'
+import { dreamcastContent } from './dreamcastTab'
+import { scanGameCube } from './gamecube'
+import { cleanPs3Title, parseSfo, scanPs3 } from './ps3'
+import { rpcs3Args } from './ps3Tab'
+import { cleanTitle, scanSwitch } from './switch'
+import { normalizeName } from './steamgriddb'
+import { cleanXbox360Title, scanXbox360 } from './xbox360'
+import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
+import { parseBinaryVdf, parseTextVdf } from './vdf'
+
+// Builds binary VDF the way Steam writes shortcuts.vdf.
+type Bin = { [key: string]: string | number | Bin }
+function binaryVdf(obj: Bin): Buffer {
+  const parts: Buffer[] = []
+  for (const [key, value] of Object.entries(obj)) {
+    const k = Buffer.from(`${key}\0`)
+    if (typeof value === 'string') parts.push(Buffer.from([1]), k, Buffer.from(`${value}\0`))
+    else if (typeof value === 'number') {
+      const n = Buffer.alloc(4)
+      n.writeUInt32LE(value)
+      parts.push(Buffer.from([2]), k, n)
+    } else parts.push(Buffer.from([0]), k, binaryVdf(value))
+  }
+  parts.push(Buffer.from([8]))
+  return Buffer.concat(parts)
+}
+
+const DAY = 86400
+const NOW = Date.UTC(2026, 9, 14, 12) // 2026-10-14
+const now = NOW / 1000
+
+async function fakeSteam(): Promise<{ root: string; user: string }> {
+  const root = await mkdtemp(join(tmpdir(), 'steamtv-'))
+  const user = join(root, 'userdata', '123')
+  await mkdir(join(user, 'config', 'grid'), { recursive: true })
+  await mkdir(join(root, 'steamapps'), { recursive: true })
+
+  const manifest = (id: string, name: string): Promise<void> =>
+    writeFile(join(root, 'steamapps', `appmanifest_${id}.acf`), `"AppState"\n{\n\t"appid"\t\t"${id}"\n\t"name"\t\t"${name}"\n}\n`)
+  await manifest('10', 'Dead Island 2')
+  await manifest('20', 'Proton 9.0')
+  await manifest('30', 'Old Game')
+
+  await writeFile(
+    join(user, 'config', 'localconfig.vdf'),
+    `"UserLocalConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"10"	{ "LastPlayed"	"${now - DAY}" }
+					"20"	{ "LastPlayed"	"${now - DAY}" }
+					"30"	{ "LastPlayed"	"${now - 90 * DAY}" }
+					"40"	{ "LastPlayed"	"${now - DAY}" }
+				}
+			}
+		}
+	}
+}
+`
+  )
+
+  // Newer games keep art in hashed subfolders.
+  await mkdir(join(root, 'appcache', 'librarycache', '10', 'abc123'), { recursive: true })
+  await writeFile(join(root, 'appcache', 'librarycache', '10', 'abc123', 'library_600x900.jpg'), '')
+
+  await writeFile(
+    join(user, 'config', 'shortcuts.vdf'),
+    binaryVdf({
+      shortcuts: {
+        '0': { appid: 111, AppName: 'Emby Theater', Exe: '"/usr/bin/emby"', LastPlayTime: now - 2 * DAY },
+        '1': { appid: 222, AppName: 'steamtv', Exe: '"/home/deck/Applications/steamtv.AppImage"', LastPlayTime: now },
+        '2': { appid: 333, appname: 'EmulationStationDE', exe: '"/x/es-de.sh"', LastPlayTime: now },
+        '3': { appid: 444, AppName: 'The Witcher 3', Exe: '"/games/witcher3"', LastPlayTime: now - 3 * DAY },
+        '4': { appid: 555, AppName: 'Never Played', Exe: '"/x"', LastPlayTime: 0 }
+      }
+    })
+  )
+  await writeFile(join(user, 'config', 'grid', '444p.png'), '')
+  return { root, user }
+}
+
+describe('vdf', () => {
+  it('parses text VDF with escapes and comments', () => {
+    const vdf = parseTextVdf('// comment\n"a"\n{\n\t"b"\t\t"say \\"hi\\""\n\t"c" { "d" "1" }\n}\n')
+    expect(vdf).toEqual({ a: { b: 'say "hi"', c: { d: '1' } } })
+  })
+
+  it('parses binary VDF', () => {
+    const vdf = parseBinaryVdf(binaryVdf({ shortcuts: { '0': { appid: 4159378748, AppName: 'x', tags: {} } } }))
+    expect(vdf).toEqual({ shortcuts: { '0': { appid: 4159378748, AppName: 'x', tags: {} } } })
+  })
+})
+
+describe('steam library', () => {
+  it('finds played, installed games and skips tools and uninstalled ones', async () => {
+    const { root, user } = await fakeSteam()
+    expect(await activeUserDir(root)).toBe(user)
+    const games = await playedSteamGames(root, user)
+    expect(games.map((g) => g.title).sort()).toEqual(['Dead Island 2', 'Old Game'])
+    expect(games.find((g) => g.title === 'Dead Island 2')?.art.portrait).toMatch(/abc123\/library_600x900\.jpg$/)
+  })
+
+  it('reads shortcuts, skipping launchers and never-played entries', async () => {
+    const { user } = await fakeSteam()
+    const shortcuts = await playedShortcuts(user)
+    expect(shortcuts.map((s) => [s.title, s.platform])).toEqual([
+      ['Emby Theater', 'emby'],
+      ['The Witcher 3', 'steam']
+    ])
+    expect(shortcuts[1].art.portrait).toMatch(/444p\.png$/)
+  })
+
+  it('recognises streaming shortcuts by name without catching games', async () => {
+    const { user } = await fakeSteam()
+    await writeFile(
+      join(user, 'config', 'shortcuts.vdf'),
+      binaryVdf({
+        shortcuts: {
+          '0': { appid: 1, AppName: 'Max', Exe: '"flatpak"', LastPlayTime: now },
+          '1': { appid: 2, AppName: 'Max Payne 3', Exe: '"/games/maxpayne3.exe"', LastPlayTime: now },
+          '2': { appid: 3, AppName: 'Paramount+', Exe: '"flatpak"', LastPlayTime: now },
+          '3': { appid: 4, AppName: 'Jellyfin', Exe: '"flatpak"', LastPlayTime: now }
+        }
+      })
+    )
+    expect((await playedShortcuts(user)).map((s) => [s.title, s.platform])).toEqual([
+      ['Max', 'max'],
+      ['Max Payne 3', 'steam'],
+      ['Paramount+', 'paramount'],
+      ['Jellyfin', 'jellyfin']
+    ])
+  })
+
+  it('keeps the newest plays inside the window', () => {
+    const p = (title: string, ago: number): Played => ({ id: title, title, platform: 'steam', lastPlayed: now - ago * DAY, art: {} })
+    const picked = pickRecent([p('a', 40), p('b', 1), p('c', 5), p('d', 2)], NOW, 30, 2)
+    expect(picked.map((x) => x.title)).toEqual(['b', 'd'])
+  })
+
+  it('gives streaming apps their tile as a wide card', () => {
+    const item = toRecentItem({ id: 'shortcut:1', title: 'Emby Theater', platform: 'emby', lastPlayed: now, art: {} })
+    expect(item.wide).toBe('fixtures/tiles/emby.webp')
+    expect(item.cover).toBeUndefined()
+  })
+
+  it('merges games and shortcuts newest first', async () => {
+    const { root } = await fakeSteam()
+    const recents = await loadRecents({ steamRoot: root }, NOW)
+    expect(recents.map((r) => r.title)).toEqual(['Dead Island 2', 'Emby Theater', 'The Witcher 3'])
+  })
+})
+
+describe('launch', () => {
+  it('builds the 64-bit id Steam uses for shortcuts', () => {
+    // The steamtv shortcut on the box: Steam logged this game id when it launched.
+    expect(shortcutGameId(4159378748)).toBe('17864395694370979840')
+  })
+
+  it('maps cards and tiles to steam:// links', async () => {
+    const { root } = await fakeSteam()
+    const config = { steamRoot: root }
+    expect(await launchUrl(config, 'recent', 'steam:10')).toBe('steam://rungameid/10')
+    expect(await launchUrl(config, 'recent', 'shortcut:111')).toBe(`steam://rungameid/${shortcutGameId(111)}`)
+    expect(await launchUrl(config, 'app', 'emby')).toBe(`steam://rungameid/${shortcutGameId(111)}`)
+    expect(await launchUrl(config, 'app', 'steam')).toBe('steam://open/games')
+    expect(await launchUrl(config, 'app', 'prime')).toBeNull()
+    expect(await launchUrl({ ...config, favorites: { prime: 'the witcher 3' } }, 'app', 'prime')).toBe(
+      `steam://rungameid/${shortcutGameId(444)}`
+    )
+  })
+})
+
+describe('collections', () => {
+  it('lists collections, skipping Hidden and deleted ones, Favorites first', async () => {
+    const { user } = await fakeSteam()
+    await mkdir(join(user, 'config', 'cloudstorage'), { recursive: true })
+    const entry = (id: string, value: object | null) => [
+      `user-collections.${id}`,
+      value ? { key: `user-collections.${id}`, value: JSON.stringify(value) } : { key: `user-collections.${id}`, is_deleted: true }
+    ]
+    await writeFile(
+      join(user, 'config', 'cloudstorage', 'cloud-storage-namespace-1.json'),
+      JSON.stringify([
+        entry('uc-b', { id: 'uc-b', name: 'Couch co-op', added: [10, 20, 30], removed: [20] }),
+        entry('hidden', { id: 'hidden', name: 'Hidden', added: [1] }),
+        entry('uc-gone', null),
+        entry('uc-dyn', { id: 'uc-dyn', name: 'Installed locally', added: [], removed: [], filterSpec: { nFormatVersion: 2 } }),
+        entry('favorite', { id: 'favorite', name: 'Favorites', added: [10] }),
+        ['some-other-key', { value: '{}' }]
+      ])
+    )
+    const collections = await readCollections(user)
+    expect(collections.map((c) => [c.name, c.dynamic, c.appids.length])).toEqual([
+      ['Favorites', false, 1],
+      ['Couch co-op', false, 2],
+      ['Installed locally', true, 0]
+    ])
+    expect(collections[1].appids).toEqual([10, 30])
+  })
+
+  it('applies play-state filters and refuses others', async () => {
+    const { user } = await fakeSteam()
+    await mkdir(join(user, 'config', 'cloudstorage'), { recursive: true })
+    // Steam's layout: nine groups; group 1 is play state.
+    const spec = (playState: number[], extra: Record<string, unknown> = {}) => ({
+      nFormatVersion: 2,
+      strSearchText: '',
+      filterGroups: Array.from({ length: 9 }, (_, i) => ({ rgOptions: i === 1 ? playState : [], bAcceptUnion: i === 0 })),
+      ...extra
+    })
+    const dynamicEntry = (id: string, filterSpec: object) => [
+      `user-collections.${id}`,
+      { value: JSON.stringify({ id, name: id, added: [], removed: [], filterSpec }) }
+    ]
+    const genre = spec([]) as { filterGroups: { rgOptions: number[] }[] }
+    genre.filterGroups[2].rgOptions = [7]
+    await writeFile(
+      join(user, 'config', 'cloudstorage', 'cloud-storage-namespace-1.json'),
+      JSON.stringify([
+        dynamicEntry('installed', spec([1])),
+        dynamicEntry('played', spec([3])),
+        dynamicEntry('unplayed', spec([4])),
+        dynamicEntry('not-installed', spec([2])),
+        dynamicEntry('search', spec([], { strSearchText: 'zelda' })),
+        dynamicEntry('genre', genre)
+      ])
+    )
+    const games = [
+      { appid: '1', title: 'Played game', lastPlayed: 100 },
+      { appid: '2', title: 'New game', lastPlayed: 0 }
+    ]
+    const byId = Object.fromEntries((await readCollections(user)).map((c) => [c.id, c]))
+    const titles = (id: string): string[] => collectionGames(byId[id], games).map((g) => g.title)
+    expect(titles('installed')).toEqual(['Played game', 'New game'])
+    expect(titles('played')).toEqual(['Played game'])
+    expect(titles('unplayed')).toEqual(['New game'])
+    expect(['not-installed', 'search', 'genre'].map((id) => isSupported(byId[id]))).toEqual([false, false, false])
+  })
+
+  it('builds Steam tab rows from chosen collections, installed games only', async () => {
+    const { root, user } = await fakeSteam()
+    await mkdir(join(user, 'config', 'cloudstorage'), { recursive: true })
+    await writeFile(
+      join(user, 'config', 'cloudstorage', 'cloud-storage-namespace-1.json'),
+      JSON.stringify([
+        ['user-collections.favorite', { value: JSON.stringify({ id: 'favorite', name: 'Favorites', added: [30, 10, 99] }) }],
+        ['user-collections.uc-x', { value: JSON.stringify({ id: 'uc-x', name: 'Other', added: [10] }) }]
+      ])
+    )
+    const { layout, rows } = await loadSteamTab({ steamRoot: root })
+    expect(layout).toBe('rows')
+    expect(rows.map((r) => [r.name, r.items.map((i) => i.title), r.notInstalled])).toEqual([
+      // Default selection is Favorites; most recently played first; app 99 isn't installed.
+      ['Favorites', ['Dead Island 2', 'Old Game'], 1]
+    ])
+    const { rows: both } = await loadSteamTab({ steamRoot: root, steamCollections: ['favorite', 'uc-x'] })
+    expect(both.map((r) => r.name)).toEqual(['Favorites', 'Other'])
+  })
+})
+
+describe('switch', () => {
+  it('cleans release-folder names', () => {
+    expect(cleanTitle('Astral.Chain.NSW-VENOM')).toBe('Astral Chain')
+    expect(cleanTitle('Bloodstained_Ritual_of_the_Night_NSW-VENOM')).toBe('Bloodstained Ritual of the Night')
+    expect(cleanTitle('Cruisn_Blast.xci')).toBe('Cruisn Blast')
+    expect(cleanTitle('Metal_Slug_Tactics_MULTI_NSW-HR')).toBe('Metal Slug Tactics')
+    expect(cleanTitle('Bloodstained.Curse.Of.The.Moon.retail-Rakuvfinhel')).toBe('Bloodstained Curse Of The Moon')
+  })
+
+  it('finds base games, skipping updates, DLC and folders with nothing playable', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-switch-'))
+    const file = async (path: string): Promise<void> => {
+      await mkdir(join(root, path, '..'), { recursive: true })
+      await writeFile(join(root, path), '')
+    }
+    await file('Bayonetta/Bayonetta [010076F0049A2000][v0][BASE].nsp')
+    await file('Bayonetta/Bayonetta 1.1 [010076F0049A2800][v65536][UPD].nsp')
+    await file('Astral.Chain.NSW-VENOM/Astral.Chain.NSW-VENOM.xci')
+    await file('Cuphead/ROM.xci')
+    await file('Cuphead DLC/Cuphead DLC [0100A5C00D163001][v0][DLC].nsp')
+    await file('Breath.of.the.Wild/exeFS/main')
+    await file('Loose Game [0100000000010000][v0][BASE].nsp')
+    await file('metadata.txt')
+
+    const games = await scanSwitch(root, { Cuphead: 'Cuphead: The Delicious Last Course' })
+    expect(games.map((g) => [g.title, g.titleId ?? null, g.path.slice(root.length + 1)])).toEqual([
+      ['Astral Chain', null, 'Astral.Chain.NSW-VENOM/Astral.Chain.NSW-VENOM.xci'],
+      ['Bayonetta', '010076F0049A2000', 'Bayonetta/Bayonetta [010076F0049A2000][v0][BASE].nsp'],
+      ['Cuphead: The Delicious Last Course', null, 'Cuphead/ROM.xci'],
+      ['Loose Game', '0100000000010000', 'Loose Game [0100000000010000][v0][BASE].nsp']
+    ])
+  })
+})
+
+// Builds a PARAM.SFO the way Sony lays it out: header, index, key table, data table.
+function sfo(values: Record<string, string>): Buffer {
+  const keys = Object.keys(values)
+  const keyTable = Buffer.concat(keys.map((k) => Buffer.from(`${k}\0`)))
+  const data = keys.map((k) => Buffer.from(`${values[k]}\0`))
+  const index = Buffer.alloc(16 * keys.length)
+  let keyOffset = 0
+  let dataOffset = 0
+  keys.forEach((k, i) => {
+    index.writeUInt16LE(keyOffset, i * 16)
+    index.writeUInt16LE(0x0204, i * 16 + 2)
+    index.writeUInt32LE(data[i].length, i * 16 + 4)
+    index.writeUInt32LE(data[i].length, i * 16 + 8)
+    index.writeUInt32LE(dataOffset, i * 16 + 12)
+    keyOffset += k.length + 1
+    dataOffset += data[i].length
+  })
+  const header = Buffer.alloc(20)
+  header.writeUInt32BE(0x00505346, 0)
+  header.writeUInt32LE(0x0101, 4)
+  header.writeUInt32LE(20 + index.length, 8)
+  header.writeUInt32LE(20 + index.length + keyTable.length, 12)
+  header.writeUInt32LE(keys.length, 16)
+  return Buffer.concat([header, index, keyTable, ...data])
+}
+
+describe('ps3', () => {
+  it('reads PARAM.SFO', () => {
+    expect(parseSfo(sfo({ CATEGORY: 'HG', TITLE: 'Journey', TITLE_ID: 'NPUA80542' }))).toEqual({
+      CATEGORY: 'HG',
+      TITLE: 'Journey',
+      TITLE_ID: 'NPUA80542'
+    })
+    expect(parseSfo(Buffer.from('not an sfo'))).toEqual({})
+  })
+
+  it('cleans store titles', () => {
+    expect(cleanPs3Title('Dead Space™ 3\nHDD')).toBe('Dead Space 3 HDD')
+    expect(cleanPs3Title('Call Of Duty® 4: Modern Warfare')).toBe('Call Of Duty 4: Modern Warfare')
+  })
+
+  it('finds installed games and disc folders, skipping patches', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-ps3-'))
+    const put = async (path: string, values: Record<string, string>): Promise<void> => {
+      await mkdir(join(root, path, '..'), { recursive: true })
+      await writeFile(join(root, path), sfo(values))
+    }
+    await put('hdd0/game/NPUA80542/PARAM.SFO', { CATEGORY: 'HG', TITLE: 'Journey', TITLE_ID: 'NPUA80542' })
+    await put('hdd0/game/BCUS98111/PARAM.SFO', { CATEGORY: 'GD', TITLE: 'God of War III', TITLE_ID: 'BCUS98111' })
+    await put('discs/God of War III (USA)/PS3_GAME/PARAM.SFO', { CATEGORY: 'DG', TITLE: 'God of War® III', TITLE_ID: 'BCUS98111' })
+    await put('discs/Skate 3 (USA)/Skate 3 (USA)/PS3_GAME/PARAM.SFO', { CATEGORY: 'DG', TITLE: 'Skate 3', TITLE_ID: 'BLUS30464' })
+    await mkdir(join(root, 'discs', 'Not a game'), { recursive: true })
+
+    const games = await scanPs3(join(root, 'hdd0'), join(root, 'discs'), { NPUA80542: 'Journey (PSN)' })
+    expect(games.map((g) => [g.title, g.titleId, g.kind, g.path.slice(root.length + 1)])).toEqual([
+      ['God of War III', 'BCUS98111', 'disc', 'discs/God of War III (USA)'],
+      ['Journey (PSN)', 'NPUA80542', 'hdd', 'hdd0/game/NPUA80542'],
+      ['Skate 3', 'BLUS30464', 'disc', 'discs/Skate 3 (USA)/Skate 3 (USA)']
+    ])
+    // Both kinds boot by their EBOOT.BIN.
+    expect(games.map((g) => rpcs3Args(g)[2].slice(root.length + 1))).toEqual([
+      'discs/God of War III (USA)/PS3_GAME/USRDIR/EBOOT.BIN',
+      'hdd0/game/NPUA80542/USRDIR/EBOOT.BIN',
+      'discs/Skate 3 (USA)/Skate 3 (USA)/PS3_GAME/USRDIR/EBOOT.BIN'
+    ])
+  })
+})
+
+describe('xbox360', () => {
+  it('takes the title from No-Intro names', () => {
+    expect(cleanXbox360Title('BioShock 2 (USA, Europe) (En,Fr,Es).iso')).toBe('BioShock 2')
+    expect(cleanXbox360Title('Dark Souls (USA) (En,Fr,Es) (Rev 1).iso')).toBe('Dark Souls')
+  })
+
+  it('compares SteamGridDB names loosely', () => {
+    expect(normalizeName('Halo - Reach')).toBe(normalizeName('Halo: Reach'))
+    expect(normalizeName('SOULCALIBUR Ⅴ')).toBe(normalizeName('SoulCalibur V'))
+    expect(normalizeName('Command & Conquer 3')).toBe(normalizeName('Command and Conquer 3'))
+    expect(normalizeName('SOULCALIBUR Ⅴ')).not.toBe(normalizeName('SoulCalibur'))
+  })
+
+  it('lists each game once, from the disc that boots', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-x360-'))
+    const files = [
+      'BioShock (World) (En,Fr,De,Es,It).iso',
+      'Halo 4 (World) (Disc 1).iso',
+      'Halo 4 (World) (Disc 2).iso',
+      'Grand Theft Auto V (World) (Disc 2) (Play).iso',
+      'Borderlands 2 - Add-On Content Pack (USA).iso',
+      'Watch_Dogs.m3u/Watch_Dogs (USA) (Disc 1) (Installation Disc).iso',
+      'Watch_Dogs.m3u/Watch_Dogs (USA) (Disc 2) (Game Disc).iso',
+      'Watch_Dogs.m3u/Watch_Dogs.m3u',
+      'readme.txt'
+    ]
+    for (const f of files) {
+      await mkdir(join(root, f, '..'), { recursive: true })
+      await writeFile(join(root, f), '')
+    }
+    const games = await scanXbox360(root, { 'BioShock (World) (En,Fr,De,Es,It).iso': 'BioShock (Xbox)' })
+    expect(games.map((g) => [g.title, g.path.slice(root.length + 1)])).toEqual([
+      ['BioShock (Xbox)', 'BioShock (World) (En,Fr,De,Es,It).iso'],
+      ['Grand Theft Auto V', 'Grand Theft Auto V (World) (Disc 2) (Play).iso'],
+      ['Halo 4', 'Halo 4 (World) (Disc 1).iso'],
+      ['Watch_Dogs', 'Watch_Dogs.m3u/Watch_Dogs (USA) (Disc 2) (Game Disc).iso']
+    ])
+  })
+})
+
+describe('gamecube', () => {
+  it('opens multi-disc games by their .m3u list and skips preview discs', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-gc-'))
+    const files = [
+      'Eternal Darkness - Sanity\'s Requiem (USA).rvz',
+      'Resident Evil 4 (USA).m3u/Resident Evil 4 (USA) (Disc 1).rvz',
+      'Resident Evil 4 (USA).m3u/Resident Evil 4 (USA) (Disc 2).rvz',
+      'Resident Evil 4 (USA).m3u/Resident Evil 4 (USA).m3u',
+      'Star Wars - Rogue Squadron III - Rebel Strike (USA) (Limited Edition Preview Disc).rvz',
+      'media/covers/whatever.png'
+    ]
+    for (const f of files) {
+      await mkdir(join(root, f, '..'), { recursive: true })
+      await writeFile(join(root, f), '')
+    }
+    const games = await scanGameCube(root)
+    expect(games.map((g) => [g.id, g.title])).toEqual([
+      ['gamecube:Eternal Darkness - Sanity\'s Requiem (USA).rvz', "Eternal Darkness - Sanity's Requiem"],
+      ['gamecube:Resident Evil 4 (USA).m3u/Resident Evil 4 (USA).m3u', 'Resident Evil 4']
+    ])
+  })
+})
+
+describe('dreamcast', () => {
+  it('groups discs two levels down, drops duplicate formats and writes disc lists', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-dc-'))
+    const files = [
+      'AeroWings (USA)/AeroWings (USA).cue',
+      'AeroWings (USA)/AeroWings (USA) (Track 1).bin',
+      'Death Crimson OX (USA)/Death Crimson OX (USA).cue',
+      'Death Crimson OX (USA).chd',
+      'Resident Evil 2/Resident Evil 2 (USA) (Disc 1)/Resident Evil 2 (USA) (Disc 1).cue',
+      'Resident Evil 2/Resident Evil 2 (USA) (Disc 2)/Resident Evil 2 (USA) (Disc 2).cue',
+      'Sega Bass Fishing v1.000 (1999)(Sega)(US)[!].gdi',
+      'House of the Dead 2, The (USA).cue',
+      'Cool Herders (USA) (Unl)/Cool Herders (USA) (Unl) (Track 01).bin'
+    ]
+    for (const f of files) {
+      await mkdir(join(root, f, '..'), { recursive: true })
+      await writeFile(join(root, f), '')
+    }
+    const games = await scanDreamcast(root)
+    expect(games.map((g) => [g.title, g.discs.length, g.path.slice(root.length + 1)])).toEqual([
+      ['AeroWings', 1, 'AeroWings (USA)/AeroWings (USA).cue'],
+      ['Death Crimson OX', 1, 'Death Crimson OX (USA).chd'],
+      ['Resident Evil 2', 2, 'Resident Evil 2/Resident Evil 2 (USA) (Disc 1)/Resident Evil 2 (USA) (Disc 1).cue'],
+      ['Sega Bass Fishing', 1, 'Sega Bass Fishing v1.000 (1999)(Sega)(US)[!].gdi'],
+      ['The House of the Dead 2', 1, 'House of the Dead 2, The (USA).cue']
+    ])
+    // Single disc: the file itself. Multi-disc: a .m3u with one disc per line.
+    expect(await dreamcastContent(games[0])).toBe(games[0].path)
+    const list = await dreamcastContent(games[2])
+    expect(list.endsWith('Resident Evil 2.m3u')).toBe(true)
+    expect((await readFile(list, 'utf8')).trim().split('\n')).toEqual(games[2].discs)
+  })
+})
+
+// Against the copy of the real box made by `npm run snapshot` (skipped without one).
+const snapshot = join(__dirname, '../../../fixtures/box/Steam')
+describe.skipIf(!existsSync(snapshot))('box snapshot', () => {
+  it('produces recents with art for most games', async () => {
+    const recents = await loadRecents({ steamRoot: snapshot, recentDays: 3650, recentLimit: 50 })
+    expect(recents.length).toBeGreaterThan(5)
+    expect(recents.some((r) => /steamtv|EmulationStation/i.test(r.title))).toBe(false)
+    const games = recents.filter((r) => r.platform === 'steam')
+    expect(games.filter((r) => r.cover).length / games.length).toBeGreaterThan(0.7)
+  })
+})

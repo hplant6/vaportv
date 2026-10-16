@@ -1,0 +1,66 @@
+{
+  "name": "steamtv",
+  "version": "0.1.0",
+  "private": true,
+  "description": "vaporTV: an Android TV-style front end for SteamOS",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:wsl": "GALLIUM_DRIVER=d3d12 MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA STEAMTV_STEAM_ROOT=${STEAMTV_STEAM_ROOT:-fixtures/box/Steam} electron-vite dev -- --ignore-gpu-blocklist",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "fixtures": "node scripts/prep-fixtures.mjs",
+    "dist": "electron-vite build && electron-builder --linux AppImage",
+    "test": "vitest run",
+    "snapshot": "scripts/snapshot-box.sh",
+    "deploy": "scripts/deploy.sh"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "@react-three/postprocessing": "3.2.0",
+    "gl-noise": "1.6.1",
+    "postprocessing": "6.39.5",
+    "qrcode": "1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "simplex-noise": "4.0.3",
+    "three": "0.183.0",
+    "three-custom-shader-material": "6.3.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "0.183.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "sharp": "^0.35.5",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.7",
+    "vitest": "^3.2.7"
+  },
+  "author": "Henry",
+  "license": "GPL-3.0-or-later",
+  "build": {
+    "appId": "me.itshenry.steamtv",
+    "productName": "vaporTV",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Game",
+      "artifactName": "steamtv.AppImage",
+      "executableName": "steamtv"
+    }
+  }
+}

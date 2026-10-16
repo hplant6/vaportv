@@ -1,0 +1,13 @@
+[Unit]
+Description=Open steamtv when Gaming Mode starts
+# Only part of the Gaming Mode session; never runs in Desktop Mode.
+PartOf=gamescope-session.target
+After=steam-launcher.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=%t/gamescope-environment
+ExecStart=%h/.local/bin/steamtv-autostart
+
+[Install]
+WantedBy=gamescope-session.target

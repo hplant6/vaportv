@@ -1,0 +1,1068 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--color-text);
+  cursor: none;
+  user-select: none;
+}
+
+button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: inherit;
+}
+
+:focus {
+  outline: none;
+}
+
+.stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: var(--color-base);
+}
+
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+}
+
+.stage-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Keeps white text readable over the brightest (midday) sky. */
+.stage-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.25) 30%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+/* The rain scene is dark already: just enough at the top for the clock and nav. */
+.stage.backdrop-rain .stage-scrim {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%);
+}
+
+.page {
+  position: absolute;
+  inset: 0;
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-stretch: var(--display-width);
+  line-height: 1.2;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.date-weather {
+  position: absolute;
+  left: 44.86px;
+  top: 27.63px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13.45px;
+}
+
+.date-weather .temp {
+  margin-top: 5.3px;
+  font-size: var(--text-meta);
+}
+
+.date-weather .date {
+  font-size: var(--text-date);
+}
+
+.clock {
+  position: absolute;
+  right: 77.99px;
+  top: 22.11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7.97px;
+}
+
+.clock .time {
+  font-size: var(--text-clock);
+}
+
+/* Bolder than the font's heaviest weight: its sturdier text cut, with a thicker outline. */
+.clock,
+.date-weather {
+  font-family: var(--font-clock);
+  font-weight: var(--clock-weight);
+  font-variation-settings: 'opsz' 10;
+  -webkit-text-stroke: 1.5px currentColor;
+}
+
+.clock .meridiem {
+  margin-top: 10.61px;
+  font-size: var(--text-meta);
+}
+
+.nav {
+  position: absolute;
+  left: 30.18px;
+  top: 14.91px;
+  width: 1857.31px;
+  height: 60.11px;
+}
+
+.nav img {
+  position: absolute;
+  pointer-events: none;
+}
+
+.nav .pill-top {
+  left: 8.53px;
+  top: 0;
+}
+
+.nav .pill-bottom {
+  left: 0;
+  top: 6.7px;
+}
+
+.nav-tabs {
+  position: absolute;
+  left: 340.82px;
+  top: 9.09px;
+  width: 1177px;
+  padding: 0 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: flex-start;
+  height: 27px;
+  font-size: var(--text-label);
+  font-weight: var(--nav-weight);
+  white-space: nowrap;
+  transition:
+    color var(--dur-focus) var(--ease-focus),
+    text-shadow var(--dur-focus) var(--ease-focus);
+}
+
+/* The tab you're on: gold, underlined and glowing. */
+.nav-tab.active {
+  height: 40px;
+  color: var(--color-accent);
+  border-bottom: 3px solid var(--color-accent-line);
+  text-shadow: 0 0 18px var(--color-accent-line);
+}
+
+/* The tab the cursor is on: gold, no glow. */
+.nav-tab:focus {
+  color: var(--color-accent);
+}
+
+/* Icon tabs (Settings gear, power): same colours as the text tabs. */
+.nav-icon-tab {
+  align-items: center;
+  height: 27px;
+}
+
+.nav-icon-tab.active {
+  height: 40px;
+  align-items: flex-start;
+}
+
+.nav-icon {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.6;
+  transition: filter var(--dur-focus) var(--ease-focus);
+}
+
+/* The text tabs glow with text-shadow; an icon glows with a drop shadow. */
+.nav-icon-tab.active .nav-icon {
+  filter: drop-shadow(0 0 8px var(--color-accent-line));
+}
+
+.nav-icon-tab.open {
+  color: var(--color-accent);
+}
+
+/* ── Power menu ─────────────────────────────────────── */
+
+.power {
+  position: relative;
+}
+
+.power-menu {
+  position: absolute;
+  top: 44px;
+  right: -16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 340px;
+  padding: 10px;
+  border-radius: var(--card-radius);
+  background: rgba(6, 4, 8, 0.94);
+  box-shadow: var(--shadow-card);
+}
+
+.power-item {
+  height: 56px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: var(--text-label);
+  font-weight: var(--nav-weight);
+  font-stretch: var(--display-width);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition:
+    background var(--dur-focus) var(--ease-focus),
+    color var(--dur-focus) var(--ease-focus);
+}
+
+.power-item:focus {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-accent);
+}
+
+/* Power Off waiting for its second press. */
+.power-item.confirm {
+  color: #ff6b5a;
+  font-size: 20px;
+}
+
+
+/* ── Sections ───────────────────────────────────────── */
+
+.section-label {
+  margin: 0;
+  height: 27px;
+  font-size: var(--text-label);
+}
+
+.recents {
+  position: absolute;
+  left: 30px;
+  top: 118px;
+}
+
+.recents-track {
+  margin-top: 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--card-gap);
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.recent-card {
+  flex: none;
+  display: block;
+  width: var(--card-w);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  /* Anchored near the top: there is only ~11px above the row but ~55px below it. */
+  transform-origin: 50% 50px;
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    box-shadow var(--dur-focus) var(--ease-focus);
+}
+
+.recent-card:focus {
+  position: relative;
+  z-index: 1;
+  transform: scale(var(--focus-scale));
+  box-shadow: var(--shadow-tile-focus);
+}
+
+.recent-art {
+  position: relative;
+  overflow: hidden;
+  height: var(--card-art-h);
+  background: var(--color-card-footer);
+}
+
+.recent-no-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  font-size: var(--text-label);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.recent-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A card with only wide art: the image centred over a blurred copy of itself. */
+.recent-art .recent-art-backdrop {
+  position: absolute;
+  inset: 0;
+  filter: blur(26px) brightness(0.55);
+  transform: scale(1.3);
+}
+
+.recent-art .recent-art-centred {
+  position: relative;
+  object-fit: contain;
+}
+
+.recent-footer {
+  height: var(--card-footer-h);
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-card-footer);
+}
+
+.recent-logo {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-logo img {
+  max-width: 26px;
+  max-height: 24px;
+}
+
+.recent-text {
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.recent-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-date {
+  margin-top: -1px;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.favorites {
+  position: absolute;
+  left: 36px;
+  /* Figma has 620; moved down so an enlarged Recents card clears the label. */
+  top: 650px;
+  width: 1865.14px;
+}
+
+/* Nothing played recently: Favorite Apps takes the Recents row's place. */
+.favorites.no-recents {
+  top: 118px;
+}
+
+/* Recents as a grid: it and Favorite Apps stack down the page. */
+.home-flow {
+  position: absolute;
+  left: 30px;
+  top: 118px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  padding-bottom: 45px;
+}
+
+.favorites.flow {
+  position: static;
+  margin-left: 6px;
+}
+
+.favorites-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, var(--tile-w));
+  justify-content: space-between;
+  row-gap: 48px;
+}
+
+.app-tile {
+  display: block;
+  width: var(--tile-w);
+  height: var(--tile-h);
+  border-radius: var(--tile-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    box-shadow var(--dur-focus) var(--ease-focus);
+}
+
+.app-tile:focus {
+  position: relative;
+  z-index: 1;
+  transform: scale(var(--focus-scale));
+  box-shadow: var(--shadow-tile-focus);
+}
+
+/* Outer columns grow inward so the enlarged tile stays inside the screen gutter. */
+.app-tile:nth-child(4n + 1) {
+  transform-origin: left center;
+}
+
+.app-tile:nth-child(4n) {
+  transform-origin: right center;
+}
+
+.app-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Toast ──────────────────────────────────────────── */
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  max-width: 1200px;
+  padding: 16px 32px;
+  border-radius: var(--card-radius);
+  background: var(--color-card-footer);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  opacity: 0;
+  transform: translate(-50%, 20px);
+  transition:
+    opacity var(--dur-focus) var(--ease-focus),
+    transform var(--dur-focus) var(--ease-focus);
+  pointer-events: none;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ── Launch overlay ─────────────────────────────────── */
+
+.launch-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 120px;
+  background: rgba(11, 7, 13, 0.82);
+  opacity: 0;
+  transition: opacity var(--dur-focus) var(--ease-focus);
+  pointer-events: none;
+}
+
+.launch-overlay.visible {
+  opacity: 1;
+}
+
+/* The pen's 12px dots on a 20px-radius path, scaled up for a TV. */
+.spinner {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform: scale(1.75);
+}
+
+.spinner-dot {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.launch-label {
+  font-size: var(--text-meta);
+  color: var(--color-text);
+}
+
+/* ── Settings ───────────────────────────────────────── */
+
+.settings {
+  position: absolute;
+  left: 36px;
+  top: 118px;
+  width: 1848px;
+}
+
+.settings-group {
+  margin-top: 32px;
+  width: 960px;
+}
+
+.settings-heading {
+  margin: 0;
+  font-size: var(--text-meta);
+}
+
+.settings-help {
+  margin: 8px 0 24px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.setting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 76px;
+  padding: 0 28px;
+  border-radius: var(--card-radius);
+  background: var(--color-card-footer);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  outline: 3px solid transparent;
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    outline-color var(--dur-focus) var(--ease-focus);
+}
+
+.setting-row:focus {
+  outline-color: var(--color-accent-line);
+  transform: scale(1.03);
+}
+
+.setting-row.unavailable {
+  opacity: 0.45;
+}
+
+.setting-name {
+  flex: 1;
+  font-size: var(--text-label);
+}
+
+.setting-detail {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+/* On/off switch: accent orange with the knob right when on. */
+.toggle {
+  flex: none;
+  position: relative;
+  width: 64px;
+  height: 34px;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background var(--dur-focus) var(--ease-focus);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-text);
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.setting-row.on .toggle {
+  background: var(--color-accent);
+}
+
+.setting-row.on .toggle-knob {
+  transform: translateX(30px);
+}
+
+/* Single choice: a ring, filled with the accent when selected. */
+.radio {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin: 0 17px;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transition:
+    border-color var(--dur-focus) var(--ease-focus),
+    box-shadow var(--dur-focus) var(--ease-focus);
+}
+
+.setting-row.on .radio {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 6px var(--color-card-footer), inset 0 0 0 20px var(--color-accent);
+}
+
+/* ── Steam tab ──────────────────────────────────────── */
+
+.collection-rows {
+  position: absolute;
+  left: 30px;
+  top: 118px;
+  display: flex;
+  flex-direction: column;
+  /* Room for a focused card, which grows downward past its row. */
+  gap: 96px;
+  padding-bottom: 45px;
+}
+
+.row-note {
+  margin-left: 20px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.7;
+}
+
+.empty-note {
+  margin: 16px 0 0;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  opacity: 0.85;
+}
+
+/* Grid layout: wide header art (Steam's 460×215), four across like Favorite Apps. */
+.collection-rows.grid {
+  gap: 56px;
+}
+
+/* A grid row lines up with Favorite Apps, whether the rest of its tab is rows or grid. */
+.collection-grid {
+  margin-left: 6px;
+  width: 1848px;
+}
+
+.wide-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 426px);
+  justify-content: space-between;
+  row-gap: 48px;
+}
+
+.wide-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 426px;
+  height: 199px;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  background: var(--color-card-footer);
+  box-shadow: var(--shadow-card);
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    box-shadow var(--dur-focus) var(--ease-focus);
+}
+
+.wide-card:focus {
+  position: relative;
+  z-index: 1;
+  transform: scale(var(--focus-scale));
+  box-shadow: var(--shadow-tile-focus);
+}
+
+/* Outer columns grow inward, as on Favorite Apps. */
+.wide-card:nth-child(4n + 1) {
+  transform-origin: left center;
+}
+
+.wide-card:nth-child(4n) {
+  transform-origin: right center;
+}
+
+.wide-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wide-card .wide-card-backdrop {
+  position: absolute;
+  inset: 0;
+  filter: blur(24px) brightness(0.55);
+  transform: scale(1.2);
+}
+
+.wide-card .wide-card-poster {
+  position: relative;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+}
+
+.wide-card-title {
+  padding: 24px;
+  font-size: var(--text-label);
+  text-align: center;
+}
+
+.setting-input {
+  width: 100%;
+  border: none;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  outline-color: var(--color-accent-line);
+}
+
+.setting-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Favourite marker on game cards. */
+.recent-card,
+.wide-card {
+  position: relative;
+}
+
+.favorite-star {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(6, 4, 8, 0.8);
+  color: var(--color-accent-line);
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* ── Screensaver ────────────────────────────────────── */
+
+.screensaver {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: #000;
+  animation: screensaver-in 1.2s ease both;
+}
+
+@keyframes screensaver-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Fades in, then zooms slowly towards its origin for as long as it's up. */
+.screensaver-slide {
+  position: absolute;
+  inset: 0;
+  animation-name: screensaver-fade, screensaver-zoom;
+  animation-timing-function: ease, linear;
+  animation-fill-mode: both;
+}
+
+@keyframes screensaver-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes screensaver-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+.screensaver-slide img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.screensaver-fill {
+  object-fit: cover;
+}
+
+.screensaver-blur {
+  object-fit: cover;
+  filter: blur(40px) brightness(0.5);
+  transform: scale(1.15);
+}
+
+.screensaver-whole {
+  object-fit: contain;
+}
+
+.screensaver-clock {
+  position: absolute;
+  left: 64px;
+  bottom: 56px;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+}
+
+.screensaver-clock.drifting {
+  bottom: auto;
+  transition: none;
+}
+
+.screensaver-time {
+  font-size: 96px;
+  line-height: 1;
+  font-family: var(--font-clock);
+  font-weight: var(--clock-weight);
+}
+
+.screensaver-time .meridiem {
+  margin-left: 8px;
+  font-size: 40px;
+}
+
+.screensaver-date {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 26px;
+  letter-spacing: 1px;
+  text-transform: none;
+  opacity: 0.85;
+}
+
+/* ── Dialogs (Google Photos, Sleep) ─────────────────── */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dialog-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 720px;
+  padding: 40px;
+  border-radius: var(--card-radius);
+  background: var(--color-card-footer);
+  box-shadow: var(--shadow-tile-focus);
+}
+
+.gphotos-qr {
+  width: 400px;
+  height: 400px;
+  border-radius: 12px;
+  image-rendering: pixelated;
+}
+
+.dialog-message {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.dialog-button {
+  padding: 14px 48px;
+  border-radius: 999px;
+  font-size: var(--text-label);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dialog-button:focus {
+  outline: 4px solid var(--color-accent);
+}
+
+/* ── Settings: categories on the left, the chosen one's settings on the right ── */
+
+.settings-columns {
+  display: flex;
+  gap: 56px;
+  margin-top: 24px;
+}
+
+.settings-categories {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 360px;
+}
+
+.settings-category {
+  display: flex;
+  align-items: center;
+  height: 72px;
+  padding: 0 28px;
+  border-radius: var(--card-radius);
+  font-size: var(--text-label);
+  text-align: left;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  outline: 3px solid transparent;
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+/* The category on show: gold, like the current nav tab. */
+.settings-category.active {
+  color: var(--color-accent);
+  background: var(--color-card-footer);
+}
+
+.settings-category:focus {
+  color: var(--color-accent);
+  background: var(--color-card-footer);
+  outline-color: var(--color-accent-line);
+}
+
+/* Clips the pane's own scrolling; padded so a focused row's grow and outline aren't cut off. */
+.settings-pane {
+  height: 885px;
+  width: 1040px;
+  margin: -16px 0 0 -24px;
+  padding: 16px 24px 0;
+  overflow: hidden;
+}
+
+.settings-pane-content {
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.settings-pane .settings-group:first-child {
+  margin-top: 0;
+}
+
+/* Favorite Apps as a carousel: the grid's first row, carried on to the right. */
+.favorites-track {
+  margin-top: 16px;
+  display: flex;
+  gap: 54px;
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.favorites-track .app-tile {
+  flex: none;
+  transform-origin: center;
+}
+
+.favorites-track .app-tile:first-child {
+  transform-origin: left center;
+}
+
+/* Drive folder chooser: a list that scrolls inside the dialog. */
+.folder-picker {
+  width: 900px;
+}
+
+.folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-height: 640px;
+  padding: 8px 16px;
+  overflow: hidden;
+}
+
+/* Living backdrop: everything but the backdrop fades away while the screensaver is up. */
+.stage.saver-backdrop > :not(.stage-canvas):not(.stage-bg):not(.screensaver) {
+  visibility: hidden;
+}
+
+.screensaver.over-backdrop {
+  background: transparent;
+}
+
+/* The clock styles: a larger clock, drifting so it can't burn in. */
+.screensaver-clock.drifting .screensaver-time {
+  font-size: 160px;
+}
+
+.screensaver-clock.drifting .screensaver-time .meridiem {
+  font-size: 60px;
+}
+
+.screensaver-clock.drifting .screensaver-date {
+  font-size: 34px;
+}
+
+/* The game a slideshow picture comes from: its logo, or its name. */
+.screensaver-caption {
+  position: absolute;
+  right: 64px;
+  bottom: 56px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  max-width: 520px;
+  height: 160px;
+  animation: screensaver-fade 2000ms ease both;
+}
+
+.screensaver-caption img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7));
+}
+
+.screensaver-caption span {
+  font-size: 36px;
+  text-align: right;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+}

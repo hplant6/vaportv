@@ -1,0 +1,6 @@
+# steamtv: let the controller wake the box from sleep.
+# Install on the box: sudo cp session/90-steamtv-controller-wake.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+# Xbox-style controllers and their wireless dongles (the Flydigi shows up as 045e:028e).
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="028e", ATTR{power/wakeup}="enabled"
+# The USB root hubs they hang off also have to pass the wake signal on.
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6b", ATTR{power/wakeup}="enabled"

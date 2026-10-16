@@ -1,0 +1,58 @@
+/* Tilt Warp (SIL Open Font License): menus and titles. One weight; its 3D tilt axes stay flat. */
+@font-face {
+  font-family: 'Tilt Warp';
+  font-weight: 400;
+  src: url('./assets/fonts/TiltWarp.ttf') format('truetype');
+}
+
+/* Big Shoulders (SIL Open Font License): the clock and date. A condensed variable font, weight 100-900. */
+@font-face {
+  font-family: 'Big Shoulders';
+  font-weight: 100 900;
+  src: url('./assets/fonts/BigShoulders.ttf') format('truetype');
+}
+
+:root {
+  /* Design frame the Figma was drawn at; the stage scales to the display. */
+  --stage-w: 1920px;
+  --stage-h: 1080px;
+
+  --color-base: #0b070d;
+  --color-text: #ffffff;
+  --color-accent: #ee960d;
+  --color-accent-line: #fca10f;
+  --color-card-footer: #060408;
+
+  /* Menus and titles: Tilt Warp, wide and easy to read from the couch. It has one weight,
+     so these stay at 400; asking for more would make the browser smear a fake bold. */
+  --font-display: 'Tilt Warp', sans-serif;
+  --display-width: 100%;
+  --display-weight: 400;
+  --nav-weight: 400;
+  /* The clock and date: Big Shoulders at its heaviest. */
+  --font-clock: 'Big Shoulders', sans-serif;
+  --clock-weight: 900;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --text-label: 24px;
+  --text-meta: 32px;
+  --text-date: 48px;
+  --text-clock: 64px;
+
+  --shadow-card: 0 10px 37.5px 0 #000;
+  --shadow-tile-focus: 0 144px 38.4px 0 rgba(0, 0, 0, 0.49);
+
+  --card-w: 253.56px;
+  --card-art-h: 348.74px;
+  --card-footer-h: 61px;
+  --card-gap: 36px;
+  --card-radius: 11px;
+
+  --tile-w: 426px;
+  --tile-h: 239px;
+  --tile-radius: 22px;
+  --focus-scale: 1.2;
+
+  --ease-focus: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-focus: 280ms;
+}
