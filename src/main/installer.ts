@@ -16,7 +16,10 @@ import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { app } from 'electron'
 import type { InstallOptions, InstallStatus } from '../shared/types'
+import { addShortcutsNow, appState, installForApp } from './appSetup'
 import { loadConfig } from './config'
+import { appCatalog } from './customApps'
+import { launchUrl } from './launch'
 import { shortcutAppId } from './library/emudeck'
 import { steamRoot } from './library/recents'
 import { activeUserDir } from './library/steam'
@@ -58,7 +61,7 @@ async function steamRunning(): Promise<boolean> {
 
 /** Gaming Mode is running: its whole session hangs off Steam, so Steam mustn't be closed. */
 async function inGamingMode(): Promise<boolean> {
-  return run('pgrep', ['-x', 'gamescope']).then(
+  return run('pgrep', ['^gamescope(-wl)?$']).then(
     () => true,
     () => false
   )
@@ -113,6 +116,7 @@ function setField(entry: VdfObject, name: string, value: string | number): void 
 const gameId = (appid: number): string => ((BigInt(appid) << 32n) | 0x02000000n).toString()
 
 export async function installStatus(): Promise<InstallStatus> {
+  const config = await loadConfig()
   const file = await shortcutsFile().catch(() => null)
   const shortcuts = file ? childObject(await readShortcuts(file).catch(() => ({})), 'shortcuts') : undefined
   const ours = shortcuts && findOurs(shortcuts)
@@ -122,7 +126,10 @@ export async function installStatus(): Promise<InstallStatus> {
     shortcut: !!ours,
     autostart: existsSync(join(SERVICE_DIR, SERVICE)),
     wake: existsSync(WAKE_RULE) || existsSync(OLD_WAKE_RULE),
-    steamRunning: await steamRunning()
+    steamRunning: await steamRunning(),
+    apps: await Promise.all(
+      appCatalog(config).map(async (a) => ({ id: a.id, name: a.name, state: appState(a.id, (await launchUrl(config, 'app', a.id)) !== null) }))
+    )
   }
 }
 
@@ -260,10 +267,15 @@ async function installWakeRule(report: Report): Promise<void> {
 }
 
 export async function install(options: InstallOptions, report: Report): Promise<void> {
+  const config = await loadConfig()
+  const apps = appCatalog(config).filter((a) => options.apps.includes(a.id))
   const target = await destination()
   await copyAppImage(target, report)
+  // Downloads first, while Steam is still open; they can take a while.
+  for (const a of apps) await installForApp(a.id, a.name, report)
   await stopSteam(report)
   await addShortcut(target, report)
+  await addShortcutsNow(config, options.apps, report)
   if (options.autostart) await installAutostart(report)
   if (options.wake) await installWakeRule(report)
   report('Done. Return to Gaming Mode to start vaporTV.')

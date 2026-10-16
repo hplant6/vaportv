@@ -13,6 +13,9 @@ import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from '.
 import { cachedArt } from './steamgriddb'
 import { ps3Games } from './ps3Tab'
 import { switchGames } from './switchTab'
+import home from '../../../fixtures/home.json'
+import { customAppFor, customApps } from '../customApps'
+import { readHistory } from '../history'
 import { xbox360Games } from './xbox360Tab'
 
 const DEFAULT_RECENT_DAYS = 30
@@ -26,8 +29,6 @@ const SERVICE_TILES: Record<string, string> = {
   youtube: 'fixtures/tiles/youtube.webp',
   emby: 'fixtures/tiles/emby.webp',
   prime: 'fixtures/tiles/prime.webp',
-  doki: 'fixtures/tiles/doki.webp',
-  jme: 'fixtures/tiles/jme.webp',
   max: 'fixtures/tiles/max.webp',
   hulu: 'fixtures/tiles/hulu.webp',
   paramount: 'fixtures/tiles/paramount.webp',
@@ -73,8 +74,8 @@ export function hasSteam(config: Config): boolean {
 }
 
 
-export function toRecentItem(played: Played): RecentItem {
-  const tile = SERVICE_TILES[played.platform]
+export function toRecentItem(played: Played, tiles: Record<string, string> = SERVICE_TILES): RecentItem {
+  const tile = tiles[played.platform]
   // Streaming apps without a poster (from Steam or SteamGridDB) fall back to their tile.
   if (tile && !played.art.portrait) {
     return { id: played.id, title: played.title, platform: played.platform, lastPlayed: isoDate(played.lastPlayed), wide: tile }
@@ -97,6 +98,16 @@ export function pickRecent(played: Played[], now: number, days: number, limit: n
     .slice(0, limit)
 }
 
+/** Apps vaporTV opened directly (no Steam shortcut, so Steam has no play time for them). */
+async function playedApps(config: Config): Promise<Played[]> {
+  const names = new Map<string, string>([...home.apps, ...home.moreApps, ...customApps(config)].map((app) => [app.id, app.name]))
+  return Object.entries(await readHistory()).flatMap(([id, at]) => {
+    const app = id.startsWith('app:') ? id.slice(4) : null
+    const name = app && names.get(app)
+    return name ? [{ id, title: name, platform: app, lastPlayed: at, art: {} }] : []
+  })
+}
+
 export async function loadRecents(config: Config, now = Date.now()): Promise<RecentItem[]> {
   const root = steamRoot(config)
   const userDir = await activeUserDir(root)
@@ -107,7 +118,7 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
           return []
         })
       : [],
-    userDir ? playedShortcuts(userDir) : [],
+    userDir ? playedShortcuts(userDir).then(async (s) => [...s, ...(await playedApps(config))]) : playedApps(config),
     playedEmulated([
       ...(await switchGames(config)),
       ...(await ps3Games(config)),
@@ -126,5 +137,13 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       played.art.portrait = (await cachedArt(serviceArtKey(played.platform))).portrait
     }
   }
-  return recent.map(toRecentItem)
+  // Your own app tiles: their shortcuts get the tile, like the built-in services.
+  const tiles = { ...SERVICE_TILES }
+  for (const played of recent) {
+    const app = played.id.startsWith('shortcut:') ? customAppFor(config, played.title) : undefined
+    if (!app) continue
+    played.platform = app.id
+    if (app.tile) tiles[app.id] = app.tile
+  }
+  return recent.map((played) => toRecentItem(played, tiles))
 }

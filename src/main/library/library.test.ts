@@ -1,8 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { launchUrl, shortcutGameId } from '../launch'
 import { collectionGames, isSupported, readCollections } from './collections'
 import { loadRecents, pickRecent, toRecentItem } from './recents'
@@ -21,6 +22,10 @@ import { parseWpctlVolume } from '../volume'
 import { assignButton, DEFAULT_CONTROLS, resolveControls } from '../../shared/controls'
 import { arcadeGames, arcadeTitle, loadArcadeTab } from './arcade'
 import type { Config } from '../config'
+import { dumpName } from './discs'
+import { libretroCover, libretroCovers, thumbnailName } from './libretroThumbnails'
+import { customAppFor, customApps } from '../customApps'
+import { appState, webShortcuts } from '../appSetup'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -560,8 +565,8 @@ describe('controls', () => {
     expect(next.back).toBe(0)
   })
   it('takes a free button without touching the others', () => {
-    const next = assignButton(DEFAULT_CONTROLS, 'favorite', 9)
-    expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 9 })
+    const next = assignButton(DEFAULT_CONTROLS, 'favorite', 10)
+    expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10 })
   })
   it('fills saved choices over the defaults and drops unusable ones', () => {
     expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8 })
@@ -611,11 +616,106 @@ describe('arcade', () => {
       expect(byId['arcade:arcade/mystery1'].title).toBe('Mystery Game')
       expect(byId['arcade:arcade/720']).toMatchObject({ system: 'arcade', core: 'mame' })
 
+      // A core chosen for one game is the one it opens in; the board's stays its default.
+      const chosen = await arcadeGames({ arcadeGameCores: { 'arcade:arcade/720': 'mame2003_plus' } } as Config)
+      expect(chosen.find((g) => g.id === 'arcade:arcade/720')).toMatchObject({ core: 'mame2003_plus', defaultCore: 'mame' })
+      expect(chosen.find((g) => g.id === 'arcade:cps2/sfa3')).toMatchObject({ core: 'fbneo', defaultCore: 'fbneo' })
+
       // Carousels turned off are left out of the tab.
       const tab = await loadArcadeTab({ arcadeRowsHidden: ['neogeo', 'cps'] } as Config)
       expect(tab.rows.map((row) => row.id)).toEqual(['naomi', 'arcade'])
     } finally {
       delete process.env.STEAMTV_ARCADE_ROMS
     }
+  })
+})
+
+describe('libretro thumbnails', () => {
+  it('names files the way the thumbnail server does', () => {
+    expect(thumbnailName('Street Fighter II: The World Warrior (World 910522)')).toBe('Street Fighter II_ The World Warrior (World 910522)')
+    expect(thumbnailName('Cannon Spike / Gun Spike')).toBe('Cannon Spike _ Gun Spike')
+  })
+
+  it("takes a disc game's dump name from its first disc", () => {
+    const disc = (path: string, discs = [path]) => ({ id: 'x', title: 'x', path, discs })
+    expect(dumpName(disc('/r/gc/Metroid Prime 2 - Echoes (USA).rvz'))).toBe('Metroid Prime 2 - Echoes (USA)')
+    expect(dumpName(disc('/l/sh.m3u', ['/r/dc/Shenmue (USA) (Disc 1).chd', '/r/dc/Shenmue (USA) (Disc 2).chd']))).toBe('Shenmue (USA)')
+  })
+
+  it('finds a cover by exact name, else by title preferring USA', async () => {
+    process.env.STEAMTV_THUMBNAIL_CACHE = await mkdtemp(join(tmpdir(), 'steamtv-thumbs-'))
+    const listing = ['Ikaruga (Europe)', 'Ikaruga (USA)', 'Ikaruga (Japan)', 'F-Zero GX (Japan)', 'Super Smash Bros. Melee (USA) (Rev 2)']
+    vi.stubGlobal('fetch', async () => new Response(listing.map((n) => `<a href="${encodeURIComponent(n)}.png">x</a>`).join('')))
+    try {
+      const game = (title: string, thumbnailNames?: string[]) => ({ id: 'gamecube:x', title, platform: 'gamecube', artKey: 'k', thumbnailNames })
+      expect((await libretroCover(game('Smash', ['Super Smash Bros. Melee (USA) (Rev 2)'])))?.name).toBe('Super Smash Bros. Melee (USA) (Rev 2)')
+      expect((await libretroCover(game('Ikaruga', ['Ikaruga (Brazil)'])))?.name).toBe('Ikaruga (USA)')
+      expect((await libretroCover(game('F-Zero GX')))?.url).toBe('https://thumbnails.libretro.com/Nintendo%20-%20GameCube/Named_Boxarts/F-Zero%20GX%20(Japan).png')
+      expect(await libretroCover(game('Metroid Prime'))).toBeNull()
+      expect((await libretroCovers(game('Ikaruga'))).map((t) => t.name)).toEqual(['Ikaruga (Europe)', 'Ikaruga (USA)', 'Ikaruga (Japan)'])
+    } finally {
+      vi.unstubAllGlobals()
+      delete process.env.STEAMTV_THUMBNAIL_CACHE
+    }
+  })
+})
+
+describe('custom apps', () => {
+  it('reads your own tiles, kept to the tiles folder, and finds them by shortcut name', () => {
+    const config = {
+      customApps: [
+        { id: 'jme', name: 'Jme', shortcut: 'JME', tile: '../../etc/jme.webp' },
+        { id: 'doki', name: 'Doki' },
+        { id: '', name: 'nameless' }
+      ]
+    } as Config
+    const apps = customApps(config)
+    expect(apps.map((a) => a.id)).toEqual(['jme', 'doki'])
+    expect(decodeURIComponent(apps[0].tile!)).toContain(join('.config', 'steamtv', 'tiles', 'jme.webp'))
+    expect(apps[1].shortcuts).toEqual(['Doki'])
+    expect(customAppFor(config, 'jme')?.id).toBe('jme')
+    expect(customAppFor(config, 'Netflix')).toBeUndefined()
+  })
+})
+
+describe('app setup', () => {
+  it('says how each kind of app gets set up', () => {
+    expect(appState('netflix', true)).toEqual({ ready: true })
+    expect(appState('netflix', false)).toEqual({ ready: false, setup: 'web' })
+    expect(appState('esde', false)).toEqual({ ready: false, setup: 'emudeck' })
+    expect(appState('someone-elses', false)).toEqual({ ready: false, setup: 'shortcut' })
+    expect(webShortcuts(['netflix', 'youtube'])).toEqual([
+      {
+        name: 'Netflix',
+        exe: '"flatpak"',
+        startDir: './',
+        launchOptions: '"run" "com.google.Chrome" "--kiosk" "--start-fullscreen" "--no-first-run" "--noerrdialogs" "https://www.netflix.com/browse"'
+      }
+    ])
+  })
+
+  it("adds and updates shortcuts in Steam's real file without disturbing the rest", async () => {
+    const source = 'fixtures/box/Steam/userdata/19236920/config/shortcuts.vdf'
+    const dir = await mkdtemp(join(tmpdir(), 'steamtv-shortcuts-'))
+    const vdf = join(dir, 'shortcuts.vdf')
+    await writeFile(vdf, await readFile(source))
+    const before = childObject(parseBinaryVdf(await readFile(vdf)), 'shortcuts')!
+    const entries = [...webShortcuts(['netflix']), { name: 'Crunchyroll', exe: '"flatpak"', startDir: './', launchOptions: '"run" "x"' }]
+    await writeFile(join(dir, 'entries.json'), JSON.stringify(entries))
+    const out = execFileSync('python3', ['session/add-app-shortcuts.py', vdf, join(dir, 'entries.json')]).toString()
+    expect(out).toContain('updated Netflix')
+    expect(out).toContain('added Crunchyroll')
+
+    const after = childObject(parseBinaryVdf(await readFile(vdf)), 'shortcuts')!
+    const byName = (s: VdfObject, name: string) =>
+      Object.values(s).find((e) => typeof e === 'object' && Object.entries(e).some(([k, v]) => k.toLowerCase() === 'appname' && v === name)) as VdfObject
+    expect(Object.keys(after)).toHaveLength(Object.keys(before).length + 1)
+    expect(byName(after, 'Netflix').appid).toBe(byName(before, 'Netflix').appid)
+    expect(byName(after, 'Crunchyroll').appid).toBe(shortcutAppId('"flatpak"', 'Crunchyroll'))
+    // Everything else is as it was.
+    for (const [key, entry] of Object.entries(before)) {
+      if (byName(before, 'Netflix') !== entry) expect(after[key]).toEqual(entry)
+    }
+    expect(existsSync(`${vdf}.vaportv-backup`)).toBe(true)
   })
 })

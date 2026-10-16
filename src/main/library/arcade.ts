@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { arcadeRowName, type ArcadeRow } from '../../shared/arcade'
@@ -84,9 +85,37 @@ export function arcadeTitle(description: string): string {
 }
 
 export interface ArcadeGame extends EmulatedGame {
-  system: string
+  system: ArcadeSystem['id']
   path: string
-  core: Core
+  /** The core it opens in: the one chosen for it, else its board's. */
+  core: string
+  defaultCore: Core
+}
+
+/**
+ * RetroArch cores that run arcade sets, and the boards each can run. Older MAME
+ * versions want sets dumped for them, which is why a game may need one of these.
+ */
+const ARCADE_CORES: { id: string; name: string; boards: ArcadeSystem['id'][] }[] = [
+  { id: 'flycast', name: 'Flycast', boards: ['atomiswave', 'naomi', 'naomi2'] },
+  { id: 'fbneo', name: 'FinalBurn Neo', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame', name: 'MAME (current)', boards: ['atomiswave', 'naomi', 'naomi2', 'cps', 'neogeo', 'arcade'] },
+  { id: 'mame2016', name: 'MAME 2016', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame2015', name: 'MAME 2015', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame2010', name: 'MAME 2010', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame2003_plus', name: 'MAME 2003-Plus', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame2003', name: 'MAME 2003', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'mame2000', name: 'MAME 2000', boards: ['cps', 'neogeo', 'arcade'] },
+  { id: 'fbalpha2012', name: 'FB Alpha 2012', boards: ['cps', 'neogeo', 'arcade'] }
+]
+
+export const arcadeCoreName = (id: string): string => ARCADE_CORES.find((core) => core.id === id)?.name ?? id
+
+/** The cores installed that can run this game's board, its board's own first. */
+export function arcadeCoreChoices(config: Config, game: ArcadeGame): { id: string; name: string }[] {
+  return ARCADE_CORES.filter((core) => core.boards.includes(game.system) && existsSync(arcadeCoreFile(config, core.id)))
+    .sort((a, b) => Number(b.id === game.defaultCore) - Number(a.id === game.defaultCore))
+    .map(({ id, name }) => ({ id, name }))
 }
 
 const ROM_SET = /\.(zip|7z)$/i
@@ -114,9 +143,12 @@ export async function arcadeGames(config: Config): Promise<ArcadeGame[]> {
           platform: system.id,
           artKey: `arcade:${artTitle}`,
           artTitle,
+          // The libretro thumbnails name arcade art after MAME's full name for the set.
+          thumbnailNames: [description, ...(parent && known[parent] ? [known[parent][0]] : [])],
           system: system.id,
           path: join(root, dir, file),
-          core
+          core: config.arcadeGameCores?.[`arcade:${dir}/${set}`] ?? core,
+          defaultCore: core
         })
       }
     }

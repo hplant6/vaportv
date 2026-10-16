@@ -1,5 +1,6 @@
 import type { AppItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
+import { APP_SETUP_EVENT } from './AppSetupDialog'
 
 export function AppTile({
   app,
@@ -13,18 +14,24 @@ export function AppTile({
   showFavorite?: boolean
   onFocus?: () => void
 }) {
+  const needsSetup = app.state ? !app.state.ready : false
   return (
     <button
-      className="app-tile"
+      className={`app-tile${needsSetup ? ' needs-setup' : ''}`}
       tabIndex={-1}
       data-focusable=""
       {...(isDefault ? { 'data-focus-default': '' } : {})}
       aria-label={app.name}
       data-app-id={app.id}
       onFocus={onFocus}
-      onClick={() => startLaunch('app', app.id, app.name, `${app.name} isn't set up on this computer yet`)}
+      onClick={(e) =>
+        needsSetup
+          ? window.dispatchEvent(new CustomEvent(APP_SETUP_EVENT, { detail: { app, tile: e.currentTarget } }))
+          : startLaunch('app', app.id, app.name, `${app.name} isn't set up on this computer yet`)
+      }
     >
       <img src={app.tile} alt="" />
+      {needsSetup && <span className="app-setup-badge display">Set up</span>}
       {showFavorite && app.favorite && (
         <span className="favorite-star" aria-label="Favourite">
           ★

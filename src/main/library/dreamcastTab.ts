@@ -6,6 +6,7 @@ import { recentsLayout, type Config } from '../config'
 import { scanDreamcast, type DreamcastGame } from './dreamcast'
 import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
+import { dumpName } from './discs'
 import { FLYCAST_CORE, RETROARCH } from './emulators'
 
 // Disc lists vaporTV writes for multi-disc games (the ROM folders are left alone).
@@ -20,7 +21,7 @@ export async function loadDreamcastGames(config: Config): Promise<DreamcastGame[
 }
 
 function asEmulated(game: DreamcastGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'dreamcast', artKey: `dreamcast:${game.title}` }
+  return { id: game.id, title: game.title, platform: 'dreamcast', artKey: `dreamcast:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function dreamcastGames(config: Config): Promise<EmulatedGame[]> {

@@ -4,7 +4,8 @@ import { readFavorites, readHistory } from '../history'
 import { artUrl } from './art'
 import { isoDate } from './dates'
 import type { Played } from './steam'
-import { cachedArt, fetchArt } from './steamgriddb'
+import { hasLibretroThumbnails, libretroCover } from './libretroThumbnails'
+import { cachedArt, fetchArt, savePortrait } from './steamgriddb'
 
 // What the Switch and PS3 tabs share: games steamtv launches in an emulator,
 // with art from SteamGridDB, and its own play history and favourites.
@@ -19,6 +20,8 @@ export interface EmulatedGame {
   artKey: string
   /** What to search SteamGridDB for, when not the title (an arcade clone: its parent's). */
   artTitle?: string
+  /** Exact names to look for in the libretro thumbnails (the dump's or MAME's), best first. */
+  thumbnailNames?: string[]
   /** Local 16:9-ish art to fall back on when SteamGridDB has none (a file path). */
   localWide?: string
 }
@@ -77,23 +80,44 @@ export async function playedEmulated(games: EmulatedGame[]): Promise<Played[]> {
 
 const filling = new Set<string>()
 
+/** Games already looked for in the libretro thumbnails this run, found or not. */
+const libretroTried = new Set<string>()
+
+/** A cover from the libretro thumbnails, for a game SteamGridDB gave none. */
+async function fillFromLibretro(game: EmulatedGame): Promise<boolean> {
+  if (!hasLibretroThumbnails(game.platform)) return false
+  if (libretroTried.has(game.artKey)) return false
+  libretroTried.add(game.artKey)
+  if ((await cachedArt(game.artKey)).portrait) return false
+  const cover = await libretroCover(game)
+  if (!cover) return false
+  // Loaded here, not at the top: it needs Electron, which the tests run without.
+  const { webCover } = await import('./webImages')
+  await savePortrait(game.artKey, await webCover(cover.url), cover.url, false)
+  return true
+}
+
 /**
  * Downloads missing art in the background, a few games at a time, calling
- * `onUpdate` after each batch that saved something new. One run per `name`.
+ * `onUpdate` after each batch that saved something new. SteamGridDB first (with a
+ * key); a game still without a cover then tries the libretro thumbnails. One run per `name`.
  */
 export function fillEmulatedArt(name: string, key: string | undefined, load: () => Promise<EmulatedGame[]>, onUpdate: () => void): void {
-  if (!key || filling.has(name)) return
+  if (filling.has(name)) return
   filling.add(name)
+  const report = (game: EmulatedGame) => (err: Error): boolean => {
+    console.error(`steamtv: art for ${game.title}:`, err.message)
+    return false
+  }
   ;(async () => {
     const games = await load()
     for (let i = 0; i < games.length; i += 4) {
       const results = await Promise.all(
-        games.slice(i, i + 4).map((game) =>
-          fetchArt(key, game.artKey, game.artTitle ?? game.title).catch((err) => {
-            console.error(`steamtv: art for ${game.title}:`, err.message)
-            return false
-          })
-        )
+        games.slice(i, i + 4).map(async (game) => {
+          const fromGrid = key ? await fetchArt(key, game.artKey, game.artTitle ?? game.title).catch(report(game)) : false
+          const fromLibretro = await fillFromLibretro(game).catch(report(game))
+          return fromGrid || fromLibretro
+        })
       )
       if (results.some(Boolean)) onUpdate()
     }

@@ -16,11 +16,13 @@ const api: SteamTvApi = {
   setTabLayout: (tab, layout) => ipcRenderer.invoke('settings:tabLayout', tab, layout),
   setRecentsLayout: (tab, layout) => ipcRenderer.invoke('settings:recentsLayout', tab, layout),
   setFavoritesLayout: (layout) => ipcRenderer.invoke('settings:favoritesLayout', layout),
+  setBraveSearchKey: (key) => ipcRenderer.invoke('settings:braveSearchKey', key),
   setSteamGridDbKey: (key) => ipcRenderer.invoke('settings:steamGridDbKey', key),
   setMusic: (file) => ipcRenderer.invoke('settings:music', file),
   setMusicVolume: (volume) => ipcRenderer.invoke('settings:musicVolume', volume),
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
   setBackdrop: (style) => ipcRenderer.invoke('settings:backdrop', style),
+  setDriftPreset: (name) => ipcRenderer.invoke('settings:driftPreset', name),
   setBackdropTime: (time) => ipcRenderer.invoke('settings:backdropTime', time),
   getMusic: () => ipcRenderer.invoke('music:get'),
   getScreensaver: () => ipcRenderer.invoke('screensaver:get'),
@@ -28,6 +30,15 @@ const api: SteamTvApi = {
   setScreensaverStyle: (style) => ipcRenderer.invoke('settings:screensaverStyle', style),
   setScreensaverSources: (sources) => ipcRenderer.invoke('settings:screensaverSources', sources),
   setSleepOnControllerOff: (on) => ipcRenderer.invoke('settings:sleepOnControllerOff', on),
+  appSetup: {
+    install: (id) => ipcRenderer.invoke('appSetup:install', id),
+    addToSteam: (ids) => ipcRenderer.invoke('appSetup:addToSteam', ids),
+    onProgress: (callback) => {
+      const listener = (_event: Electron.IpcRendererEvent, line: string): void => callback(line)
+      ipcRenderer.on('appSetup:progress', listener)
+      return () => ipcRenderer.removeListener('appSetup:progress', listener)
+    }
+  },
   toggleFavoriteApp: (id) => ipcRenderer.invoke('apps:favorite', id),
   setArcadeRowsHidden: (rows) => ipcRenderer.invoke('settings:arcadeRowsHidden', rows),
   setControls: (controls) => ipcRenderer.invoke('settings:controls', controls),
@@ -36,7 +47,14 @@ const api: SteamTvApi = {
     search: (id, query) => ipcRenderer.invoke('art:search', id, query),
     covers: (id, gameId) => ipcRenderer.invoke('art:covers', id, gameId),
     choose: (id, gameId, cover) => ipcRenderer.invoke('art:choose', id, gameId, cover),
-    reset: (id) => ipcRenderer.invoke('art:reset', id)
+    reset: (id) => ipcRenderer.invoke('art:reset', id),
+    webSearch: (query) => ipcRenderer.invoke('art:webSearch', query),
+    libretro: (id, query) => ipcRenderer.invoke('art:libretro', id, query),
+    chooseWeb: (id, url, thumb) => ipcRenderer.invoke('art:chooseWeb', id, url, thumb)
+  },
+  arcadeCores: {
+    get: (id) => ipcRenderer.invoke('arcade:cores', id),
+    set: (id, core) => ipcRenderer.invoke('arcade:setCore', id, core)
   },
   setup: {
     status: () => ipcRenderer.invoke('setup:status'),

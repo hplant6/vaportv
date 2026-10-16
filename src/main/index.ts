@@ -6,12 +6,14 @@ import home from '../../fixtures/home.json'
 import type { ArcadeRow } from '../shared/arcade'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
+import type { AppItem, ArcadeCores, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
+import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
+import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, returnToGamingMode, uninstall } from './installer'
-import { launch, launchedName } from './launch'
+import { launch, launchedName, launchUrl } from './launch'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -22,8 +24,11 @@ import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
-import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
-import { ART_CACHE, chooseArt, gameCovers, resetArt, searchGames } from './library/steamgriddb'
+import { arcadeCoreChoices, arcadeCoreName, arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
+import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames } from './library/steamgriddb'
+import { searchDuckDuckGo } from './library/duckduckgo'
+import { hasLibretroThumbnails, libretroCovers } from './library/libretroThumbnails'
+import { searchWebImages, webCover } from './library/webImages'
 import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
@@ -110,8 +115,10 @@ registerArtScheme()
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
 /** The chosen backdrop, or the sea if it's one that's since been removed (Particles). */
 function backdropStyle(config: Config): BackdropStyle {
-  return config.backdrop === 'rain' ? 'rain' : 'sea'
+  return config.backdrop === 'rain' || config.backdrop === 'drift' ? config.backdrop : 'sea'
 }
+
+const DEFAULT_DRIFT_PRESET = 'molten'
 
 /**
  * Notes the Steam shortcut vaporTV was launched from (Steam passes its ids), so the
@@ -149,9 +156,13 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
 }
 
 /** Runs an install step list, sending each line to the setup window; resolves with an error message or null. */
-async function setupRun(sender: Electron.WebContents, job: (report: (line: string) => void) => Promise<void>): Promise<string | null> {
+async function setupRun(
+  sender: Electron.WebContents,
+  job: (report: (line: string) => void) => Promise<void>,
+  channel = 'setup:progress'
+): Promise<string | null> {
   const report = (line: string): void => {
-    if (!sender.isDestroyed()) sender.send('setup:progress', line)
+    if (!sender.isDestroyed()) sender.send(channel, line)
   }
   try {
     await job(report)
@@ -171,16 +182,36 @@ async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | 
   return undefined
 }
 
-async function artGame(id: string): Promise<{ key: string; game: EmulatedGame }> {
+/** The game behind a card, for the Artwork window; Steam's own games aren't ours to change. */
+async function artTarget(id: string): Promise<{ config: Config; game: EmulatedGame }> {
   const config = await loadConfig()
-  if (!config.steamGridDbKey) throw new Error('Add a SteamGridDB key in Settings → Artwork first.')
   const game = await emulatedGame(config, id)
   if (!game) throw new Error("This one's art comes from Steam, not SteamGridDB.")
+  return { config, game }
+}
+
+async function artGame(id: string): Promise<{ key: string; game: EmulatedGame }> {
+  const { config, game } = await artTarget(id)
+  if (!config.steamGridDbKey) throw new Error('Add a SteamGridDB key in Settings → Artwork first.')
   return { key: config.steamGridDbKey, game }
 }
 
+/** How the web search names each platform: box art for consoles, flyers for arcade boards. */
+const WEB_QUERY: Record<string, string> = {
+  switch: 'Nintendo Switch box art',
+  ps3: 'PS3 box art',
+  xbox360: 'Xbox 360 box art',
+  gamecube: 'GameCube box art',
+  dreamcast: 'Dreamcast box art',
+  atomiswave: 'arcade flyer',
+  naomi: 'arcade flyer',
+  naomi2: 'arcade flyer',
+  cps: 'arcade flyer',
+  neogeo: 'Neo Geo box art',
+  arcade: 'arcade flyer'
+}
+
 /** Every app vaporTV knows how to open, in the Apps tab's order. */
-const APPS: AppItem[] = [...home.apps, ...home.moreApps]
 
 /** Home's Favorite Apps: the ones chosen, or the built-in eight until any are. */
 function favoriteAppIds(config: Config): string[] {
@@ -194,8 +225,15 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
   fillArt()
   const recents = hasSteam(config) ? await loadRecents(config) : home.recents
   const favorites = favoriteAppIds(config)
-  const allApps = APPS.map((app) => ({ ...app, favorite: favorites.includes(app.id) }))
-  const apps = favorites.flatMap((id) => allApps.filter((app) => app.id === id))
+  const allApps = await Promise.all(
+    appCatalog(config).map(async (app) => ({
+      ...app,
+      favorite: favorites.includes(app.id),
+      state: appState(app.id, (await launchUrl(config, 'app', app.id)) !== null)
+    }))
+  )
+  // Home shows only the ones that open; the Apps tab offers to set up the rest.
+  const apps = favorites.flatMap((id) => allApps.filter((app) => app.id === id && app.state.ready))
   return {
     recents,
     apps,
@@ -205,9 +243,27 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
     favoritesLayout: config.favoritesLayout ?? 'rows'
   }
 })
+ipcMain.handle('appSetup:install', async (event, id: string) => {
+  const config = await loadConfig()
+  const app = appCatalog(config).find((a) => a.id === id)
+  if (!app) return 'No such app.'
+  return setupRun(event.sender, (report) => installForApp(id, app.name, report), 'appSetup:progress')
+})
+ipcMain.handle('appSetup:addToSteam', async (event, ids: string[]) => {
+  const config = await loadConfig()
+  return setupRun(
+    event.sender,
+    async (report) => {
+      if (!(await inGamingMode())) throw new Error('Outside Gaming Mode, add apps from the vaporTV setup window (open the AppImage in Desktop Mode).')
+      report('Steam is restarting to add them…')
+      await addShortcutsWithRestart(config, ids)
+    },
+    'appSetup:progress'
+  )
+})
 ipcMain.handle('apps:favorite', async (_event, id: string) => {
   const config = await loadConfig()
-  if (!APPS.some((app) => app.id === id)) return false
+  if (!appCatalog(config).some((app) => app.id === id)) return false
   const favorites = favoriteAppIds(config)
   const on = !favorites.includes(id)
   await saveConfig({ favoriteApps: on ? [...favorites, id] : favorites.filter((f) => f !== id) })
@@ -215,8 +271,33 @@ ipcMain.handle('apps:favorite', async (_event, id: string) => {
 })
 ipcMain.handle('weather:get', () => getWeather())
 ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
-  const { key, game } = await artGame(id)
-  return { title: game.title, matches: await searchGames(key, query ?? game.artTitle ?? game.title) }
+  const { config, game } = await artTarget(id)
+  const name = game.artTitle ?? game.title
+  const key = config.steamGridDbKey
+  return {
+    title: game.title,
+    webQuery: `${name} ${WEB_QUERY[game.platform] ?? 'cover art'}`,
+    webSource: config.braveSearchKey ? 'Brave' : 'DuckDuckGo',
+    libretro: hasLibretroThumbnails(game.platform),
+    sgdb: !!key,
+    matches: key ? await searchGames(key, query ?? name) : []
+  }
+})
+// Brave's API with a key; otherwise DuckDuckGo, free but unofficial.
+ipcMain.handle('art:webSearch', async (_event, query: string) => {
+  const config = await loadConfig()
+  return config.braveSearchKey ? searchWebImages(config.braveSearchKey, query) : searchDuckDuckGo(query)
+})
+ipcMain.handle('art:libretro', async (_event, id: string, query?: string) => {
+  const { game } = await artTarget(id)
+  return (await libretroCovers(game, query)).map((t) => ({ url: t.url, thumb: t.url, name: t.name }))
+})
+ipcMain.handle('art:chooseWeb', async (_event, id: string, url: string, thumb?: string) => {
+  const { game } = await artTarget(id)
+  // Some sites refuse to hand pictures to anything but their own pages: the search's preview will do.
+  const png = await webCover(url).catch((err) => (thumb && thumb !== url ? webCover(thumb) : Promise.reject(err)))
+  await savePortrait(game.artKey, png, url)
+  win?.webContents.send('art:updated')
 })
 ipcMain.handle('art:covers', async (_event, id: string, gameId: number) => gameCovers((await artGame(id)).key, gameId))
 ipcMain.handle('art:choose', async (_event, id: string, gameId: number, cover: string) => {
@@ -225,7 +306,7 @@ ipcMain.handle('art:choose', async (_event, id: string, gameId: number, cover: s
   win?.webContents.send('art:updated')
 })
 ipcMain.handle('art:reset', async (_event, id: string) => {
-  const { game } = await artGame(id)
+  const { game } = await artTarget(id)
   await resetArt(game.artKey)
   // Look it up again now, rather than at the next tab load.
   fillArt()
@@ -273,6 +354,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     musicVolume: config.musicVolume ?? 'medium',
     backdrop: backdropStyle(config),
     backdropTime: config.backdropTime ?? 'auto',
+    driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
@@ -281,7 +363,8 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     screensaverStyle: screensaverStyle(config),
     screensaverSources: screensaverSources(config),
     screensaverFolder: screensaverFolder(config).replace(homedir(), '~'),
-    steamGridDbKeyHint: config.steamGridDbKey ? config.steamGridDbKey.slice(-4) : null
+    steamGridDbKeyHint: config.steamGridDbKey ? config.steamGridDbKey.slice(-4) : null,
+    braveSearchKeyHint: config.braveSearchKey ? config.braveSearchKey.slice(-4) : null
   }
 })
 ipcMain.handle('steam-tab:get', async () => loadSteamTab(await loadConfig()))
@@ -294,6 +377,7 @@ ipcMain.handle('settings:recentsLayout', async (_event, tab: RecentsTab, layout:
   const config = await loadConfig()
   await saveConfig({ recentsLayouts: { ...config.recentsLayouts, [tab]: layout } })
 })
+ipcMain.handle('settings:braveSearchKey', (_event, key: string) => saveConfig({ braveSearchKey: key.trim() || undefined }))
 ipcMain.handle('settings:steamGridDbKey', async (_event, key: string) => {
   await saveConfig({ steamGridDbKey: key.trim() || undefined })
   fillArt()
@@ -303,9 +387,10 @@ ipcMain.handle('settings:music', (_event, file: string | null) => saveConfig({ m
 ipcMain.handle('settings:musicVolume', (_event, volume: MusicVolume) => saveConfig({ musicVolume: volume }))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle) => saveConfig({ backdrop: style }))
+ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
-  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto' }
+  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
@@ -361,6 +446,25 @@ ipcMain.handle('xbox360-tab:get', async () => {
   fillArt()
   return loadXbox360Tab(config)
 })
+ipcMain.handle('arcade:cores', async (_event, id: string): Promise<ArcadeCores> => {
+  const config = await loadConfig()
+  const game = (await arcadeGames(config)).find((g) => g.id === id)
+  if (!game) throw new Error('Only arcade games have a choice of core.')
+  return {
+    title: game.title,
+    current: game.core,
+    defaultCore: game.defaultCore,
+    choices: arcadeCoreChoices(config, game)
+  }
+})
+ipcMain.handle('arcade:setCore', async (_event, id: string, core: string | null) => {
+  const config = await loadConfig()
+  const cores = { ...config.arcadeGameCores }
+  if (core) cores[id] = core
+  else delete cores[id]
+  await saveConfig({ arcadeGameCores: cores })
+  return arcadeCoreName(core ?? (await arcadeGames(config)).find((g) => g.id === id)?.defaultCore ?? '')
+})
 ipcMain.handle('arcade-tab:get', async () => {
   const config = await loadConfig()
   fillArt()
@@ -394,7 +498,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, ps3.hdd0, ps3.discs, musicFolder(config), ...screensaverFolders(config)])
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), ...screensaverFolders(config)])
   if (setupMode) return createWindow()
   startDriveSync()
   createWindow()

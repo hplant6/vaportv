@@ -3,6 +3,8 @@ import { useAvailableTabs } from '../availableTabs'
 import pillBottom from '../assets/nav-pill-bottom.svg'
 import pillTop from '../assets/nav-pill-top.svg'
 import { GearIcon, PowerIcon } from './icons'
+import { Clock } from './Clock'
+import { DateWeather } from './DateWeather'
 import { PowerMenu } from './PowerMenu'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade' | 'settings'
@@ -40,15 +42,20 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     </button>
   )
 
+  // Settings sits after the date, power before the time: the bar keeps its room for the tabs.
   return (
-    <nav className="nav">
-      <img className="pill-top" src={pillTop} alt="" />
-      <img className="pill-bottom" src={pillBottom} alt="" />
-      <div className="nav-tabs" data-focus-memory="nav">
-        <div className="nav-text-tabs">{TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}</div>
-        <div className="nav-icons">
-          {tab('settings', <GearIcon />, 'Settings', true)}
-          <div className="power">
+    <>
+      <DateWeather after={<span className="nav-edge" data-focus-memory="nav">{tab('settings', <GearIcon />, 'Settings', true)}</span>} />
+      <nav className="nav">
+        <img className="pill-top" src={pillTop} alt="" />
+        <img className="pill-bottom" src={pillBottom} alt="" />
+        <div className="nav-tabs" data-focus-memory="nav">
+          {TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}
+        </div>
+      </nav>
+      <Clock
+        before={
+          <span className="nav-edge power" data-focus-memory="nav">
             <button
               id="power-button"
               className={`nav-tab display nav-icon-tab${powerOpen ? ' open' : ''}`}
@@ -63,9 +70,9 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
               <PowerIcon />
             </button>
             {powerOpen && <PowerMenu onClose={() => setPowerOpen(false)} />}
-          </div>
-        </div>
-      </div>
-    </nav>
+          </span>
+        }
+      />
+    </>
   )
 }

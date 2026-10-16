@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import type { BackdropStyle } from '../../shared/types'
 import type { HomeData } from '../../shared/types'
+import { DriftBackground } from './background/DriftBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
 import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
@@ -10,6 +11,8 @@ import { tabShown } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
+import { AppSetupDialog } from './components/AppSetupDialog'
+import { CoreDialog } from './components/CoreDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
 import { TAB_ORDER, type Screen } from './components/NavBar'
@@ -46,12 +49,16 @@ export function App() {
   const disableWebgl = useCallback(() => setWebgl(false), [])
   // Null until the setting loads, so the sea doesn't flash up before another backdrop.
   const [backdrop, setBackdrop] = useState<BackdropStyle | null>(null)
+  const [driftPreset, setDriftPreset] = useState('molten')
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style }) => setBackdrop(style))
+      window.steamtv.getBackdrop().then(({ style, drift }) => {
+        setBackdrop(style)
+        setDriftPreset(drift)
+      })
     }
     load()
     window.addEventListener(BACKDROP_CHANGED_EVENT, load)
@@ -146,6 +153,8 @@ export function App() {
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
+      ) : backdrop === 'drift' ? (
+        <DriftBackground preset={driftPreset} onUnavailable={backdropUnavailable} />
       ) : (
         backdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
       )}
@@ -225,6 +234,8 @@ export function App() {
       <LaunchOverlay />
       <SleepPrompt />
       <ArtworkDialog />
+      <CoreDialog />
+      <AppSetupDialog apps={home?.allApps ?? []} />
       <Screensaver />
       <BackgroundMusic />
       <VolumeOsd />

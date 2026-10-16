@@ -3,8 +3,6 @@ import { AppRow } from '../components/AppRow'
 import { AppTile } from '../components/AppTile'
 import { CardRow } from '../components/CardRow'
 import { CollectionGrid } from '../components/CollectionGrid'
-import { Clock } from '../components/Clock'
-import { DateWeather } from '../components/DateWeather'
 import { NavBar, type Screen } from '../components/NavBar'
 import { usePageScroll } from './usePageScroll'
 
@@ -13,9 +11,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
 
   return (
     <div className="page" {...scroll}>
-      <DateWeather />
       <NavBar active="home" onNavigate={onNavigate} />
-      <Clock />
 
       {data.recentsLayout === 'grid' && data.recents.length > 0 ? (
         // Grid: Recents grows downward, so Favorite Apps follows it down the page.

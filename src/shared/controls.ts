@@ -1,7 +1,7 @@
 // What each controller button does in vaporTV. The D-pad and sticks always move;
 // everything else can be moved to another button in Settings → Controller.
 
-export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp'
+export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'core' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp'
 
 /** Action → standard-mapping button index. */
 export type Controls = Record<ControlAction, number>
@@ -11,6 +11,7 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string 
   { id: 'back', name: 'Back', detail: 'Close, or go back' },
   { id: 'favorite', name: 'Favorite', detail: 'Add or remove a favorite' },
   { id: 'options', name: 'Artwork', detail: 'Fix a console game’s art' },
+  { id: 'core', name: 'Arcade core', detail: 'Pick an arcade game’s emulator' },
   { id: 'previousTab', name: 'Previous tab', detail: '' },
   { id: 'nextTab', name: 'Next tab', detail: '' },
   { id: 'volumeDown', name: 'Volume down', detail: 'Hold to keep going' },
@@ -22,6 +23,7 @@ export const DEFAULT_CONTROLS: Controls = {
   back: 1,
   options: 2,
   favorite: 3,
+  core: 9,
   previousTab: 4,
   nextTab: 5,
   volumeDown: 6,

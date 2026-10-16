@@ -14,6 +14,8 @@ import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
 import { loadPs3Games, rpcs3Args } from './library/ps3Tab'
 import { loadSwitchGames } from './library/switchTab'
 import { loadXbox360Games, xeniaCommand } from './library/xbox360Tab'
+import { directCommand } from './appSetup'
+import { customApps } from './customApps'
 import { childObject, childString, parseBinaryVdf } from './library/vdf'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
@@ -27,8 +29,6 @@ const DEFAULT_FAVORITES: Record<string, string | string[]> = {
   netflix: 'Netflix',
   disney: 'Disney+',
   emby: 'Emby Theater',
-  jme: 'JME',
-  doki: 'Doki',
   prime: 'Prime Video',
   max: 'Max',
   hulu: 'Hulu',
@@ -71,7 +71,7 @@ export async function launchUrl(config: Config, kind: LaunchKind, id: string): P
     return null
   }
   if (STEAM_PAGES[id]) return STEAM_PAGES[id]
-  const names = [config.favorites?.[id] ?? DEFAULT_FAVORITES[id] ?? []].flat()
+  const names = [config.favorites?.[id] ?? DEFAULT_FAVORITES[id] ?? customApps(config).find((app) => app.id === id)?.shortcuts ?? []].flat()
   for (const name of names) {
     const appid = await shortcutAppId(config, name)
     if (appid) return `steam://rungameid/${shortcutGameId(appid)}`
@@ -188,10 +188,21 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('gamecube:')) return launchGameCube(config, id)
   if (id.startsWith('dreamcast:')) return launchDreamcast(config, id)
   if (id.startsWith('arcade:')) return launchArcade(config, id)
+  // An app opened directly before (from Recents) opens the same way.
+  if (id.startsWith('app:')) return launch(config, 'app', id.slice(4), name)
   const url = await launchUrl(config, kind, id)
   if (!url) {
-    console.error(`steamtv: nothing to launch for ${kind} ${id}`)
-    return false
+    // A Flathub program without a Steam shortcut runs directly, like the emulators.
+    const direct = kind === 'app' ? directCommand(id) : null
+    if (!direct) {
+      console.error(`steamtv: nothing to launch for ${kind} ${id}`)
+      return false
+    }
+    console.log(`steamtv: launching ${direct.args.join(' ')} directly`)
+    run(direct.command, direct.args)
+    emulatorGame = name
+    await recordPlay(`app:${id}`)
+    return true
   }
   console.log(`steamtv: launching ${url}`)
   const appid = appIdOf(url)

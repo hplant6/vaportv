@@ -10,7 +10,7 @@ const out = join(dirname(fileURLToPath(import.meta.url)), '../src/renderer/publi
 
 const covers = ['the-thing', 'mario-3d-world', 'pragmata', 'the-below']
 const logos = { default: 'emby', variant2: 'steam', variant3: 'switch', variant4: 'youtube', variant5: 'netflix' }
-const tiles = ['youtube', 'netflix', 'jme', 'disney', 'emby', 'steam', 'doki', 'prime']
+const tiles = ['youtube', 'netflix', 'disney', 'emby', 'steam', 'prime']
 
 for (const dir of ['covers', 'wide', 'logos', 'tiles']) await mkdir(join(out, dir), { recursive: true })
 

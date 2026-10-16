@@ -153,6 +153,15 @@ export function options(): void {
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: el }))
 }
 
+/** Start (by default) on an arcade game: choose its RetroArch core. */
+export const CORE_EVENT = 'steamtv:core'
+
+export function coreMenu(): void {
+  if (trap()) return
+  const el = current()
+  if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(CORE_EVENT, { detail: el }))
+}
+
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'
 

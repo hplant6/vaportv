@@ -1,4 +1,4 @@
-import { activate, back, favorite, move, options, switchTab, type Direction } from './focus'
+import { activate, back, coreMenu, favorite, move, options, switchTab, type Direction } from './focus'
 import { noteInput } from './idle'
 import { stepVolume } from './volume'
 import { ASSIGNABLE_BUTTONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
@@ -26,6 +26,7 @@ let confirmDown = false
 let backDown = false
 let favoriteDown = false
 let optionsDown = false
+let coreDown = false
 let anyDown = false
 let previousTabDown = false
 let nextTabDown = false
@@ -95,6 +96,7 @@ function poll(now: number): void {
   let backPressed = false
   let favoritePressed = false
   let optionsPressed = false
+  let corePressed = false
   let previousTab = false
   let nextTab = false
   let volumeDown = false
@@ -108,6 +110,7 @@ function poll(now: number): void {
     backPressed ||= down(pad, 'back')
     favoritePressed ||= down(pad, 'favorite')
     optionsPressed ||= down(pad, 'options')
+    corePressed ||= down(pad, 'core')
     previousTab ||= down(pad, 'previousTab')
     nextTab ||= down(pad, 'nextTab')
     volumeDown ||= down(pad, 'volumeDown')
@@ -115,7 +118,7 @@ function poll(now: number): void {
   }
 
   if (waitForRelease) {
-    if (direction || confirm || backPressed || favoritePressed || optionsPressed || previousTab || nextTab || volumeDown || volumeUp) return
+    if (direction || confirm || backPressed || favoritePressed || optionsPressed || corePressed || previousTab || nextTab || volumeDown || volumeUp) return
     waitForRelease = false
   }
 
@@ -149,6 +152,8 @@ function poll(now: number): void {
   favoriteDown = favoritePressed
   if (optionsPressed && !optionsDown) options()
   optionsDown = optionsPressed
+  if (corePressed && !coreDown) coreMenu()
+  coreDown = corePressed
   if (previousTab && !previousTabDown) switchTab(-1)
   previousTabDown = previousTab
   if (nextTab && !nextTabDown) switchTab(1)

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { focus, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { toast } from './Toast'
 
-// Fixing a console game's art by hand. X on a card opens it: first which SteamGridDB game
-// this is (or Automatic, to undo a choice), then which of that game's covers to use.
+// Fixing a console game's art by hand. X on a card opens it: first where the cover comes
+// from (Automatic to undo a choice, RetroArch's box art, a web image search, or which
+// SteamGridDB game this is), then which picture to use.
 
 /** Cards whose art comes from Steam itself rather than SteamGridDB. */
 const STEAM_ART = /^(steam|shortcut):/
@@ -14,7 +15,18 @@ interface Match {
   year?: number
 }
 
-type Step = { kind: 'matches' } | { kind: 'covers'; match: Match }
+/** A picture from the web or the libretro thumbnails. */
+interface Picture {
+  url: string
+  thumb: string
+  width?: number
+  height?: number
+  /** Its site (web) or its name (libretro). */
+  label?: string
+}
+
+type PictureSource = 'web' | 'libretro'
+type Step = { kind: 'matches' } | { kind: 'covers'; match: Match } | { kind: PictureSource }
 
 const message = (err: unknown): string =>
   (err instanceof Error ? err.message : String(err)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
@@ -51,8 +63,14 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
   const list = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState<Step>({ kind: 'matches' })
   const [title, setTitle] = useState('')
+  const [webQuery, setWebQuery] = useState('')
+  const [webSource, setWebSource] = useState('')
+  const [libretro, setLibretro] = useState(false)
+  const [sgdb, setSgdb] = useState(true)
+  const [query, setQuery] = useState('')
   const [matches, setMatches] = useState<Match[] | null>(null)
   const [covers, setCovers] = useState<{ url: string; thumb: string }[] | null>(null)
+  const [pictures, setPictures] = useState<Picture[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -61,6 +79,10 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
       .search(id)
       .then((r) => {
         setTitle(r.title)
+        setWebQuery(r.webQuery)
+        setWebSource(r.webSource)
+        setLibretro(r.libretro)
+        setSgdb(r.sgdb)
         setMatches(r.matches)
       })
       .catch((err: unknown) => setError(message(err)))
@@ -75,21 +97,46 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
       .catch((err: unknown) => setError(message(err)))
   }, [id, step])
 
-  // B: from the covers back to the games; from the games, close.
+  const findPictures = (source: PictureSource, text: string): void => {
+    setPictures(null)
+    setError(null)
+    const found: Promise<Picture[]> =
+      source === 'web'
+        ? window.steamtv.art.webSearch(text).then((r) => r.map((p) => ({ ...p, label: p.source })))
+        : window.steamtv.art.libretro(id, text).then((r) => r.map((p) => ({ url: p.url, thumb: p.thumb, label: p.name })))
+    found.then(setPictures).catch((err: unknown) => {
+      setPictures([])
+      setError(message(err))
+    })
+  }
+
+  const openPictures = (source: PictureSource): void => {
+    const text = source === 'web' ? webQuery : title
+    setQuery(text)
+    setStep({ kind: source })
+    findPictures(source, text)
+  }
+
+  // B: from a picture step back to the first; from the first, close.
   useEffect(() => {
     const back = (): void => {
       if (saving) return
-      if (step.kind === 'covers') setStep({ kind: 'matches' })
-      else onClose()
+      if (step.kind !== 'matches') {
+        setError(null)
+        setStep({ kind: 'matches' })
+      } else onClose()
     }
     window.addEventListener(TRAP_CLOSE_EVENT, back)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, back)
   }, [step, saving, onClose])
 
-  // The cursor starts on the first choice of each step, once it has loaded.
-  const loaded = step.kind === 'matches' ? matches !== null : covers !== null
+  // The cursor starts on the first choice of each step, once it has loaded (on a picture
+  // step, the first picture, so the search box doesn't take it).
+  const loaded = step.kind === 'matches' ? matches !== null : step.kind === 'covers' ? covers !== null : pictures !== null
   useEffect(() => {
-    const first = panel.current?.querySelector<HTMLElement>('[data-focusable]')
+    const first =
+      (step.kind !== 'matches' && panel.current?.querySelector<HTMLElement>('.artwork-cover')) ||
+      panel.current?.querySelector<HTMLElement>('[data-focusable]')
     if (first) focus(first)
     if (list.current) list.current.scrollTop = 0
   }, [step, loaded])
@@ -104,12 +151,12 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
     }
   }
 
-  const choose = (match: Match, cover: string): void => {
+  const done = (job: Promise<void>, note: string): void => {
     setSaving(true)
-    window.steamtv.art
-      .choose(id, match.id, cover)
+    setError(null)
+    job
       .then(() => {
-        toast('Artwork updated')
+        toast(note)
         onClose()
       })
       .catch((err: unknown) => {
@@ -118,20 +165,19 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
       })
   }
 
-  const automatic = (): void => {
-    window.steamtv.art
-      .reset(id)
-      .then(() => {
-        toast('Artwork set back to automatic')
-        onClose()
-      })
-      .catch((err: unknown) => setError(message(err)))
-  }
+  const heading =
+    step.kind === 'covers'
+      ? step.match.name
+      : step.kind === 'web'
+        ? 'Search the web'
+        : step.kind === 'libretro'
+          ? 'RetroArch box art'
+          : `Artwork for ${title || '…'}`
 
   return (
     <div className="dialog-backdrop">
       <div className="dialog-panel artwork-panel" ref={panel} data-focus-trap="">
-        <h2 className="section-label display">{step.kind === 'matches' ? `Artwork for ${title || '…'}` : step.match.name}</h2>
+        <h2 className="section-label display">{heading}</h2>
         {error && <p className="dialog-message">{error}</p>}
 
         {step.kind === 'matches' && (
@@ -140,17 +186,43 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
             {!matches && !error && <p className="dialog-message">Searching SteamGridDB…</p>}
             <div className="artwork-list" ref={list}>
               {matches && (
-                <button
-                  className="setting-row"
-                  tabIndex={-1}
-                  data-focusable=""
-                  data-select-sound="move"
-                  onFocus={(e) => reveal(e.currentTarget)}
-                  onClick={automatic}
-                >
-                  <span className="setting-name display">Automatic</span>
-                  <span className="setting-detail">Let vaporTV pick</span>
-                </button>
+                <>
+                  <button
+                    className="setting-row"
+                    tabIndex={-1}
+                    data-focusable=""
+                    data-select-sound="move"
+                    onFocus={(e) => reveal(e.currentTarget)}
+                    onClick={() => done(window.steamtv.art.reset(id), 'Artwork set back to automatic')}
+                  >
+                    <span className="setting-name display">Automatic</span>
+                    <span className="setting-detail">Let vaporTV pick</span>
+                  </button>
+                  {libretro && (
+                    <button
+                      className="setting-row"
+                      tabIndex={-1}
+                      data-focusable=""
+                      data-select-sound="move"
+                      onFocus={(e) => reveal(e.currentTarget)}
+                      onClick={() => openPictures('libretro')}
+                    >
+                      <span className="setting-name display">RetroArch box art</span>
+                      <span className="setting-detail">The libretro thumbnails</span>
+                    </button>
+                  )}
+                  <button
+                    className="setting-row"
+                    tabIndex={-1}
+                    data-focusable=""
+                    data-select-sound="move"
+                    onFocus={(e) => reveal(e.currentTarget)}
+                    onClick={() => openPictures('web')}
+                  >
+                    <span className="setting-name display">Search the web</span>
+                    <span className="setting-detail">Any picture · {webSource}</span>
+                  </button>
+                </>
               )}
               {matches?.map((m) => (
                 <button
@@ -166,7 +238,11 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
                   {m.year && <span className="setting-detail">{m.year}</span>}
                 </button>
               ))}
-              {matches?.length === 0 && <p className="dialog-message">SteamGridDB has nothing by that name.</p>}
+              {matches?.length === 0 && (
+                <p className="dialog-message">
+                  {sgdb ? 'SteamGridDB has nothing by that name.' : 'Add a SteamGridDB key in Settings → Artwork to see its matches here.'}
+                </p>
+              )}
             </div>
           </>
         )}
@@ -186,9 +262,58 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
                   data-select-sound="move"
                   disabled={saving}
                   onFocus={(e) => reveal(e.currentTarget)}
-                  onClick={() => choose(step.match, c.url)}
+                  onClick={() => done(window.steamtv.art.choose(id, step.match.id, c.url), 'Artwork updated')}
                 >
                   <img src={c.thumb} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {(step.kind === 'web' || step.kind === 'libretro') && (
+          <>
+            <input
+              className="setting-row setting-input artwork-query"
+              data-focusable=""
+              aria-label="Search for"
+              spellCheck={false}
+              value={query}
+              disabled={saving}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && query.trim()) findPictures(step.kind as PictureSource, query.trim())
+              }}
+            />
+            <p className="dialog-message">
+              {saving
+                ? 'Saving…'
+                : pictures === null
+                  ? 'Searching…'
+                  : 'Pick a picture; it’s cropped to fit the card. Up to edit the search.'}
+            </p>
+            {pictures?.length === 0 && !error && <p className="dialog-message">Nothing found. Edit the search and press Enter.</p>}
+            <div className="artwork-covers" ref={list}>
+              {pictures?.map((picture) => (
+                <button
+                  key={picture.url}
+                  className="artwork-cover"
+                  tabIndex={-1}
+                  data-focusable=""
+                  data-select-sound="move"
+                  disabled={saving}
+                  aria-label={picture.label ?? 'Picture'}
+                  onFocus={(e) => reveal(e.currentTarget)}
+                  onClick={() => done(window.steamtv.art.chooseWeb(id, picture.url, picture.thumb), 'Artwork updated')}
+                >
+                  <img src={picture.thumb} alt="" loading="lazy" />
+                  {step.kind === 'web' && picture.width && picture.height ? (
+                    <span className="artwork-size">
+                      {picture.width}×{picture.height}
+                    </span>
+                  ) : step.kind === 'libretro' && picture.label ? (
+                    <span className="artwork-size">{picture.label.match(/\(([^)]+)\)/)?.[1] ?? ''}</span>
+                  ) : null}
                 </button>
               ))}
             </div>

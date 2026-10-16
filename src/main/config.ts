@@ -75,6 +75,8 @@ export interface Config {
   arcadeRowsHidden?: ArcadeRow[]
   /** RetroArch cores for the Arcade tab, by family (default the Flatpak's cores/<name>_libretro.so). */
   arcadeCores?: Partial<Record<'flycast' | 'fbneo' | 'mame', string>>
+  /** RetroArch core chosen for one arcade game (game id → core name, e.g. "mame2003_plus"). */
+  arcadeGameCores?: Record<string, string>
   /** Recents layout per screen, where chosen; see recentsLayout(). */
   recentsLayouts?: Partial<Record<RecentsTab, SteamLayout>>
   /** Home's Favorite Apps: a sideways row (default) or the grid. */
@@ -92,10 +94,14 @@ export interface Config {
   musicVolume?: MusicVolume
   backdrop?: BackdropStyle
   backdropTime?: BackdropTime
+  /** Gradient Drift's colours (a preset name, or 'random'); default molten. */
+  driftPreset?: string
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */
   steamGridDbKey?: string
+  /** Brave Search API key, for the Artwork window's web image search. */
+  braveSearchKey?: string
   /** Steam's data folder. Defaults to ~/.local/share/Steam (or $STEAMTV_STEAM_ROOT). */
   steamRoot?: string
   /** How far back Recents looks, in days (default 30). */
@@ -104,6 +110,11 @@ export interface Config {
   recentLimit?: number
   /** Favorite Apps tile id -> name of the Steam shortcut it opens, e.g. { "prime": "Prime Video" }. */
   favorites?: Record<string, string>
+  /**
+   * App tiles of your own: { id, name, shortcut (the Steam shortcut's name, default
+   * the name), tile (a picture's file name in ~/.config/steamtv/tiles) }.
+   */
+  customApps?: { id: string; name: string; shortcut?: string | string[]; tile?: string }[]
   /** Location is looked up from the IP address unless latitude/longitude are set here. */
   weather?: {
     latitude?: number

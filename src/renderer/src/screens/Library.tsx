@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CollectionRow, LibraryTab } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
-import { Clock } from '../components/Clock'
 import { CollectionGrid } from '../components/CollectionGrid'
-import { DateWeather } from '../components/DateWeather'
 import { NavBar, type Screen } from '../components/NavBar'
 import { toast } from '../components/Toast'
 import { FAVORITE_EVENT, focusContentDefault } from '../input/focus'
@@ -72,9 +70,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
 
   return (
     <div className="page" {...scroll}>
-      <DateWeather />
       <NavBar active={screen} onNavigate={onNavigate} />
-      <Clock />
 
       <div className={`collection-rows ${tab?.layout ?? 'rows'}`}>
         {rows?.length === 0 && <p className="empty-note">{empty}</p>}

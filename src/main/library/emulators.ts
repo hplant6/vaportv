@@ -27,16 +27,17 @@ export const RETROARCH = ['flatpak', 'run', 'org.libretro.RetroArch']
 const CORES = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores')
 export const FLYCAST_CORE = join(CORES, 'flycast_libretro.so')
 
-/** The RetroArch cores the Arcade tab uses, by board family. */
+/** The RetroArch cores the Arcade tab uses by default, by board family. */
 export type ArcadeCore = 'flycast' | 'fbneo' | 'mame'
 
-export function arcadeCoreFile(config: Config, core: ArcadeCore): string {
-  const configured = config.arcadeCores?.[core] ?? (core === 'flycast' ? config.flycastCore : undefined)
+/** A RetroArch core's file, by its name (`mame2003_plus` → cores/mame2003_plus_libretro.so). */
+export function arcadeCoreFile(config: Config, core: string): string {
+  const configured = config.arcadeCores?.[core as ArcadeCore] ?? (core === 'flycast' ? config.flycastCore : undefined)
   return configured ?? join(CORES, `${core}_libretro.so`)
 }
 
 /** A Flatpak app installed for this user or system-wide. */
-function flatpakInstalled(id: string): boolean {
+export function flatpakInstalled(id: string): boolean {
   return [join(homedir(), '.local', 'share', 'flatpak', 'app', id), join('/var/lib/flatpak/app', id)].some((dir) => existsSync(dir))
 }
 

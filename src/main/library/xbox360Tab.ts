@@ -5,6 +5,7 @@ import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
 import { steamRoot } from './recents'
 import { romRoot, xeniaPrefix } from './emudeck'
 import { protonPath, xeniaPath } from './emulators'
+import { dumpName } from './discs'
 import { scanXbox360, type Xbox360Game } from './xbox360'
 
 // EmuDeck's Xbox 360 setup: the Windows build of Xenia Canary in roms/xbox360,
@@ -19,7 +20,7 @@ export async function loadXbox360Games(config: Config): Promise<Xbox360Game[]> {
 }
 
 function asEmulated(game: Xbox360Game): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'xbox360', artKey: `xbox360:${game.title}` }
+  return { id: game.id, title: game.title, platform: 'xbox360', artKey: `xbox360:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function xbox360Games(config: Config): Promise<EmulatedGame[]> {

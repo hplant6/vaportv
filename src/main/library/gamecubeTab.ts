@@ -4,6 +4,7 @@ import { recentsLayout, type Config } from '../config'
 import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
 import { scanGameCube, type GameCubeGame } from './gamecube'
 import { romRoot } from './emudeck'
+import { dumpName } from './discs'
 import { DOLPHIN } from './emulators'
 
 export function gamecubeRoot(config: Config): string {
@@ -15,7 +16,7 @@ export async function loadGameCubeGames(config: Config): Promise<GameCubeGame[]>
 }
 
 function asEmulated(game: GameCubeGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'gamecube', artKey: `gamecube:${game.title}` }
+  return { id: game.id, title: game.title, platform: 'gamecube', artKey: `gamecube:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function gamecubeGames(config: Config): Promise<EmulatedGame[]> {

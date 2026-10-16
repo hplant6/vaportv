@@ -1,5 +1,5 @@
 import { readdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 
 // Disc-image libraries (Xbox 360, GameCube): a folder of No-Intro named images,
 // some grouped a level down, multi-disc games as several files.
@@ -12,6 +12,15 @@ export interface DiscGame {
   path: string
   /** Every disc image of a multi-disc game, in disc order (just `path` for one disc). */
   discs: string[]
+}
+
+/**
+ * The dump's own name, as No-Intro/Redump give it ("Metroid Prime 2 - Echoes (USA)"):
+ * the first disc's file name without its extension or disc number.
+ */
+export function dumpName(game: DiscGame): string {
+  const file = basename(game.discs[0] ?? game.path)
+  return file.slice(0, file.length - extname(file).length).replace(/\s*\(Disc \d+\)/i, '')
 }
 
 export interface DiscOptions {

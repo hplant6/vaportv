@@ -137,8 +137,6 @@ const SERVICES: [RegExp, string][] = [
   [/youtube|vacuumtube|smarttube/i, 'youtube'],
   [/emby/i, 'emby'],
   [/prime video|amazon/i, 'prime'],
-  [/doki/i, 'doki'],
-  [/\bjme\b/i, 'jme'],
   // Short names: matched against the whole shortcut name, so "Max Payne" isn't Max.
   [/^(hbo )?max$/i, 'max'],
   [/^hulu$/i, 'hulu'],

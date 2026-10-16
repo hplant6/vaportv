@@ -129,3 +129,56 @@ body:has(.setup) {
   margin: 16px 0 0;
   color: #ff8a7a;
 }
+
+.setup-apps {
+  margin: 8px 0 16px;
+}
+
+.setup-apps h3 {
+  display: inline-block;
+  margin: 8px 16px 8px 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.setup-apps ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-apps label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.setup-apps input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}
+
+.setup-app-ready .mark {
+  display: inline-block;
+  width: 28px;
+  color: var(--color-accent);
+}
+
+/* A text button: reset the TV UI's icon-sized button default. */
+.setup .setup-link {
+  width: auto;
+  height: auto;
+  padding: 0;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -55,11 +55,6 @@
       "tile": "fixtures/tiles/netflix.webp"
     },
     {
-      "id": "jme",
-      "name": "Jme",
-      "tile": "fixtures/tiles/jme.webp"
-    },
-    {
       "id": "disney",
       "name": "Disney+",
       "tile": "fixtures/tiles/disney.webp"
@@ -73,11 +68,6 @@
       "id": "steam",
       "name": "Steam",
       "tile": "fixtures/tiles/steam.webp"
-    },
-    {
-      "id": "doki",
-      "name": "Doki",
-      "tile": "fixtures/tiles/doki.webp"
     },
     {
       "id": "prime",
@@ -129,10 +119,13 @@
     "ps3": "fixtures/logos/rpcs3.png",
     "xbox360": "fixtures/logos/xenia.png",
     "gamecube": "fixtures/logos/dolphin.png",
-    "dreamcast": "fixtures/logos/flycast.png",
-    "atomiswave": "fixtures/logos/flycast.png",
-    "naomi": "fixtures/logos/flycast.png",
-    "naomi2": "fixtures/logos/flycast.png",
+    "dreamcast": "fixtures/logos/flycast-white.png",
+    "atomiswave": "fixtures/logos/retroarch.svg",
+    "naomi": "fixtures/logos/retroarch.svg",
+    "naomi2": "fixtures/logos/retroarch.svg",
+    "cps": "fixtures/logos/retroarch.svg",
+    "neogeo": "fixtures/logos/retroarch.svg",
+    "arcade": "fixtures/logos/retroarch.svg",
     "youtube": "fixtures/logos/youtube.png",
     "netflix": "fixtures/logos/netflix.png"
   }

@@ -227,6 +227,23 @@ export async function chooseArt(key: string, cacheKey: string, gameId: number, c
   }
 }
 
+/**
+ * A cover from elsewhere (a web image search, the libretro thumbnails), already cropped
+ * to a PNG. The game's other art stays. A manual one (picked by hand) is never replaced
+ * by automatic lookups.
+ */
+export async function savePortrait(cacheKey: string, png: Buffer, source: string, manual = true): Promise<void> {
+  const all = await loadIndex()
+  const old = all[cacheKey]
+  const hash = (s: string, n: number): string => createHash('sha1').update(s).digest('hex').slice(0, n)
+  const file = `${hash(cacheKey, 16)}-portrait-${hash(source, 6)}.png`
+  await mkdir(ART_CACHE, { recursive: true })
+  await writeFile(join(ART_CACHE, file), png)
+  all[cacheKey] = { gameId: old?.gameId ?? null, wide: old?.wide, hero: old?.hero, checkedAt: old?.checkedAt ?? Date.now(), manual, portrait: file }
+  await saveIndex()
+  if (old?.portrait && old.portrait !== file) await rm(join(ART_CACHE, basename(old.portrait)), { force: true })
+}
+
 /** Back to automatic: forgets the game's art so the next lookup finds it afresh. */
 export async function resetArt(cacheKey: string): Promise<void> {
   const all = await loadIndex()

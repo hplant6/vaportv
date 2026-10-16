@@ -16,12 +16,37 @@ export interface RecentItem {
   favorite?: boolean
 }
 
+/** The cores an arcade game can open in. */
+export interface ArcadeCores {
+  title: string
+  /** What it opens in now. */
+  current: string
+  /** Its board's usual core. */
+  defaultCore: string
+  /** Installed cores that run its board, the default first. */
+  choices: { id: string; name: string }[]
+}
+
 export interface AppItem {
   id: string
   name: string
   tile: string
   /** On Home's Favorite Apps (set on the Apps tab's list). */
   favorite?: boolean
+  /** Whether it opens on this box, and if not how it's set up (the Apps tab's list). */
+  state?: AppState
+}
+
+/**
+ * An app tile's readiness. setup: 'install' a Flathub program; 'web' a streaming site
+ * (Chrome, plus a Steam shortcut); 'emudeck' comes with EmuDeck; 'shortcut' only by
+ * adding a Steam shortcut by hand.
+ */
+export interface AppState {
+  ready: boolean
+  setup?: 'install' | 'web' | 'emudeck' | 'shortcut'
+  /** For 'install': the program installed (the YouTube tile installs VacuumTube). */
+  program?: string
 }
 
 export interface HomeData {
@@ -97,7 +122,7 @@ export type MusicVolume = 'low' | 'medium' | 'high'
 export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 
 /** Which animated backdrop is drawn behind every screen. */
-export type BackdropStyle = 'sea' | 'rain'
+export type BackdropStyle = 'sea' | 'rain' | 'drift'
 
 export interface Settings {
   /** Every Steam collection, Favorites first. */
@@ -123,6 +148,8 @@ export interface Settings {
   musicVolume: MusicVolume
   backdrop: BackdropStyle
   backdropTime: BackdropTime
+  /** Gradient Drift's colours: a preset name, or 'random' for a new one each start. */
+  driftPreset: string
   /** Where music is read from, for the hint in Settings. */
   musicFolder: string
   /** Switching the controller off puts the box to sleep (while vaporTV is on screen). */
@@ -138,6 +165,8 @@ export interface Settings {
   screensaverFolder: string
   /** Last 4 characters of the SteamGridDB key, or null if none is set. */
   steamGridDbKeyHint: string | null
+  /** Last 4 characters of the Brave Search API key, or null if none is set. */
+  braveSearchKeyHint: string | null
 }
 
 /** What the screensaver shows: a slideshow, the backdrop with a big clock, or a clock with the weather. */
@@ -208,6 +237,8 @@ export interface GooglePhotosProgress {
 
 /** What's set up, as the Desktop Mode setup window sees it. */
 export interface InstallStatus {
+  /** Every app tile and whether it opens here yet. */
+  apps: { id: string; name: string; state: AppState }[]
   /** The AppImage this window was opened from, if any. */
   running: string | null
   /** The AppImage vaporTV's Steam shortcut runs, if there is one. */
@@ -223,6 +254,8 @@ export interface InstallOptions {
   autostart: boolean
   /** Let a controller wake the box (needs the admin password). */
   wake: boolean
+  /** Apps to set up as well (ids): installed from Flathub, websites added to Steam. */
+  apps: string[]
 }
 
 export interface SteamTvApi {
@@ -243,10 +276,36 @@ export interface SteamTvApi {
   getSettings(): Promise<Settings>
   /** Artwork window for console games: SteamGridDB matches, covers, and choosing one by hand. */
   art: {
-    search(id: string, query?: string): Promise<{ title: string; matches: { id: number; name: string; year?: number }[] }>
+    /** SteamGridDB's matches (none without its key), and the web search to offer. */
+    search(
+      id: string,
+      query?: string
+    ): Promise<{
+      title: string
+      webQuery: string
+      /** Who answers "Search the web": Brave (with a key) or DuckDuckGo. */
+      webSource: string
+      /** Whether the libretro thumbnails cover this platform. */
+      libretro: boolean
+      /** Whether a SteamGridDB key is set (no key: no matches). */
+      sgdb: boolean
+      matches: { id: number; name: string; year?: number }[]
+    }>
+    /** Web image search results. */
+    webSearch(query: string): Promise<{ url: string; thumb: string; width?: number; height?: number; source?: string }[]>
+    /** libretro thumbnail box art whose names match the game (or `query`). */
+    libretro(id: string, query?: string): Promise<{ url: string; thumb: string; name: string }[]>
+    /** Uses a picture (cropped to a cover) as the game's cover; `thumb` if the full one won't download. */
+    chooseWeb(id: string, url: string, thumb?: string): Promise<void>
     covers(id: string, gameId: number): Promise<{ url: string; thumb: string }[]>
     choose(id: string, gameId: number, cover: string): Promise<void>
     reset(id: string): Promise<void>
+  }
+  /** Start on an arcade game: which RetroArch core it opens in. */
+  arcadeCores: {
+    get(id: string): Promise<ArcadeCores>
+    /** Saves the game's core (null: its board's default); resolves with the core's name. */
+    set(id: string, core: string | null): Promise<string>
   }
   /** Desktop Mode setup. Install and uninstall resolve with an error message, or null when done. */
   setup: {
@@ -281,11 +340,13 @@ export interface SteamTvApi {
   setTabLayout(tab: LayoutTab, layout: SteamLayout): Promise<void>
   setRecentsLayout(tab: RecentsTab, layout: SteamLayout): Promise<void>
   setFavoritesLayout(layout: SteamLayout): Promise<void>
+  setBraveSearchKey(key: string): Promise<void>
   setSteamGridDbKey(key: string): Promise<void>
   setMusic(file: string | null): Promise<void>
   setMusicVolume(volume: MusicVolume): Promise<void>
-  getBackdrop(): Promise<{ style: BackdropStyle; time: BackdropTime }>
+  getBackdrop(): Promise<{ style: BackdropStyle; time: BackdropTime; drift: string }>
   setBackdrop(style: BackdropStyle): Promise<void>
+  setDriftPreset(name: string): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<{ url: string | null; volume: number }>
@@ -298,6 +359,14 @@ export interface SteamTvApi {
   setControls(controls: Controls): Promise<void>
   /** Saves which Arcade tab carousels are turned off. */
   setArcadeRowsHidden(rows: ArcadeRow[]): Promise<void>
+  /** Setting up an app tile that doesn't open yet. */
+  appSetup: {
+    /** Installs what it needs from Flathub; resolves with an error message, or null when done. */
+    install(id: string): Promise<string | null>
+    /** Websites (ids) to add to Steam, closing and reopening Steam; resolves with an error, or null. */
+    addToSteam(ids: string[]): Promise<string | null>
+    onProgress(callback: (line: string) => void): () => void
+  }
   /** Adds an app to Home's Favorite Apps or takes it off; resolves with whether it's now a favorite. */
   toggleFavoriteApp(id: string): Promise<boolean>
   setSleepWarning(on: boolean): Promise<void>

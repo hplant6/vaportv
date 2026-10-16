@@ -7,8 +7,6 @@ import { ControlsSettings } from '../components/ControlsSettings'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { SLEEP_SETTING_EVENT } from '../components/SleepPrompt'
-import { Clock } from '../components/Clock'
-import { DateWeather } from '../components/DateWeather'
 import { NavBar, type Screen } from '../components/NavBar'
 import { focus, focusContentDefault } from '../input/focus'
 import { usePageScroll } from './usePageScroll'
@@ -82,7 +80,7 @@ function LayoutRow({
   )
 }
 
-function KeyRow({ hint, onSave }: { hint: string | null; onSave: (key: string) => void }) {
+function KeyRow({ service, hint, onSave }: { service: string; hint: string | null; onSave: (key: string) => void }) {
   const [editing, setEditing] = useState(false)
   const input = useRef<HTMLInputElement>(null)
 
@@ -96,8 +94,8 @@ function KeyRow({ hint, onSave }: { hint: string | null; onSave: (key: string) =
         ref={input}
         className="setting-row setting-input"
         data-focusable=""
-        placeholder="Paste or type your SteamGridDB API key, then Enter"
-        aria-label="SteamGridDB API key"
+        placeholder={`Paste or type your ${service} API key, then Enter`}
+        aria-label={`${service} API key`}
         spellCheck={false}
         onKeyDown={(event) => {
           if (event.key === 'Enter') {
@@ -115,7 +113,7 @@ function KeyRow({ hint, onSave }: { hint: string | null; onSave: (key: string) =
     <button
       className="setting-row"
       tabIndex={-1}
-      aria-label="SteamGridDB API key"
+      aria-label={`${service} API key`}
       data-focusable=""
       data-select-sound="move"
       onClick={() => setEditing(true)}
@@ -264,7 +262,20 @@ const SCREENSAVER_DELAYS: { minutes: number; name: string }[] = [
 
 const BACKDROPS: { id: BackdropStyle; name: string; detail: string }[] = [
   { id: 'sea', name: 'Sea', detail: 'Follows the time of day' },
-  { id: 'rain', name: 'Rain', detail: 'A puddle in the rain, close up' }
+  { id: 'rain', name: 'Rain', detail: 'A puddle in the rain, close up' },
+  { id: 'drift', name: 'Gradient Drift', detail: 'Colours drifting behind ribbed glass' }
+]
+
+/** Gradient Drift's looks (the pen's presets); light ones sit behind white text, so they're marked. */
+const DRIFT_PRESETS: { id: string; name: string; detail: string }[] = [
+  { id: 'molten', name: 'Molten', detail: 'Reds and golds on black' },
+  { id: 'deep sea', name: 'Deep sea', detail: 'Blues and teals on navy' },
+  { id: 'neon signage', name: 'Neon signage', detail: 'Hot colours on black' },
+  { id: 'default', name: 'Spectrum', detail: 'Bright colours on white · light' },
+  { id: 'pastel frost', name: 'Pastel frost', detail: 'Soft pastels · light' },
+  { id: 'ink wash', name: 'Ink wash', detail: 'Greys on paper · light' },
+  { id: 'citrus pop', name: 'Citrus pop', detail: 'Fruit colours on cream · light' },
+  { id: 'random', name: 'Random', detail: 'A different one each start' }
 ]
 
 const BACKDROP_TIMES: { id: BackdropTime; name: string; detail?: string }[] = [
@@ -327,6 +338,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setSteamGridDbKey(trimmed)
   }
 
+  const saveBraveKey = (key: string): void => {
+    if (!settings) return
+    const trimmed = key.trim()
+    setSettings({ ...settings, braveSearchKeyHint: trimmed ? trimmed.slice(-4) : null })
+    window.steamtv.setBraveSearchKey(trimmed)
+  }
+
   const chooseMusic = (file: string | null): void => {
     if (!settings || settings.music === file) return
     setSettings({ ...settings, music: file })
@@ -385,6 +403,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.backdrop === style) return
     setSettings({ ...settings, backdrop: style })
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  const chooseDriftPreset = (name: string): void => {
+    if (!settings || settings.driftPreset === name) return
+    setSettings({ ...settings, driftPreset: name })
+    window.steamtv.setDriftPreset(name).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseBackdropTime = (time: BackdropTime): void => {
@@ -557,6 +581,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               ))}
           </div>
         </div>
+
+        {settings?.backdrop === 'drift' && (
+          <div className="settings-group">
+            <h3 className="settings-heading display">Gradient Drift colours</h3>
+            <div className="setting-list" data-focus-memory="settings-drift">
+              {DRIFT_PRESETS.map((p) => (
+                <ChoiceRow
+                  key={p.id}
+                  label={p.name}
+                  detail={p.detail}
+                  selected={settings.driftPreset === p.id}
+                  onSelect={() => chooseDriftPreset(p.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {settings?.backdrop === 'sea' && (
           <div className="settings-group">
@@ -738,7 +779,18 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             Cover art for emulated games comes from steamgriddb.com. Get a key there under Preferences → API.
           </p>
           <div className="setting-list" data-focus-memory="settings-key">
-            {settings && <KeyRow hint={settings.steamGridDbKeyHint} onSave={saveKey} />}
+            {settings && <KeyRow service="SteamGridDB" hint={settings.steamGridDbKeyHint} onSave={saveKey} />}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Web image search</h3>
+          <p className="settings-help">
+            X on a game, then Search the web, for any picture as its cover. Free through DuckDuckGo, which has no official
+            API and may stop working; with a Brave Search API key (api-dashboard.search.brave.com) it uses Brave's API instead.
+          </p>
+          <div className="setting-list" data-focus-memory="settings-brave-key">
+            {settings && <KeyRow service="Brave Search" hint={settings.braveSearchKeyHint} onSave={saveBraveKey} />}
           </div>
         </div>
       </>
@@ -747,9 +799,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   return (
     <div className="page">
-      <DateWeather />
       <NavBar active="settings" onNavigate={onNavigate} />
-      <Clock />
 
       <section className="settings">
         <h2 className="section-label display">Settings</h2>
