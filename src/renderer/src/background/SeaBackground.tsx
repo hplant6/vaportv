@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { DEFAULT_SUN_TIMES, type SunTimes } from '../../../shared/sun'
+import { WEATHER_CHANGED_EVENT } from '../components/LocationDialog'
 import { FS, VS } from './seaShader'
 import { heldMinutes, minutesOfDay, sceneAt } from './timeOfDay'
 import type { BackdropTime } from '../../../shared/types'
@@ -120,6 +121,8 @@ function start(canvas: HTMLCanvasElement): () => void {
   }
   loadSun()
   const sunTimer = setInterval(loadSun, SUN_REFRESH)
+  // A new place has its own sunrise and sunset.
+  window.addEventListener(WEATHER_CHANGED_EVENT, loadSun)
 
   let held: BackdropTime = 'auto'
   const loadHeld = (): void => {
@@ -156,6 +159,7 @@ function start(canvas: HTMLCanvasElement): () => void {
   return () => {
     cancelAnimationFrame(raf)
     clearInterval(sunTimer)
+    window.removeEventListener(WEATHER_CHANGED_EVENT, loadSun)
     window.removeEventListener(BACKDROP_CHANGED_EVENT, loadHeld)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }

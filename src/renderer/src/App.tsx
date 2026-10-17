@@ -12,6 +12,7 @@ import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { AppSetupDialog } from './components/AppSetupDialog'
+import { Welcome } from './components/Welcome'
 import { CoreDialog } from './components/CoreDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
@@ -236,6 +237,7 @@ export function App() {
       <ArtworkDialog />
       <CoreDialog />
       <AppSetupDialog apps={home?.allApps ?? []} />
+      <Welcome />
       <Screensaver />
       <BackgroundMusic />
       <VolumeOsd />

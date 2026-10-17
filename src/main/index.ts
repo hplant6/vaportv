@@ -4,9 +4,10 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import home from '../../fixtures/home.json'
 import type { ArcadeRow } from '../shared/arcade'
+import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -32,7 +33,7 @@ import { searchWebImages, webCover } from './library/webImages'
 import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
-import { getLocation } from './location'
+import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
 import { currentMusic, musicFolder, musicTracks } from './music'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { cancelPick, clearPhotos, googlePhotosStatus, signIn as googleSignIn, signOut as googleSignOut, startPick } from './addons/googlePhotos'
@@ -89,6 +90,7 @@ function createWindow(): void {
     frame: !!devUrl || setupMode,
     title: setupMode ? 'vaporTV Setup' : 'vaporTV',
     backgroundColor: '#0B070D',
+    icon: app.isPackaged ? join(process.resourcesPath, 'library-art', 'icon.png') : join(app.getAppPath(), 'build', 'icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       // Navigation sounds play before anyone has clicked in the window.
@@ -270,6 +272,13 @@ ipcMain.handle('apps:favorite', async (_event, id: string) => {
   return on
 })
 ipcMain.handle('weather:get', () => getWeather())
+ipcMain.handle('location:get', () => locationSettings())
+ipcMain.handle('location:search', (_event, query: string) => searchPlaces(query))
+ipcMain.handle('location:set', (_event, place: PlaceMatch | null) => setPlace(place))
+ipcMain.handle('location:unit', (_event, unit: TemperatureUnit) => setTemperatureUnit(unit))
+// Screenshots skip it (STEAMTV_WELCOME=1 shows it, to take one of the tour itself).
+ipcMain.handle('welcome:seen', async () => !!(await loadConfig()).welcomeSeen || (!!screenshotMode() && !process.env.STEAMTV_WELCOME))
+ipcMain.handle('welcome:done', () => saveConfig({ welcomeSeen: true }))
 ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
   const { config, game } = await artTarget(id)
   const name = game.artTitle ?? game.title
@@ -277,7 +286,8 @@ ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
   return {
     title: game.title,
     webQuery: `${name} ${WEB_QUERY[game.platform] ?? 'cover art'}`,
-    webSource: config.braveSearchKey ? 'Brave' : 'DuckDuckGo',
+    // Empty: no search to offer (the public build without a Brave key).
+    webSource: config.braveSearchKey ? 'Brave' : EXTRAS ? 'DuckDuckGo' : '',
     libretro: hasLibretroThumbnails(game.platform),
     sgdb: !!key,
     matches: key ? await searchGames(key, query ?? name) : []
@@ -286,7 +296,9 @@ ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
 // Brave's API with a key; otherwise DuckDuckGo, free but unofficial.
 ipcMain.handle('art:webSearch', async (_event, query: string) => {
   const config = await loadConfig()
-  return config.braveSearchKey ? searchWebImages(config.braveSearchKey, query) : searchDuckDuckGo(query)
+  if (config.braveSearchKey) return searchWebImages(config.braveSearchKey, query)
+  if (!EXTRAS) throw new Error('Add a Brave Search API key in Settings → Artwork to search the web.')
+  return searchDuckDuckGo(query)
 })
 ipcMain.handle('art:libretro', async (_event, id: string, query?: string) => {
   const { game } = await artTarget(id)
@@ -500,7 +512,7 @@ app.whenReady().then(async () => {
   // Local files the page may load: game art, the background-music folder and screensaver photos.
   handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), ...screensaverFolders(config)])
   if (setupMode) return createWindow()
-  startDriveSync()
+  if (EXTRAS) startDriveSync()
   createWindow()
   // Select + Start held: close whatever is in front and come back here.
   if (!screenshot) {

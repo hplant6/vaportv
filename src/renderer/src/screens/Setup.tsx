@@ -140,7 +140,8 @@ export function Setup() {
               <label>
                 <input type="checkbox" checked={wake} disabled={working} onChange={(e) => setWake(e.target.checked)} />
                 <span>
-                  Let my controller wake the box from sleep <span className="hint">(asks for your password)</span>
+                  Let my controller wake the box from sleep{' '}
+                  <span className="hint">(needs an admin password; set one with passwd in Konsole if you never have)</span>
                 </span>
               </label>
             </div>

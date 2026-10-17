@@ -1,5 +1,6 @@
 // Builds vaporTV's Steam library art (cover, banner, hero, logo) into build/library-art/,
-// which the installer copies into Steam's grid folder for the vaporTV shortcut.
+// which the installer copies into Steam's grid folder for the vaporTV shortcut, and the
+// app icon (build/icon.png, which electron-builder picks up; a copy ships as library art).
 //
 //   node scripts/make-library-art.mjs
 //
@@ -53,3 +54,22 @@ await sharp(await background(1920, 620)).png().toFile(join(OUT, 'hero.png'))
 console.log('wrote hero.png')
 await sharp(wordmark(1280, 400, 260)).png().toFile(join(OUT, 'logo.png'))
 console.log('wrote logo.png')
+
+// The app icon: the sunset in a rounded square with a big "v", which still reads at 32px.
+const ICON = 512
+const iconMask = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${ICON}" height="${ICON}">
+  <rect width="${ICON}" height="${ICON}" rx="${ICON * 0.22}" fill="#fff"/></svg>`)
+const iconLetter = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${ICON}" height="${ICON}">
+  <defs><filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.5"/>
+  </filter></defs>
+  <text x="${ICON / 2}" y="${ICON * 0.46}" font-family="Tilt Warp" font-size="${ICON * 0.78}" fill="#fff" text-anchor="middle"
+    dominant-baseline="central" filter="url(#s)">v</text>
+</svg>`)
+const icon = await sharp(await background(ICON, ICON))
+  .composite([{ input: iconLetter }, { input: iconMask, blend: 'dest-in' }])
+  .png()
+  .toBuffer()
+await sharp(icon).toFile('build/icon.png')
+await sharp(icon).toFile(join(OUT, 'icon.png'))
+console.log('wrote icon.png')

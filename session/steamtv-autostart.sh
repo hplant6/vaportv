@@ -14,7 +14,8 @@ ATTEMPTS=3
 
 log() { echo "steamtv-autostart: $*"; }
 
-steamtv_running() { pgrep -x steamtv >/dev/null; }
+# The program was called steamtv before the rename; either is vaporTV.
+steamtv_running() { pgrep '^(steamtv|vaportv)$' >/dev/null; }
 
 # The shortcut's 32-bit app id (GAME_ID >> 32), for telling what's on screen.
 STEAMTV_APPID=${STEAMTV_APPID:-}

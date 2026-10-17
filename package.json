@@ -48,7 +48,7 @@
   "author": "Henry",
   "license": "GPL-3.0-or-later",
   "build": {
-    "appId": "me.itshenry.steamtv",
+    "appId": "me.itshenry.vaportv",
     "extraResources": [
       { "from": "session", "to": "session" },
       { "from": "build/library-art", "to": "library-art", "filter": ["*.png"] }
@@ -63,8 +63,8 @@
     "linux": {
       "target": "AppImage",
       "category": "Game",
-      "artifactName": "steamtv.AppImage",
-      "executableName": "steamtv"
+      "artifactName": "vaporTV.AppImage",
+      "executableName": "vaportv"
     }
   }
 }

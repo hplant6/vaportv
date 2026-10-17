@@ -119,8 +119,13 @@ export interface Config {
   weather?: {
     latitude?: number
     longitude?: number
+    /** The chosen place's name, for Settings, and its country (for automatic units). */
+    place?: string
+    country?: string
     unit?: 'fahrenheit' | 'celsius'
   }
+  /** The welcome tour has been shown (it shows once, on the first start). */
+  welcomeSeen?: boolean
 }
 
 export const configPath = (): string => join(app.getPath('home'), '.config', 'steamtv', 'config.json')

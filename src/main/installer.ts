@@ -35,6 +35,7 @@ const SERVICE = 'steamtv-autostart.service'
 const SERVICE_DIR = join(homedir(), '.config', 'systemd', 'user')
 const AUTOSTART_BIN = join(homedir(), '.local', 'bin', 'steamtv-autostart')
 const SHORTCUT_ENV = join(homedir(), '.config', 'steamtv', 'steam-shortcut.env')
+const ICON = join(homedir(), '.local', 'share', 'steamtv', 'vaportv.png')
 const WAKE_RULE = '/etc/udev/rules.d/90-vaportv-controller-wake.rules'
 /** Earlier hand-installed rule (the developer's box); left alone if present. */
 const OLD_WAKE_RULE = '/etc/udev/rules.d/90-steamtv-controller-wake.rules'
@@ -156,7 +157,7 @@ async function copyAppImage(target: string, report: Report): Promise<void> {
  * Adds vaporTV to Steam's shortcuts (in place), or updates the existing entry to run
  * `exe`. Returns its app id and whether it was already there.
  */
-export function upsertShortcut(vdf: VdfObject, exe: string): { appid: number; updated: boolean } {
+export function upsertShortcut(vdf: VdfObject, exe: string, icon = ''): { appid: number; updated: boolean } {
   const shortcuts = (childObject(vdf, 'shortcuts') ?? (vdf.shortcuts = {})) as VdfObject
   const existing = findOurs(shortcuts)
   let appid: number
@@ -168,6 +169,7 @@ export function upsertShortcut(vdf: VdfObject, exe: string): { appid: number; up
     setField(entry, 'Exe', quote(exe))
     setField(entry, 'StartDir', quote(dirname(exe)))
     setField(entry, 'LaunchOptions', LAUNCH_OPTIONS)
+    if (icon) setField(entry, 'icon', icon)
   } else {
     appid = shortcutAppId(quote(exe), NAME)
     const keys = Object.keys(shortcuts).map(Number).filter(Number.isFinite)
@@ -176,7 +178,7 @@ export function upsertShortcut(vdf: VdfObject, exe: string): { appid: number; up
       AppName: NAME,
       Exe: quote(exe),
       StartDir: quote(dirname(exe)),
-      icon: '',
+      icon,
       ShortcutPath: '',
       LaunchOptions: LAUNCH_OPTIONS,
       IsHidden: 0,
@@ -197,7 +199,7 @@ export function upsertShortcut(vdf: VdfObject, exe: string): { appid: number; up
 async function addShortcut(exe: string, report: Report): Promise<number> {
   const file = await shortcutsFile()
   const vdf = await readShortcuts(file)
-  const { appid, updated } = upsertShortcut(vdf, exe)
+  const { appid, updated } = upsertShortcut(vdf, exe, await installIcon())
   report(updated ? 'Updated the vaporTV shortcut in Steam' : 'Added vaporTV to your Steam library')
   await writeFile(`${file}.vaportv-backup`, await readFile(file).catch(() => Buffer.alloc(0)))
   await writeFile(file, dumpBinaryVdf(vdf))
@@ -209,6 +211,15 @@ async function addShortcut(exe: string, report: Report): Promise<number> {
 }
 
 /** vaporTV's capsule, banner, hero and logo for Steam's library (grid folder, named by app id). */
+/** The app icon, kept outside the AppImage (whose files vanish when it closes) for Steam to show. */
+async function installIcon(): Promise<string> {
+  const source = resource('library-art', 'icon.png')
+  if (!existsSync(source)) return ''
+  await mkdir(dirname(ICON), { recursive: true })
+  await copyFile(source, ICON)
+  return ICON
+}
+
 async function addLibraryArt(configDir: string, appid: number): Promise<void> {
   const grid = join(configDir, 'grid')
   await mkdir(grid, { recursive: true })
@@ -248,22 +259,31 @@ async function installWakeRule(report: Report): Promise<void> {
     'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6b", ATTR{power/wakeup}="enabled"',
     ''
   ].join('\n')
+  // SteamOS comes without a password for its user, and the admin prompt needs one.
+  const status = await run('passwd', ['-S']).then(
+    ({ stdout }) => stdout,
+    () => ''
+  )
+  if (/^\S+ NP /m.test(status)) {
+    return report('Skipped controller wake: it needs an admin password. Set one with `passwd` in Konsole, then run setup again.')
+  }
   report('Asking for your password to set up controller wake…')
-  await new Promise<void>((resolve, reject) => {
+  const done = await new Promise<boolean>((resolve) => {
     const child = spawn('pkexec', [
       'sh',
       '-c',
       `cat > ${WAKE_RULE} && udevadm control --reload && udevadm trigger --subsystem-match=usb --action=change`
     ])
     child.stdin.end(rule)
-    child.on('error', reject)
-    child.on('exit', (code) =>
-      code === 0
-        ? resolve()
-        : reject(new Error('Controller wake needs your password. If you never set one, run `passwd` in Konsole first.'))
-    )
+    child.on('error', () => resolve(false))
+    child.on('exit', (code) => resolve(code === 0))
   })
-  report('Your controller can now wake the box')
+  // Not worth failing the whole install over: everything else is already in place.
+  report(
+    done
+      ? 'Your controller can now wake the box'
+      : "Skipped controller wake (the password wasn't given). If you never set one, run `passwd` in Konsole, then run setup again."
+  )
 }
 
 export async function install(options: InstallOptions, report: Report): Promise<void> {

@@ -1,9 +1,11 @@
 import type { Weather } from '../shared/types'
-import { getLocation } from './location'
+import { getLocation, onLocationChange } from './location'
 
 const TTL = 15 * 60 * 1000
 
 let cached: { at: number; value: Weather } | null = null
+// A new place or unit: fetch again rather than show the old one for 15 minutes.
+onLocationChange(() => (cached = null))
 
 export async function getWeather(): Promise<Weather | null> {
   if (cached && Date.now() - cached.at < TTL) return cached.value

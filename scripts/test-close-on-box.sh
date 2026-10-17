@@ -15,7 +15,7 @@ test_app() {
   for i in $(seq 60); do [ "$(on_screen)" = "$appid" ] && break; sleep 1; done
   if [ "$(on_screen)" != "$appid" ]; then echo "$name: NEVER CAME ON SCREEN (on screen: $(on_screen))"; return; fi
   sleep 8
-  kill -USR2 "$(pgrep -o -x steamtv)"
+  kill -USR2 "$(pgrep -o '^(steamtv|vaportv)$')"
   for i in $(seq 20); do reaper_alive "$appid" || break; sleep 1; done
   sleep 3
   local alive=$(reaper_alive "$appid" && echo STILL-RUNNING || echo closed)

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Weather } from '../../../shared/types'
+import { WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { useNow } from './useNow'
 
 const REFRESH = 15 * 60 * 1000
@@ -13,7 +14,11 @@ export function DateWeather({ after }: { after?: ReactNode }) {
     const load = (): Promise<void> => window.steamtv.getWeather().then(setWeather)
     load()
     const timer = setInterval(load, REFRESH)
-    return () => clearInterval(timer)
+    window.addEventListener(WEATHER_CHANGED_EVENT, load)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener(WEATHER_CHANGED_EVENT, load)
+    }
   }, [])
 
   const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

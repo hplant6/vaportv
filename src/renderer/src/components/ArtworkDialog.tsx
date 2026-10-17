@@ -220,7 +220,7 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
                     onClick={() => openPictures('web')}
                   >
                     <span className="setting-name display">Search the web</span>
-                    <span className="setting-detail">Any picture · {webSource}</span>
+                    <span className="setting-detail">{webSource ? `Any picture · ${webSource}` : 'Needs a Brave Search key (Settings → Artwork)'}</span>
                   </button>
                 </>
               )}

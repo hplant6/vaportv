@@ -6,7 +6,8 @@ HOST=${STEAMTV_HOST:-steamos}
 cd "$(dirname "$0")/.."
 
 npm run dist >/tmp/steamtv-dist.log 2>&1 || { tail -20 /tmp/steamtv-dist.log; exit 1; }
-scp -q dist/steamtv.AppImage "$HOST:Applications/steamtv.AppImage.new"
+# The box keeps its original file name: its Steam shortcut points there.
+scp -q dist/vaporTV.AppImage "$HOST:Applications/steamtv.AppImage.new"
 scp -q session/steamtv-autostart.sh "$HOST:.local/bin/steamtv-autostart"
 ssh "$HOST" bash -s <<'EOF'
 set -euo pipefail
@@ -21,21 +22,21 @@ fi
 # Don't pull steamtv out from under someone: restart only if it's what's on screen
 # and it hasn't launched an emulator (which runs inside steamtv's Steam session).
 reaper=$( [ -n "$APPID" ] && pgrep -f "^$HOME/.local/share/Steam/ubuntu12_32/reaper SteamLaunch AppId=$APPID" || true)
-if [ -n "$reaper" ] && pgrep -P "$reaper" | xargs -r ps -o comm= -p | grep -qv steamtv; then
+if [ -n "$reaper" ] && pgrep -P "$reaper" | xargs -r ps -o comm= -p | grep -qvE '^(steamtv|vaportv)$'; then
   echo "Installed. An emulator is running inside steamtv; the update applies next time steamtv starts."
   exit 0
 fi
 # On screen is fine as steamtv ($APPID) or Steam's own UI (769); anything else is
 # a game or app in use.
-if pgrep -x steamtv >/dev/null && ! DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qwE "${APPID:-none}|769"; then
+if pgrep '^(steamtv|vaportv)$' >/dev/null && ! DISPLAY=:0 xprop -root GAMESCOPE_FOCUSED_APP_GFX | grep -qwE "${APPID:-none}|769"; then
   echo "Installed. A game or app is on screen; the update applies next time steamtv starts."
   exit 0
 fi
-if pgrep -x steamtv >/dev/null; then
-  kill "$(pgrep -o -x steamtv)"
-  if ! timeout 20 bash -c 'while pgrep -x steamtv >/dev/null; do sleep 1; done'; then
+if pgrep '^(steamtv|vaportv)$' >/dev/null; then
+  kill "$(pgrep -o '^(steamtv|vaportv)$')"
+  if ! timeout 20 bash -c 'while pgrep "^(steamtv|vaportv)$" >/dev/null; do sleep 1; done'; then
     echo "steamtv didn't close in 20s; forcing it"
-    pkill -9 -x steamtv || true
+    pkill -9 '^(steamtv|vaportv)$' || true
     sleep 2
   fi
   sleep 2

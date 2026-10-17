@@ -30,6 +30,16 @@ const api: SteamTvApi = {
   setScreensaverStyle: (style) => ipcRenderer.invoke('settings:screensaverStyle', style),
   setScreensaverSources: (sources) => ipcRenderer.invoke('settings:screensaverSources', sources),
   setSleepOnControllerOff: (on) => ipcRenderer.invoke('settings:sleepOnControllerOff', on),
+  location: {
+    get: () => ipcRenderer.invoke('location:get'),
+    search: (query) => ipcRenderer.invoke('location:search', query),
+    set: (place) => ipcRenderer.invoke('location:set', place),
+    setUnit: (unit) => ipcRenderer.invoke('location:unit', unit)
+  },
+  welcome: {
+    seen: () => ipcRenderer.invoke('welcome:seen'),
+    done: () => ipcRenderer.invoke('welcome:done')
+  },
   appSetup: {
     install: (id) => ipcRenderer.invoke('appSetup:install', id),
     addToSteam: (ids) => ipcRenderer.invoke('appSetup:addToSteam', ids),

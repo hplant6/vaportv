@@ -16,6 +16,7 @@ import { join } from 'node:path'
 import QRCode from 'qrcode'
 import type { GooglePhotosProgress, GooglePhotosStatus } from '../../shared/types'
 import { loadConfig, saveConfig, type Config } from '../config'
+import { EXTRAS } from '../../shared/build'
 import { ADDON_PHOTOS } from '../screensaver'
 
 const PHOTOS_SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly'
@@ -38,7 +39,7 @@ export function hasScope(config: Config, scope: string): boolean {
 }
 
 export function googlePhotosEnabled(config: Config): boolean {
-  return !!config.googlePhotos?.clientId && !!config.googlePhotos.clientSecret
+  return EXTRAS && !!config.googlePhotos?.clientId && !!config.googlePhotos.clientSecret
 }
 
 export async function googlePhotosStatus(config: Config): Promise<GooglePhotosStatus> {

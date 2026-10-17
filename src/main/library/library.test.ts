@@ -26,6 +26,7 @@ import { dumpName } from './discs'
 import { libretroCover, libretroCovers, thumbnailName } from './libretroThumbnails'
 import { customAppFor, customApps } from '../customApps'
 import { appState, webShortcuts } from '../appSetup'
+import { searchPlaces } from '../location'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -717,5 +718,26 @@ describe('app setup', () => {
       if (byName(before, 'Netflix') !== entry) expect(after[key]).toEqual(entry)
     }
     expect(existsSync(`${vdf}.vaportv-backup`)).toBe(true)
+  })
+})
+
+describe('weather location', () => {
+  it('turns place search results into names with their country', async () => {
+    vi.stubGlobal('fetch', async () =>
+      Response.json({
+        results: [
+          { name: 'Portland', admin1: 'Oregon', country: 'United States', country_code: 'US', latitude: 45.5, longitude: -122.7 },
+          { name: 'Berlin', country: 'Germany', country_code: 'DE', latitude: 52.5, longitude: 13.4 }
+        ]
+      })
+    )
+    try {
+      expect(await searchPlaces('x')).toEqual([
+        { name: 'Portland, Oregon, United States', latitude: 45.5, longitude: -122.7, country: 'US' },
+        { name: 'Berlin, Germany', latitude: 52.5, longitude: 13.4, country: 'DE' }
+      ])
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

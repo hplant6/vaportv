@@ -25,7 +25,7 @@ const FOLDER_WHERE: Record<DriveFolder['where'], string> = {
  * Dialogs render over the whole stage: inside Settings' scrolling pane, the pane's
  * scroll transform would position and clip them.
  */
-function OverStage({ children }: { children: ReactNode }) {
+export function OverStage({ children }: { children: ReactNode }) {
   return createPortal(children, document.querySelector('.stage') ?? document.body)
 }
 

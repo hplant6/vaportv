@@ -61,6 +61,25 @@ export interface HomeData {
   favoritesLayout: SteamLayout
 }
 
+export type TemperatureUnit = 'auto' | 'fahrenheit' | 'celsius'
+
+/** Where the weather is for (Settings → General). */
+export interface LocationSettings {
+  /** e.g. "Riverside, California"; null if not known yet. */
+  place: string | null
+  /** Picked in Settings, rather than guessed from the internet connection. */
+  chosen: boolean
+  unit: TemperatureUnit
+}
+
+export interface PlaceMatch {
+  name: string
+  latitude: number
+  longitude: number
+  /** ISO country code: decides °F or °C when the unit is automatic. */
+  country?: string
+}
+
 export interface Weather {
   temperature: number
 }
@@ -359,6 +378,18 @@ export interface SteamTvApi {
   setControls(controls: Controls): Promise<void>
   /** Saves which Arcade tab carousels are turned off. */
   setArcadeRowsHidden(rows: ArcadeRow[]): Promise<void>
+  location: {
+    get(): Promise<LocationSettings>
+    search(query: string): Promise<PlaceMatch[]>
+    /** A place, or null to guess from the internet connection again. */
+    set(place: PlaceMatch | null): Promise<void>
+    setUnit(unit: TemperatureUnit): Promise<void>
+  }
+  /** The first-start welcome tour: whether it's been shown, and marking it shown. */
+  welcome: {
+    seen(): Promise<boolean>
+    done(): Promise<void>
+  }
   /** Setting up an app tile that doesn't open yet. */
   appSetup: {
     /** Installs what it needs from Flathub; resolves with an error message, or null when done. */
