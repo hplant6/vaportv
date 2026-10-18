@@ -22,6 +22,7 @@ const api: SteamTvApi = {
   setMusicVolume: (volume) => ipcRenderer.invoke('settings:musicVolume', volume),
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
   setBackdrop: (style) => ipcRenderer.invoke('settings:backdrop', style),
+  setTunnelColors: (colors) => ipcRenderer.invoke('settings:tunnelColors', colors),
   setDriftDirection: (direction) => ipcRenderer.invoke('settings:driftDirection', direction),
   setDriftPreset: (name) => ipcRenderer.invoke('settings:driftPreset', name),
   setBackdropTime: (time) => ipcRenderer.invoke('settings:backdropTime', time),

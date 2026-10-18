@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import type { BackdropStyle } from '../../shared/types'
 import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
+import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
+import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
 import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
@@ -52,12 +54,14 @@ export function App() {
   const [backdrop, setBackdrop] = useState<BackdropStyle | null>(null)
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
+  const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, drift, driftDirection }) => {
+      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors }) => {
+        setTunnelColors(tunnelColors)
         setBackdrop(style)
         setDriftPreset(drift)
         setDriftDirection(driftDirection)
@@ -156,6 +160,10 @@ export function App() {
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
+      ) : backdrop === 'waves' ? (
+        <WavesBackground onUnavailable={backdropUnavailable} />
+      ) : backdrop === 'tunnel' ? (
+        <StarTunnelBackground colors={tunnelColors} onUnavailable={backdropUnavailable} />
       ) : backdrop === 'drift' ? (
         <DriftBackground preset={driftPreset} direction={driftDirection} onUnavailable={backdropUnavailable} />
       ) : (

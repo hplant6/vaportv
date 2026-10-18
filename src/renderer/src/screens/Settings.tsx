@@ -272,7 +272,9 @@ const SCREENSAVER_DELAYS: { minutes: number; name: string }[] = [
 const BACKDROPS: { id: BackdropStyle; name: string; detail: string }[] = [
   { id: 'sea', name: 'Sea', detail: 'Follows the time of day' },
   { id: 'rain', name: 'Rain', detail: 'A puddle in the rain, close up' },
-  { id: 'drift', name: 'Gradient Drift', detail: 'Colours drifting behind ribbed glass' }
+  { id: 'drift', name: 'Gradient Drift', detail: 'Colours drifting behind ribbed glass' },
+  { id: 'waves', name: 'Chromatic Waves', detail: 'Colour-split lines rolling on navy' },
+  { id: 'tunnel', name: 'Star Tunnel', detail: 'Drifting down a tube of stars' }
 ]
 
 /** Gradient Drift's looks (the pen's presets); light ones sit behind white text, so they're marked. */
@@ -285,6 +287,13 @@ const DRIFT_PRESETS: { id: string; name: string; detail: string }[] = [
   { id: 'forest', name: 'Forest', detail: 'Greens and earth' },
   { id: 'twilight', name: 'Twilight', detail: 'Indigo and lilac' },
   { id: 'random', name: 'Random', detail: 'A different one each start' }
+]
+
+const TUNNEL_COLORS: { id: SettingsData['tunnelColors']; name: string; detail: string }[] = [
+  { id: 'nebula', name: 'Nebula', detail: 'Deep red, blue and violet' },
+  { id: 'starlight', name: 'Starlight', detail: 'White, like real stars' },
+  { id: 'ice', name: 'Ice', detail: 'Cyan, blue and white' },
+  { id: 'ember', name: 'Ember', detail: 'Red, orange and gold' }
 ]
 
 const DRIFT_DIRECTIONS: { id: 'vertical' | 'horizontal'; name: string; detail: string }[] = [
@@ -425,6 +434,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.backdrop === style) return
     setSettings({ ...settings, backdrop: style })
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  const chooseTunnelColors = (colors: SettingsData['tunnelColors']): void => {
+    if (!settings || settings.tunnelColors === colors) return
+    setSettings({ ...settings, tunnelColors: colors })
+    window.steamtv.setTunnelColors(colors).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseDriftDirection = (direction: 'vertical' | 'horizontal'): void => {
@@ -639,6 +654,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   detail={d.detail}
                   selected={settings.driftDirection === d.id}
                   onSelect={() => chooseDriftDirection(d.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {settings?.backdrop === 'tunnel' && (
+          <div className="settings-group">
+            <h3 className="settings-heading display">Star Tunnel colours</h3>
+            <div className="setting-list" data-focus-memory="settings-tunnel-colors">
+              {TUNNEL_COLORS.map((c) => (
+                <ChoiceRow
+                  key={c.id}
+                  label={c.name}
+                  detail={c.detail}
+                  selected={settings.tunnelColors === c.id}
+                  onSelect={() => chooseTunnelColors(c.id)}
                 />
               ))}
             </div>

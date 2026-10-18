@@ -117,7 +117,8 @@ registerArtScheme()
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
 /** The chosen backdrop, or the sea if it's one that's since been removed (Particles). */
 function backdropStyle(config: Config): BackdropStyle {
-  return config.backdrop === 'rain' || config.backdrop === 'drift' ? config.backdrop : 'sea'
+  const offered: BackdropStyle[] = ['sea', 'rain', 'drift', 'waves', 'tunnel']
+  return config.backdrop && offered.includes(config.backdrop) ? config.backdrop : 'sea'
 }
 
 const DEFAULT_DRIFT_PRESET = 'molten'
@@ -368,6 +369,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
     driftDirection: config.driftDirection ?? 'vertical',
+    tunnelColors: config.tunnelColors ?? 'nebula',
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
@@ -402,10 +404,11 @@ ipcMain.handle('settings:musicVolume', (_event, volume: MusicVolume) => saveConf
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle) => saveConfig({ backdrop: style }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
+ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
-  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical' }
+  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula' }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))

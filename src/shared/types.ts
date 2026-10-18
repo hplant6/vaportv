@@ -141,7 +141,7 @@ export type MusicVolume = 'low' | 'medium' | 'high'
 export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 
 /** Which animated backdrop is drawn behind every screen. */
-export type BackdropStyle = 'sea' | 'rain' | 'drift'
+export type BackdropStyle = 'sea' | 'rain' | 'drift' | 'waves' | 'tunnel'
 
 export interface Settings {
   /** Every Steam collection, Favorites first. */
@@ -171,6 +171,8 @@ export interface Settings {
   driftPreset: string
   /** Which way Gradient Drift's glass ribs run. */
   driftDirection: 'vertical' | 'horizontal'
+  /** Star Tunnel's colours. */
+  tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
   /** Where music is read from, for the hint in Settings. */
   musicFolder: string
   /** Switching the controller off puts the box to sleep (while vaporTV is on screen). */
@@ -370,10 +372,17 @@ export interface SteamTvApi {
   setSteamGridDbKey(key: string): Promise<void>
   setMusic(file: string | null): Promise<void>
   setMusicVolume(volume: MusicVolume): Promise<void>
-  getBackdrop(): Promise<{ style: BackdropStyle; time: BackdropTime; drift: string; driftDirection: 'vertical' | 'horizontal' }>
+  getBackdrop(): Promise<{
+    style: BackdropStyle
+    time: BackdropTime
+    drift: string
+    driftDirection: 'vertical' | 'horizontal'
+    tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
+  }>
   setBackdrop(style: BackdropStyle): Promise<void>
   setDriftPreset(name: string): Promise<void>
   setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
+  setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<{ url: string | null; volume: number }>

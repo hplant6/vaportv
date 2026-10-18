@@ -100,6 +100,8 @@ export interface Config {
   driftPreset?: string
   /** Which way its glass ribs run (default vertical). */
   driftDirection?: 'vertical' | 'horizontal'
+  /** Star Tunnel's colours (default nebula). */
+  tunnelColors?: 'nebula' | 'starlight' | 'ice' | 'ember'
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */
