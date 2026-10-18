@@ -254,8 +254,16 @@ function start(canvas: HTMLCanvasElement, config: DriftConfig): () => void {
   }
 }
 
-/** Gradient Drift in the chosen colours. Calls onUnavailable if WebGL2 can't run it. */
+/**
+ * Gradient Drift in the chosen colours. Calls onUnavailable if WebGL2 can't run it.
+ * Each palette gets a canvas of its own: the last one's WebGL context is released when
+ * it stops, and a canvas hands back that same (lost) context if asked again.
+ */
 export function DriftBackground({ preset, onUnavailable }: { preset: string; onUnavailable: () => void }) {
+  return <DriftCanvas key={preset} preset={preset} onUnavailable={onUnavailable} />
+}
+
+function DriftCanvas({ preset, onUnavailable }: { preset: string; onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

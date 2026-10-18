@@ -213,7 +213,7 @@ const PANE_HEIGHT = 885
 function SettingsPane({ backTo, children }: { backTo: string; children: ReactNode }) {
   const scroll = usePageScroll(PANE_HEIGHT)
   return (
-    <div className="settings-pane" data-back-focus={backTo} data-nav-scope="">
+    <div className="settings-pane" data-back-focus={backTo} data-nav-left={backTo} data-nav-scope="">
       <div className="settings-pane-content" {...scroll}>
         {children}
       </div>
@@ -317,10 +317,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.getSettings().then(setSettings)
   }, [])
 
-  // Only on first load; toggling a row also updates `settings`.
+  // Only on first load; toggling a row also updates `settings`. The categories are
+  // there before it finishes (a big Steam library takes a few seconds): if the cursor
+  // has already moved into them, it stays where it is.
   const loaded = settings !== null
   useEffect(() => {
-    if (loaded) focusContentDefault()
+    if (loaded && !document.activeElement?.closest('.settings')) focusContentDefault()
   }, [loaded])
 
   const toggle = (id: string): void => {
@@ -660,6 +662,22 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     screensaver: (
       <>
         <div className="settings-group">
+          <div className="setting-list" data-focus-memory="settings-screensaver-test">
+            <button
+              className="setting-row"
+              tabIndex={-1}
+              aria-label="Test the screensaver"
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => window.dispatchEvent(new CustomEvent(SCREENSAVER_EVENT, { detail: 'preview' }))}
+            >
+              <span className="setting-name display">Test the screensaver</span>
+              <span className="setting-detail">Starts it now, as chosen below · any button ends it</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Screensaver</h3>
           <p className="settings-help">
             Starts when nothing has been pressed for a while, only while vaporTV is on screen. Any button wakes it.
@@ -674,17 +692,6 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   onSelect={() => chooseScreensaverDelay(d.minutes)}
                 />
               ))}
-            <button
-              className="setting-row"
-              tabIndex={-1}
-              aria-label="Preview screensaver"
-              data-focusable=""
-              data-select-sound="move"
-              onClick={() => window.dispatchEvent(new CustomEvent(SCREENSAVER_EVENT, { detail: 'preview' }))}
-            >
-              <span className="setting-name display">Preview</span>
-              <span className="setting-detail">Start it now</span>
-            </button>
           </div>
         </div>
 

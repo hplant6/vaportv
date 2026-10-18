@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Adds (or updates, by name) non-Steam shortcuts for vaporTV's apps.
 
-    add-app-shortcuts.py SHORTCUTS_VDF ENTRIES_JSON [--wait-for-steam-exit]
+    add-app-shortcuts.py SHORTCUTS_VDF ENTRIES_JSON [--wait-for-steam-exit] [--relaunch]
 
 ENTRIES_JSON is a file holding [{"name", "exe", "startDir", "launchOptions"}, ...].
 Steam rewrites shortcuts.vdf as it exits, so this only writes once Steam is gone:
 with --wait-for-steam-exit it waits for that (vaporTV starts it before restarting
 Steam in Gaming Mode, as a separate service, since vaporTV closes with Steam).
 Everything else in the file is kept as it was; a backup is left beside it.
+With --relaunch it then opens vaporTV again: Gaming Mode brings Steam back by itself,
+but its autostart only runs when the whole session starts.
 """
 
 import json
@@ -126,7 +128,18 @@ def main():
         out.write(dump(root))
     os.replace(tmp, vdf_path)
     os.remove(entries_path)
+    if '--relaunch' in sys.argv:
+        relaunch()
     return 0
+
+
+def relaunch():
+    """vaporTV's autostart, which waits for Steam's UI and then opens vaporTV."""
+    started = subprocess.run(['systemctl', '--user', 'start', 'steamtv-autostart.service'], stderr=subprocess.DEVNULL)
+    if started.returncode != 0:
+        script = os.path.expanduser('~/.local/bin/steamtv-autostart')
+        if os.path.exists(script):
+            subprocess.run([script])
 
 
 if __name__ == '__main__':

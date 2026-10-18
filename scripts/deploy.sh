@@ -20,9 +20,10 @@ if ! pgrep -x gamescope-wl >/dev/null; then
   exit 0
 fi
 # Don't pull steamtv out from under someone: restart only if it's what's on screen
+# (its own processes are steamtv / vaportv and the AppImage launcher, steamtv.AppImag)
 # and it hasn't launched an emulator (which runs inside steamtv's Steam session).
 reaper=$( [ -n "$APPID" ] && pgrep -f "^$HOME/.local/share/Steam/ubuntu12_32/reaper SteamLaunch AppId=$APPID" || true)
-if [ -n "$reaper" ] && pgrep -P "$reaper" | xargs -r ps -o comm= -p | grep -qvE '^(steamtv|vaportv)$'; then
+if [ -n "$reaper" ] && pgrep -P "$reaper" | xargs -r ps -o comm= -p | grep -qviE '^(steamtv|vaportv)'; then
   echo "Installed. An emulator is running inside steamtv; the update applies next time steamtv starts."
   exit 0
 fi

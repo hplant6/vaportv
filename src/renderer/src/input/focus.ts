@@ -90,8 +90,12 @@ export function move(direction: Direction, source: InputSource): void {
   const candidates = [...(trap() ?? document).querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el !== from)
   const rect = from.getBoundingClientRect()
   // An element can name where a direction goes (data-nav-right=".selector"), e.g. a
-  // Settings category into its pane, whose first row may not line up with it.
-  const named = from.dataset[`nav${direction[0].toUpperCase()}${direction.slice(1)}`]
+  // Settings category into its pane, whose first row may not line up with it. A
+  // container can too, for everything in it: left from anywhere in a Settings pane is
+  // its own category, wherever the pane has scrolled to.
+  const key = `nav${direction[0].toUpperCase()}${direction.slice(1)}` as const
+  const fromContainer = from.dataset[key] === undefined
+  const named = from.dataset[key] ?? from.parentElement?.closest<HTMLElement>(`[data-nav-${direction}]`)?.dataset[key]
   // Up and down stay within a column marked data-nav-scope (Settings' categories, its
   // pane); past its top they may only leave for things outside every scope (the nav bar).
   const scope = from.closest('[data-nav-scope]')
@@ -107,8 +111,10 @@ export function move(direction: Direction, source: InputSource): void {
       : upDown(direction === 'down' ? 1 : -1))
   if (!target) return
 
+  // Re-entering a row returns to where you were in it; a container's own target
+  // (a pane's category) is exact, so it isn't swapped for that.
   const group = memoryGroup(target)
-  if (group && group !== memoryGroup(from)) {
+  if (group && group !== memoryGroup(from) && !(named && fromContainer)) {
     const last = remembered.get(group)
     if (last?.isConnected) target = last
   }

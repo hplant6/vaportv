@@ -27,6 +27,7 @@ import { libretroCover, libretroCovers, thumbnailName } from './libretroThumbnai
 import { customAppFor, customApps } from '../customApps'
 import { appState, webShortcuts } from '../appSetup'
 import { searchPlaces } from '../location'
+import { isSwitchOff } from '../../shared/controllers'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -693,6 +694,8 @@ describe('app setup', () => {
         launchOptions: '"run" "com.google.Chrome" "--kiosk" "--start-fullscreen" "--no-first-run" "--noerrdialogs" "https://www.netflix.com/browse"'
       }
     ])
+    // On a 4K TV the sites are drawn at 2x, so their text is readable from the couch.
+    expect(webShortcuts(['netflix'], 2)[0].launchOptions).toContain('"--force-device-scale-factor=2" "https://www.netflix.com/browse"')
   })
 
   it("adds and updates shortcuts in Steam's real file without disturbing the rest", async () => {
@@ -739,5 +742,30 @@ describe('weather location', () => {
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+})
+
+describe('controller switched off', () => {
+  const flydigi = { id: 'Flydigi VADER3 (STANDARD GAMEPAD Vendor: 045e Product: 028e)', index: 0, connected: true }
+  const steamPad = { id: 'Microsoft X-Box 360 pad 0 (STANDARD GAMEPAD Vendor: 28de Product: 11ff)', index: 1, connected: true }
+
+  it("ignores Steam's virtual controller coming and going as a real one connects", () => {
+    // What happened on the box: the Flydigi connected and Steam's pad blinked out.
+    expect(isSwitchOff(steamPad, [flydigi], 2)).toBe(false)
+    expect(isSwitchOff(steamPad, [flydigi], 60_000)).toBe(false)
+  })
+
+  it('ignores disconnects just after a controller connected', () => {
+    expect(isSwitchOff(flydigi, [steamPad], 1500)).toBe(false)
+  })
+
+  it('counts the last real controller going away', () => {
+    expect(isSwitchOff(flydigi, [steamPad], 60_000)).toBe(true)
+    expect(isSwitchOff(flydigi, [], 60_000)).toBe(true)
+  })
+
+  it('not while another real controller is still on', () => {
+    const second = { id: 'Xbox Wireless Controller (Vendor: 045e Product: 0b13)', index: 2, connected: true }
+    expect(isSwitchOff(flydigi, [steamPad, second], 60_000)).toBe(false)
   })
 })

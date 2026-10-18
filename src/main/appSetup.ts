@@ -14,7 +14,7 @@ import { chmod, copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { app } from 'electron'
+import { app, screen } from 'electron'
 import type { AppState } from '../shared/types'
 import type { Config } from './config'
 import { flatpakInstalled } from './library/emulators'
@@ -105,12 +105,23 @@ export async function installForApp(id: string, name: string, report: Report): P
   throw new Error(`vaporTV can't set ${name} up by itself.`)
 }
 
-/** Websites among `ids`, as the Steam shortcuts to add for them. */
-export function webShortcuts(ids: string[]): { name: string; exe: string; startDir: string; launchOptions: string }[] {
+/**
+ * How much Chrome should enlarge websites for this screen: the sites are laid out for
+ * a desktop, so on a 4K TV their text is tiny unless drawn at 2x (as on a 1080p screen).
+ */
+export function tvScale(): number {
+  const display = screen.getPrimaryDisplay()
+  const height = Math.round(display.size.height * display.scaleFactor)
+  return Math.max(1, Math.round((height / 1080) * 4) / 4)
+}
+
+/** Websites among `ids`, as the Steam shortcuts to add for them, drawn at `scale`. */
+export function webShortcuts(ids: string[], scale = 1): { name: string; exe: string; startDir: string; launchOptions: string }[] {
   return ids.flatMap((id) => {
     const recipe = RECIPES[id]
     if (recipe?.kind !== 'web') return []
-    const args = ['run', BROWSER, '--kiosk', '--start-fullscreen', '--no-first-run', '--noerrdialogs', recipe.url]
+    const zoom = scale > 1 ? [`--force-device-scale-factor=${scale}`] : []
+    const args = ['run', BROWSER, '--kiosk', '--start-fullscreen', '--no-first-run', '--noerrdialogs', ...zoom, recipe.url]
     return [{ name: recipe.shortcut, exe: '"flatpak"', startDir: './', launchOptions: args.map((a) => `"${a}"`).join(' ') }]
   })
 }
@@ -140,7 +151,7 @@ async function entriesFile(entries: ReturnType<typeof webShortcuts>): Promise<st
 
 /** Adds the shortcuts now. Steam must already be closed (the Desktop Mode setup window). */
 export async function addShortcutsNow(config: Config, ids: string[], report: Report): Promise<void> {
-  const entries = webShortcuts(ids)
+  const entries = webShortcuts(ids, tvScale())
   if (!entries.length) return
   const { stdout } = await exec('python3', [await helper(), await shortcutsFile(config), await entriesFile(entries)])
   for (const line of stdout.split('\n').filter(Boolean)) report(line.replace(/^added /, 'Added ').replace(/^updated /, 'Updated '))
@@ -149,12 +160,12 @@ export async function addShortcutsNow(config: Config, ids: string[], report: Rep
 /**
  * Gaming Mode: hands the shortcuts to a helper that runs on its own (a transient user
  * service), then closes Steam. The helper writes them once Steam is gone; Gaming Mode
- * brings Steam back, and with it vaporTV if it opens at start.
+ * brings Steam back, and the helper then opens vaporTV again (through its autostart).
  */
 export async function addShortcutsWithRestart(config: Config, ids: string[]): Promise<void> {
-  const entries = webShortcuts(ids)
+  const entries = webShortcuts(ids, tvScale())
   if (!entries.length) return
-  const args = [await helper(), await shortcutsFile(config), await entriesFile(entries), '--wait-for-steam-exit']
+  const args = [await helper(), await shortcutsFile(config), await entriesFile(entries), '--wait-for-steam-exit', '--relaunch']
   await exec('systemd-run', ['--user', '--collect', '--quiet', `--unit=vaportv-app-shortcuts-${Date.now()}`, 'python3', ...args])
   spawn('steam', ['-shutdown'], { detached: true, stdio: 'ignore' }).unref()
 }

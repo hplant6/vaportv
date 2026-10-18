@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
+import { isSwitchOff } from '../../../shared/controllers'
 import { toast } from './Toast'
 
 const SLEEP_EVENT = 'steamtv:sleep'
@@ -16,6 +17,19 @@ export function requestSleep(): void {
 }
 
 type Mode = 'ask' | 'auto'
+
+let lastConnect = -Infinity
+window.addEventListener('gamepadconnected', () => (lastConnect = performance.now()))
+
+/**
+ * Whether a disconnect means a controller was switched off: a real one, the last
+ * real one connected, and not part of another controller connecting.
+ */
+function switchedOff(event: Event): boolean {
+  const pad = (event as GamepadEvent).gamepad
+  const pads = navigator.getGamepads().filter((p): p is Gamepad => !!p)
+  return !!pad && isSwitchOff(pad, pads, performance.now() - lastConnect)
+}
 
 /**
  * Sleeping with the controller already off lets switching it back on wake the box.
@@ -47,8 +61,10 @@ export function SleepPrompt() {
       setMode('ask')
     }
     // Only over vaporTV itself: a controller dying mid-game mustn't put the box to sleep.
-    const disconnected = (): void => {
+    const disconnected = (event: Event): void => {
       if (!autoSleep.current || !document.hasFocus() || document.visibilityState !== 'visible') return
+      if (!switchedOff(event)) return
+      window.steamtv.logInput(`sleep: controller switched off (${(event as GamepadEvent).gamepad.id})`)
       if (!warn.current) {
         window.steamtv.power('sleep')
         return
@@ -93,7 +109,7 @@ export function SleepPrompt() {
     }, 1000)
     // Asked from the power menu: the controller going off is the go-ahead.
     // Counting down on its own: the controller coming back means it was a blip, or a change of mind.
-    const onDisconnect = mode === 'ask' ? sleep : undefined
+    const onDisconnect = mode === 'ask' ? (event: Event) => switchedOff(event) && sleep() : undefined
     const onConnect = mode === 'auto' ? cancel : undefined
     if (onDisconnect) window.addEventListener('gamepaddisconnected', onDisconnect)
     if (onConnect) window.addEventListener('gamepadconnected', onConnect)
