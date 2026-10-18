@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, MusicVolume, RecentsTab, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, MusicVolume, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -27,6 +27,8 @@ export interface Config {
   /** Minutes of no input before the screensaver; 0 turns it off. */
   screensaverDelay?: number
   screensaverStyle?: ScreensaverStyle
+  /** Where the big clock sits (default moving, against burn-in). */
+  screensaverClock?: ScreensaverClockSpot
   /** Slideshow sources; any left out default to on. */
   screensaverSources?: Partial<ScreensaverSources>
   /** Folder of your own screensaver photos (default ~/Pictures/Screensaver). */
@@ -96,6 +98,8 @@ export interface Config {
   backdropTime?: BackdropTime
   /** Gradient Drift's colours (a preset name, or 'random'); default molten. */
   driftPreset?: string
+  /** Which way its glass ribs run (default vertical). */
+  driftDirection?: 'vertical' | 'horizontal'
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */

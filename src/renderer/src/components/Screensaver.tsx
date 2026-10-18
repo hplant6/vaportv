@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ScreensaverPhoto, ScreensaverStyle } from '../../../shared/types'
+import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
 import { idleMs, onScreensaver, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
 
@@ -49,6 +49,7 @@ export function Screensaver() {
   const [up, setUp] = useState(screensaverUp())
   const [photos, setPhotos] = useState<ScreensaverPhoto[]>([])
   const [style, setStyle] = useState<ScreensaverStyle>('slideshow')
+  const [clockSpot, setClockSpot] = useState<ScreensaverClockSpot>('moving')
   const delay = useRef(0)
 
   useEffect(() => onScreensaver(setUp), [])
@@ -62,6 +63,7 @@ export function Screensaver() {
       window.steamtv.getScreensaver().then((data) => {
         setPhotos(shuffle(data.photos))
         setStyle(data.style)
+        setClockSpot(data.clockSpot)
         setScreensaverUp(true)
       })
     }
@@ -94,12 +96,12 @@ export function Screensaver() {
   if (style === 'backdrop') {
     return (
       <div className="screensaver over-backdrop">
-        <DriftingClock />
+        <DriftingClock spot={clockSpot} />
       </div>
     )
   }
   // No pictures to show (or the clock style): the clock and weather on black.
-  return <div className="screensaver">{style === 'slideshow' && photos.length ? <Slideshow photos={photos} /> : <DriftingClock />}</div>
+  return <div className="screensaver">{style === 'slideshow' && photos.length ? <Slideshow photos={photos} /> : <DriftingClock spot={clockSpot} />}</div>
 }
 
 function Slideshow({ photos }: { photos: ScreensaverPhoto[] }) {
@@ -169,7 +171,14 @@ function Caption({ photo }: { photo?: ScreensaverPhoto }) {
 /** The time, date and temperature, moving every minute so it can't burn into the screen. */
 const WEATHER_REFRESH_MS = 15 * 60 * 1000
 
-function DriftingClock() {
+/** Held-still spots for the big clock; the centre one is centred on itself. */
+const CLOCK_SPOTS: Record<Exclude<ScreensaverClockSpot, 'moving'>, React.CSSProperties> = {
+  topLeft: { left: '64px', top: '56px' },
+  center: { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }
+}
+
+/** The big clock: in a new random spot every minute (so it can't burn in), or held where Settings says. */
+function DriftingClock({ spot }: { spot: ScreensaverClockSpot }) {
   const now = useNow()
   const [temperature, setTemperature] = useState<number | null>(null)
   useEffect(() => {
@@ -186,7 +195,8 @@ function DriftingClock() {
     minute.current = now.getMinutes()
     position.current = randomSpot()
   }
-  return <ScreensaverClock className="screensaver-clock drifting" style={position.current} temperature={temperature} />
+  const style = spot === 'moving' ? position.current : CLOCK_SPOTS[spot]
+  return <ScreensaverClock className="screensaver-clock drifting" style={style} temperature={temperature} />
 }
 
 function ScreensaverClock({

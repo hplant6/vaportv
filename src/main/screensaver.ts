@@ -118,5 +118,5 @@ export async function screensaverData(config: Config): Promise<ScreensaverData> 
           ])
         ).flat()
       : []
-  return { delayMinutes: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY, style, photos }
+  return { delayMinutes: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY, style, clockSpot: config.screensaverClock ?? 'moving', photos }
 }

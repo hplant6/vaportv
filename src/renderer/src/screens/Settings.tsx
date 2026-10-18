@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverSources, ScreensaverStyle, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
@@ -227,6 +227,12 @@ const SCREENSAVER_STYLES: { id: ScreensaverStyle; name: string; detail: string }
   { id: 'clock', name: 'Clock & weather', detail: 'On black' }
 ]
 
+const CLOCK_SPOTS: { id: ScreensaverClockSpot; name: string; detail: string }[] = [
+  { id: 'moving', name: 'Moving', detail: 'A new spot every minute · safest for OLED TVs' },
+  { id: 'topLeft', name: 'Top left', detail: 'Stays put' },
+  { id: 'center', name: 'Center', detail: 'Stays put' }
+]
+
 const SCREENSAVER_SOURCES: { id: keyof ScreensaverSources; name: string; detail: string }[] = [
   { id: 'gameArt', name: 'Game art', detail: 'Banners from your Steam and console games' },
   { id: 'screenshots', name: 'Steam screenshots', detail: 'Ones you take in games' },
@@ -271,14 +277,19 @@ const BACKDROPS: { id: BackdropStyle; name: string; detail: string }[] = [
 
 /** Gradient Drift's looks (the pen's presets); light ones sit behind white text, so they're marked. */
 const DRIFT_PRESETS: { id: string; name: string; detail: string }[] = [
-  { id: 'molten', name: 'Molten', detail: 'Reds and golds on black' },
-  { id: 'deep sea', name: 'Deep sea', detail: 'Blues and teals on navy' },
-  { id: 'neon signage', name: 'Neon signage', detail: 'Hot colours on black' },
-  { id: 'default', name: 'Spectrum', detail: 'Bright colours on white · light' },
-  { id: 'pastel frost', name: 'Pastel frost', detail: 'Soft pastels · light' },
-  { id: 'ink wash', name: 'Ink wash', detail: 'Greys on paper · light' },
-  { id: 'citrus pop', name: 'Citrus pop', detail: 'Fruit colours on cream · light' },
+  { id: 'molten', name: 'Molten', detail: 'Reds and golds' },
+  { id: 'deep sea', name: 'Deep sea', detail: 'Blues and teals' },
+  { id: 'neon', name: 'Neon', detail: 'Pinks, cyans and violets' },
+  { id: 'aurora', name: 'Aurora', detail: 'Greens and purples' },
+  { id: 'sunset', name: 'Sunset', detail: 'Peach, gold and rose' },
+  { id: 'forest', name: 'Forest', detail: 'Greens and earth' },
+  { id: 'twilight', name: 'Twilight', detail: 'Indigo and lilac' },
   { id: 'random', name: 'Random', detail: 'A different one each start' }
+]
+
+const DRIFT_DIRECTIONS: { id: 'vertical' | 'horizontal'; name: string; detail: string }[] = [
+  { id: 'vertical', name: 'Vertical', detail: 'Ribs running up and down' },
+  { id: 'horizontal', name: 'Horizontal', detail: 'Ribs running across' }
 ]
 
 const BACKDROP_TIMES: { id: BackdropTime; name: string; detail?: string }[] = [
@@ -391,6 +402,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setScreensaverStyle(style)
   }
 
+  const chooseScreensaverClock = (spot: ScreensaverClockSpot): void => {
+    if (!settings || settings.screensaverClock === spot) return
+    setSettings({ ...settings, screensaverClock: spot })
+    window.steamtv.setScreensaverClock(spot)
+  }
+
   const toggleScreensaverSource = (id: keyof ScreensaverSources): void => {
     if (!settings) return
     const sources = { ...settings.screensaverSources, [id]: !settings.screensaverSources[id] }
@@ -408,6 +425,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.backdrop === style) return
     setSettings({ ...settings, backdrop: style })
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  const chooseDriftDirection = (direction: 'vertical' | 'horizontal'): void => {
+    if (!settings || settings.driftDirection === direction) return
+    setSettings({ ...settings, driftDirection: direction })
+    window.steamtv.setDriftDirection(direction).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseDriftPreset = (name: string): void => {
@@ -605,6 +628,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         )}
 
+        {settings?.backdrop === 'drift' && (
+          <div className="settings-group">
+            <h3 className="settings-heading display">Gradient Drift ribs</h3>
+            <div className="setting-list" data-focus-memory="settings-drift-direction">
+              {DRIFT_DIRECTIONS.map((d) => (
+                <ChoiceRow
+                  key={d.id}
+                  label={d.name}
+                  detail={d.detail}
+                  selected={settings.driftDirection === d.id}
+                  onSelect={() => chooseDriftDirection(d.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {settings?.backdrop === 'sea' && (
           <div className="settings-group">
             <h3 className="settings-heading display">Backdrop time of day</h3>
@@ -710,6 +750,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               ))}
           </div>
         </div>
+
+        {settings && settings.screensaverStyle !== 'slideshow' && (
+          <div className="settings-group">
+            <h3 className="settings-heading display">Clock position</h3>
+            <div className="setting-list" data-focus-memory="settings-screensaver-clock">
+              {CLOCK_SPOTS.map((c) => (
+                <ChoiceRow
+                  key={c.id}
+                  label={c.name}
+                  detail={c.detail}
+                  selected={settings.screensaverClock === c.id}
+                  onSelect={() => chooseScreensaverClock(c.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {settings?.screensaverStyle === 'slideshow' && (
           <div className="settings-group">

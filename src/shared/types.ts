@@ -169,6 +169,8 @@ export interface Settings {
   backdropTime: BackdropTime
   /** Gradient Drift's colours: a preset name, or 'random' for a new one each start. */
   driftPreset: string
+  /** Which way Gradient Drift's glass ribs run. */
+  driftDirection: 'vertical' | 'horizontal'
   /** Where music is read from, for the hint in Settings. */
   musicFolder: string
   /** Switching the controller off puts the box to sleep (while vaporTV is on screen). */
@@ -180,6 +182,7 @@ export interface Settings {
   /** Screensaver delay in minutes (0 = off), and where it reads photos. */
   screensaverDelay: number
   screensaverStyle: ScreensaverStyle
+  screensaverClock: ScreensaverClockSpot
   screensaverSources: ScreensaverSources
   screensaverFolder: string
   /** Last 4 characters of the SteamGridDB key, or null if none is set. */
@@ -190,6 +193,9 @@ export interface Settings {
 
 /** What the screensaver shows: a slideshow, the backdrop with a big clock, or a clock with the weather. */
 export type ScreensaverStyle = 'slideshow' | 'backdrop' | 'clock'
+
+/** Where the big clock sits (backdrop and clock styles): moving every minute so it can't burn in, or held still. */
+export type ScreensaverClockSpot = 'moving' | 'topLeft' | 'center'
 
 /** Which pictures the slideshow mixes together. */
 export interface ScreensaverSources {
@@ -214,6 +220,7 @@ export interface ScreensaverData {
   /** Minutes of no input before it starts; 0 for never. */
   delayMinutes: number
   style: ScreensaverStyle
+  clockSpot: ScreensaverClockSpot
   /** For the slideshow, in no particular order (empty for the other styles). */
   photos: ScreensaverPhoto[]
 }
@@ -363,15 +370,17 @@ export interface SteamTvApi {
   setSteamGridDbKey(key: string): Promise<void>
   setMusic(file: string | null): Promise<void>
   setMusicVolume(volume: MusicVolume): Promise<void>
-  getBackdrop(): Promise<{ style: BackdropStyle; time: BackdropTime; drift: string }>
+  getBackdrop(): Promise<{ style: BackdropStyle; time: BackdropTime; drift: string; driftDirection: 'vertical' | 'horizontal' }>
   setBackdrop(style: BackdropStyle): Promise<void>
   setDriftPreset(name: string): Promise<void>
+  setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<{ url: string | null; volume: number }>
   getScreensaver(): Promise<ScreensaverData>
   setScreensaverDelay(minutes: number): Promise<void>
   setScreensaverStyle(style: ScreensaverStyle): Promise<void>
+  setScreensaverClock(spot: ScreensaverClockSpot): Promise<void>
   setScreensaverSources(sources: ScreensaverSources): Promise<void>
   setSleepOnControllerOff(on: boolean): Promise<void>
   /** Saves the button for each action (Settings → Controller). */

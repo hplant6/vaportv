@@ -51,14 +51,16 @@ export function App() {
   // Null until the setting loads, so the sea doesn't flash up before another backdrop.
   const [backdrop, setBackdrop] = useState<BackdropStyle | null>(null)
   const [driftPreset, setDriftPreset] = useState('molten')
+  const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, drift }) => {
+      window.steamtv.getBackdrop().then(({ style, drift, driftDirection }) => {
         setBackdrop(style)
         setDriftPreset(drift)
+        setDriftDirection(driftDirection)
       })
     }
     load()
@@ -155,7 +157,7 @@ export function App() {
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'drift' ? (
-        <DriftBackground preset={driftPreset} onUnavailable={backdropUnavailable} />
+        <DriftBackground preset={driftPreset} direction={driftDirection} onUnavailable={backdropUnavailable} />
       ) : (
         backdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
       )}

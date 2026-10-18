@@ -16,6 +16,10 @@ export function screenshotMode(): string | undefined {
 
 export async function captureAndQuit(win: BrowserWindow, path: string): Promise<void> {
   await wait(1500)
+  // Chromium only sends focus events to a page whose window is focused, and the page
+  // follows the cursor through them (Settings' panes, scrolling); on the box it always is.
+  win.focus()
+  win.webContents.focus()
   if (process.env.STEAMTV_SCREENSAVER) {
     await win.webContents.executeJavaScript(`window.dispatchEvent(new CustomEvent('steamtv:screensaver', { detail: 'preview' }))`)
   }

@@ -36,8 +36,9 @@
 
   --text-label: 24px;
   --text-meta: 32px;
-  --text-date: 48px;
-  --text-clock: 64px;
+  /* The date (top left) and the time (top right) match: one size, one height. */
+  --text-date: 56px;
+  --text-clock: 56px;
 
   --shadow-card: 0 10px 37.5px 0 #000;
   --shadow-tile-focus: 0 144px 38.4px 0 rgba(0, 0, 0, 0.49);

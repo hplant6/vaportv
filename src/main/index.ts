@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -367,12 +367,14 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     backdrop: backdropStyle(config),
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
+    driftDirection: config.driftDirection ?? 'vertical',
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
     controls: resolveControls(config.controls),
     screensaverDelay: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY,
     screensaverStyle: screensaverStyle(config),
+    screensaverClock: config.screensaverClock ?? 'moving',
     screensaverSources: screensaverSources(config),
     screensaverFolder: screensaverFolder(config).replace(homedir(), '~'),
     steamGridDbKeyHint: config.steamGridDbKey ? config.steamGridDbKey.slice(-4) : null,
@@ -400,9 +402,10 @@ ipcMain.handle('settings:musicVolume', (_event, volume: MusicVolume) => saveConf
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle) => saveConfig({ backdrop: style }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
+ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
-  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET }
+  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical' }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
@@ -411,6 +414,7 @@ ipcMain.handle('settings:arcadeRowsHidden', (_event, rows: ArcadeRow[]) => saveC
 ipcMain.handle('settings:controls', (_event, controls: Controls) => saveConfig({ controls: resolveControls(controls) }))
 ipcMain.handle('settings:sleepWarning', (_event, on: boolean) => saveConfig({ sleepWarning: on }))
 ipcMain.handle('settings:screensaverStyle', (_event, style: ScreensaverStyle) => saveConfig({ screensaverStyle: style }))
+ipcMain.handle('settings:screensaverClock', (_event, spot: ScreensaverClockSpot) => saveConfig({ screensaverClock: spot }))
 ipcMain.handle('settings:screensaverSources', (_event, sources: ScreensaverSources) => saveConfig({ screensaverSources: sources }))
 ipcMain.handle('settings:screensaverDelay', (_event, minutes: number) => saveConfig({ screensaverDelay: minutes }))
 ipcMain.handle('gphotos:status', async () => googlePhotosStatus(await loadConfig()))

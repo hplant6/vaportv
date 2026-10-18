@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { presets, type DistortLayerConfig, type DriftConfig } from './drift/presets'
+import { presets, withDirection, type DistortLayerConfig, type DriftConfig, type DriftDirection } from './drift/presets'
 import { blurFrag, circlesFrag, distortFrag, fullscreenVert, MAX_CIRCLES } from './drift/shaders'
 
 // Gradient Drift (Liam Egan's pen, MIT): soft colour circles drifting behind a
@@ -73,10 +73,14 @@ function makeCircles(config: DriftConfig): Circle[] {
   }))
 }
 
-/** The look to draw: a preset by name, or a random one each start. */
-export function driftConfig(name: string): DriftConfig {
+/**
+ * The look to draw, its ribs turned as chosen: a palette by name, a random one each
+ * start ('random'), or molten for a name no longer offered.
+ */
+export function driftConfig(name: string, direction: DriftDirection): DriftConfig {
   const names = Object.keys(presets)
-  return presets[name] ?? presets[names[Math.floor(Math.random() * names.length)]]
+  const config = name === 'random' ? presets[names[Math.floor(Math.random() * names.length)]] : (presets[name] ?? presets.molten)
+  return withDirection(config, direction)
 }
 
 type GL = WebGL2RenderingContext
@@ -259,22 +263,30 @@ function start(canvas: HTMLCanvasElement, config: DriftConfig): () => void {
  * Each palette gets a canvas of its own: the last one's WebGL context is released when
  * it stops, and a canvas hands back that same (lost) context if asked again.
  */
-export function DriftBackground({ preset, onUnavailable }: { preset: string; onUnavailable: () => void }) {
-  return <DriftCanvas key={preset} preset={preset} onUnavailable={onUnavailable} />
+export function DriftBackground({
+  preset,
+  direction,
+  onUnavailable
+}: {
+  preset: string
+  direction: DriftDirection
+  onUnavailable: () => void
+}) {
+  return <DriftCanvas key={`${preset}:${direction}`} preset={preset} direction={direction} onUnavailable={onUnavailable} />
 }
 
-function DriftCanvas({ preset, onUnavailable }: { preset: string; onUnavailable: () => void }) {
+function DriftCanvas({ preset, direction, onUnavailable }: { preset: string; direction: DriftDirection; onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     try {
-      return start(canvas.current!, driftConfig(preset))
+      return start(canvas.current!, driftConfig(preset, direction))
     } catch (err) {
       console.error('steamtv: drift backdrop unavailable:', err)
       onUnavailable()
       return undefined
     }
-  }, [preset, onUnavailable])
+  }, [preset, direction, onUnavailable])
 
   return <canvas className="stage-canvas" ref={canvas} />
 }
