@@ -1,0 +1,12 @@
+/* Hover previews (Netflix's older grid pages): they open on whatever has focus and take
+   the arrow keys with them. The info panel (detail-modal) stays. */
+.previewModal--wrapper.mini-modal {
+  display: none !important;
+}
+
+/* The older pages draw no focus ring of their own. */
+.title-card-container a.slider-refocus:focus {
+  outline: 4px solid #fff;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
