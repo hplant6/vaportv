@@ -11,6 +11,7 @@ import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, 
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
+import { startRemotePower } from './remotePower'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, returnToGamingMode, uninstall } from './installer'
@@ -555,6 +556,8 @@ app.whenReady().then(async () => {
       onClosed: () => send('closing', { active: false }),
       log: logInput
     })
+    // A remote's power button: sleep.
+    startRemotePower(logInput)
   }
 })
 app.on('window-all-closed', () => app.quit())

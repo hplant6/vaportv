@@ -4,7 +4,7 @@ import { OverStage } from './GooglePhotos'
 
 // An on-screen keyboard for the D-pad, as on Android TV, for the times vaporTV needs
 // text (a Wi-Fi password). Steam's own keyboard can't be opened from outside in Gaming
-// Mode. A real keyboard types into it too; B (Escape) cancels.
+// Mode. A real keyboard types into it too; B (Escape, a remote's Back) cancels.
 
 const LETTERS = [
   ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
@@ -52,10 +52,14 @@ export function OnScreenKeyboard({
   }, [])
 
   // A real keyboard types straight in (arrows and Enter still move and press keys here).
+  // A remote's Backspace deletes, and with nothing left to delete, cancels, as Back.
+  const typed = useRef(text)
+  typed.current = text
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.ctrlKey || event.altKey || event.metaKey) return
-      if (event.key === 'Backspace') setText((t) => t.slice(0, -1))
+      if (event.key === 'Backspace' && typed.current) setText((t) => t.slice(0, -1))
+      else if (event.key === 'Backspace' || event.key === 'BrowserBack') cancel.current()
       else if (event.key.length === 1) setText((t) => t + event.key)
       else return
       event.preventDefault()

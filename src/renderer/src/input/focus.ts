@@ -122,7 +122,7 @@ export function move(direction: Direction, source: InputSource): void {
   play('move')
 }
 
-/** B on a controller, Escape or Backspace on a keyboard. Screens listen for this. */
+/** B on a controller; Escape, Backspace or Back (a remote's) on a keyboard. Screens listen for this. */
 export const BACK_EVENT = 'steamtv:back'
 /** B while a focus trap (e.g. the power menu) is open: it closes instead of going back. */
 export const TRAP_CLOSE_EVENT = 'steamtv:close-trap'
@@ -147,6 +147,16 @@ export function switchTab(step: -1 | 1): void {
   window.steamtv.logInput(`tab ${step > 0 ? 'next' : 'previous'}`)
   play('move')
   window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: step }))
+}
+
+/** A remote's Menu key: Settings, or back Home from there. App listens for this. */
+export const SETTINGS_EVENT = 'steamtv:settings'
+
+export function openSettings(): void {
+  if (trap()) return
+  window.steamtv.logInput('settings')
+  play('move')
+  window.dispatchEvent(new Event(SETTINGS_EVENT))
 }
 
 /** X on a controller, the X key on a keyboard: options for the focused card (its artwork). */

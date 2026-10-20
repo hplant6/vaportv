@@ -162,9 +162,11 @@ function openInfo(card) {
 window.addEventListener(
   'keydown',
   (event) => {
+    // B on a controller is Escape; a remote's Back is Backspace or the browser's Back key.
+    const back = event.key === 'Escape' || event.key === 'Backspace' || event.key === 'BrowserBack'
     if (location.pathname.startsWith('/watch')) {
-      // The player has no key for leaving it; B (Escape) goes back to where it was opened from.
-      if (event.key === 'Escape') {
+      // The player has no key for leaving it; Back goes back to where it was opened from.
+      if (back) {
         event.preventDefault()
         event.stopImmediatePropagation()
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
@@ -176,6 +178,16 @@ window.addEventListener(
     const target = event.target
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
     if (event.key === 'F9') return dump()
+    // Back closes the info panel (Netflix's own Escape does; Backspace and Back don't).
+    if (back && event.key !== 'Escape') {
+      const close = panel()?.querySelector('[data-uia="previewModal-closebtn"]')
+      if (close) {
+        close.click()
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+      return
+    }
     if (event.key === 'F8') {
       chrome.runtime.sendMessage({ name: 'reload' })
       return setTimeout(() => location.reload(), 800)

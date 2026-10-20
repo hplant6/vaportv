@@ -32,6 +32,7 @@ import { parseSleepBlocker } from '../power'
 import { exifDate } from '../screensaver'
 import { deviceKind, parseDevices } from '../bluetooth'
 import { parseNetworks, terseFields } from '../wifi'
+import { hasKey, remoteKeyboards } from '../remotePower'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -838,5 +839,24 @@ describe('wifi', () => {
     expect(networks.map((n) => n.ssid)).toEqual(['Home', 'Office', 'Neighbour', 'Cafe'])
     expect(networks[0]).toEqual({ ssid: 'Home', signal: 60, secure: true, saved: false, connected: true })
     expect(networks.find((n) => n.ssid === 'Cafe')?.secure).toBe(false)
+  })
+})
+
+describe('remote power', () => {
+  // From a box: its own power button, a USB TV remote's system keys, a Sofabaton hub.
+  const devices = [
+    'I: Bus=0019 Vendor=0000 Product=0001 Version=0000\nN: Name="Power Button"\nH: Handlers=kbd event0 \nB: KEY=8000 10000000000000 0',
+    'I: Bus=0003 Vendor=25a7 Product=0122 Version=0101\nN: Name="ZYSD.Ltd HCY RC System Control"\nH: Handlers=kbd event5 \nB: KEY=4000 10000000000000 0',
+    'I: Bus=0005 Vendor=2717 Product=32b8 Version=0001\nN: Name="ble-Sofabaton FA80 Keyboard"\nH: Handlers=sysrq kbd event21 \nB: KEY=3f00033fff 0 0 483ffff17aff32d bfd4444600000000 1 130ff38b17d007 ffff7bfad9415fff ffbeffdfffefffff fffffffffffffffe',
+    'I: Bus=0003 Vendor=045e Product=028e Version=0114\nN: Name="Microsoft X-Box 360 pad"\nH: Handlers=event7 js0 \nB: KEY=7cdb000000000000 0 0 0 0'
+  ].join('\n\n')
+
+  it('reads key capabilities', () => {
+    expect(hasKey('8000 10000000000000 0', 116)).toBe(true)
+    expect(hasKey('7cdb000000000000 0 0 0 0', 116)).toBe(false)
+  })
+
+  it("watches remotes' keyboards with a Power key, not the box's own button or controllers", () => {
+    expect(remoteKeyboards(devices)).toEqual(['/dev/input/event5', '/dev/input/event21'])
   })
 })

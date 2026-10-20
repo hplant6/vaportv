@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
-import { createReadStream, type ReadStream } from 'node:fs'
 import { readdir, readFile, readlink } from 'node:fs/promises'
+import { readKeys } from './evdev'
 
 // Hold Select + Start to always get back to steamtv: it closes whatever is in front
 // (a game, a streaming app, an emulator), or just brings steamtv forward over
@@ -9,9 +9,6 @@ import { readdir, readFile, readlink } from 'node:fs/promises'
 
 const BTN_SELECT = 0x13a
 const BTN_START = 0x13b
-const EV_KEY = 1
-/** struct input_event on 64-bit Linux: timeval (16) + type (2) + code (2) + value (4). */
-const EVENT_SIZE = 24
 const HOLD_MS = 1000
 const RESCAN_MS = 5000
 const KILL_GRACE_MS = 5000
@@ -33,7 +30,6 @@ export const STEAMTV_APPID: number | null = process.env.SteamAppId && process.en
 type Log = (line: string) => void
 
 interface Watched {
-  stream: ReadStream
   held: Set<number>
 }
 
@@ -261,28 +257,20 @@ export function startHotkey(options: HotkeyOptions): void {
   }
 
   const watch = (path: string): void => {
-    const stream = createReadStream(path, { highWaterMark: EVENT_SIZE * 64 })
-    const device: Watched = { stream, held: new Set() }
-    let pending = Buffer.alloc(0)
-    stream.on('data', (chunk) => {
-      pending = Buffer.concat([pending, chunk as Buffer])
-      while (pending.length >= EVENT_SIZE) {
-        const type = pending.readUInt16LE(16)
-        const code = pending.readUInt16LE(18)
-        const value = pending.readInt32LE(20)
-        pending = pending.subarray(EVENT_SIZE)
-        if (type !== EV_KEY || (code !== BTN_SELECT && code !== BTN_START)) continue
+    const device: Watched = { held: new Set() }
+    readKeys(
+      path,
+      (code, value) => {
+        if (code !== BTN_SELECT && code !== BTN_START) return
         if (value) device.held.add(code)
         else device.held.delete(code)
         update()
+      },
+      () => {
+        watched.delete(path)
+        update()
       }
-    })
-    const drop = (): void => {
-      watched.delete(path)
-      update()
-    }
-    stream.on('error', drop)
-    stream.on('close', drop)
+    )
     watched.set(path, device)
     options.log(`hotkey: watching ${path}`)
   }

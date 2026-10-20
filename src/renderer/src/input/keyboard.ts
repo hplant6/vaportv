@@ -1,4 +1,5 @@
-import { activate, back, coreMenu, favorite, move, options, switchTab, type Direction } from './focus'
+import { activate, back, coreMenu, favorite, move, openSettings, options, switchTab, type Direction } from './focus'
+import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { noteInput } from './idle'
 
 const DIRECTIONS: Record<string, Direction> = {
@@ -58,9 +59,20 @@ export function startKeyboard(): void {
     } else if (event.key === 'Enter') {
       event.preventDefault()
       if (!event.repeat) activate()
-    } else if (event.key === 'Escape' || event.key === 'Backspace') {
+    } else if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'BrowserBack') {
       event.preventDefault()
       if (!event.repeat) back()
+    } else if (event.key === 'F2') {
+      // A remote's Guide button (mapped to F2): the screensaver now, as Settings' Test does.
+      event.preventDefault()
+      if (!event.repeat) {
+        window.steamtv.logInput('screensaver key')
+        window.dispatchEvent(new CustomEvent(SCREENSAVER_EVENT, { detail: 'preview' }))
+      }
+    } else if (event.key === 'ContextMenu' || event.key === 'Props') {
+      // A keyboard's Menu key; remotes' Menu buttons send the HID "Menu" key, which is Props.
+      event.preventDefault()
+      if (!event.repeat) openSettings()
     } else if (event.key === 'PageUp' || event.key === 'PageDown') {
       event.preventDefault()
       if (!event.repeat) switchTab(event.key === 'PageUp' ? -1 : 1)

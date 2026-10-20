@@ -6,7 +6,7 @@ import { StarTunnelBackground, type TunnelColors } from './background/StarTunnel
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
-import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, TAB_EVENT } from './input/focus'
+import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
 import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabShown } from './availableTabs'
@@ -158,6 +158,17 @@ export function App() {
     }
     window.addEventListener(TAB_EVENT, onTab)
     return () => window.removeEventListener(TAB_EVENT, onTab)
+  }, [])
+
+  // A remote's Menu key: Settings, and from Settings back Home.
+  useEffect(() => {
+    const onSettings = (): void => {
+      // Off whatever has the cursor (the nav bar stays put): the screen's default takes over.
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      setScreen((current) => (current === 'settings' ? 'home' : 'settings'))
+    }
+    window.addEventListener(SETTINGS_EVENT, onSettings)
+    return () => window.removeEventListener(SETTINGS_EVENT, onSettings)
   }, [])
 
   // Cards are keyed by id, so a refresh keeps focus where it was unless the
