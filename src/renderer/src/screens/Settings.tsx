@@ -424,6 +424,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setScreensaverSources(sources)
   }
 
+  const toggleScreensaverDetails = (): void => {
+    if (!settings) return
+    setSettings({ ...settings, screensaverDetails: !settings.screensaverDetails })
+    window.steamtv.setScreensaverDetails(!settings.screensaverDetails)
+  }
+
   const chooseScreensaverDelay = (minutes: number): void => {
     if (!settings || settings.screensaverDelay === minutes) return
     setSettings({ ...settings, screensaverDelay: minutes })
@@ -814,6 +820,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   onToggle={() => toggleScreensaverSource(src.id)}
                 />
               ))}
+            </div>
+            <p className="settings-help">The D-pad steps back and forward through the pictures without ending the screensaver.</p>
+            <div className="setting-list" data-focus-memory="settings-screensaver-details">
+              <ToggleRow
+                label="Photo details"
+                detail="When your photos were taken, and their album"
+                on={settings.screensaverDetails}
+                onToggle={toggleScreensaverDetails}
+              />
             </div>
           </div>
         )}

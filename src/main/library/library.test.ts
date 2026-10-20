@@ -28,6 +28,8 @@ import { customAppFor, customApps } from '../customApps'
 import { appState, webShortcuts } from '../appSetup'
 import { searchPlaces } from '../location'
 import { isSwitchOff } from '../../shared/controllers'
+import { parseSleepBlocker } from '../power'
+import { exifDate } from '../screensaver'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -767,5 +769,40 @@ describe('controller switched off', () => {
   it('not while another real controller is still on', () => {
     const second = { id: 'Xbox Wireless Controller (Vendor: 045e Product: 0b13)', index: 2, connected: true }
     expect(isSwitchOff(flydigi, [steamPad, second], 60_000)).toBe(false)
+  })
+})
+
+describe('sleep blocks', () => {
+  // systemd-inhibit --list --no-legend, as on the box during the photos copy.
+  const list = [
+    'NetworkManager 0    root 1583  NetworkManager  sleep      NetworkManager needs to turn off networks   delay',
+    'Realtime Kit   0    root 1781  rtkit-daemon    sleep      Demote realtime scheduling and stop canary. delay',
+    'Photos copy    1000 deck 22225 systemd-inhibit sleep:idle Copying the Google Photos export to NZB     block',
+    'cecd           1000 deck 1861  cecd            sleep      Put TV to sleep                             delay'
+  ].join('\n')
+
+  it('finds a block on sleep, with its reason', () => {
+    expect(parseSleepBlocker(list)).toBe('Copying the Google Photos export to NZB')
+  })
+
+  it("ignores delay locks and blocks on other things", () => {
+    expect(parseSleepBlocker(list.split('\n').filter((l) => !l.startsWith('Photos')).join('\n'))).toBeNull()
+    expect(parseSleepBlocker('Shutdown guard   1000 deck 5 x   shutdown   Saving   block')).toBeNull()
+  })
+})
+
+describe('exifDate', () => {
+  const exif = (...dates: string[]): Buffer => Buffer.from(`\xff\xd8\xff\xe1Exif\0\0MM${dates.join('\0junk\0')}\0`, 'latin1')
+
+  it('takes the earliest date: when it was taken, not when it was last edited', () => {
+    expect(exifDate(exif('2024:01:05 09:00:00', '2019:07:04 18:30:12', '2019:07:04 18:30:12'))).toBe('2019-07-04T18:30:12')
+  })
+
+  it('skips the blank dates cameras leave', () => {
+    expect(exifDate(exif('0000:00:00 00:00:00', '2021:12:25 08:15:00'))).toBe('2021-12-25T08:15:00')
+  })
+
+  it('is null without any', () => {
+    expect(exifDate(Buffer.from('no metadata here'))).toBeNull()
   })
 })

@@ -8,6 +8,7 @@ const api: SteamTvApi = {
   launch: (kind, id, name) => ipcRenderer.invoke('launch', kind, id, name),
   quit: () => ipcRenderer.invoke('quit'),
   power: (action) => ipcRenderer.invoke('power', action),
+  sleepBlocker: () => ipcRenderer.invoke('power:sleepBlocker'),
   stepVolume: (direction) => ipcRenderer.invoke('volume:step', direction),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   getAvailableTabs: () => ipcRenderer.invoke('tabs:available'),
@@ -31,6 +32,8 @@ const api: SteamTvApi = {
   setScreensaverDelay: (minutes) => ipcRenderer.invoke('settings:screensaverDelay', minutes),
   setScreensaverStyle: (style) => ipcRenderer.invoke('settings:screensaverStyle', style),
   setScreensaverClock: (spot) => ipcRenderer.invoke('settings:screensaverClock', spot),
+  setScreensaverDetails: (on) => ipcRenderer.invoke('settings:screensaverDetails', on),
+  photoTaken: (url) => ipcRenderer.invoke('screensaver:photoTaken', url),
   setScreensaverSources: (sources) => ipcRenderer.invoke('settings:screensaverSources', sources),
   setSleepOnControllerOff: (on) => ipcRenderer.invoke('settings:sleepOnControllerOff', on),
   location: {

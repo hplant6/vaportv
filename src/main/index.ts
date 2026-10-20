@@ -39,13 +39,14 @@ import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive
 import { cancelPick, clearPhotos, googlePhotosStatus, signIn as googleSignIn, signOut as googleSignOut, startPick } from './addons/googlePhotos'
 import {
   DEFAULT_SCREENSAVER_DELAY,
+  photoTaken,
   screensaverData,
   screensaverFolder,
   screensaverFolders,
   screensaverSources,
   screensaverStyle
 } from './screensaver'
-import { power } from './power'
+import { power, sleepBlocker } from './power'
 import { captureAndQuit, screenshotMode } from './screenshot'
 import { stepVolume } from './volume'
 import { getWeather } from './weather'
@@ -377,6 +378,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     screensaverDelay: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY,
     screensaverStyle: screensaverStyle(config),
     screensaverClock: config.screensaverClock ?? 'moving',
+    screensaverDetails: config.screensaverDetails ?? true,
     screensaverSources: screensaverSources(config),
     screensaverFolder: screensaverFolder(config).replace(homedir(), '~'),
     steamGridDbKeyHint: config.steamGridDbKey ? config.steamGridDbKey.slice(-4) : null,
@@ -412,12 +414,14 @@ ipcMain.handle('backdrop:get', async () => {
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
+ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTaken(await loadConfig(), url))
 ipcMain.handle('settings:sleepOnControllerOff', (_event, on: boolean) => saveConfig({ sleepOnControllerOff: on }))
 ipcMain.handle('settings:arcadeRowsHidden', (_event, rows: ArcadeRow[]) => saveConfig({ arcadeRowsHidden: rows }))
 ipcMain.handle('settings:controls', (_event, controls: Controls) => saveConfig({ controls: resolveControls(controls) }))
 ipcMain.handle('settings:sleepWarning', (_event, on: boolean) => saveConfig({ sleepWarning: on }))
 ipcMain.handle('settings:screensaverStyle', (_event, style: ScreensaverStyle) => saveConfig({ screensaverStyle: style }))
 ipcMain.handle('settings:screensaverClock', (_event, spot: ScreensaverClockSpot) => saveConfig({ screensaverClock: spot }))
+ipcMain.handle('settings:screensaverDetails', (_event, on: boolean) => saveConfig({ screensaverDetails: on }))
 ipcMain.handle('settings:screensaverSources', (_event, sources: ScreensaverSources) => saveConfig({ screensaverSources: sources }))
 ipcMain.handle('settings:screensaverDelay', (_event, minutes: number) => saveConfig({ screensaverDelay: minutes }))
 ipcMain.handle('gphotos:status', async () => googlePhotosStatus(await loadConfig()))
@@ -508,6 +512,7 @@ ipcMain.handle('switch-tab:get', async () => {
 // Give the select sound a moment to play before the window goes.
 ipcMain.handle('quit', () => setTimeout(() => app.quit(), 400))
 ipcMain.handle('power', (_event, action: PowerAction) => power(action))
+ipcMain.handle('power:sleepBlocker', () => sleepBlocker())
 ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(direction === 1 ? 1 : -1))
 
 app.whenReady().then(async () => {

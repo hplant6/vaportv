@@ -126,7 +126,7 @@ function poll(now: number): void {
   const anyInput = !!direction || pads().some((pad) => pad.buttons.some((b) => b.pressed))
   const newPress = anyInput && !anyDown
   anyDown = anyInput
-  if (anyInput && noteInput(newPress)) {
+  if (anyInput && noteInput(newPress, direction)) {
     held = null
     waitForRelease = true
     return

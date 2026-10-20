@@ -1109,6 +1109,22 @@ button {
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
 }
 
+/* Your photo's date, and the album under it. */
+.screensaver-caption.photo-details {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.screensaver-caption.photo-details small {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  text-align: right;
+  opacity: 0.85;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
 /* Artwork window: games to pick from, then a grid of their covers. Both scroll inside the panel. */
 .artwork-panel {
   width: 1000px;

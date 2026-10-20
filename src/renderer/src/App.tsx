@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { BackdropStyle } from '../../shared/types'
 import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
@@ -48,6 +48,8 @@ export function App() {
   const scale = useStageScale()
   const [home, setHome] = useState<HomeData | null>(null)
   const [screen, setScreen] = useState<Screen>('home')
+  const screenRef = useRef(screen)
+  screenRef.current = screen
   const [webgl, setWebgl] = useState(true)
   const disableWebgl = useCallback(() => setWebgl(false), [])
   // Null until the setting loads, so the sea doesn't flash up before another backdrop.
@@ -130,16 +132,29 @@ export function App() {
     return () => window.removeEventListener(BACK_EVENT, onBack)
   }, [])
 
-  // L1/R1 step to the previous or next tab, wrapping around at the ends.
+  // L1/R1 step to the previous or next tab. Between the last (Settings) and the first
+  // they stop on the power button, so its menu is a bumper press away too.
   useEffect(() => {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail
-      setScreen((current) => {
-        // Only the tabs on show, so L1/R1 skips empty ones.
-        const order = TAB_ORDER.filter((s) => tabShown(s) || s === current)
-        const i = order.indexOf(current)
-        return order[(i + step + order.length) % order.length]
-      })
+      const current = screenRef.current
+      // Only the tabs on show, so L1/R1 skips empty ones.
+      const order = TAB_ORDER.filter((s) => tabShown(s) || s === current)
+      const power = document.getElementById('power-button')
+      const onPower = !!power && document.activeElement === power
+      const i = onPower ? (step > 0 ? -1 : order.length) : order.indexOf(current)
+      const next = i + step
+      if (power && !onPower && (next < 0 || next >= order.length)) {
+        focus(power)
+        return
+      }
+      const target = order[(next + order.length) % order.length]
+      if (onPower) {
+        // Off the power button: the screen's own default focus takes over.
+        power.blur()
+        if (target === current) focusDefault()
+      }
+      setScreen(target)
     }
     window.addEventListener(TAB_EVENT, onTab)
     return () => window.removeEventListener(TAB_EVENT, onTab)

@@ -19,6 +19,15 @@ export function requestSleep(): void {
 type Mode = 'ask' | 'auto'
 
 let lastConnect = -Infinity
+
+/** Whether something holds a sleep block; if so, says so and keeps the box up. */
+async function stayAwakeFor(): Promise<boolean> {
+  const why = await window.steamtv.sleepBlocker().catch(() => null)
+  if (!why) return false
+  window.steamtv.logInput(`sleep: staying awake (${why})`)
+  toast(`Staying awake: ${why}`)
+  return true
+}
 window.addEventListener('gamepadconnected', () => (lastConnect = performance.now()))
 
 /**
@@ -65,14 +74,19 @@ export function SleepPrompt() {
       if (!autoSleep.current || !document.hasFocus() || document.visibilityState !== 'visible') return
       if (!switchedOff(event)) return
       window.steamtv.logInput(`sleep: controller switched off (${(event as GamepadEvent).gamepad.id})`)
-      if (!warn.current) {
-        window.steamtv.power('sleep')
-        return
-      }
-      setMode((current) => {
-        if (current) return current
-        setSeconds(AUTO_SECONDS)
-        return 'auto'
+      // A controller also switches itself off when left alone; something busy (a long
+      // copy, say) can hold a sleep block, and then the box stays up.
+      void stayAwakeFor().then((busy) => {
+        if (busy) return
+        if (!warn.current) {
+          window.steamtv.power('sleep')
+          return
+        }
+        setMode((current) => {
+          if (current) return current
+          setSeconds(AUTO_SECONDS)
+          return 'auto'
+        })
       })
     }
     load()
@@ -93,8 +107,11 @@ export function SleepPrompt() {
       if (done) return
       done = true
       setMode(null)
-      window.steamtv.power('sleep').then((ok) => {
-        if (!ok) toast("Couldn't sleep from here")
+      void stayAwakeFor().then((busy) => {
+        if (busy) return
+        window.steamtv.power('sleep').then((ok) => {
+          if (!ok) toast("Couldn't sleep from here")
+        })
       })
     }
     const cancel = (): void => {

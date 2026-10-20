@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
-import { idleMs, onScreensaver, screensaverUp, setScreensaverUp } from '../input/idle'
+import { idleMs, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
 
 /** Settings fires this after changing the delay, or to preview the screensaver (detail: 'preview'). */
@@ -9,6 +9,8 @@ export const SCREENSAVER_EVENT = 'steamtv:screensaver'
 const CHECK_MS = 5000
 const SLIDE_MS = 12000
 const FADE_MS = 2000
+/** A quicker fade when the D-pad steps to another picture. */
+const STEP_FADE_MS = 500
 /** Taller than this (height / width) is shown whole over a blurred copy, not cropped to fill. */
 const PORTRAIT = 1.05
 /** Ken Burns: each photo drifts towards one of these corners while it zooms. */
@@ -19,6 +21,21 @@ interface Slide {
   photo: ScreensaverPhoto
   whole: boolean
   origin: string
+  fadeMs: number
+}
+
+let slideIds = 0
+/** Dates read from photos' EXIF (by URL), so each file is read once. */
+const takenCache = new Map<string, Promise<string | null>>()
+
+function taken(photo: ScreensaverPhoto): Promise<string | null> {
+  if (photo.taken) return Promise.resolve(photo.taken)
+  let date = takenCache.get(photo.url)
+  if (!date) {
+    date = window.steamtv.photoTaken(photo.url).catch(() => null)
+    takenCache.set(photo.url, date)
+  }
+  return date
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -30,10 +47,14 @@ function shuffle<T>(items: T[]): T[] {
   return out
 }
 
-/** Loads a photo fully before it's shown, so it never draws in halfway through a fade. */
-async function prepare(photo: ScreensaverPhoto, id: number): Promise<Slide | null> {
+/**
+ * Loads a photo fully before it's shown, so it never draws in halfway through a fade;
+ * with `details`, finds when your photo was taken too.
+ */
+async function prepare(photo: ScreensaverPhoto, fadeMs: number, details: boolean): Promise<Slide | null> {
   const img = new Image()
   img.src = photo.url
+  const date = details && photo.kind === 'photo' ? taken(photo) : Promise.resolve(null)
   try {
     await img.decode()
   } catch {
@@ -41,7 +62,8 @@ async function prepare(photo: ScreensaverPhoto, id: number): Promise<Slide | nul
   }
   // Your photos in portrait are shown whole; game art and screenshots always fill the screen.
   const whole = photo.kind === 'photo' && img.naturalHeight / img.naturalWidth > PORTRAIT
-  return { id, photo, whole, origin: ORIGINS[Math.floor(Math.random() * ORIGINS.length)] }
+  const shown = { ...photo, taken: (await date) ?? undefined }
+  return { id: slideIds++, photo: shown, whole, origin: ORIGINS[Math.floor(Math.random() * ORIGINS.length)], fadeMs }
 }
 
 /** Starts after the delay set in Settings with no input while vaporTV is in front; any input ends it. */
@@ -50,6 +72,7 @@ export function Screensaver() {
   const [photos, setPhotos] = useState<ScreensaverPhoto[]>([])
   const [style, setStyle] = useState<ScreensaverStyle>('slideshow')
   const [clockSpot, setClockSpot] = useState<ScreensaverClockSpot>('moving')
+  const [details, setDetails] = useState(true)
   const delay = useRef(0)
 
   useEffect(() => onScreensaver(setUp), [])
@@ -64,6 +87,7 @@ export function Screensaver() {
         setPhotos(shuffle(data.photos))
         setStyle(data.style)
         setClockSpot(data.clockSpot)
+        setDetails(data.photoDetails)
         setScreensaverUp(true)
       })
     }
@@ -101,44 +125,54 @@ export function Screensaver() {
     )
   }
   // No pictures to show (or the clock style): the clock and weather on black.
-  return <div className="screensaver">{style === 'slideshow' && photos.length ? <Slideshow photos={photos} /> : <DriftingClock spot={clockSpot} />}</div>
+  return <div className="screensaver">{style === 'slideshow' && photos.length ? <Slideshow photos={photos} details={details} /> : <DriftingClock spot={clockSpot} />}</div>
 }
 
-function Slideshow({ photos }: { photos: ScreensaverPhoto[] }) {
+/** The pictures in turn, each fading in over the last; the D-pad steps back (left, up) or on (right, down). */
+function Slideshow({ photos, details }: { photos: ScreensaverPhoto[]; details: boolean }) {
   // The newest slide fades in over the one before it.
   const [slides, setSlides] = useState<Slide[]>([])
 
   useEffect(() => {
     let cancelled = false
-    let next = 0
+    /** Where in `photos` the picture on screen is. */
+    let position = -1
+    /** Bumped by each step, so a slower load that's been overtaken is dropped. */
+    let request = 0
     let timer: ReturnType<typeof setTimeout>
-    const show = async (): Promise<void> => {
+    const show = async (step: 1 | -1, fadeMs: number): Promise<void> => {
+      clearTimeout(timer)
+      const mine = ++request
       // Skip photos that fail to load, but give up after a full pass.
-      for (let tries = 0; tries < photos.length; tries++) {
-        const slide = await prepare(photos[next % photos.length], next)
-        next++
-        if (cancelled) return
+      for (let tries = 1; tries <= photos.length; tries++) {
+        const at = (((position + step * tries) % photos.length) + photos.length) % photos.length
+        const slide = await prepare(photos[at], fadeMs, details)
+        if (cancelled || mine !== request) return
         if (slide) {
+          position = at
           setSlides((current) => [...current.slice(-1), slide])
           break
         }
       }
-      if (photos.length > 1) timer = setTimeout(show, SLIDE_MS)
+      if (photos.length > 1) timer = setTimeout(() => show(1, FADE_MS), SLIDE_MS)
     }
-    show()
+    show(1, FADE_MS)
+    const unstep = onScreensaverStep((direction) => show(direction === 'left' || direction === 'up' ? -1 : 1, STEP_FADE_MS))
     return () => {
       cancelled = true
       clearTimeout(timer)
+      unstep()
     }
-  }, [photos])
+  }, [photos, details])
 
+  const current = slides.at(-1)
   return (
     <>
       {slides.map((slide) => (
         <div
           key={slide.id}
           className="screensaver-slide"
-          style={{ animationDuration: `${FADE_MS}ms, ${SLIDE_MS + FADE_MS * 2}ms`, transformOrigin: slide.origin }}
+          style={{ animationDuration: `${slide.fadeMs}ms, ${SLIDE_MS + FADE_MS * 2}ms`, transformOrigin: slide.origin }}
         >
           {slide.whole ? (
             <>
@@ -150,7 +184,7 @@ function Slideshow({ photos }: { photos: ScreensaverPhoto[] }) {
           )}
         </div>
       ))}
-      <Caption photo={slides.at(-1)?.photo} key={slides.at(-1)?.id} />
+      {current && <Caption photo={current.photo} details={details} fadeMs={current.fadeMs} key={current.id} />}
       <ScreensaverClock className="screensaver-clock" />
     </>
   )
@@ -159,10 +193,29 @@ function Slideshow({ photos }: { photos: ScreensaverPhoto[] }) {
 const randomSpot = (): React.CSSProperties => ({ left: `${10 + Math.random() * 55}%`, top: `${10 + Math.random() * 60}%` })
 
 /** The game a picture comes from: its logo where there is one, else its name. */
-function Caption({ photo }: { photo?: ScreensaverPhoto }) {
-  if (!photo?.logo && !photo?.caption) return null
+/** When your photo was taken, e.g. "April 25, 2025". */
+function photoDate(taken: string): string {
+  const date = new Date(taken)
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+/** The game a picture comes from (its logo or name), or, with `details`, your photo's date and album. */
+function Caption({ photo, details, fadeMs }: { photo: ScreensaverPhoto; details: boolean; fadeMs: number }) {
+  const style = { animationDuration: `${fadeMs}ms` }
+  if (photo.kind === 'photo') {
+    const date = details && photo.taken ? photoDate(photo.taken) : ''
+    const album = details ? photo.album : undefined
+    if (!date && !album) return null
+    return (
+      <div className="screensaver-caption photo-details" style={style}>
+        {date && <span className="display">{date}</span>}
+        {album && <small>{album}</small>}
+      </div>
+    )
+  }
+  if (!photo.logo && !photo.caption) return null
   return (
-    <div className="screensaver-caption">
+    <div className="screensaver-caption" style={style}>
       {photo.logo ? <img src={photo.logo} alt={photo.caption ?? ''} /> : <span className="display">{photo.caption}</span>}
     </div>
   )

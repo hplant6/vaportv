@@ -8,16 +8,21 @@ const ITEMS: { action: PowerAction; label: string }[] = [
   { action: 'desktop', label: 'Exit to Desktop' },
   { action: 'steam', label: 'Exit to Steam' },
   { action: 'sleep', label: 'Sleep' },
+  { action: 'restart', label: 'Restart' },
   { action: 'poweroff', label: 'Power Off' }
 ]
 
-// Power Off needs a second press within this long, so a stray press can't turn the box off.
+/** Asked to confirm: a second press within CONFIRM_MS, so a stray press can't restart or turn off the box. */
+const CONFIRMED: Partial<Record<PowerAction, string>> = {
+  restart: 'Press A again to restart',
+  poweroff: 'Press A again to power off'
+}
 const CONFIRM_MS = 4000
 
 /** The power icon's drop-down. Up/down and A inside it; B closes it. */
 export function PowerMenu({ onClose }: { onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null)
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState<PowerAction | null>(null)
 
   const close = (): void => {
     onClose()
@@ -35,13 +40,13 @@ export function PowerMenu({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (!confirming) return
-    const timer = setTimeout(() => setConfirming(false), CONFIRM_MS)
+    const timer = setTimeout(() => setConfirming(null), CONFIRM_MS)
     return () => clearTimeout(timer)
   }, [confirming])
 
   const choose = (action: PowerAction): void => {
-    if (action === 'poweroff' && !confirming) {
-      setConfirming(true)
+    if (CONFIRMED[action] && confirming !== action) {
+      setConfirming(action)
       return
     }
     if (action === 'sleep') {
@@ -60,14 +65,14 @@ export function PowerMenu({ onClose }: { onClose: () => void }) {
       {ITEMS.map((item) => (
         <button
           key={item.action}
-          className={`power-item${item.action === 'poweroff' && confirming ? ' confirm' : ''}`}
+          className={`power-item${item.action === confirming ? ' confirm' : ''}`}
           role="menuitem"
           tabIndex={-1}
           data-focusable=""
           data-select-sound="move"
           onClick={() => choose(item.action)}
         >
-          {item.action === 'poweroff' && confirming ? 'Press A again to power off' : item.label}
+          {item.action === confirming ? CONFIRMED[item.action] : item.label}
         </button>
       ))}
     </div>

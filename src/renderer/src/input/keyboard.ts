@@ -38,7 +38,7 @@ export function startKeyboard(): void {
   window.addEventListener(
     'keydown',
     (event) => {
-      if (!noteInput(!event.repeat)) return
+      if (!noteInput(!event.repeat, DIRECTIONS[event.key])) return
       event.preventDefault()
       event.stopImmediatePropagation()
     },

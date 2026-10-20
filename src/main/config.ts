@@ -29,6 +29,8 @@ export interface Config {
   screensaverStyle?: ScreensaverStyle
   /** Where the big clock sits (default moving, against burn-in). */
   screensaverClock?: ScreensaverClockSpot
+  /** Your photos' date and album over them in the slideshow (default on). */
+  screensaverDetails?: boolean
   /** Slideshow sources; any left out default to on. */
   screensaverSources?: Partial<ScreensaverSources>
   /** Folder of your own screensaver photos (default ~/Pictures/Screensaver). */

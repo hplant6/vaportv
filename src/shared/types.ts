@@ -87,7 +87,7 @@ export interface Weather {
 export type LaunchKind = 'recent' | 'app'
 
 /** The power menu's choices. */
-export type PowerAction = 'desktop' | 'steam' | 'sleep' | 'poweroff'
+export type PowerAction = 'desktop' | 'steam' | 'sleep' | 'restart' | 'poweroff'
 
 export interface SteamCollection {
   id: string
@@ -185,6 +185,8 @@ export interface Settings {
   screensaverDelay: number
   screensaverStyle: ScreensaverStyle
   screensaverClock: ScreensaverClockSpot
+  /** Your photos' date and album shown over them in the slideshow. */
+  screensaverDetails: boolean
   screensaverSources: ScreensaverSources
   screensaverFolder: string
   /** Last 4 characters of the SteamGridDB key, or null if none is set. */
@@ -216,6 +218,9 @@ export interface ScreensaverPhoto {
   caption?: string
   /** The game's logo, shown instead of the caption where there is one. */
   logo?: string
+  /** Your photos: the folder it's in, and when it was taken (ISO date) if its folder's index says. */
+  album?: string
+  taken?: string
 }
 
 export interface ScreensaverData {
@@ -223,6 +228,8 @@ export interface ScreensaverData {
   delayMinutes: number
   style: ScreensaverStyle
   clockSpot: ScreensaverClockSpot
+  /** Show your photos' date and album. */
+  photoDetails: boolean
   /** For the slideshow, in no particular order (empty for the other styles). */
   photos: ScreensaverPhoto[]
 }
@@ -297,8 +304,10 @@ export interface SteamTvApi {
   onClosing(callback: (state: { active: boolean; name?: string }) => void): () => void
   /** Closes steamtv; under Steam this returns to Gaming Mode. */
   quit(): Promise<void>
-  /** Power menu: exit to desktop or Steam, sleep, power off. Resolves false if it couldn't. */
+  /** Power menu: exit to desktop or Steam, sleep, restart, power off. Resolves false if it couldn't. */
   power(action: PowerAction): Promise<boolean>
+  /** Why the box must stay awake (something holds a sleep block, e.g. a long copy), or null. */
+  sleepBlocker(): Promise<string | null>
   /** Raises (1) or lowers (-1) the system volume a step; the new level (0–100), or null if it couldn't. */
   stepVolume(direction: 1 | -1): Promise<{ level: number; muted: boolean } | null>
   getSettings(): Promise<Settings>
@@ -390,6 +399,9 @@ export interface SteamTvApi {
   setScreensaverDelay(minutes: number): Promise<void>
   setScreensaverStyle(style: ScreensaverStyle): Promise<void>
   setScreensaverClock(spot: ScreensaverClockSpot): Promise<void>
+  setScreensaverDetails(on: boolean): Promise<void>
+  /** When a screensaver photo (by URL) was taken, from its EXIF; null if unknown. */
+  photoTaken(url: string): Promise<string | null>
   setScreensaverSources(sources: ScreensaverSources): Promise<void>
   setSleepOnControllerOff(on: boolean): Promise<void>
   /** Saves the button for each action (Settings → Controller). */

@@ -24,13 +24,20 @@ import { activeUserDir } from './library/steam'
 const exec = promisify(execFile)
 
 export const BROWSER = 'com.google.Chrome'
+/** What a Flatpak needs to see a controller: the input devices, and udev's list of them. */
+const CONTROLLER_ACCESS = ['--device=all', '--filesystem=/run/udev:ro']
 const FLATHUB = 'https://dl.flathub.org/repo/flathub.flatpakrepo'
 
 type Recipe =
   /** A website, opened by Chrome in kiosk mode from a Steam shortcut named `shortcut`. */
   | { kind: 'web'; shortcut: string; url: string }
-  /** A Flathub program that works with a controller as it is. */
-  | { kind: 'flatpak'; flatpak: string; program: string; args?: string[] }
+  /**
+   * A Flathub program that works with a controller. `controller`: its sandbox doesn't
+   * let it see controllers by itself (Jellyfin ships with only the GPU), so
+   * it's given input devices, and udev's database (Chromium finds pads through it), when
+   * installed and when run.
+   */
+  | { kind: 'flatpak'; flatpak: string; program: string; args?: string[]; controller?: boolean }
   /** Comes with EmuDeck. */
   | { kind: 'emudeck' }
 
@@ -44,8 +51,10 @@ const RECIPES: Record<string, Recipe> = {
   peacock: { kind: 'web', shortcut: 'Peacock', url: 'https://www.peacocktv.com/watch/home' },
   tubi: { kind: 'web', shortcut: 'Tubi', url: 'https://tubitv.com/home' },
   youtube: { kind: 'flatpak', flatpak: 'rocks.shy.VacuumTube', program: 'VacuumTube' },
+  // Emby Theater's Flatpak ignores gamepads whatever its sandbox allows: Steam Input's
+  // keyboard layout (arrows, Enter, Escape) is what drives it.
   emby: { kind: 'flatpak', flatpak: 'media.emby.EmbyTheater', program: 'Emby Theater' },
-  jellyfin: { kind: 'flatpak', flatpak: 'org.jellyfin.JellyfinDesktop', program: 'Jellyfin Desktop', args: ['--tv', '--fullscreen'] },
+  jellyfin: { kind: 'flatpak', flatpak: 'org.jellyfin.JellyfinDesktop', program: 'Jellyfin Desktop', args: ['--tv', '--fullscreen'], controller: true },
   esde: { kind: 'emudeck' }
 }
 
@@ -66,7 +75,7 @@ export function appState(id: string, hasShortcut: boolean): AppState {
 export function directCommand(id: string): { command: string; args: string[] } | null {
   const recipe = RECIPES[id]
   if (recipe?.kind !== 'flatpak' || !flatpakInstalled(recipe.flatpak)) return null
-  return { command: 'flatpak', args: ['run', recipe.flatpak, ...(recipe.args ?? [])] }
+  return { command: 'flatpak', args: ['run', ...(recipe.controller ? CONTROLLER_ACCESS : []), recipe.flatpak, ...(recipe.args ?? [])] }
 }
 
 type Report = (line: string) => void
@@ -100,7 +109,12 @@ async function installFlatpak(id: string, name: string, report: Report): Promise
 /** Installs what an app needs: the program itself, or Chrome for a website. */
 export async function installForApp(id: string, name: string, report: Report): Promise<void> {
   const recipe = RECIPES[id]
-  if (recipe?.kind === 'flatpak') return installFlatpak(recipe.flatpak, recipe.program, report)
+  if (recipe?.kind === 'flatpak') {
+    await installFlatpak(recipe.flatpak, recipe.program, report)
+    // Kept for every launch, Steam shortcuts included: they run plain `flatpak run`.
+    if (recipe.controller) await exec('flatpak', ['override', '--user', ...CONTROLLER_ACCESS, recipe.flatpak])
+    return
+  }
   if (recipe?.kind === 'web') return installFlatpak(BROWSER, 'Google Chrome', report)
   throw new Error(`vaporTV can't set ${name} up by itself.`)
 }
