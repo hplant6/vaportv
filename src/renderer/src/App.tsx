@@ -132,8 +132,8 @@ export function App() {
     return () => window.removeEventListener(BACK_EVENT, onBack)
   }, [])
 
-  // L1/R1 step to the previous or next tab. Between the last (Settings) and the first
-  // they stop on the power button, so its menu is a bumper press away too.
+  // L1/R1 step to the previous or next tab, in the bar's order. Past the rightmost tab
+  // they stop on the power button (at the right end) before wrapping round to Settings.
   useEffect(() => {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail

@@ -21,8 +21,8 @@ const TABS: { id: Screen; label: string }[] = [
   { id: 'arcade', label: 'Arcade' }
 ]
 
-/** Screens in the order L1/R1 step through them: the tabs, then Settings. */
-export const TAB_ORDER: Screen[] = [...TABS.map((t) => t.id), 'settings']
+/** Screens in the order L1/R1 step through them, as the bar reads left to right: Settings, then the tabs. */
+export const TAB_ORDER: Screen[] = ['settings', ...TABS.map((t) => t.id)]
 
 export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) {
   const [powerOpen, setPowerOpen] = useState(false)
