@@ -4,7 +4,7 @@ import type { DriveFolder, GoogleDriveStatus, GooglePhotosProgress, GooglePhotos
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { toast } from './Toast'
 
-function ActionRow({ label, detail, onSelect }: { label: string; detail?: string; onSelect: () => void }) {
+export function ActionRow({ label, detail, onSelect }: { label: string; detail?: string; onSelect: () => void }) {
   return (
     <button className="setting-row" tabIndex={-1} aria-label={label} data-focusable="" data-select-sound="move" onClick={onSelect}>
       <span className="setting-name display">{label}</span>
@@ -30,7 +30,7 @@ export function OverStage({ children }: { children: ReactNode }) {
 }
 
 /** An IPC error's own message, without Electron's "Error invoking remote method …" wrapper. */
-function errorText(err: unknown): string {
+export function errorText(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err)
   return message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
 }

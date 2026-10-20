@@ -257,6 +257,8 @@ async function installWakeRule(report: Report): Promise<void> {
     '# vaporTV: let a controller wake the box from sleep. Switching a wireless controller',
     "# on reconnects its USB receiver, which wakes the box when the hub it's on may wake it.",
     'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6b", ATTR{power/wakeup}="enabled"',
+    "# Bluetooth too (a remote's hub, a keyboard): USB Bluetooth adapters are class e0.",
+    'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{bDeviceClass}=="e0", ATTR{power/wakeup}="enabled"',
     ''
   ].join('\n')
   // SteamOS comes without a password for its user, and the admin prompt needs one.

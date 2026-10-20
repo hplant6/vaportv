@@ -36,6 +36,8 @@ import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360T
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
 import { currentMusic, musicFolder, musicTracks } from './music'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
+import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
+import { bluetoothStatus, connectBluetooth, disconnectBluetooth, findBluetoothDevices, forgetBluetooth, pairBluetooth, setBluetoothPowered } from './bluetooth'
 import { cancelPick, clearPhotos, googlePhotosStatus, signIn as googleSignIn, signOut as googleSignOut, startPick } from './addons/googlePhotos'
 import {
   DEFAULT_SCREENSAVER_DELAY,
@@ -440,6 +442,18 @@ ipcMain.handle('gphotos:pick', (event) =>
 )
 ipcMain.handle('gphotos:cancel', () => cancelPick())
 ipcMain.handle('gphotos:clear', () => clearPhotos())
+ipcMain.handle('wifi:status', () => wifiStatus())
+ipcMain.handle('wifi:enabled', (_event, on: boolean) => setWifiEnabled(on))
+ipcMain.handle('wifi:rescan', () => rescanWifi())
+ipcMain.handle('wifi:connect', (_event, ssid: string, password?: string) => connectWifi(ssid, password))
+ipcMain.handle('wifi:forget', (_event, ssid: string) => forgetWifi(ssid))
+ipcMain.handle('bluetooth:status', () => bluetoothStatus())
+ipcMain.handle('bluetooth:power', (_event, on: boolean) => setBluetoothPowered(on))
+ipcMain.handle('bluetooth:find', () => findBluetoothDevices())
+ipcMain.handle('bluetooth:pair', (_event, address: string) => pairBluetooth(address))
+ipcMain.handle('bluetooth:connect', (_event, address: string) => connectBluetooth(address))
+ipcMain.handle('bluetooth:disconnect', (_event, address: string) => disconnectBluetooth(address))
+ipcMain.handle('bluetooth:forget', (_event, address: string) => forgetBluetooth(address))
 ipcMain.handle('gdrive:status', () => driveStatus())
 ipcMain.handle('gdrive:folders', () => driveFolders())
 ipcMain.handle('gdrive:choose', (_event, folder: DriveFolder | null) => chooseDriveFolder(folder))

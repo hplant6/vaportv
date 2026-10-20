@@ -83,6 +83,22 @@ const api: SteamTvApi = {
       return () => ipcRenderer.removeListener('setup:progress', listener)
     }
   },
+  wifi: {
+    status: () => ipcRenderer.invoke('wifi:status'),
+    setEnabled: (on) => ipcRenderer.invoke('wifi:enabled', on),
+    rescan: () => ipcRenderer.invoke('wifi:rescan'),
+    connect: (ssid, password) => ipcRenderer.invoke('wifi:connect', ssid, password),
+    forget: (ssid) => ipcRenderer.invoke('wifi:forget', ssid)
+  },
+  bluetooth: {
+    status: () => ipcRenderer.invoke('bluetooth:status'),
+    setPowered: (on) => ipcRenderer.invoke('bluetooth:power', on),
+    find: () => ipcRenderer.invoke('bluetooth:find'),
+    pair: (address) => ipcRenderer.invoke('bluetooth:pair', address),
+    connect: (address) => ipcRenderer.invoke('bluetooth:connect', address),
+    disconnect: (address) => ipcRenderer.invoke('bluetooth:disconnect', address),
+    forget: (address) => ipcRenderer.invoke('bluetooth:forget', address)
+  },
   googleDrive: {
     status: () => ipcRenderer.invoke('gdrive:status'),
     folders: () => ipcRenderer.invoke('gdrive:folders'),

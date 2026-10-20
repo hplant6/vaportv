@@ -5,6 +5,8 @@ import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GeneralSettings } from '../components/GeneralSettings'
+import { BluetoothSettings } from '../components/Bluetooth'
+import { WifiSettings } from '../components/Wifi'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { SLEEP_SETTING_EVENT } from '../components/SleepPrompt'
@@ -189,7 +191,7 @@ const FAVORITES_LAYOUTS: { id: SteamLayout; name: string; detail: string }[] = [
   { id: 'grid', name: 'Grid', detail: 'Two rows · scroll down' }
 ]
 
-type Category = 'general' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'artwork'
+type Category = 'general' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork'
 
 const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'general', name: 'General' },
@@ -200,6 +202,8 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'music', name: 'Music' },
   { id: 'screensaver', name: 'Screensaver' },
   { id: 'controller', name: 'Controller' },
+  { id: 'wifi', name: 'Wi-Fi' },
+  { id: 'bluetooth', name: 'Bluetooth' },
   { id: 'artwork', name: 'Artwork' }
 ]
 
@@ -886,6 +890,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         {settings && <ControlsSettings controls={settings.controls} onChange={(controls) => setSettings({ ...settings, controls })} />}
       </>
     ),
+    wifi: <WifiSettings />,
+    bluetooth: <BluetoothSettings />,
     artwork: (
       <>
         <div className="settings-group">

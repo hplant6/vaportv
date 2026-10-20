@@ -234,6 +234,47 @@ export interface ScreensaverData {
   photos: ScreensaverPhoto[]
 }
 
+export interface BluetoothDevice {
+  address: string
+  name: string
+  kind: 'audio' | 'controller' | 'keyboard' | 'mouse' | 'phone' | 'other'
+  paired: boolean
+  connected: boolean
+}
+
+export interface BluetoothStatus {
+  /** There's a Bluetooth adapter. */
+  available: boolean
+  powered: boolean
+  /** Find devices is searching. */
+  scanning: boolean
+  /** What's under way for one device ("Pairing…"). */
+  busy: { address: string; doing: string } | null
+  /** Paired devices, and while searching, ones found nearby. */
+  devices: BluetoothDevice[]
+}
+
+export interface WifiNetwork {
+  ssid: string
+  /** 0-100 */
+  signal: number
+  /** Needs a password. */
+  secure: boolean
+  /** Joined before: connects without asking. */
+  saved: boolean
+  connected: boolean
+}
+
+export interface WifiStatus {
+  /** There's a Wi-Fi adapter. */
+  available: boolean
+  enabled: boolean
+  /** Connected by cable too. */
+  wired: boolean
+  busy: { ssid: string; doing: string } | null
+  networks: WifiNetwork[]
+}
+
 export interface GooglePhotosStatus {
   /** The add-on is set up (a Google client in config.json). */
   enabled: boolean
@@ -450,6 +491,26 @@ export interface SteamTvApi {
     /** Another folder, or null for the default "vaporTV Screensaver" one. */
     choose(folder: DriveFolder | null): Promise<void>
     syncNow(): Promise<void>
+  }
+  /** Settings → Bluetooth. Each action rejects with a message to show if it fails. */
+  bluetooth: {
+    status(): Promise<BluetoothStatus>
+    setPowered(on: boolean): Promise<void>
+    /** Searches for about 30 seconds; what it finds turns up in status(). */
+    find(): Promise<void>
+    pair(address: string): Promise<void>
+    connect(address: string): Promise<void>
+    disconnect(address: string): Promise<void>
+    forget(address: string): Promise<void>
+  }
+  /** Settings → Wi-Fi. Each action rejects with a message to show if it fails. */
+  wifi: {
+    status(): Promise<WifiStatus>
+    setEnabled(on: boolean): Promise<void>
+    rescan(): Promise<void>
+    /** A saved network without `password`; a new one (or a new password) with it. */
+    connect(ssid: string, password?: string): Promise<void>
+    forget(ssid: string): Promise<void>
   }
   /** Appends a line to ~/.cache/steamtv/input.log. */
   logInput(line: string): void

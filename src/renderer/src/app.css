@@ -970,6 +970,67 @@ button {
   outline: 4px solid var(--color-accent);
 }
 
+/* On-screen keyboard: ten keys a row, then shift, symbols, space, delete and done. */
+.osk-panel {
+  width: 1180px;
+}
+
+.osk-field {
+  align-self: stretch;
+  min-height: 72px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono);
+  font-size: 32px;
+  overflow-wrap: anywhere;
+}
+
+.osk-field.empty {
+  opacity: 0.5;
+}
+
+.osk-keys {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 10px;
+  align-self: stretch;
+}
+
+.osk-actions {
+  display: flex;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.osk-key {
+  height: 72px;
+  min-width: 96px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 30px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  outline: 3px solid transparent;
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.osk-key:focus {
+  outline-color: var(--color-accent-line);
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
+}
+
+.osk-key.wide {
+  flex: 1;
+}
+
+.osk-key.on,
+.osk-key.done {
+  color: #000;
+  background: var(--color-accent);
+}
+
 /* ── Settings: categories on the left, the chosen one's settings on the right ── */
 
 .settings-columns {

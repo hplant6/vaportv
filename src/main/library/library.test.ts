@@ -30,6 +30,8 @@ import { searchPlaces } from '../location'
 import { isSwitchOff } from '../../shared/controllers'
 import { parseSleepBlocker } from '../power'
 import { exifDate } from '../screensaver'
+import { deviceKind, parseDevices } from '../bluetooth'
+import { parseNetworks, terseFields } from '../wifi'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -804,5 +806,37 @@ describe('exifDate', () => {
 
   it('is null without any', () => {
     expect(exifDate(Buffer.from('no metadata here'))).toBeNull()
+  })
+})
+
+describe('bluetooth', () => {
+  it("reads bluetoothctl's device list", () => {
+    const list = 'Device 12:34:56:78:9A:BC Sofabaton X2\nDevice AA:BB:CC:DD:EE:FF 12-34-56-78-9A-BC\nsome other line\n'
+    expect(parseDevices(list)).toEqual([
+      { address: '12:34:56:78:9A:BC', name: 'Sofabaton X2' },
+      { address: 'AA:BB:CC:DD:EE:FF', name: '12-34-56-78-9A-BC' }
+    ])
+  })
+
+  it('tells what a device is from its icon', () => {
+    expect(deviceKind('input-keyboard')).toBe('keyboard')
+    expect(deviceKind('audio-headset')).toBe('audio')
+    expect(deviceKind('input-gaming')).toBe('controller')
+    expect(deviceKind(undefined)).toBe('other')
+  })
+})
+
+describe('wifi', () => {
+  it("splits nmcli's terse lines, keeping escaped colons", () => {
+    expect(terseFields('*:Cafe\\: Guest:70:WPA2')).toEqual(['*', 'Cafe: Guest', '70', 'WPA2'])
+    expect(terseFields(' :back\\\\slash:5:--')).toEqual([' ', 'back\\slash', '5', '--'])
+  })
+
+  it('lists each network once, the one in use first, then saved, then by signal', () => {
+    const list = [' :Neighbour:80:WPA2', '*:Home:60:WPA2', ' :Home:90:WPA2', ' ::70:WPA2', ' :Cafe:40:--', ' :Office:30:WPA2'].join('\n')
+    const networks = parseNetworks(list, new Set(['Office']))
+    expect(networks.map((n) => n.ssid)).toEqual(['Home', 'Office', 'Neighbour', 'Cafe'])
+    expect(networks[0]).toEqual({ ssid: 'Home', signal: 60, secure: true, saved: false, connected: true })
+    expect(networks.find((n) => n.ssid === 'Cafe')?.secure).toBe(false)
   })
 })
