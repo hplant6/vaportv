@@ -36,6 +36,7 @@ const DEFAULT_FAVORITES: Record<string, string | string[]> = {
   peacock: 'Peacock',
   tubi: 'Tubi',
   jellyfin: 'Jellyfin',
+  plex: ['Plex HTPC', 'Plex'],
   // EmuDeck names its shortcut EmulationStationDE; added by hand it's usually ES-DE.
   esde: ['EmulationStationDE', 'ES-DE', 'EmulationStation-DE']
 }

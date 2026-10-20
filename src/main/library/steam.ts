@@ -143,7 +143,8 @@ const SERVICES: [RegExp, string][] = [
   [/^paramount\+?$/i, 'paramount'],
   [/^peacock$/i, 'peacock'],
   [/^tubi$/i, 'tubi'],
-  [/^jellyfin$/i, 'jellyfin']
+  [/^jellyfin$/i, 'jellyfin'],
+  [/^plex( htpc)?$/i, 'plex']
 ]
 
 // Shortcuts that are launchers rather than things you play.

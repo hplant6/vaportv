@@ -107,6 +107,11 @@
       "tile": "fixtures/tiles/jellyfin.webp"
     },
     {
+      "id": "plex",
+      "name": "Plex",
+      "tile": "fixtures/tiles/plex.webp"
+    },
+    {
       "id": "esde",
       "name": "ES-DE",
       "tile": "fixtures/tiles/esde.webp"
