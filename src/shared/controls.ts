@@ -1,6 +1,8 @@
 // What each controller button does in vaporTV. The D-pad and sticks always move;
 // everything else can be moved to another button in Settings → Controller.
 
+import type { ControllerFamily } from './controllers'
+
 export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'core' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp'
 
 /** Action → standard-mapping button index. */
@@ -34,9 +36,18 @@ export const DEFAULT_CONTROLS: Controls = {
 export const ASSIGNABLE_BUTTONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 const BUTTON_NAMES = ['A', 'B', 'X', 'Y', 'L1', 'R1', 'L2', 'R2', 'Select', 'Start', 'L3', 'R3']
+/** Other makers' names for the same buttons, where they differ. */
+const FAMILY_NAMES: Partial<Record<ControllerFamily, string[]>> = {
+  ps3: ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Select', 'Start', 'L3', 'R3'],
+  ps4: ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3'],
+  ps5: ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Create', 'Options', 'L3', 'R3'],
+  // Nintendo's letters sit the other way round.
+  switch: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '−', '+', 'L stick', 'R stick']
+}
 
-export function buttonName(index: number): string {
-  return BUTTON_NAMES[index] ?? `Button ${index}`
+/** A button's name as `family`'s controllers mark it (Xbox-style by default). */
+export function buttonName(index: number, family: ControllerFamily = 'xbox'): string {
+  return (FAMILY_NAMES[family] ?? BUTTON_NAMES)[index] ?? `Button ${index}`
 }
 
 /** Saved choices over the defaults, ignoring anything unusable. */

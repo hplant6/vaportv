@@ -27,7 +27,8 @@ import { libretroCover, libretroCovers, thumbnailName } from './libretroThumbnai
 import { customAppFor, customApps } from '../customApps'
 import { appState, webShortcuts } from '../appSetup'
 import { searchPlaces } from '../location'
-import { isSwitchOff } from '../../shared/controllers'
+import { connectedFamily, controllerFamily, isSwitchOff } from '../../shared/controllers'
+import { buttonName } from '../../shared/controls'
 import { parseSleepBlocker } from '../power'
 import { exifDate } from '../screensaver'
 import { deviceKind, parseDevices } from '../bluetooth'
@@ -858,5 +859,29 @@ describe('remote power', () => {
 
   it("watches remotes' keyboards with a Power key, not the box's own button or controllers", () => {
     expect(remoteKeyboards(devices)).toEqual(['/dev/input/event5', '/dev/input/event21'])
+  })
+})
+
+describe('controller family', () => {
+  it("tells a controller's maker from its id", () => {
+    expect(controllerFamily('Microsoft X-Box 360 pad (STANDARD GAMEPAD Vendor: 045e Product: 028e)')).toBe('xbox')
+    expect(controllerFamily('DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)')).toBe('ps5')
+    expect(controllerFamily('Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)')).toBe('ps4')
+    expect(controllerFamily('Sony PLAYSTATION(R)3 Controller (Vendor: 054c Product: 0268)')).toBe('ps3')
+    expect(controllerFamily('Pro Controller (STANDARD GAMEPAD Vendor: 057e Product: 2009)')).toBe('switch')
+  })
+
+  it("goes by the real controller, not Steam's stand-in for it", () => {
+    const steam = { id: 'Microsoft X-Box 360 pad 0 (STANDARD GAMEPAD Vendor: 28de Product: 11ff)', connected: true }
+    const dualsense = { id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)', connected: true }
+    expect(connectedFamily([steam, dualsense])).toBe('ps5')
+    expect(connectedFamily([steam])).toBe('xbox')
+  })
+
+  it("names buttons as each maker does", () => {
+    expect(buttonName(0)).toBe('A')
+    expect(buttonName(0, 'ps5')).toBe('Cross')
+    expect(buttonName(8, 'ps4')).toBe('Share')
+    expect(buttonName(0, 'switch')).toBe('B')
   })
 })

@@ -10,7 +10,7 @@ body:has(.setup) {
   margin: 0 auto;
   padding: 48px 32px;
   color: #fff;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
 }
 
 .setup-title {
@@ -177,7 +177,7 @@ body:has(.setup) {
   height: auto;
   padding: 0;
   color: var(--color-accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 14px;
   text-decoration: underline;
   cursor: pointer;

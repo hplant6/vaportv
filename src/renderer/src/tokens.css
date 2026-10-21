@@ -32,7 +32,8 @@
   /* The clock and date: Big Shoulders at its heaviest. */
   --font-clock: 'Big Shoulders', sans-serif;
   --clock-weight: 900;
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* Descriptions, help and other small text: IBM Plex Sans. */
+  --font-body: 'IBM Plex Sans', sans-serif;
 
   --text-label: 24px;
   --text-meta: 32px;

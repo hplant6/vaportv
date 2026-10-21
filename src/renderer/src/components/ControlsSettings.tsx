@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { assignButton, buttonName, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 import { cancelCapture, captureButton, CONTROLS_CHANGED_EVENT } from '../input/gamepad'
+import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { toast } from './Toast'
 
 /**
@@ -9,6 +10,7 @@ import { toast } from './Toast'
  */
 export function ControlsSettings({ controls, onChange }: { controls: Controls; onChange: (controls: Controls) => void }) {
   const [waiting, setWaiting] = useState<ControlAction | null>(null)
+  const family = useControllerFamily()
 
   const save = (next: Controls): void => {
     onChange(next)
@@ -22,7 +24,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
       if (button === null || button === controls[action]) return
       const holder = CONTROL_ACTIONS.find((a) => a.id !== action && controls[a.id] === button)
       save(assignButton(controls, action, button))
-      if (holder) toast(`${holder.name} moved to ${buttonName(controls[action])}`)
+      if (holder) toast(`${holder.name} moved to ${buttonName(controls[action], family)}`)
     })
   }
 
@@ -53,7 +55,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             key={a.id}
             className={`setting-row${waiting === a.id ? ' waiting' : ''}`}
             tabIndex={-1}
-            aria-label={`${a.name}: ${buttonName(controls[a.id])}`}
+            aria-label={`${a.name}: ${buttonName(controls[a.id], family)}`}
             data-focusable=""
             data-select-sound="move"
             onClick={() => listen(a.id)}
@@ -64,7 +66,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             ) : (
               <>
                 {a.detail && <span className="setting-detail">{a.detail}</span>}
-                <span className="control-button display">{buttonName(controls[a.id])}</span>
+                <ButtonIcon button={controls[a.id]} family={family} />
               </>
             )}
           </button>

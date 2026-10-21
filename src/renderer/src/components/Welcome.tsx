@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { buttonName, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 import type { LocationSettings } from '../../../shared/types'
 import { focus, focusDefault, TRAP_CLOSE_EVENT } from '../input/focus'
+import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 
 // The welcome tour: shown once, the first time vaporTV starts, and again from
@@ -29,11 +30,6 @@ export function Welcome() {
   return open ? <Tour onClose={close} /> : null
 }
 
-/** A button's name as a little pill, the way the controller shows it. */
-function Button({ children }: { children: ReactNode }) {
-  return <span className="control-button display">{children}</span>
-}
-
 function Row({ keys, children }: { keys: ReactNode; children: ReactNode }) {
   return (
     <li className="welcome-row">
@@ -49,6 +45,7 @@ function Tour({ onClose }: { onClose: () => void }) {
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
+  const family = useControllerFamily()
 
   useEffect(() => {
     window.steamtv.getSettings().then((s) => setControls(s.controls))
@@ -60,7 +57,7 @@ function Tour({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener(WEATHER_CHANGED_EVENT, load)
   }, [])
 
-  const key = (action: ControlAction): ReactNode => <Button>{buttonName(controls[action])}</Button>
+  const key = (action: ControlAction): ReactNode => <ButtonIcon button={controls[action]} family={family} />
 
   const steps: { title: string; body: ReactNode }[] = [
     {
@@ -76,7 +73,7 @@ function Tour({ onClose }: { onClose: () => void }) {
       title: 'Getting around',
       body: (
         <ul className="welcome-list">
-          <Row keys={<Button>D-pad</Button>}>Move (the left stick works too)</Row>
+          <Row keys={<DpadIcon />}>Move (the left stick works too)</Row>
           <Row keys={key('select')}>Open what’s highlighted</Row>
           <Row keys={key('back')}>Go back</Row>
           <Row keys={<>{key('previousTab')}{key('nextTab')}</>}>Switch tabs</Row>
@@ -91,7 +88,9 @@ function Tour({ onClose }: { onClose: () => void }) {
           <Row keys={key('options')}>Fix a console game’s cover art</Row>
           <Row keys={key('core')}>Pick which emulator core runs an arcade game</Row>
           <Row keys={<>{key('volumeDown')}{key('volumeUp')}</>}>Volume down and up</Row>
-          <Row keys={<><Button>Select</Button><Button>Start</Button></>}>Hold both while playing to close it and come back here</Row>
+          <Row keys={<><ButtonIcon button={8} family={family} /><ButtonIcon button={9} family={family} /></>}>
+            Hold both while playing to close it and come back here
+          </Row>
         </ul>
       )
     },
@@ -99,7 +98,7 @@ function Tour({ onClose }: { onClose: () => void }) {
       title: 'Your apps',
       body: (
         <p className="dialog-message">
-          Streaming apps you haven’t set up yet are dimmed in the Apps tab: press {buttonName(controls.select)} on one and
+          Streaming apps you haven’t set up yet are dimmed in the Apps tab: press {buttonName(controls.select, family)} on one and
           vaporTV sets it up. Backdrops, music, the screensaver and the buttons are all in Settings.
         </p>
       )
@@ -157,7 +156,7 @@ function Tour({ onClose }: { onClose: () => void }) {
               {action('Choose a place', () => setPicking(true))}
             </>
           ) : (
-            action(step === 0 ? 'Show me' : 'Next', () => setStep(step + 1), step > 0 ? `${buttonName(controls.back)} to go back` : undefined)
+            action(step === 0 ? 'Show me' : 'Next', () => setStep(step + 1), step > 0 ? `${buttonName(controls.back, family)} to go back` : undefined)
           )}
         </div>
       </div>
