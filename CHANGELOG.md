@@ -13,6 +13,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Netflix's arrow-key controls install with the rest of setup (it asks for the admin password once, along with controller wake).
 - A Sofabaton (or other remote) can open Steam's menu with F11, and its Home button closes apps.
 - Kodi can be set up from the apps list, for watching an Emby library.
+- Games and apps without artwork get a proper background behind their name instead of a blank card.
 
 ### Fixed
 - Netflix: the arrows move between profiles on "Who's watching?".
+- Kodi (and other apps vaporTV opens itself) no longer keep running unseen after you go back to vaporTV through Steam's menu.

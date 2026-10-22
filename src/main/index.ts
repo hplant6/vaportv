@@ -15,7 +15,7 @@ import { startRemoteKeys } from './remoteKeys'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, returnToGamingMode, uninstall } from './installer'
-import { launch, launchedIsGame, launchedName, launchUrl } from './launch'
+import { directAppAge, launch, launchedIsGame, launchedName, launchUrl } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { handleArtScheme, registerArtScheme } from './library/art'
@@ -284,6 +284,11 @@ ipcMain.handle('location:search', (_event, query: string) => searchPlaces(query)
 ipcMain.handle('location:set', (_event, place: PlaceMatch | null) => setPlace(place))
 ipcMain.handle('location:unit', (_event, unit: TemperatureUnit) => setTemperatureUnit(unit))
 // Screenshots skip it (STEAMTV_WELCOME=1 shows it, to take one of the tour itself).
+/** An app's first moments, when its windows may come and go (see the focus handler). */
+const APP_SETTLE_MS = 20_000
+/** How long vaporTV must stay in front before an app behind it counts as left. */
+const FOCUS_SETTLE_MS = 3000
+
 // Updates: checked a minute after start and every few hours; see updater.ts.
 const UPDATE_EVERY_MS = 6 * 60 * 60 * 1000
 let update: UpdateInfo | null = null
@@ -600,6 +605,16 @@ app.whenReady().then(async () => {
     })
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).
     startRemoteKeys(logInput, foreground)
+    // Back in vaporTV some other way (Steam's menu) with an app it opened still running
+    // behind: that app is done with, so it's closed rather than left running unseen.
+    // Not in an app's first seconds (Kodi's window comes and goes as it starts), and
+    // only if vaporTV stays in front a moment.
+    win?.on('focus', () => {
+      setTimeout(() => {
+        const age = directAppAge()
+        if (win?.isFocused() && age !== null && age > APP_SETTLE_MS) foreground.closeAppBehind().catch((err) => logInput(`hotkey: ${err}`))
+      }, FOCUS_SETTLE_MS)
+    })
     // This version's Netflix extension, for Chrome to pick up (see netflixExtension.ts).
     stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
     setTimeout(checkUpdates, 60_000)

@@ -86,6 +86,8 @@ const launchedNames = new Map<number, string>()
 let emulatorGame: string | undefined
 /** Whether what vaporTV runs itself is an app (Kodi, Plex) rather than an emulated game. */
 let directIsApp = false
+/** When that app was opened. */
+let directAppOpenedAt = 0
 /** Steam app ids vaporTV launched that are apps (streaming shortcuts), not games. */
 const launchedApps = new Set<number>()
 
@@ -100,6 +102,11 @@ export function launchedName(target: number | 'emulator'): string | undefined {
  */
 export function launchedIsGame(target: number | 'emulator'): boolean {
   return target === 'emulator' ? !directIsApp : !launchedApps.has(target)
+}
+
+/** How long ago vaporTV opened the app it runs itself (Kodi, Plex), or null if what it runs is a game. */
+export function directAppAge(): number | null {
+  return directIsApp ? Date.now() - directAppOpenedAt : null
 }
 
 /** The 32-bit app id gamescope reports for a steam://rungameid/<id> launch. */
@@ -222,6 +229,7 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
     run(direct.command, direct.args)
     emulatorGame = name
     directIsApp = true
+    directAppOpenedAt = Date.now()
     await recordPlay(`app:${id}`)
     return true
   }

@@ -337,6 +337,9 @@ button {
   font-size: var(--text-label);
   text-align: center;
   overflow-wrap: anywhere;
+  /* No art yet: the title over vaporTV's own static. */
+  background: center / cover url('./assets/empty/portrait.webp');
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 .recent-art img {
@@ -783,9 +786,16 @@ button {
 }
 
 .wide-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
   padding: 24px;
   font-size: var(--text-label);
   text-align: center;
+  background: center / cover url('./assets/empty/wide.webp');
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 .setting-input {

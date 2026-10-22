@@ -249,6 +249,8 @@ async function inFront(options: HotkeyOptions): Promise<'game' | 'app' | null> {
 export interface Foreground {
   close: () => void
   kind: () => Promise<'game' | 'app' | null>
+  /** An app vaporTV opened itself (Kodi, Plex) left running behind it: close it. Games are left alone. */
+  closeAppBehind: () => Promise<void>
 }
 
 /** Watches controllers for Select + Start; returns the same closing for other triggers. */
@@ -257,7 +259,14 @@ export function startHotkey(options: HotkeyOptions): Foreground {
     close: () => {
       closeForeground(options).catch((err) => options.log(`hotkey: ${err}`))
     },
-    kind: () => inFront(options)
+    kind: () => inFront(options),
+    closeAppBehind: async () => {
+      if (options.isGame('emulator')) return
+      const pids = await launchedBySteamtv()
+      if (!pids.length) return
+      options.log(`hotkey: ${options.nameFor('emulator') ?? 'an app'} was left running behind vaporTV; closing it (${pids.length} processes)`)
+      await terminate(pids, options.log)
+    }
   }
   if (process.platform !== 'linux') return foreground
   logXprop = options.log
