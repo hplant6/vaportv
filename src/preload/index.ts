@@ -42,6 +42,11 @@ const api: SteamTvApi = {
     set: (place) => ipcRenderer.invoke('location:set', place),
     setUnit: (unit) => ipcRenderer.invoke('location:unit', unit)
   },
+  intro: {
+    get: () => ipcRenderer.invoke('intro:get'),
+    opening: () => ipcRenderer.invoke('intro:opening'),
+    set: (choice) => ipcRenderer.invoke('intro:set', choice)
+  },
   updates: {
     get: () => ipcRenderer.invoke('update:get'),
     check: () => ipcRenderer.invoke('update:check'),

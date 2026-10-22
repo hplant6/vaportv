@@ -18,6 +18,8 @@ import { install, installStatus, returnToGamingMode, uninstall } from './install
 import { directAppAge, launch, launchedIsGame, launchedName, launchUrl } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
+import { INTRO_FOLDER, introSettings } from './intro'
+import { bootVideoSelected, steamJustStarted } from './bootVideo'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -332,6 +334,21 @@ ipcMain.handle('update:install', async (event): Promise<string | null> => {
   return null
 })
 
+// No intro in screenshot runs (they want the page as it settles).
+ipcMain.handle('intro:get', async () => {
+  const settings = await introSettings(await loadConfig())
+  return screenshot ? { ...settings, url: null } : settings
+})
+ipcMain.handle('intro:set', (_event, choice: string) => saveConfig({ introVideo: choice }))
+// As vaporTV opens: not straight after Steam played the same intro as its startup movie.
+ipcMain.handle('intro:opening', async () => {
+  const config = await loadConfig()
+  const settings = await introSettings(config)
+  if (screenshot || !settings.url) return null
+  if (settings.choice === 'default' && (await bootVideoSelected(config)) && (await steamJustStarted())) return null
+  return settings.url
+})
+
 ipcMain.handle('welcome:seen', async () => !!(await loadConfig()).welcomeSeen || (!!screenshotMode() && !process.env.STEAMTV_WELCOME))
 ipcMain.handle('welcome:done', () => saveConfig({ welcomeSeen: true }))
 ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
@@ -587,7 +604,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), ...screensaverFolders(config)])
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, ...screensaverFolders(config)])
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()
   createWindow()

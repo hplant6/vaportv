@@ -14,6 +14,7 @@ import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { UpdateDialog } from './components/UpdateDialog'
+import { Intro } from './components/Intro'
 import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
 import { CoreDialog } from './components/CoreDialog'
@@ -278,6 +279,7 @@ export function App() {
       <Welcome />
       <Screensaver />
       <BackgroundMusic />
+      <Intro />
       <VolumeOsd />
       <Toast />
     </div>

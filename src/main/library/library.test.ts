@@ -915,3 +915,39 @@ describe('updater', () => {
     expect(newer('v1.1.0-beta', '1.0.0')).toBe(false)
   })
 })
+
+describe('boot video', () => {
+  const tree = (customization: string): string =>
+    `"InstallConfigStore"\n{\n\t"Software"\n\t{\n\t\t"Valve"\n\t\t{\n\t\t}\n\t}\n${customization}}\n`
+  const startupMovie = async (text: string): Promise<VdfObject | undefined> => {
+    const { parseTextVdf, childObject } = await import('./vdf')
+    return childObject(parseTextVdf(text), 'InstallConfigStore', 'Customization', 'StartupMovie')
+  }
+
+  it('sets the startup movie in place, keeping the rest', async () => {
+    const { withStartupMovie } = await import('../bootVideo')
+    const before = tree(
+      `\t"Customization"\n\t{\n\t\t"StartupMovie"\n\t\t{\n\t\t\t"Shuffle"\t\t"1"\n\t\t\t"MovieID"\t\t"0"\n\t\t\t"LocalPath"\t\t""\n\t\t}\n\t\t"Screensaver"\n\t\t{\n\t\t\t"WhileInGame"\t\t"0"\n\t\t}\n\t}\n`
+    )
+    const after = withStartupMovie(before, '/uioverrides/movies/vaportv.webm')
+    expect(await startupMovie(after)).toEqual({ Shuffle: '0', MovieID: '0', LocalPath: '/uioverrides/movies/vaportv.webm' })
+    expect(after.split('\n').length).toBe(before.split('\n').length)
+    expect(after).toContain('"Screensaver"')
+    // And back to Steam's own.
+    expect((await startupMovie(withStartupMovie(after, '')))?.LocalPath).toBe('')
+  })
+
+  it('adds the block when Steam has none yet', async () => {
+    const { withStartupMovie } = await import('../bootVideo')
+    const inCustomization = withStartupMovie(tree(`\t"Customization"\n\t{\n\t}\n`), '/m.webm')
+    expect((await startupMovie(inCustomization))?.LocalPath).toBe('/m.webm')
+    const fresh = withStartupMovie(tree(''), '/m.webm')
+    expect(await startupMovie(fresh)).toEqual({ Shuffle: '0', MovieID: '0', LocalPath: '/m.webm' })
+  })
+
+  it('adds a missing value to an existing block', async () => {
+    const { withStartupMovie } = await import('../bootVideo')
+    const partial = tree(`\t"Customization"\n\t{\n\t\t"StartupMovie"\n\t\t{\n\t\t\t"Shuffle"\t\t"1"\n\t\t}\n\t}\n`)
+    expect(await startupMovie(withStartupMovie(partial, '/m.webm'))).toEqual({ Shuffle: '0', MovieID: '0', LocalPath: '/m.webm' })
+  })
+})

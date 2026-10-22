@@ -83,6 +83,7 @@ export function Setup() {
   const [status, setStatus] = useState<InstallStatus | null>(null)
   const [autostart, setAutostart] = useState(true)
   const [wake, setWake] = useState(true)
+  const [bootVideo, setBootVideo] = useState(true)
   const [phase, setPhase] = useState<Phase>('ready')
   const [log, setLog] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -102,7 +103,7 @@ export function Setup() {
     setPhase('working')
     setLog([])
     setError(null)
-    const job = which === 'install' ? window.steamtv.setup.install({ autostart, wake, apps }) : window.steamtv.setup.uninstall()
+    const job = which === 'install' ? window.steamtv.setup.install({ autostart, wake, bootVideo, apps }) : window.steamtv.setup.uninstall()
     job.then((err) => {
       setError(err)
       setPhase(err ? 'failed' : 'done')
@@ -128,6 +129,7 @@ export function Setup() {
             <Check on={status.autostart} label="Opens when Gaming Mode starts" />
             <Check on={status.wake} label="Controller can wake the box" />
             <Check on={status.netflix} label="Netflix works with a controller or remote" />
+            <Check on={status.bootVideo} label="The box starts with vaporTV's intro" />
           </ul>
         )}
 
@@ -137,6 +139,12 @@ export function Setup() {
               <label>
                 <input type="checkbox" checked={autostart} disabled={working} onChange={(e) => setAutostart(e.target.checked)} />
                 <span>Open vaporTV when Gaming Mode starts</span>
+              </label>
+              <label>
+                <input type="checkbox" checked={bootVideo} disabled={working} onChange={(e) => setBootVideo(e.target.checked)} />
+                <span>
+                  Play the vaporTV intro when the box starts <span className="hint">(as Steam's startup movie)</span>
+                </span>
               </label>
               <label>
                 <input type="checkbox" checked={wake} disabled={working} onChange={(e) => setWake(e.target.checked)} />

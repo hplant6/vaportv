@@ -9,6 +9,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- An intro video as vaporTV opens; any button skips it. Choose it, turn it off, or use your own (any video in `~/Videos/vaporTV Intros`) in Settings → General → Intro.
+- Setup can make the vaporTV intro Steam's startup movie, so the box boots into it (vaporTV then skips its own copy straight after).
 - Updates: vaporTV checks for new versions, shows what changed in each one since yours, and installs it from the couch (Settings → General → Updates).
 - Netflix's arrow-key controls install with the rest of setup (it asks for the admin password once, along with controller wake).
 - A Sofabaton (or other remote) can open Steam's menu with F11, and its Home button closes apps.

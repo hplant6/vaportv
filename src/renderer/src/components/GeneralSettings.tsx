@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
+import type { IntroSettings, LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
 import { OverStage } from './GooglePhotos'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { OPEN_UPDATE_EVENT } from './UpdateDialog'
+import { PLAY_INTRO_EVENT } from './Intro'
 import { OPEN_WELCOME_EVENT } from './Welcome'
 
 const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
@@ -11,7 +12,7 @@ const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' }
 ]
 
-/** Settings → General: where the weather is for, its units, updates, and the welcome tour. */
+/** Settings → General: where the weather is for, its units, the intro video, updates, and the welcome tour. */
 export function GeneralSettings() {
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
@@ -29,6 +30,16 @@ export function GeneralSettings() {
     if (!location || location.unit === unit) return
     setLocation({ ...location, unit })
     window.steamtv.location.setUnit(unit).then(() => window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)))
+  }
+
+  const [intro, setIntro] = useState<IntroSettings | null>(null)
+  useEffect(() => {
+    window.steamtv.intro.get().then(setIntro)
+  }, [])
+  const chooseIntro = (choice: string): void => {
+    if (!intro || intro.choice === choice) return
+    setIntro({ ...intro, choice })
+    window.steamtv.intro.set(choice)
   }
 
   const [updates, setUpdates] = useState<UpdateState | null>(null)
@@ -111,6 +122,40 @@ export function GeneralSettings() {
                 {u.detail && <span className="setting-detail">{u.detail}</span>}
               </button>
             ))}
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <h3 className="settings-heading display">Intro</h3>
+        <div className="setting-list" data-focus-memory="settings-intro">
+          {intro?.choices.map((c) => (
+            <button
+              key={c.id}
+              className={`setting-row${intro.choice === c.id ? ' on' : ''}`}
+              tabIndex={-1}
+              role="radio"
+              aria-checked={intro.choice === c.id}
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => chooseIntro(c.id)}
+            >
+              <span className="radio" aria-hidden="true" />
+              <span className="setting-name display">{c.name}</span>
+              {c.id === 'default' && <span className="setting-detail">Default</span>}
+            </button>
+          ))}
+          <button
+            className="setting-row"
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={() => window.dispatchEvent(new Event(PLAY_INTRO_EVENT))}
+          >
+            <span className="setting-name display">Play now</span>
+            <span className="setting-detail">
+              {intro?.choice === 'off' ? 'Choose an intro first' : `Your own: put a video in ${intro?.folder ?? 'the intro folder'}`}
+            </span>
+          </button>
         </div>
       </div>
 

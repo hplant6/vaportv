@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { introDone } from './Intro'
 
 /** Settings fires this after changing the track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -32,10 +33,16 @@ export function BackgroundMusic() {
       }, 50)
     }
 
+    // Not over the intro video: it has its own sound.
+    let introOver = false
     const start = (): void => {
-      if (!el.src || !document.hasFocus()) return
+      if (!introOver || !el.src || !document.hasFocus()) return
       el.play().then(() => fadeTo(target.current)).catch(() => {})
     }
+    introDone.then(() => {
+      introOver = true
+      start()
+    })
 
     const load = (): void => {
       window.steamtv.getMusic().then(({ url, volume }) => {

@@ -4,6 +4,7 @@ import type { LocationSettings } from '../../../shared/types'
 import { focus, focusDefault, TRAP_CLOSE_EVENT } from '../input/focus'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
+import { introDone } from './Intro'
 
 // The welcome tour: shown once, the first time vaporTV starts, and again from
 // Settings → General. A goes on, B goes back; the last step checks the weather's place.
@@ -15,7 +16,8 @@ export function Welcome() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    window.steamtv.welcome.seen().then((seen) => setOpen(!seen))
+    // After the intro, so the tour isn't hidden behind it.
+    Promise.all([window.steamtv.welcome.seen(), introDone]).then(([seen]) => setOpen(!seen))
     const show = (): void => setOpen(true)
     window.addEventListener(OPEN_WELCOME_EVENT, show)
     return () => window.removeEventListener(OPEN_WELCOME_EVENT, show)

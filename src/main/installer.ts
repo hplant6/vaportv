@@ -21,6 +21,7 @@ import { addShortcutsNow, appState, installForApp } from './appSetup'
 import { loadConfig } from './config'
 import { appCatalog } from './customApps'
 import { launchUrl } from './launch'
+import { bootVideoSelected, installBootVideo, removeBootVideo } from './bootVideo'
 import { NETFLIX_POLICY, netflixPolicy, netflixPolicyCurrent, stageNetflixExtension } from './netflixExtension'
 import { shortcutAppId } from './library/emudeck'
 import { steamRoot } from './library/recents'
@@ -130,6 +131,7 @@ export async function installStatus(): Promise<InstallStatus> {
     autostart: existsSync(join(SERVICE_DIR, SERVICE)),
     wake: existsSync(WAKE_RULE) || existsSync(OLD_WAKE_RULE),
     netflix: existsSync(NETFLIX_POLICY),
+    bootVideo: await bootVideoSelected(config),
     steamRunning: await steamRunning(),
     apps: await Promise.all(
       appCatalog(config).map(async (a) => ({ id: a.id, name: a.name, state: appState(a.id, (await launchUrl(config, 'app', a.id)) !== null) }))
@@ -320,6 +322,11 @@ export async function install(options: InstallOptions, report: Report): Promise<
   await stopSteam(report)
   await addShortcut(target, report)
   await addShortcutsNow(config, options.apps, report)
+  // While Steam is closed: it rewrites config.vdf as it exits.
+  if (options.bootVideo) {
+    await installBootVideo(config)
+    report("vaporTV's intro is now Steam's startup movie")
+  }
   if (options.autostart) await installAutostart(report)
   const netflix = options.apps.includes('netflix') || (await launchUrl(config, 'app', 'netflix')) !== null
   if (netflix) await stageNetflixExtension()
@@ -328,6 +335,7 @@ export async function install(options: InstallOptions, report: Report): Promise<
 }
 
 export async function uninstall(report: Report): Promise<void> {
+  const config = await loadConfig()
   await stopSteam(report)
   const file = await shortcutsFile()
   const vdf = await readShortcuts(file)
@@ -346,6 +354,10 @@ export async function uninstall(report: Report): Promise<void> {
     report('Gaming Mode no longer starts vaporTV')
   }
   await rm(SHORTCUT_ENV, { force: true })
+  if (await bootVideoSelected(config)) {
+    await removeBootVideo(config)
+    report("Steam's own startup movie is back")
+  }
   const rootFiles = (
     [
       [WAKE_RULE, 'controller wake'],

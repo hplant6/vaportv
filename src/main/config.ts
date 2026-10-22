@@ -134,6 +134,8 @@ export interface Config {
   }
   /** The welcome tour has been shown (it shows once, on the first start). */
   welcomeSeen?: boolean
+  /** The intro as vaporTV opens: 'default' (vaporTV's own, the default), 'off', or a file in ~/Videos/vaporTV Intros. */
+  introVideo?: string
   /** An update's version whose window was put off with Later: it doesn't open by itself again. */
   updateDismissed?: string
   /** Testing the updater: a releases JSON (URL or file, shaped as GitHub's API) in place of GitHub's. */

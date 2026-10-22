@@ -324,7 +324,20 @@ export interface InstallStatus {
   wake: boolean
   /** Chrome's policy for vaporTV for Netflix is in place. */
   netflix: boolean
+  /** Steam's startup movie is vaporTV's intro. */
+  bootVideo: boolean
   steamRunning: boolean
+}
+
+/** Settings → General → Intro, and what the intro plays. */
+export interface IntroSettings {
+  /** 'off', 'default' (vaporTV's own) or a file in the intro folder. */
+  choice: string
+  /** What to play (page-relative or a local-file URL), or null for none. */
+  url: string | null
+  choices: { id: string; name: string }[]
+  /** Where your own intros go, for Settings to say (with ~ for home). */
+  folder: string
 }
 
 /** A newer vaporTV on GitHub, with what changed in each release since this one. */
@@ -353,6 +366,8 @@ export interface InstallOptions {
   autostart: boolean
   /** Let a controller wake the box (needs the admin password). */
   wake: boolean
+  /** Make vaporTV's intro Steam's startup movie. */
+  bootVideo: boolean
   /** Apps to set up as well (ids): installed from Flathub, websites added to Steam. */
   apps: string[]
 }
@@ -478,6 +493,13 @@ export interface SteamTvApi {
     /** A place, or null to guess from the internet connection again. */
     set(place: PlaceMatch | null): Promise<void>
     setUnit(unit: TemperatureUnit): Promise<void>
+  }
+  /** The intro video as vaporTV opens. */
+  intro: {
+    get(): Promise<IntroSettings>
+    /** What to play as vaporTV opens: none just after Steam has played it as its startup movie. */
+    opening(): Promise<string | null>
+    set(choice: string): Promise<void>
   }
   /** Updates from GitHub Releases. */
   updates: {
