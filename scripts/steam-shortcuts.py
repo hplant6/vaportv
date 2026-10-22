@@ -4,6 +4,7 @@
     steam-shortcuts.py list FILE
     steam-shortcuts.py add FILE OUT NAME EXE [LAUNCH_OPTIONS] [START_DIR]
     steam-shortcuts.py rename FILE OUT OLD_NAME NEW_NAME   (keeps the app id)
+    steam-shortcuts.py icon FILE OUT NAME ICON_PATH
 
 Steam overwrites shortcuts.vdf on exit, so edit a copy with Steam stopped and put
 it back before Steam starts (scripts/add-shortcut.sh does that on the box).
@@ -115,6 +116,17 @@ def main():
         entry[key] = new
         open(dst, 'wb').write(dump(root) + b'\x08' + tail)
         print(f'renamed {old} -> {new} (app id {field(entry, "appid")[1]} unchanged)')
+        return
+    if len(sys.argv) == 6 and sys.argv[1] == 'icon':
+        src, dst, name, icon = sys.argv[2:6]
+        root, tail = load(src)
+        matches = [e for e in root['shortcuts'].values() if field(e, 'AppName').lower() == name.lower()]
+        if len(matches) != 1:
+            sys.exit(f'{name}: {len(matches)} matches')
+        entry = matches[0]
+        entry[next((k for k in entry if k.lower() == 'icon'), 'icon')] = icon
+        open(dst, 'wb').write(dump(root) + b'\x08' + tail)
+        print(f'{name}: icon {icon}')
         return
     sys.exit(__doc__)
 
