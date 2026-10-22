@@ -11,11 +11,11 @@ import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, 
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
-import { startRemotePower } from './remotePower'
+import { startRemoteKeys } from './remoteKeys'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, returnToGamingMode, uninstall } from './installer'
-import { launch, launchedName, launchUrl } from './launch'
+import { launch, launchedIsGame, launchedName, launchUrl } from './launch'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -546,18 +546,19 @@ app.whenReady().then(async () => {
     const send = (channel: string, ...args: unknown[]): void => {
       if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
     }
-    startHotkey({
+    const foreground = startHotkey({
       bringBack: () => {
         win?.focus()
         ensureSteamtvInFront(logInput)
       },
       nameFor: launchedName,
+      isGame: launchedIsGame,
       onClosing: (name) => send('closing', { active: true, name }),
       onClosed: () => send('closing', { active: false }),
       log: logInput
     })
-    // A remote's power button: sleep.
-    startRemotePower(logInput)
+    // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).
+    startRemoteKeys(logInput, foreground)
   }
 })
 app.on('window-all-closed', () => app.quit())

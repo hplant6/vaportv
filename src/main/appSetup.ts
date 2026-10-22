@@ -1,7 +1,7 @@
 // Setting up the app tiles on a box that doesn't have them yet.
 //
 // Two kinds of app:
-//   - real programs that work with a controller (VacuumTube, Emby Theater, Jellyfin, Plex HTPC):
+//   - real programs that work with a controller (VacuumTube, Emby Theater, Jellyfin, Plex HTPC, Kodi):
 //     installed from Flathub for this user (no password) and launched directly, like the
 //     emulators, so they need no Steam shortcut;
 //   - streaming websites: Chrome (from Flathub) in kiosk mode, as a Steam shortcut, so
@@ -57,6 +57,9 @@ const RECIPES: Record<string, Recipe> = {
   jellyfin: { kind: 'flatpak', flatpak: 'org.jellyfin.JellyfinDesktop', program: 'Jellyfin Desktop', args: ['--tv', '--fullscreen'], controller: true },
   // Plex's TV app (the 10-foot one); its sandbox already sees controllers.
   plex: { kind: 'flatpak', flatpak: 'tv.plex.PlexHTPC', program: 'Plex HTPC' },
+  // Kodi, for an Emby library through its Emby add-on (Emby Theater can't show its
+  // playback controls in Gaming Mode). Its sandbox already sees controllers.
+  kodi: { kind: 'flatpak', flatpak: 'tv.kodi.Kodi', program: 'Kodi' },
   esde: { kind: 'emudeck' }
 }
 

@@ -35,7 +35,8 @@ const SERVICE_TILES: Record<string, string> = {
   peacock: 'fixtures/tiles/peacock.webp',
   tubi: 'fixtures/tiles/tubi.webp',
   jellyfin: 'fixtures/tiles/jellyfin.webp',
-  plex: 'fixtures/tiles/plex.webp'
+  plex: 'fixtures/tiles/plex.webp',
+  kodi: 'fixtures/tiles/kodi.webp'
 }
 
 // Streaming apps' posters come from SteamGridDB, where websites and programs are
@@ -52,7 +53,8 @@ const SERVICE_ART: Record<string, string> = {
   peacock: 'Peacock TV',
   tubi: 'Tubi (Website)',
   jellyfin: 'Jellyfin',
-  plex: 'Plex'
+  plex: 'Plex',
+  kodi: 'Kodi'
 }
 
 const serviceArtKey = (platform: string): string => `service:${platform}`

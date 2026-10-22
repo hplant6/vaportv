@@ -112,6 +112,11 @@
       "tile": "fixtures/tiles/plex.webp"
     },
     {
+      "id": "kodi",
+      "name": "Kodi",
+      "tile": "fixtures/tiles/kodi.webp"
+    },
+    {
       "id": "esde",
       "name": "ES-DE",
       "tile": "fixtures/tiles/esde.webp"

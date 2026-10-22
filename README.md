@@ -40,7 +40,7 @@
 3. The **vaporTV setup** window opens. Choose:
    - **Open vaporTV when Gaming Mode starts** (recommended)
    - **Let my controller wake the box from sleep**: needs an admin password. SteamOS has none until you set one with `passwd` in Konsole; without it this step is skipped.
-   - **Apps** to set up: streaming services open in Google Chrome (installed from Flathub if needed) as Steam shortcuts; YouTube, Emby, Jellyfin and Plex install their own apps from Flathub.
+   - **Apps** to set up: streaming services open in Google Chrome (installed from Flathub if needed) as Steam shortcuts; YouTube, Emby, Jellyfin, Plex and Kodi install their own apps from Flathub.
 4. Click **Install**. Steam closes for a moment while vaporTV is added to your library.
 5. Click **Return to Gaming Mode**. A short welcome tour shows the buttons.
 

@@ -33,7 +33,7 @@ import { parseSleepBlocker } from '../power'
 import { exifDate } from '../screensaver'
 import { deviceKind, parseDevices } from '../bluetooth'
 import { parseNetworks, terseFields } from '../wifi'
-import { hasKey, remoteKeyboards } from '../remotePower'
+import { hasKey, remoteKeyboards } from '../remoteKeys'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -857,8 +857,19 @@ describe('remote power', () => {
     expect(hasKey('7cdb000000000000 0 0 0 0', 116)).toBe(false)
   })
 
-  it("watches remotes' keyboards with a Power key, not the box's own button or controllers", () => {
-    expect(remoteKeyboards(devices)).toEqual(['/dev/input/event5', '/dev/input/event21'])
+  it("watches keyboards with a Power key, not the box's own button or controllers; remotes' Home counts", () => {
+    expect(remoteKeyboards(devices)).toEqual([
+      // The USB remote's System Control part: Power, but no Home on it.
+      { path: '/dev/input/event5', remote: false },
+      { path: '/dev/input/event21', remote: true }
+    ])
+  })
+
+  it("leaves an ordinary keyboard's Home alone", () => {
+    const keyboard = 'I: Bus=0003 Vendor=046d Product=c31c Version=0110\nN: Name="Logitech USB Keyboard"\nH: Handlers=sysrq kbd event9 \nB: KEY=10004000000000 0'
+    expect(hasKey('10004000000000 0', 102)).toBe(true)
+    expect(hasKey('10004000000000 0', 116)).toBe(true)
+    expect(remoteKeyboards(keyboard)).toEqual([{ path: '/dev/input/event9', remote: false }])
   })
 })
 

@@ -190,6 +190,8 @@ export interface HotkeyOptions {
   bringBack: () => void
   /** Name of what steamtv launched for a Steam app id, or of its running emulator game. */
   nameFor: (target: number | 'emulator') => string | undefined
+  /** Whether that is a game (rather than an app such as Kodi or Netflix). */
+  isGame: (target: number | 'emulator') => boolean
   /** An app is being closed (show the closing animation)... */
   onClosing: (name: string | undefined) => void
   /** ...and now it's gone. */
@@ -235,8 +237,29 @@ async function closeForeground(options: HotkeyOptions): Promise<void> {
   }
 }
 
-export function startHotkey(options: HotkeyOptions): void {
-  if (process.platform !== 'linux') return
+/** What's in front: a game, an app, or nothing to close (vaporTV or Steam's own UI). */
+async function inFront(options: HotkeyOptions): Promise<'game' | 'app' | null> {
+  if ((await launchedBySteamtv()).length) return options.isGame('emulator') ? 'game' : 'app'
+  const appid = await appOnScreen()
+  if (appid === null || appid === STEAMTV_APPID || appid === STEAM_UI_APPID) return null
+  return options.isGame(appid) ? 'game' : 'app'
+}
+
+/** Closing what's in front from elsewhere (a remote's Home), and telling a game from an app first. */
+export interface Foreground {
+  close: () => void
+  kind: () => Promise<'game' | 'app' | null>
+}
+
+/** Watches controllers for Select + Start; returns the same closing for other triggers. */
+export function startHotkey(options: HotkeyOptions): Foreground {
+  const foreground: Foreground = {
+    close: () => {
+      closeForeground(options).catch((err) => options.log(`hotkey: ${err}`))
+    },
+    kind: () => inFront(options)
+  }
+  if (process.platform !== 'linux') return foreground
   logXprop = options.log
   const watched = new Map<string, Watched>()
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -287,6 +310,7 @@ export function startHotkey(options: HotkeyOptions): void {
   }
   rescan()
   setInterval(rescan, RESCAN_MS)
+  return foreground
 }
 
 /** Puts steamtv back in front if Steam's UI is over it (e.g. after an app closed). */

@@ -6,7 +6,7 @@ import type { LaunchKind } from '../shared/types'
 import type { Config } from './config'
 import { recordPlay } from './history'
 import { steamRoot } from './library/recents'
-import { activeUserDir } from './library/steam'
+import { activeUserDir, isServiceName } from './library/steam'
 import { arcadeCommand, arcadeGames } from './library/arcade'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
 import { rpcs3Path, ryujinxPath } from './library/emulators'
@@ -37,6 +37,7 @@ const DEFAULT_FAVORITES: Record<string, string | string[]> = {
   tubi: 'Tubi',
   jellyfin: 'Jellyfin',
   plex: ['Plex HTPC', 'Plex'],
+  kodi: 'Kodi',
   // EmuDeck names its shortcut EmulationStationDE; added by hand it's usually ES-DE.
   esde: ['EmulationStationDE', 'ES-DE', 'EmulationStation-DE']
 }
@@ -83,10 +84,22 @@ export async function launchUrl(config: Config, kind: LaunchKind, id: string): P
 // What steamtv launched, for naming it in the closing animation.
 const launchedNames = new Map<number, string>()
 let emulatorGame: string | undefined
+/** Whether what vaporTV runs itself is an app (Kodi, Plex) rather than an emulated game. */
+let directIsApp = false
+/** Steam app ids vaporTV launched that are apps (streaming shortcuts), not games. */
+const launchedApps = new Set<number>()
 
 /** Name of what steamtv launched for a Steam app id, or of its running emulator game. */
 export function launchedName(target: number | 'emulator'): string | undefined {
   return target === 'emulator' ? emulatorGame : launchedNames.get(target)
+}
+
+/**
+ * Whether what's running is a game, so a remote's Home asks twice before closing it.
+ * Anything vaporTV didn't launch counts as one: closing a game unsaved is the worse mistake.
+ */
+export function launchedIsGame(target: number | 'emulator'): boolean {
+  return target === 'emulator' ? !directIsApp : !launchedApps.has(target)
 }
 
 /** The 32-bit app id gamescope reports for a steam://rungameid/<id> launch. */
@@ -116,6 +129,7 @@ async function launchSwitch(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.path} in ${ryujinx}`)
   run(ryujinx, ['--fullscreen', game.path])
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -128,6 +142,7 @@ async function launchPs3(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.titleId} in ${rpcs3}`)
   run(rpcs3, rpcs3Args(game))
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -141,6 +156,7 @@ async function launchXbox360(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.path} in Xenia`)
   run(command, args, env)
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -153,6 +169,7 @@ async function launchGameCube(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.path} in Dolphin`)
   run(command, args)
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -165,6 +182,7 @@ async function launchDreamcast(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.path} in Flycast`)
   run(command, args)
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -177,6 +195,7 @@ async function launchArcade(config: Config, id: string): Promise<boolean> {
   console.log(`steamtv: launching ${game.path} in RetroArch (${game.core})`)
   run(command, args)
   emulatorGame = game.title
+  directIsApp = false
   await recordPlay(id)
   return true
 }
@@ -202,12 +221,14 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
     console.log(`steamtv: launching ${direct.args.join(' ')} directly`)
     run(direct.command, direct.args)
     emulatorGame = name
+    directIsApp = true
     await recordPlay(`app:${id}`)
     return true
   }
   console.log(`steamtv: launching ${url}`)
   const appid = appIdOf(url)
   if (appid !== null && name) launchedNames.set(appid, name)
+  if (appid !== null && (kind === 'app' || (name && isServiceName(name)))) launchedApps.add(appid)
   // `steam <url>` forwards to the running client and exits. Steam launched us with
   // LD_PRELOAD cleared (see the shortcut's launch options), which suits it too.
   run('steam', [url])

@@ -144,8 +144,14 @@ const SERVICES: [RegExp, string][] = [
   [/^peacock$/i, 'peacock'],
   [/^tubi$/i, 'tubi'],
   [/^jellyfin$/i, 'jellyfin'],
-  [/^plex( htpc)?$/i, 'plex']
+  [/^plex( htpc)?$/i, 'plex'],
+  [/^kodi$/i, 'kodi']
 ]
+
+/** Whether a shortcut's name is a streaming service's (an app, not a game). */
+export function isServiceName(name: string): boolean {
+  return SERVICES.some(([pattern]) => pattern.test(name))
+}
 
 // Shortcuts that are launchers rather than things you play.
 const LAUNCHERS = /vaportv|steamtv|emulationstation|es-de/i
