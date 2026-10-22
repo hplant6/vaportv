@@ -10,7 +10,7 @@ import { dreamcastGames } from './dreamcastTab'
 import { playedEmulated, type EmulatedGame } from './emulated'
 import { gamecubeGames } from './gamecubeTab'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
-import { cachedArt } from './steamgriddb'
+import { cachedArt, GAME_ART } from './steamgriddb'
 import { ps3Games } from './ps3Tab'
 import { switchGames } from './switchTab'
 import home from '../../../fixtures/home.json'
@@ -21,26 +21,9 @@ import { xbox360Games } from './xbox360Tab'
 const DEFAULT_RECENT_DAYS = 30
 const DEFAULT_RECENT_LIMIT = 12
 
-// Streaming apps without a SteamGridDB poster fall back to their Favorite Apps
-// tile (16:9), shown centred on a poster-shaped card.
-const SERVICE_TILES: Record<string, string> = {
-  netflix: 'fixtures/tiles/netflix.webp',
-  disney: 'fixtures/tiles/disney.webp',
-  youtube: 'fixtures/tiles/youtube.webp',
-  emby: 'fixtures/tiles/emby.webp',
-  prime: 'fixtures/tiles/prime.webp',
-  max: 'fixtures/tiles/max.webp',
-  hulu: 'fixtures/tiles/hulu.webp',
-  paramount: 'fixtures/tiles/paramount.webp',
-  peacock: 'fixtures/tiles/peacock.webp',
-  tubi: 'fixtures/tiles/tubi.webp',
-  jellyfin: 'fixtures/tiles/jellyfin.webp',
-  plex: 'fixtures/tiles/plex.webp',
-  kodi: 'fixtures/tiles/kodi.webp'
-}
-
-// Streaming apps' posters come from SteamGridDB, where websites and programs are
-// listed under names like these (searched as exact names).
+// App art (tiles, Recents cards, footer icons) comes from SteamGridDB, never from
+// files shipped with vaporTV: those logos belong to the services. Websites and
+// programs are listed there under names like these (searched as exact names).
 const SERVICE_ART: Record<string, string> = {
   netflix: 'Netflix (Website)',
   disney: 'Disney+ (Website)',
@@ -57,16 +40,31 @@ const SERVICE_ART: Record<string, string> = {
   kodi: 'Kodi'
 }
 
+/** Every app with art: the services, and Steam's own tile (kept apart: Steam's games share its platform name). */
+const APP_ART: Record<string, string> = { ...SERVICE_ART, steam: 'Steam' }
+
 const serviceArtKey = (platform: string): string => `service:${platform}`
 
-/** The streaming services, as "games" for the background art fill. */
+/** The apps, as "games" for the background art fill: their art, and an icon for card footers. */
 export function serviceArtGames(): EmulatedGame[] {
-  return Object.entries(SERVICE_ART).map(([platform, name]) => ({
+  return Object.entries(APP_ART).map(([platform, name]) => ({
     id: `service:${platform}`,
     title: name,
     platform,
-    artKey: serviceArtKey(platform)
+    artKey: serviceArtKey(platform),
+    artKinds: [...GAME_ART, 'icon']
   }))
+}
+
+/** The apps' cached art, as page URLs: wide (tiles) and icon (card footers), by app id. */
+export async function appArt(): Promise<Record<string, { wide?: string; icon?: string }>> {
+  const entries = await Promise.all(
+    Object.keys(APP_ART).map(async (id) => {
+      const art = await cachedArt(serviceArtKey(id))
+      return [id, { wide: art.wide && artUrl(art.wide), icon: art.icon && artUrl(art.icon) }] as const
+    })
+  )
+  return Object.fromEntries(entries)
 }
 
 export function steamRoot(config: Config): string {
@@ -78,7 +76,8 @@ export function hasSteam(config: Config): boolean {
 }
 
 
-export function toRecentItem(played: Played, tiles: Record<string, string> = SERVICE_TILES): RecentItem {
+/** `tiles`: wide art for apps (by platform), for a card with no poster to fall back on. */
+export function toRecentItem(played: Played, tiles: Record<string, string> = {}): RecentItem {
   const tile = tiles[played.platform]
   // Streaming apps without a poster (from Steam or SteamGridDB) fall back to their tile.
   if (tile && !played.art.portrait) {
@@ -141,8 +140,10 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       played.art.portrait = (await cachedArt(serviceArtKey(played.platform))).portrait
     }
   }
-  // Your own app tiles: their shortcuts get the tile, like the built-in services.
-  const tiles = { ...SERVICE_TILES }
+  // The services' wide art, and your own app tiles (their shortcuts get the tile too).
+  const art = await appArt()
+  const tiles: Record<string, string> = {}
+  for (const id of Object.keys(SERVICE_ART)) if (art[id]?.wide) tiles[id] = art[id].wide!
   for (const played of recent) {
     const app = played.id.startsWith('shortcut:') ? customAppFor(config, played.title) : undefined
     if (!app) continue

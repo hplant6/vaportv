@@ -101,4 +101,4 @@ npm run dist         # build the AppImage (dist/vaporTV.AppImage)
 
 vaporTV is free software under the [GNU General Public License v3.0 or later](LICENSE). Third-party fonts, sounds, artwork and code it includes, and their licences, are listed in [NOTICE.md](NOTICE.md).
 
-Streaming service names and logos belong to their owners; vaporTV is not affiliated with them. Privacy policy: https://itshenry.me/vaportv/privacy/
+vaporTV ships no service logos: app tiles are downloaded from SteamGridDB on your box (add a free SteamGridDB key in Settings → Artwork), and show the app's name until then. Service names belong to their owners; vaporTV is not affiliated with them. Privacy policy: https://itshenry.me/vaportv/privacy/

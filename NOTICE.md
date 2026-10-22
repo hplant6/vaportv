@@ -21,6 +21,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |
 | Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
 | RetroArch icon (arcade card footers, recoloured white) | `src/renderer/public/fixtures/logos/retroarch.svg` | Simple Icons; the RetroArch logo is libretro's trademark | CC0 1.0 (SVG data) |
+| Emulator icons (card footers: Ryujinx, RPCS3, Xenia, Dolphin, Flycast) | `src/renderer/public/fixtures/logos/` | the emulator projects; each logo is its project's mark | the projects' own (licences not yet confirmed) |
 | UI sounds | `src/renderer/src/assets/sounds/` | alpha-es-de theme for ES-DE | CC0 1.0 |
 | ES-DE logo (Apps tile) | `src/renderer/public/fixtures/tiles/esde.webp` | ES-DE (Northwestern Software AB, Leon Styhre) | MIT |
 | Controller button icons (welcome tour, Settings → Controller) | `src/renderer/src/assets/buttons/` | alpha-es-de theme for ES-DE | CC0-1.0 |
@@ -29,5 +30,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Big Shoulders (clock and date) | `src/renderer/src/assets/fonts/` | Patric King (The Big Shoulders Project Authors) | SIL Open Font License 1.1 (`BigShoulders-OFL.txt`) |
 | React, three.js, React Three Fiber, drei, postprocessing, qrcode and other npm dependencies | `package.json` | their authors | MIT / Apache-2.0 / ISC (see each package) |
 
-Streaming service names and logos used on app tiles are trademarks of their owners;
-vaporTV is not affiliated with them.
+vaporTV ships no streaming-service or app logos. App tiles and their small icons are
+downloaded on your own box from SteamGridDB (with your SteamGridDB key, Settings →
+Artwork), where the community uploads them; without a key a tile shows the app's name.
+Service names are trademarks of their owners; vaporTV is not affiliated with them.

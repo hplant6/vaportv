@@ -785,6 +785,19 @@ button {
   object-fit: contain;
 }
 
+.app-tile-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  font-size: 40px;
+  text-align: center;
+  background: center / cover url('./assets/empty/wide.webp');
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
 .wide-card-title {
   display: flex;
   align-items: center;

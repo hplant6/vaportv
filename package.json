@@ -10,7 +10,6 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "fixtures": "node scripts/prep-fixtures.mjs",
     "dist": "electron-vite build && electron-builder --linux AppImage",
     "pack:netflix": "node scripts/pack-extension.mjs",
     "test": "vitest run",

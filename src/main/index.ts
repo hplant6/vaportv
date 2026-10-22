@@ -26,7 +26,7 @@ import type { EmulatedGame } from './library/emulated'
 import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
-import { hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
+import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
 import { arcadeCoreChoices, arcadeCoreName, arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
 import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames } from './library/steamgriddb'
@@ -232,11 +232,15 @@ const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps3', 'xbox360',
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
   fillArt()
-  const recents = hasSteam(config) ? await loadRecents(config) : home.recents
+  const recents = hasSteam(config) ? await loadRecents(config) : []
   const favorites = favoriteAppIds(config)
+  // Tiles and footer icons from SteamGridDB (see appArt); a tile without one shows its name.
+  const art = await appArt()
+  const icons = Object.fromEntries(Object.entries(art).flatMap(([id, a]) => (a.icon ? [[id, a.icon]] : [])))
   const allApps = await Promise.all(
     appCatalog(config).map(async (app) => ({
       ...app,
+      tile: art[app.id]?.wide ?? app.tile,
       favorite: favorites.includes(app.id),
       state: appState(app.id, (await launchUrl(config, 'app', app.id)) !== null)
     }))
@@ -247,7 +251,7 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
     recents,
     apps,
     allApps,
-    platformLogos: home.platformLogos,
+    platformLogos: { ...icons, ...home.platformLogos },
     recentsLayout: recentsLayout(config, 'home'),
     favoritesLayout: config.favoritesLayout ?? 'rows'
   }

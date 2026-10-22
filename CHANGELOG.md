@@ -15,6 +15,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Kodi can be set up from the apps list, for watching an Emby library.
 - Games and apps without artwork get a proper background behind their name instead of a blank card.
 
+### Changed
+- App tiles and their small card icons now come from SteamGridDB (with your key in Settings → Artwork) instead of being built in; without a key, a tile shows the app's name.
+
 ### Fixed
 - Netflix: the arrows move between profiles on "Who's watching?".
 - Kodi (and other apps vaporTV opens itself) no longer keep running unseen after you go back to vaporTV through Steam's menu.

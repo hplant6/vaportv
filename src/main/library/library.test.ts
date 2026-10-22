@@ -172,8 +172,15 @@ describe('steam library', () => {
   })
 
   it('gives streaming apps their tile as a wide card', () => {
+    const tiles = { emby: 'steamtv-art://emby-wide.png' }
+    const item = toRecentItem({ id: 'shortcut:1', title: 'Emby Theater', platform: 'emby', lastPlayed: now, art: {} }, tiles)
+    expect(item.wide).toBe('steamtv-art://emby-wide.png')
+    expect(item.cover).toBeUndefined()
+  })
+
+  it('leaves an app without art to its name (no bundled logos)', () => {
     const item = toRecentItem({ id: 'shortcut:1', title: 'Emby Theater', platform: 'emby', lastPlayed: now, art: {} })
-    expect(item.wide).toBe('fixtures/tiles/emby.webp')
+    expect(item.wide).toBeUndefined()
     expect(item.cover).toBeUndefined()
   })
 

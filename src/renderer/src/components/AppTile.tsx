@@ -30,7 +30,12 @@ export function AppTile({
           : startLaunch('app', app.id, app.name, `${app.name} isn't set up on this computer yet`)
       }
     >
-      <img src={app.tile} alt="" />
+      {app.tile ? (
+        <img src={app.tile} alt="" />
+      ) : (
+        // No art yet (it comes from SteamGridDB, with a key): its name over vaporTV's static.
+        <span className="app-tile-name display">{app.name}</span>
+      )}
       {needsSetup && <span className="app-setup-badge display">Set up</span>}
       {showFavorite && app.favorite && (
         <span className="favorite-star" aria-label="Favourite">

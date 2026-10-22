@@ -14,17 +14,26 @@ const INDEX = join(ART_CACHE, 'index.json')
 /** Look a missing game up again after this long; SteamGridDB keeps growing. */
 const RETRY_MISSES = 14 * 24 * 60 * 60 * 1000
 
-export type ArtKind = 'portrait' | 'wide' | 'hero'
+export type ArtKind = 'portrait' | 'wide' | 'hero' | 'icon'
+
+/** What a game is looked up for unless it asks for more (apps add their icon). */
+export const GAME_ART: ArtKind[] = ['portrait', 'wide', 'hero']
 
 const DIMENSIONS: Record<ArtKind, string> = {
   portrait: '600x900',
   wide: '460x215,920x430',
   // Logo-free wide banners, for the screensaver.
-  hero: '1920x620,3840x1240'
+  hero: '1920x620,3840x1240',
+  // Any size: shown small, in a card's footer.
+  icon: ''
 }
 
-/** SteamGridDB keeps heroes apart from grids. */
-const ENDPOINT: Record<ArtKind, string> = { portrait: 'grids', wide: 'grids', hero: 'heroes' }
+/** SteamGridDB keeps heroes and icons apart from grids. */
+const ENDPOINT: Record<ArtKind, string> = { portrait: 'grids', wide: 'grids', hero: 'heroes', icon: 'icons' }
+
+/** The API path listing a game's static art of one kind, safest first. */
+const artPath = (kind: ArtKind, gameId: number): string =>
+  `/${ENDPOINT[kind]}/game/${gameId}?${DIMENSIONS[kind] ? `dimensions=${DIMENSIONS[kind]}&` : ''}types=static&nsfw=false&humor=false&epilepsy=false`
 
 interface IndexEntry {
   /** SteamGridDB game id, or null if the search found nothing. */
@@ -33,6 +42,7 @@ interface IndexEntry {
   portrait?: string | null
   wide?: string | null
   hero?: string | null
+  icon?: string | null
   checkedAt: number
   /** Chosen by hand in the Artwork window: automatic lookups leave it alone. */
   manual?: boolean
@@ -129,38 +139,35 @@ async function findGame(key: string, title: string): Promise<number | null> {
 }
 
 /** Cached art for a game, without any network access. */
-export async function cachedArt(cacheKey: string): Promise<{ portrait?: string; wide?: string; hero?: string }> {
+export async function cachedArt(cacheKey: string): Promise<{ portrait?: string; wide?: string; hero?: string; icon?: string }> {
   const entry = (await loadIndex())[cacheKey]
   const keep = (name?: string | null): string | undefined => {
     const path = name && join(ART_CACHE, basename(name))
     return path && existsSync(path) ? path : undefined
   }
-  return { portrait: keep(entry?.portrait), wide: keep(entry?.wide), hero: keep(entry?.hero) }
+  return { portrait: keep(entry?.portrait), wide: keep(entry?.wide), hero: keep(entry?.hero), icon: keep(entry?.icon) }
 }
 
 /**
- * Finds and downloads art for `title` unless already cached (or recently not found).
- * Returns true if anything new was saved.
+ * Finds and downloads art (`kinds`) for `title` unless already cached (or recently not
+ * found). Returns true if anything new was saved.
  */
-export async function fetchArt(key: string, cacheKey: string, title: string): Promise<boolean> {
+export async function fetchArt(key: string, cacheKey: string, title: string, kinds: ArtKind[] = GAME_ART): Promise<boolean> {
   const all = await loadIndex()
   const entry = all[cacheKey]
   if (entry?.manual) return false
   const recentMiss = entry?.gameId === null && Date.now() - entry.checkedAt < RETRY_MISSES
-  // Entries from before heroes were fetched just get their hero added.
-  const complete = entry?.gameId != null && entry.portrait !== undefined && entry.wide !== undefined && entry.hero !== undefined
+  // Entries from before a kind was fetched (heroes, icons) just get it added.
+  const complete = entry?.gameId != null && kinds.every((kind) => entry[kind] !== undefined)
   if (recentMiss || complete) return false
 
   let gameId = entry?.gameId ?? null
   if (gameId === null) gameId = await findGame(key, title)
-  const next: IndexEntry = { gameId, checkedAt: Date.now(), portrait: entry?.portrait, wide: entry?.wide, hero: entry?.hero }
+  const next: IndexEntry = { gameId, checkedAt: Date.now(), portrait: entry?.portrait, wide: entry?.wide, hero: entry?.hero, icon: entry?.icon }
   if (gameId !== null) {
-    for (const kind of ['portrait', 'wide', 'hero'] as const) {
+    for (const kind of kinds) {
       if (next[kind] !== undefined) continue
-      const grids = await api<{ url: string }[]>(
-        key,
-        `/${ENDPOINT[kind]}/game/${gameId}?dimensions=${DIMENSIONS[kind]}&types=static&nsfw=false&humor=false&epilepsy=false`
-      )
+      const grids = await api<{ url: string }[]>(key, artPath(kind, gameId))
       next[kind] = grids?.[0] ? await download(grids[0].url, cacheKey, kind) : null
     }
   }
@@ -189,10 +196,7 @@ export async function searchGames(key: string, query: string): Promise<ArtMatch[
 
 /** A game's static portrait covers on SteamGridDB: full image and thumbnail URLs. */
 export async function gameCovers(key: string, gameId: number): Promise<{ url: string; thumb: string }[]> {
-  const grids = await api<{ url: string; thumb: string }[]>(
-    key,
-    `/grids/game/${gameId}?dimensions=${DIMENSIONS.portrait}&types=static&nsfw=false&humor=false&epilepsy=false`
-  )
+  const grids = await api<{ url: string; thumb: string }[]>(key, artPath('portrait', gameId))
   return (grids ?? []).map((g) => ({ url: g.url, thumb: g.thumb }))
 }
 
@@ -204,10 +208,7 @@ export async function chooseArt(key: string, cacheKey: string, gameId: number, c
   const all = await loadIndex()
   const old = all[cacheKey]
   const first = async (kind: 'wide' | 'hero'): Promise<string | null> => {
-    const grids = await api<{ url: string }[]>(
-      key,
-      `/${ENDPOINT[kind]}/game/${gameId}?dimensions=${DIMENSIONS[kind]}&types=static&nsfw=false&humor=false&epilepsy=false`
-    )
+    const grids = await api<{ url: string }[]>(key, artPath(kind, gameId))
     return grids?.[0] ? download(grids[0].url, cacheKey, kind) : null
   }
   const next: IndexEntry = {
@@ -216,7 +217,8 @@ export async function chooseArt(key: string, cacheKey: string, gameId: number, c
     manual: true,
     portrait: await download(cover, cacheKey, 'portrait'),
     wide: await first('wide'),
-    hero: await first('hero')
+    hero: await first('hero'),
+    icon: old?.icon
   }
   all[cacheKey] = next
   await saveIndex()
@@ -239,7 +241,7 @@ export async function savePortrait(cacheKey: string, png: Buffer, source: string
   const file = `${hash(cacheKey, 16)}-portrait-${hash(source, 6)}.png`
   await mkdir(ART_CACHE, { recursive: true })
   await writeFile(join(ART_CACHE, file), png)
-  all[cacheKey] = { gameId: old?.gameId ?? null, wide: old?.wide, hero: old?.hero, checkedAt: old?.checkedAt ?? Date.now(), manual, portrait: file }
+  all[cacheKey] = { gameId: old?.gameId ?? null, wide: old?.wide, hero: old?.hero, icon: old?.icon, checkedAt: old?.checkedAt ?? Date.now(), manual, portrait: file }
   await saveIndex()
   if (old?.portrait && old.portrait !== file) await rm(join(ART_CACHE, basename(old.portrait)), { force: true })
 }

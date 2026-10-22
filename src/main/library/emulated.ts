@@ -5,7 +5,7 @@ import { artUrl } from './art'
 import { isoDate } from './dates'
 import type { Played } from './steam'
 import { hasLibretroThumbnails, libretroCover } from './libretroThumbnails'
-import { cachedArt, fetchArt, savePortrait } from './steamgriddb'
+import { cachedArt, fetchArt, savePortrait, type ArtKind } from './steamgriddb'
 
 // What the Switch and PS3 tabs share: games steamtv launches in an emulator,
 // with art from SteamGridDB, and its own play history and favourites.
@@ -24,6 +24,8 @@ export interface EmulatedGame {
   thumbnailNames?: string[]
   /** Local 16:9-ish art to fall back on when SteamGridDB has none (a file path). */
   localWide?: string
+  /** SteamGridDB art to fetch, when more than a game's (an app's icon too). */
+  artKinds?: ArtKind[]
 }
 
 async function art(game: EmulatedGame): Promise<Played['art']> {
@@ -114,7 +116,7 @@ export function fillEmulatedArt(name: string, key: string | undefined, load: () 
     for (let i = 0; i < games.length; i += 4) {
       const results = await Promise.all(
         games.slice(i, i + 4).map(async (game) => {
-          const fromGrid = key ? await fetchArt(key, game.artKey, game.artTitle ?? game.title).catch(report(game)) : false
+          const fromGrid = key ? await fetchArt(key, game.artKey, game.artTitle ?? game.title, game.artKinds).catch(report(game)) : false
           const fromLibretro = await fillFromLibretro(game).catch(report(game))
           return fromGrid || fromLibretro
         })
