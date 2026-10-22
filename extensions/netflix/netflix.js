@@ -12,6 +12,8 @@ const ROW = 'section.carousel-row, .lolomoRow, .rowContainer, .row-with-x-column
 const BILLBOARD = '[data-uia="play-video-button"], [data-uia="billboard-more-info"]'
 const MENU = 'a[data-uia^="nav-"], [data-uia="navigation+actions+search+icon"], [data-uia="navigation+profile-menu+trigger"]'
 const PANEL = '[role="dialog"][data-uia^="modal-motion-container-DETAIL"]'
+/** "Who's watching?": profile tiles and Manage Profiles, which have no titles to move between. */
+const GATE = '[data-uia="profile-gate-screen"]'
 // Links off to help pages and within the panel ("more") aren't worth a stop.
 const IN_PANEL = 'a[href^="/"], button, [role="button"], [tabindex="0"]:not(a)'
 const PAGE_NEXT = '[data-uia="carousel-hawkins-right-button"], .handleNext'
@@ -133,6 +135,11 @@ function start() {
 
 function move(direction) {
   const from = document.activeElement
+  const gate = all(GATE).find(shown)
+  if (gate) {
+    const stops = all('button, a[href]', gate).filter(shown)
+    return go(gate.contains(from) && stops.includes(from) ? nearest(from, stops, direction) : stops[0])
+  }
   const open = panel()
   if (open) {
     // Inside the info panel; anything else focused means it has only just opened.
