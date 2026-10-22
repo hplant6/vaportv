@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, UpdateInfo, UpdateState } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -16,6 +16,8 @@ import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from '
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, returnToGamingMode, uninstall } from './installer'
 import { launch, launchedIsGame, launchedName, launchUrl } from './launch'
+import { stageNetflixExtension } from './netflixExtension'
+import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -282,6 +284,45 @@ ipcMain.handle('location:search', (_event, query: string) => searchPlaces(query)
 ipcMain.handle('location:set', (_event, place: PlaceMatch | null) => setPlace(place))
 ipcMain.handle('location:unit', (_event, unit: TemperatureUnit) => setTemperatureUnit(unit))
 // Screenshots skip it (STEAMTV_WELCOME=1 shows it, to take one of the tour itself).
+// Updates: checked a minute after start and every few hours; see updater.ts.
+const UPDATE_EVERY_MS = 6 * 60 * 60 * 1000
+let update: UpdateInfo | null = null
+let updateError: string | null = null
+
+async function updateState(): Promise<UpdateState> {
+  const config = await loadConfig()
+  return { current: app.getVersion(), enabled: canUpdate(config), update, error: updateError, dismissed: config.updateDismissed ?? null }
+}
+
+async function checkUpdates(): Promise<UpdateState> {
+  const config = await loadConfig()
+  if (canUpdate(config)) {
+    const before = update?.version
+    try {
+      update = await checkForUpdate(config)
+      updateError = null
+    } catch (err) {
+      updateError = err instanceof Error ? err.message : String(err)
+    }
+    if (update && update.version !== before) win?.webContents.send('update:available', await updateState())
+  }
+  return updateState()
+}
+
+ipcMain.handle('update:get', () => updateState())
+ipcMain.handle('update:check', () => checkUpdates())
+ipcMain.handle('update:dismiss', (_event, version: string) => saveConfig({ updateDismissed: version }))
+ipcMain.handle('update:install', async (event): Promise<string | null> => {
+  if (!update) return 'There is no update to install'
+  try {
+    await installUpdate(await loadConfig(), update, (percent) => event.sender.send('update:progress', percent))
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err)
+  }
+  await restartAfterUpdate()
+  return null
+})
+
 ipcMain.handle('welcome:seen', async () => !!(await loadConfig()).welcomeSeen || (!!screenshotMode() && !process.env.STEAMTV_WELCOME))
 ipcMain.handle('welcome:done', () => saveConfig({ welcomeSeen: true }))
 ipcMain.handle('art:search', async (_event, id: string, query?: string) => {
@@ -559,6 +600,10 @@ app.whenReady().then(async () => {
     })
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).
     startRemoteKeys(logInput, foreground)
+    // This version's Netflix extension, for Chrome to pick up (see netflixExtension.ts).
+    stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
+    setTimeout(checkUpdates, 60_000)
+    setInterval(checkUpdates, UPDATE_EVERY_MS)
   }
 })
 app.on('window-all-closed', () => app.quit())

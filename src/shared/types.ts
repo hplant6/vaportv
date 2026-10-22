@@ -322,7 +322,30 @@ export interface InstallStatus {
   shortcut: boolean
   autostart: boolean
   wake: boolean
+  /** Chrome's policy for vaporTV for Netflix is in place. */
+  netflix: boolean
   steamRunning: boolean
+}
+
+/** A newer vaporTV on GitHub, with what changed in each release since this one. */
+export interface UpdateInfo {
+  current: string
+  version: string
+  /** The AppImage's size in bytes. */
+  size: number
+  /** Newest first: each release's notes (Markdown, from CHANGELOG.md). */
+  notes: { version: string; date: string | null; body: string }[]
+}
+
+/** Settings and the update window's view of updates. */
+export interface UpdateState {
+  current: string
+  /** False in builds that don't update themselves (the author's, with extras). */
+  enabled: boolean
+  update: UpdateInfo | null
+  /** The last check failed: why. */
+  error: string | null
+  dismissed: string | null
 }
 
 export interface InstallOptions {
@@ -455,6 +478,20 @@ export interface SteamTvApi {
     /** A place, or null to guess from the internet connection again. */
     set(place: PlaceMatch | null): Promise<void>
     setUnit(unit: TemperatureUnit): Promise<void>
+  }
+  /** Updates from GitHub Releases. */
+  updates: {
+    get(): Promise<UpdateState>
+    /** Asks GitHub now. */
+    check(): Promise<UpdateState>
+    /** Downloads and installs the update, then restarts vaporTV; resolves with an error message if it fails. */
+    install(): Promise<string | null>
+    /** Later: the window doesn't open by itself again for this version. */
+    dismiss(version: string): Promise<void>
+    /** A newer version was found (by the check vaporTV runs every few hours). */
+    onAvailable(callback: (state: UpdateState) => void): () => void
+    /** Download progress, in whole percents. */
+    onProgress(callback: (percent: number) => void): () => void
   }
   /** The first-start welcome tour: whether it's been shown, and marking it shown. */
   welcome: {

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "fixtures": "node scripts/prep-fixtures.mjs",
     "dist": "electron-vite build && electron-builder --linux AppImage",
+    "pack:netflix": "node scripts/pack-extension.mjs",
     "test": "vitest run",
     "snapshot": "scripts/snapshot-box.sh",
     "deploy": "scripts/deploy.sh"
@@ -53,6 +54,10 @@
       {
         "from": "session",
         "to": "session"
+      },
+      {
+        "from": "build/netflix",
+        "to": "netflix"
       },
       {
         "from": "build/library-art",

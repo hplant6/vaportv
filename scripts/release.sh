@@ -13,13 +13,17 @@ TAG="v$VERSION"
 git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "main isn't pushed (or is behind); push first."; exit 1; }
 if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then echo "$TAG already exists; bump the version in package.json."; exit 1; fi
+# The release notes (what the update window shows): this version's section of CHANGELOG.md.
+NOTES=$(awk -v v="## $VERSION" '$0 == v { on = 1; next } on && /^## / { exit } on' CHANGELOG.md | sed '/./,$!d')
+[ -n "$NOTES" ] || { echo "CHANGELOG.md has no '## $VERSION' section: rename '## Unreleased' to it (or write one) and commit."; exit 1; }
+# The Netflix extension ships packed: the .crx must be from the sources as they are now.
+packed=$(node -p "require('./build/netflix/extension.json').source")
+current=$(node --input-type=module -e "import { sourceHash } from './scripts/pack-extension.mjs'; console.log(await sourceHash())")
+[ "$packed" = "$current" ] || { echo "The Netflix extension changed since it was packed: bump its version in extensions/netflix/manifest.json, run npm run pack:netflix and commit."; exit 1; }
 
 VAPORTV_PUBLIC=1 npm run dist >/tmp/vaportv-release.log 2>&1 || { tail -20 /tmp/vaportv-release.log; exit 1; }
 # The public build must not carry the extras.
 if grep -q "duckduckgo.com" out/main/index.js; then echo "The build still has the extras in it; not publishing."; exit 1; fi
 
-gh release create "$TAG" dist/vaporTV.AppImage -R "$REPO" --target "$(git rev-parse HEAD)" --title "vaporTV $VERSION" --notes "$(cat <<NOTES
-Download **vaporTV.AppImage** below, open it in Desktop Mode, and follow the setup window. See the [README](https://github.com/$REPO#install) for the steps.
-NOTES
-)"
+gh release create "$TAG" dist/vaporTV.AppImage -R "$REPO" --target "$(git rev-parse HEAD)" --title "vaporTV $VERSION" --notes "$NOTES"
 echo "Published $TAG"

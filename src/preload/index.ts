@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GooglePhotosProgress, SteamTvApi } from '../shared/types'
+import type { GooglePhotosProgress, SteamTvApi, UpdateState } from '../shared/types'
 
 const api: SteamTvApi = {
   getHome: () => ipcRenderer.invoke('home:get'),
@@ -41,6 +41,22 @@ const api: SteamTvApi = {
     search: (query) => ipcRenderer.invoke('location:search', query),
     set: (place) => ipcRenderer.invoke('location:set', place),
     setUnit: (unit) => ipcRenderer.invoke('location:unit', unit)
+  },
+  updates: {
+    get: () => ipcRenderer.invoke('update:get'),
+    check: () => ipcRenderer.invoke('update:check'),
+    install: () => ipcRenderer.invoke('update:install'),
+    dismiss: (version) => ipcRenderer.invoke('update:dismiss', version),
+    onAvailable: (callback) => {
+      const listener = (_event: unknown, state: UpdateState): void => callback(state)
+      ipcRenderer.on('update:available', listener)
+      return () => ipcRenderer.removeListener('update:available', listener)
+    },
+    onProgress: (callback) => {
+      const listener = (_event: unknown, percent: number): void => callback(percent)
+      ipcRenderer.on('update:progress', listener)
+      return () => ipcRenderer.removeListener('update:progress', listener)
+    }
   },
   welcome: {
     seen: () => ipcRenderer.invoke('welcome:seen'),

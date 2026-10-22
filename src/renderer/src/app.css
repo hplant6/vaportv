@@ -970,6 +970,89 @@ button {
   outline: 4px solid var(--color-accent);
 }
 
+/* Update: each release's notes, newest first, scrolling as the cursor moves through them. */
+.update-panel {
+  width: 960px;
+}
+
+.update-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.update-release {
+  padding: 20px 28px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.update-release:focus {
+  outline: 4px solid var(--color-accent);
+  outline-offset: -4px;
+}
+
+.update-version {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.update-date {
+  font-family: var(--font-body);
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.update-body {
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.update-body h4 {
+  margin: 12px 0 4px;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.update-body p,
+.update-body ul {
+  margin: 4px 0;
+}
+
+.update-body ul {
+  padding-left: 28px;
+}
+
+.update-body code {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.update-status {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.update-buttons {
+  display: flex;
+  gap: 24px;
+}
+
+.dialog-button:disabled {
+  opacity: 0.4;
+}
+
 /* On-screen keyboard: ten keys a row, then shift, symbols, space, delete and done. */
 .osk-panel {
   width: 1180px;

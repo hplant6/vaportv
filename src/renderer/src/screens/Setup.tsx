@@ -127,6 +127,7 @@ export function Setup() {
             <Check on={status.shortcut} label="In your Steam library" />
             <Check on={status.autostart} label="Opens when Gaming Mode starts" />
             <Check on={status.wake} label="Controller can wake the box" />
+            <Check on={status.netflix} label="Netflix works with a controller or remote" />
           </ul>
         )}
 

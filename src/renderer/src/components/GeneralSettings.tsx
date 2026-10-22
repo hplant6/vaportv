@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { LocationSettings, TemperatureUnit } from '../../../shared/types'
+import type { LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
 import { OverStage } from './GooglePhotos'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
+import { OPEN_UPDATE_EVENT } from './UpdateDialog'
 import { OPEN_WELCOME_EVENT } from './Welcome'
 
 const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
@@ -10,7 +11,7 @@ const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' }
 ]
 
-/** Settings → General: where the weather is for, its units, and the welcome tour. */
+/** Settings → General: where the weather is for, its units, updates, and the welcome tour. */
 export function GeneralSettings() {
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
@@ -29,6 +30,40 @@ export function GeneralSettings() {
     setLocation({ ...location, unit })
     window.steamtv.location.setUnit(unit).then(() => window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)))
   }
+
+  const [updates, setUpdates] = useState<UpdateState | null>(null)
+  const [checking, setChecking] = useState(false)
+  useEffect(() => {
+    window.steamtv.updates.get().then(setUpdates)
+    return window.steamtv.updates.onAvailable(setUpdates)
+  }, [])
+
+  // With an update: its window. Without: ask GitHub now.
+  const pressUpdates = (): void => {
+    if (!updates?.enabled || checking) return
+    if (updates.update) {
+      window.dispatchEvent(new CustomEvent(OPEN_UPDATE_EVENT, { detail: updates }))
+      return
+    }
+    setChecking(true)
+    window.steamtv.updates.check().then((next) => {
+      setChecking(false)
+      setUpdates(next)
+      if (next.update) window.dispatchEvent(new CustomEvent(OPEN_UPDATE_EVENT, { detail: next }))
+    })
+  }
+
+  const updateDetail = !updates
+    ? ''
+    : !updates.enabled
+      ? 'This build is updated by hand'
+      : checking
+        ? 'Checking…'
+        : updates.update
+          ? `${updates.update.version} is out · A for what's new`
+          : updates.error
+            ? `Couldn't check: ${updates.error} · A to try again`
+            : 'Up to date · A to check now'
 
   const closePicker = useCallback(() => {
     setPicking(false)
@@ -76,6 +111,16 @@ export function GeneralSettings() {
                 {u.detail && <span className="setting-detail">{u.detail}</span>}
               </button>
             ))}
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <h3 className="settings-heading display">Updates</h3>
+        <div className="setting-list" data-focus-memory="settings-updates">
+          <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={pressUpdates}>
+            <span className="setting-name display">vaporTV {updates?.current ?? ''}</span>
+            <span className="setting-detail">{updateDetail}</span>
+          </button>
         </div>
       </div>
 

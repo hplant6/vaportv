@@ -13,6 +13,7 @@ import { tabShown } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
+import { UpdateDialog } from './components/UpdateDialog'
 import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
 import { CoreDialog } from './components/CoreDialog'
@@ -272,6 +273,7 @@ export function App() {
       <SleepPrompt />
       <ArtworkDialog />
       <CoreDialog />
+      <UpdateDialog />
       <AppSetupDialog apps={home?.allApps ?? []} />
       <Welcome />
       <Screensaver />

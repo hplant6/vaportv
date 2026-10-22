@@ -22,6 +22,8 @@ const PAGE_PREV = '[data-uia="carousel-hawkins-left-button"], .handlePrev'
 const PAGE_MS = 700
 
 const DIRECTIONS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+/** Loaded unpacked with manifest.dev.json (which adds debug.js): F8 reloads, F9 dumps the page. */
+const DEV = !!chrome.runtime.getManifest().background
 
 const all = (selector, root = document) => [...root.querySelectorAll(selector)]
 
@@ -184,7 +186,7 @@ window.addEventListener(
     }
     const target = event.target
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
-    if (event.key === 'F9') return dump()
+    if (DEV && event.key === 'F9') return dump()
     // Back closes the info panel (Netflix's own Escape does; Backspace and Back don't).
     if (back && event.key !== 'Escape') {
       const close = panel()?.querySelector('[data-uia="previewModal-closebtn"]')
@@ -195,7 +197,7 @@ window.addEventListener(
       }
       return
     }
-    if (event.key === 'F8') {
+    if (DEV && event.key === 'F8') {
       chrome.runtime.sendMessage({ name: 'reload' })
       return setTimeout(() => location.reload(), 800)
     }

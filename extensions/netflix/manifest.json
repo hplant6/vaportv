@@ -10,7 +10,5 @@
       "css": ["netflix.css"],
       "run_at": "document_start"
     }
-  ],
-  "background": { "service_worker": "debug.js" },
-  "host_permissions": ["http://127.0.0.1:8765/*"]
+  ]
 }

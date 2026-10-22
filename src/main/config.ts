@@ -134,6 +134,10 @@ export interface Config {
   }
   /** The welcome tour has been shown (it shows once, on the first start). */
   welcomeSeen?: boolean
+  /** An update's version whose window was put off with Later: it doesn't open by itself again. */
+  updateDismissed?: string
+  /** Testing the updater: a releases JSON (URL or file, shaped as GitHub's API) in place of GitHub's. */
+  updateFeed?: string
 }
 
 export const configPath = (): string => join(app.getPath('home'), '.config', 'steamtv', 'config.json')

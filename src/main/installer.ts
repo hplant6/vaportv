@@ -6,12 +6,13 @@
 //   2. close Steam, add or update the "vaporTV" non-Steam shortcut (launch options and
 //      library art included), and note its ids for the autostart script
 //   3. install the Gaming Mode autostart service (optional)
-//   4. install the controller wake rule, which needs the admin password (optional)
+//   4. with the admin password (one prompt): the controller wake rule (optional), and
+//      the Chrome policy that installs vaporTV for Netflix (when Netflix is set up)
 
 import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { chmod, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { app } from 'electron'
@@ -20,6 +21,7 @@ import { addShortcutsNow, appState, installForApp } from './appSetup'
 import { loadConfig } from './config'
 import { appCatalog } from './customApps'
 import { launchUrl } from './launch'
+import { NETFLIX_POLICY, netflixPolicy, netflixPolicyCurrent, stageNetflixExtension } from './netflixExtension'
 import { shortcutAppId } from './library/emudeck'
 import { steamRoot } from './library/recents'
 import { activeUserDir } from './library/steam'
@@ -127,6 +129,7 @@ export async function installStatus(): Promise<InstallStatus> {
     shortcut: !!ours,
     autostart: existsSync(join(SERVICE_DIR, SERVICE)),
     wake: existsSync(WAKE_RULE) || existsSync(OLD_WAKE_RULE),
+    netflix: existsSync(NETFLIX_POLICY),
     steamRunning: await steamRunning(),
     apps: await Promise.all(
       appCatalog(config).map(async (a) => ({ id: a.id, name: a.name, state: appState(a.id, (await launchUrl(config, 'app', a.id)) !== null) }))
@@ -247,44 +250,63 @@ async function installAutostart(report: Report): Promise<void> {
   report('vaporTV will open when Gaming Mode starts')
 }
 
+const WAKE_RULE_TEXT = [
+  '# vaporTV: let a controller wake the box from sleep. Switching a wireless controller',
+  "# on reconnects its USB receiver, which wakes the box when the hub it's on may wake it.",
+  'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6b", ATTR{power/wakeup}="enabled"',
+  "# Bluetooth too (a remote's hub, a keyboard): USB Bluetooth adapters are class e0.",
+  'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{bDeviceClass}=="e0", ATTR{power/wakeup}="enabled"',
+  ''
+].join('\n')
+
 /**
- * Lets USB receivers wake the box: with wake enabled on the USB root hubs, switching a
- * controller on (its receiver reconnecting) wakes it. Needs root, so asks for the password.
+ * What needs root, under one password prompt: the wake rule (with wake enabled on the USB
+ * root hubs, switching a controller on, its receiver reconnecting, wakes the box) and the
+ * Chrome policy that installs vaporTV for Netflix.
  */
-async function installWakeRule(report: Report): Promise<void> {
-  if (existsSync(OLD_WAKE_RULE)) return report('Controller wake is already set up')
-  const rule = [
-    '# vaporTV: let a controller wake the box from sleep. Switching a wireless controller',
-    "# on reconnects its USB receiver, which wakes the box when the hub it's on may wake it.",
-    'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="1d6b", ATTR{power/wakeup}="enabled"',
-    "# Bluetooth too (a remote's hub, a keyboard): USB Bluetooth adapters are class e0.",
-    'ACTION=="add|change", SUBSYSTEM=="usb", ATTR{bDeviceClass}=="e0", ATTR{power/wakeup}="enabled"',
-    ''
-  ].join('\n')
+async function adminStep(wake: boolean, netflix: boolean, report: Report): Promise<void> {
+  if (wake && (existsSync(OLD_WAKE_RULE) || (await readFile(WAKE_RULE, 'utf8').catch(() => '')) === WAKE_RULE_TEXT)) {
+    report('Controller wake is already set up')
+    wake = false
+  }
+  const policy = netflix && !(await netflixPolicyCurrent()) ? await netflixPolicy() : null
+  if (netflix && !policy) report('Netflix remote control is already set up')
+  if (!wake && !policy) return
+  const what = [wake && 'controller wake', policy && 'Netflix remote control'].filter(Boolean).join(' and ')
   // SteamOS comes without a password for its user, and the admin prompt needs one.
   const status = await run('passwd', ['-S']).then(
     ({ stdout }) => stdout,
     () => ''
   )
   if (/^\S+ NP /m.test(status)) {
-    return report('Skipped controller wake: it needs an admin password. Set one with `passwd` in Konsole, then run setup again.')
+    return report(`Skipped ${what}: it needs an admin password. Set one with \`passwd\` in Konsole, then run setup again.`)
   }
-  report('Asking for your password to set up controller wake…')
-  const done = await new Promise<boolean>((resolve) => {
-    const child = spawn('pkexec', [
-      'sh',
-      '-c',
-      `cat > ${WAKE_RULE} && udevadm control --reload && udevadm trigger --subsystem-match=usb --action=change`
-    ])
-    child.stdin.end(rule)
-    child.on('error', () => resolve(false))
-    child.on('exit', (code) => resolve(code === 0))
-  })
+  // Written here first, then put in place as root.
+  const temp = await mkdtemp(join(tmpdir(), 'vaportv-'))
+  const steps: string[] = []
+  if (wake) {
+    await writeFile(join(temp, 'wake.rules'), WAKE_RULE_TEXT)
+    steps.push(
+      `install -m 644 ${join(temp, 'wake.rules')} ${WAKE_RULE}`,
+      'udevadm control --reload',
+      'udevadm trigger --subsystem-match=usb --action=change'
+    )
+  }
+  if (policy) {
+    await writeFile(join(temp, 'policy.json'), policy)
+    steps.push(`install -D -m 644 ${join(temp, 'policy.json')} ${NETFLIX_POLICY}`)
+  }
+  report(`Asking for your password to set up ${what}…`)
+  const done = await run('pkexec', ['sh', '-c', steps.join(' && ')]).then(
+    () => true,
+    () => false
+  )
+  await rm(temp, { recursive: true, force: true })
   // Not worth failing the whole install over: everything else is already in place.
   report(
     done
-      ? 'Your controller can now wake the box'
-      : "Skipped controller wake (the password wasn't given). If you never set one, run `passwd` in Konsole, then run setup again."
+      ? `Set up ${what}`
+      : `Skipped ${what} (the password wasn't given). If you never set one, run \`passwd\` in Konsole, then run setup again.`
   )
 }
 
@@ -299,7 +321,9 @@ export async function install(options: InstallOptions, report: Report): Promise<
   await addShortcut(target, report)
   await addShortcutsNow(config, options.apps, report)
   if (options.autostart) await installAutostart(report)
-  if (options.wake) await installWakeRule(report)
+  const netflix = options.apps.includes('netflix') || (await launchUrl(config, 'app', 'netflix')) !== null
+  if (netflix) await stageNetflixExtension()
+  await adminStep(options.wake, netflix, report)
   report('Done. Return to Gaming Mode to start vaporTV.')
 }
 
@@ -322,11 +346,18 @@ export async function uninstall(report: Report): Promise<void> {
     report('Gaming Mode no longer starts vaporTV')
   }
   await rm(SHORTCUT_ENV, { force: true })
-  if (existsSync(WAKE_RULE)) {
-    report('Asking for your password to remove controller wake…')
-    await run('pkexec', ['rm', '-f', WAKE_RULE]).then(
-      () => report('Removed controller wake'),
-      () => report("Couldn't remove controller wake (no password given)")
+  const rootFiles = (
+    [
+      [WAKE_RULE, 'controller wake'],
+      [NETFLIX_POLICY, 'Netflix remote control']
+    ] as const
+  ).filter(([file]) => existsSync(file))
+  if (rootFiles.length) {
+    const what = rootFiles.map(([, name]) => name).join(' and ')
+    report(`Asking for your password to remove ${what}…`)
+    await run('pkexec', ['rm', '-f', ...rootFiles.map(([file]) => file)]).then(
+      () => report(`Removed ${what}`),
+      () => report(`Couldn't remove ${what} (no password given)`)
     )
   }
   report(`Done. Your settings stay in ~/.config/steamtv; delete ${basename(process.env.APPIMAGE ?? 'the AppImage')} to finish.`)
