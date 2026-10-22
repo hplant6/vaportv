@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
 import { idleMs, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
+import logo from '../assets/logo.svg'
 
 /** Settings fires this after changing the delay, or to preview the screensaver (detail: 'preview'). */
 export const SCREENSAVER_EVENT = 'steamtv:screensaver'
@@ -121,11 +122,17 @@ export function Screensaver() {
     return (
       <div className="screensaver over-backdrop">
         <DriftingClock spot={clockSpot} />
+        <ScreensaverLogo />
       </div>
     )
   }
   // No pictures to show (or the clock style): the clock and weather on black.
-  return <div className="screensaver">{style === 'slideshow' && photos.length ? <Slideshow photos={photos} details={details} /> : <DriftingClock spot={clockSpot} />}</div>
+  return (
+    <div className="screensaver">
+      {style === 'slideshow' && photos.length ? <Slideshow photos={photos} details={details} /> : <DriftingClock spot={clockSpot} />}
+      <ScreensaverLogo />
+    </div>
+  )
 }
 
 /** The pictures in turn, each fading in over the last; the D-pad steps back (left, up) or on (right, down). */
@@ -190,7 +197,28 @@ function Slideshow({ photos, details }: { photos: ScreensaverPhoto[]; details: b
   )
 }
 
-const randomSpot = (): React.CSSProperties => ({ left: `${10 + Math.random() * 55}%`, top: `${10 + Math.random() * 60}%` })
+// On the right half it stays below the logo in the top-right corner.
+const randomSpot = (): React.CSSProperties => {
+  const left = 10 + Math.random() * 55
+  const top = left > 40 ? 20 + Math.random() * 50 : 10 + Math.random() * 60
+  return { left: `${left}%`, top: `${top}%` }
+}
+
+/** How far the logo may wander from its corner, in px: too little to see, enough not to burn in. */
+const LOGO_SHIFT = 8
+
+/** vaporTV's logo in the top-right corner, nudged every minute so it never sits still on the panel. */
+function ScreensaverLogo() {
+  const now = useNow()
+  const shift = useRef({ x: 0, y: 0 })
+  const minute = useRef(now.getMinutes())
+  if (minute.current !== now.getMinutes()) {
+    minute.current = now.getMinutes()
+    const step = (): number => Math.round((Math.random() * 2 - 1) * LOGO_SHIFT)
+    shift.current = { x: step(), y: step() }
+  }
+  return <img className="screensaver-logo" src={logo} alt="vaporTV" style={{ transform: `translate(${shift.current.x}px, ${shift.current.y}px)` }} />
+}
 
 /** The game a picture comes from: its logo where there is one, else its name. */
 /** When your photo was taken, e.g. "April 25, 2025". */
