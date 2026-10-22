@@ -210,7 +210,6 @@ async function addShortcut(exe: string, report: Report): Promise<number> {
   return appid
 }
 
-/** vaporTV's capsule, banner, hero and logo for Steam's library (grid folder, named by app id). */
 /** The app icon, kept outside the AppImage (whose files vanish when it closes) for Steam to show. */
 async function installIcon(): Promise<string> {
   const source = resource('library-art', 'icon.png')
@@ -220,14 +219,15 @@ async function installIcon(): Promise<string> {
   return ICON
 }
 
+/** vaporTV's capsule, banner and hero for Steam's library (grid folder, named by app id). */
 async function addLibraryArt(configDir: string, appid: number): Promise<void> {
   const grid = join(configDir, 'grid')
   await mkdir(grid, { recursive: true })
   const art: [string, string][] = [
     ['capsule.png', `${appid}p.png`],
     ['header.png', `${appid}.png`],
-    ['hero.png', `${appid}_hero.png`],
-    ['logo.png', `${appid}_logo.png`]
+    // The hero has the wordmark in it, so there's no separate logo for Steam to lay over it.
+    ['hero.png', `${appid}_hero.png`]
   ]
   for (const [from, to] of art) {
     const source = resource('library-art', from)
