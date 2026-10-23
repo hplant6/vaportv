@@ -1092,9 +1092,21 @@ describe('cartridge and floppy tabs', () => {
     const { scanSnes } = await import('./snes')
     const { scanAmiga } = await import('./amiga')
     const root = await mkdtemp(join(tmpdir(), 'steamtv-retro-'))
-    for (const name of ['Super Metroid (Japan, USA) (En,Ja).zip', 'Legend of Zelda, The - A Link to the Past (USA).sfc', 'gamelist.xml', 'Chrono Trigger (USA).srm'])
+    for (const name of [
+      'Super Metroid (Japan, USA) (En,Ja).zip',
+      'Legend of Zelda, The - A Link to the Past (USA).sfc',
+      'Star Fox (USA) (Super Weekend Competition).zip',
+      'Star Fox (USA).zip',
+      'Spider-Man (World) (Sega).zip',
+      'Spider-Man (USA, Europe) (Acclaim).zip',
+      'gamelist.xml',
+      'Chrono Trigger (USA).srm'
+    ])
       await writeFile(join(root, name), '')
-    expect((await scanSnes(root)).map((g) => g.title)).toEqual(['Super Metroid', 'The Legend of Zelda - A Link to the Past'])
+    const snes = await scanSnes(root, { 'Spider-Man (World) (Sega).zip': 'Spider-Man vs. The Kingpin' })
+    expect(snes.map((g) => g.title)).toEqual(['Spider-Man', 'Spider-Man vs. The Kingpin', 'Star Fox', 'Super Metroid', 'The Legend of Zelda - A Link to the Past'])
+    // The retail cart, not the contest one.
+    expect(snes.find((g) => g.title === 'Star Fox')!.path).toMatch(/Star Fox \(USA\)\.zip$/)
     const amiga = await mkdtemp(join(tmpdir(), 'steamtv-amiga-'))
     for (const name of ['Turrican II - The Final Fight (Europe).zip', 'Worms - The Director\'s Cut (Europe) (AGA).zip', 'metadata.txt'])
       await writeFile(join(amiga, name), '')

@@ -489,12 +489,15 @@ ipcMain.handle('tabs:available', async (): Promise<TabArrangement> => {
   return arrangeTabs(await tabsWithContent(config), config.tabsHidden ?? [], config.tabLayout)
 })
 // Settings → Tabs lists the tabs with something in them: where each sits, and those off (in bar order).
+// A tab that fits in neither the bar nor More is listed as off too, so it can be swapped in.
 ipcMain.handle('tabs:settings', async () => {
   const config = await loadConfig()
   const available = await tabsWithContent(config)
   const hidden = config.tabsHidden ?? []
-  const off = TAB_LIST.map((t) => t.id).filter((t): t is HideableTab => t !== 'home' && available.includes(t) && hidden.includes(t))
-  return { ...arrangeTabs(available, hidden, config.tabLayout), off }
+  const arranged = arrangeTabs(available, hidden, config.tabLayout)
+  const placed = new Set([...arranged.bar, ...arranged.more])
+  const off = TAB_LIST.map((t) => t.id).filter((t): t is HideableTab => t !== 'home' && available.includes(t) && !placed.has(t))
+  return { ...arranged, off }
 })
 ipcMain.handle('tabs:set', async (_event, arrangement: TabArrangement, off: HideableTab[]) => {
   // Tabs with nothing in them aren't listed, so keep where they were for when they have games.

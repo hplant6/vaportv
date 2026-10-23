@@ -31,7 +31,10 @@ export interface DiscOptions {
   images: RegExp
   /** Whether the emulator takes .m3u disc lists (then a game's list is what's opened). */
   playlists: boolean
-  /** Name overrides by file name (relative to the root). */
+  /**
+   * Name overrides by file name (relative to the root). A file's override also keeps it apart from
+   * others that tidy to the same title (two different games both called "Spider-Man").
+   */
   titles?: Record<string, string>
   /** How many folder levels below the root to look in (default 1). */
   depth?: number
@@ -75,6 +78,8 @@ function formatRank(file: string): number {
 
 // Unfinished versions: a game's release wins over them when both are there.
 const PRERELEASE = /\((beta|proto|prototype|demo|sample|preview)\b[^)]*\)/i
+// Contest, kiosk and rental carts ("Star Fox (USA) (Super Weekend Competition)"): the retail release wins.
+const SPECIAL_EDITION = /\([^)]*\b(competition|kiosk|promo|lodgenet)\b[^)]*\)/i
 
 /**
  * One file per disc number: copies of the same disc in other formats, and betas or demos
@@ -82,7 +87,7 @@ const PRERELEASE = /\((beta|proto|prototype|demo|sample|preview)\b[^)]*\)/i
  */
 function distinctDiscs(files: string[]): string[] {
   const byDisc = new Map<number, string>()
-  const rank = (file: string): number => (PRERELEASE.test(file) ? 100 : 0) + formatRank(file)
+  const rank = (file: string): number => (PRERELEASE.test(file) ? 100 : 0) + (SPECIAL_EDITION.test(file) ? 50 : 0) + formatRank(file)
   for (const file of [...files].sort((a, b) => rank(a) - rank(b))) {
     const disc = Number(DISC.exec(file)?.[1] ?? 1)
     if (!byDisc.has(disc)) byDisc.set(disc, file)
@@ -122,7 +127,7 @@ export async function scanDiscImages(root: string, options: DiscOptions): Promis
 
   const byTitle = new Map<string, string[]>()
   for (const file of files.filter((f) => (options.images.test(f) || isList(f)) && !NOT_A_GAME.test(name(f)))) {
-    const title = cleanNoIntroTitle(name(file))
+    const title = options.titles?.[file] ?? cleanNoIntroTitle(name(file))
     byTitle.set(title, [...(byTitle.get(title) ?? []), file])
   }
   return [...byTitle.entries()]
@@ -132,7 +137,7 @@ export async function scanDiscImages(root: string, options: DiscOptions): Promis
       const discs = images.map((f) => join(root, f))
       return {
         id: `${options.platform}:${file}`,
-        title: options.titles?.[file] ?? title,
+        title,
         path: join(root, file),
         discs: discs.length ? discs : [join(root, file)]
       }
