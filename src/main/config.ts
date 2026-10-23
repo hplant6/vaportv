@@ -109,9 +109,12 @@ export interface Config {
   flycastCore?: string
   /** Ryujinx launcher (default ~/Applications/publish/Ryujinx.sh). */
   ryujinx?: string
-  /** Background music: a file in the music folder (relative), or unset for none. Set from Settings. */
+  /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */
   music?: string
   musicVolume?: MusicVolume
+  /** Ambience, the layer under the music: as `music`, from the Ambience folder and the built-in rain. */
+  ambience?: string
+  ambienceVolume?: MusicVolume
   backdrop?: BackdropStyle
   backdropTime?: BackdropTime
   /** Gradient Drift's colours (a preset name, or 'random'); default molten. */

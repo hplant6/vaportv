@@ -19,8 +19,12 @@ const api: SteamTvApi = {
   setFavoritesLayout: (layout) => ipcRenderer.invoke('settings:favoritesLayout', layout),
   setBraveSearchKey: (key) => ipcRenderer.invoke('settings:braveSearchKey', key),
   setSteamGridDbKey: (key) => ipcRenderer.invoke('settings:steamGridDbKey', key),
-  setMusic: (file) => ipcRenderer.invoke('settings:music', file),
-  setMusicVolume: (volume) => ipcRenderer.invoke('settings:musicVolume', volume),
+  setMusic: (kind, choice) => ipcRenderer.invoke('settings:music', kind, choice),
+  setMusicVolume: (kind, volume) => ipcRenderer.invoke('settings:musicVolume', kind, volume),
+  musicFiles: {
+    browse: (dir) => ipcRenderer.invoke('music:browse', dir),
+    add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)
+  },
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
   setBackdrop: (style) => ipcRenderer.invoke('settings:backdrop', style),
   setTunnelColors: (colors) => ipcRenderer.invoke('settings:tunnelColors', colors),

@@ -141,6 +141,23 @@ export interface MusicTrack {
 
 export type MusicVolume = 'low' | 'medium' | 'high'
 
+/** Background sound plays in two layers at once: music, and ambience under it. */
+export type MusicKind = 'music' | 'ambience'
+
+/** One layer as the page plays it: one track looping, or several in random order. */
+export interface MusicLayer {
+  urls: string[]
+  shuffle: boolean
+  volume: number
+}
+
+/** A place in Settings → Music's file browser: a home folder, a drive, a subfolder, or an audio file. */
+export interface BrowseEntry {
+  name: string
+  path: string
+  kind: 'folder' | 'drive' | 'audio'
+}
+
 /** The backdrop's time of day: following the clock, or held at one moment. */
 export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 
@@ -167,11 +184,13 @@ export interface Settings {
   /** Each screen's Recents layout (by default, its tab's layout; Rows on Home). */
   recentsLayouts: Record<RecentsTab, SteamLayout>
   favoritesLayout: SteamLayout
-  /** Audio files in the music folder. */
-  musicTracks: MusicTrack[]
-  /** Chosen background track (relative file), or null for none. */
+  /** Each layer's tracks: built in, then those in the music folder (Ambience/ for ambience, the rest music). */
+  musicTracks: Record<MusicKind, MusicTrack[]>
+  /** Each layer's choice: a track (its file), 'shuffle' for all of them at random, or null for none. */
   music: string | null
+  ambience: string | null
   musicVolume: MusicVolume
+  ambienceVolume: MusicVolume
   backdrop: BackdropStyle
   backdropTime: BackdropTime
   /** Gradient Drift's colours: a preset name, or 'random' for a new one each start. */
@@ -478,8 +497,14 @@ export interface SteamTvApi {
   setFavoritesLayout(layout: SteamLayout): Promise<void>
   setBraveSearchKey(key: string): Promise<void>
   setSteamGridDbKey(key: string): Promise<void>
-  setMusic(file: string | null): Promise<void>
-  setMusicVolume(volume: MusicVolume): Promise<void>
+  /** A layer's choice: a track's file, 'shuffle', or null for none. */
+  setMusic(kind: MusicKind, choice: string | null): Promise<void>
+  setMusicVolume(kind: MusicKind, volume: MusicVolume): Promise<void>
+  /** Adding your own: browse home folders and drives (null for the places to start), then copy a file in as music or ambience. */
+  musicFiles: {
+    browse(dir: string | null): Promise<BrowseEntry[]>
+    add(path: string, kind: MusicKind): Promise<string>
+  }
   getBackdrop(): Promise<{
     style: BackdropStyle
     time: BackdropTime
@@ -493,7 +518,7 @@ export interface SteamTvApi {
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
-  getMusic(): Promise<{ url: string | null; volume: number }>
+  getMusic(): Promise<Record<MusicKind, MusicLayer>>
   getScreensaver(): Promise<ScreensaverData>
   setScreensaverDelay(minutes: number): Promise<void>
   setScreensaverStyle(style: ScreensaverStyle): Promise<void>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
+import { AddMusicRow } from '../components/AddMusic'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
@@ -357,17 +358,37 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setBraveSearchKey(trimmed)
   }
 
-  const chooseMusic = (file: string | null): void => {
-    if (!settings || settings.music === file) return
-    setSettings({ ...settings, music: file })
-    window.steamtv.setMusic(file).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
+  const chooseMusic = (kind: MusicKind, choice: string | null): void => {
+    if (!settings || settings[kind] === choice) return
+    setSettings({ ...settings, [kind]: choice })
+    window.steamtv.setMusic(kind, choice).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
   }
 
-  const chooseVolume = (volume: MusicVolume): void => {
-    if (!settings || settings.musicVolume === volume) return
-    setSettings({ ...settings, musicVolume: volume })
-    window.steamtv.setMusicVolume(volume).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
+  const chooseVolume = (kind: MusicKind, volume: MusicVolume): void => {
+    const field = kind === 'music' ? 'musicVolume' : 'ambienceVolume'
+    if (!settings || settings[field] === volume) return
+    setSettings({ ...settings, [field]: volume })
+    window.steamtv.setMusicVolume(kind, volume).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
   }
+
+  /** One layer's choices: none, shuffle (with two or more tracks), and each track. */
+  const musicChoices = (kind: MusicKind) =>
+    settings && (
+      <>
+        <ChoiceRow label="None" selected={!settings[kind]} onSelect={() => chooseMusic(kind, null)} />
+        {settings.musicTracks[kind].length > 1 && (
+          <ChoiceRow
+            label="Shuffle"
+            detail={`All ${settings.musicTracks[kind].length}, in random order`}
+            selected={settings[kind] === 'shuffle'}
+            onSelect={() => chooseMusic(kind, 'shuffle')}
+          />
+        )}
+        {settings.musicTracks[kind].map((track) => (
+          <ChoiceRow key={track.file} label={track.name} selected={settings[kind] === track.file} onSelect={() => chooseMusic(kind, track.file)} />
+        ))}
+      </>
+    )
 
   const toggleSleepOnControllerOff = (): void => {
     if (!settings) return
@@ -714,36 +735,45 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     music: (
       <>
         <div className="settings-group">
-          <h3 className="settings-heading display">Background music</h3>
-          <p className="settings-help">
-            Plays quietly while you browse and pauses during games. Add your own audio files to {settings?.musicFolder ?? '~/Music'}.
-          </p>
+          <h3 className="settings-heading display">Music</h3>
+          <p className="settings-help">Plays quietly while you browse and pauses during games, over the ambience.</p>
           <div className="setting-list" data-focus-memory="settings-music">
-            {settings && (
-              <>
-                <ChoiceRow label="None" selected={!settings.music} onSelect={() => chooseMusic(null)} />
-                {settings.musicTracks.map((track) => (
-                  <ChoiceRow
-                    key={track.file}
-                    label={track.name}
-                    selected={settings.music === track.file}
-                    onSelect={() => chooseMusic(track.file)}
-                  />
-                ))}
-              </>
-            )}
+            {musicChoices('music')}
           </div>
         </div>
 
         <div className="settings-group">
-          <h3 className="settings-heading display">Music volume</h3>
-          <div className="setting-list" data-focus-memory="settings-volume">
-            {settings &&
-              VOLUMES.map((v) => (
-                <ChoiceRow key={v.id} label={v.name} selected={settings.musicVolume === v.id} onSelect={() => chooseVolume(v.id)} />
-              ))}
+          <h3 className="settings-heading display">Ambience</h3>
+          <p className="settings-help">Sounds of a place, under the music.</p>
+          <div className="setting-list" data-focus-memory="settings-ambience">
+            {musicChoices('ambience')}
           </div>
         </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Add your own</h3>
+          <p className="settings-help">Copies an audio file into {settings?.musicFolder ?? '~/Music'}, as music or ambience.</p>
+          <div className="setting-list" data-focus-memory="settings-music-add">
+            <AddMusicRow onAdded={() => window.steamtv.getSettings().then(setSettings)} />
+          </div>
+        </div>
+
+        {(['music', 'ambience'] as const).map((kind) => (
+          <div className="settings-group" key={kind}>
+            <h3 className="settings-heading display">{kind === 'music' ? 'Music volume' : 'Ambience volume'}</h3>
+            <div className="setting-list" data-focus-memory={`settings-volume-${kind}`}>
+              {settings &&
+                VOLUMES.map((v) => (
+                  <ChoiceRow
+                    key={v.id}
+                    label={v.name}
+                    selected={settings[kind === 'music' ? 'musicVolume' : 'ambienceVolume'] === v.id}
+                    onSelect={() => chooseVolume(kind, v.id)}
+                  />
+                ))}
+            </div>
+          </div>
+        ))}
       </>
     ),
     screensaver: (

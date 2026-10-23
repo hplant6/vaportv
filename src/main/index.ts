@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -43,7 +43,7 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { currentMusic, musicFolder, musicTracks } from './music'
+import { browseMusic, currentMusic, importMusic, musicChoices, musicFolder, musicTracks } from './music'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
 import { bluetoothStatus, connectBluetooth, disconnectBluetooth, findBluetoothDevices, forgetBluetooth, pairBluetooth, setBluetoothPowered } from './bluetooth'
@@ -486,8 +486,9 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     favoritesLayout: config.favoritesLayout ?? 'rows',
     recentsLayouts: Object.fromEntries(RECENTS_TABS.map((tab) => [tab, recentsLayout(config, tab)])) as Record<RecentsTab, SteamLayout>,
     musicTracks: await musicTracks(config),
-    music: config.music ?? null,
+    ...musicChoices(config),
     musicVolume: config.musicVolume ?? 'medium',
+    ambienceVolume: config.ambienceVolume ?? 'medium',
     backdrop: backdropStyle(config),
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
@@ -523,8 +524,16 @@ ipcMain.handle('settings:steamGridDbKey', async (_event, key: string) => {
   fillArt()
 })
 
-ipcMain.handle('settings:music', (_event, file: string | null) => saveConfig({ music: file ?? undefined }))
-ipcMain.handle('settings:musicVolume', (_event, volume: MusicVolume) => saveConfig({ musicVolume: volume }))
+ipcMain.handle('settings:music', async (_event, kind: MusicKind, choice: string | null) => {
+  // Saving either layer settles both, so an old rain-as-music choice doesn't come back.
+  const choices = { ...musicChoices(await loadConfig()), [kind]: choice }
+  return saveConfig({ music: choices.music ?? undefined, ambience: choices.ambience ?? '' })
+})
+ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
+  saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
+)
+ipcMain.handle('music:browse', async (_event, dir: string | null) => browseMusic(await loadConfig(), dir))
+ipcMain.handle('music:add', async (_event, path: string, kind: MusicKind) => importMusic(await loadConfig(), path, kind))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle) => saveConfig({ backdrop: style }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
