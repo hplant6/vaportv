@@ -7,17 +7,20 @@ import { usePageScroll } from './usePageScroll'
 export function Apps({ apps, onNavigate }: { apps: HomeData['apps']; onNavigate: (screen: Screen) => void }) {
   const scroll = usePageScroll()
   return (
-    <div className="page" {...scroll}>
+    <div className="page">
       <NavBar active="apps" onNavigate={onNavigate} />
-
-      <section className="favorites no-recents">
-        <h2 className="section-label display">Apps ({apps.length})</h2>
-        <div className="favorites-grid" data-focus-memory="apps">
-          {apps.map((app, index) => (
-            <AppTile key={app.id} app={app} isDefault={index === 0} showFavorite />
-          ))}
+      <div className="page-viewport">
+        <div className="page-scroll" {...scroll}>
+          <section className="favorites no-recents">
+            <h2 className="section-label display">Apps ({apps.length})</h2>
+            <div className="favorites-grid" data-focus-memory="apps">
+              {apps.map((app, index) => (
+                <AppTile key={app.id} app={app} isDefault={index === 0} showFavorite />
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

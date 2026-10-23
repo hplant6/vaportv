@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useAvailableTabs } from '../availableTabs'
-import pillBottom from '../assets/nav-pill-bottom.svg'
-import pillTop from '../assets/nav-pill-top.svg'
+import navLine from '../assets/nav-line.svg'
 import { GearIcon, PowerIcon } from './icons'
 import { Clock } from './Clock'
+import { BatteryIndicator } from './BatteryIndicator'
 import { DateWeather } from './DateWeather'
 import { PowerMenu } from './PowerMenu'
 
@@ -47,8 +47,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     <>
       <DateWeather after={<span className="nav-edge" data-focus-memory="nav">{tab('settings', <GearIcon />, 'Settings', true)}</span>} />
       <nav className="nav">
-        <img className="pill-top" src={pillTop} alt="" />
-        <img className="pill-bottom" src={pillBottom} alt="" />
+        <img className="nav-line" src={navLine} alt="" />
         <div className="nav-tabs" data-focus-memory="nav">
           {TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}
         </div>
@@ -72,6 +71,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
             {powerOpen && <PowerMenu onClose={() => setPowerOpen(false)} />}
           </span>
         }
+        battery={<BatteryIndicator />}
       />
     </>
   )

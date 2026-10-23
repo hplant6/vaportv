@@ -67,6 +67,19 @@ button {
 .page {
   position: absolute;
   inset: 0;
+}
+
+/* The top bar stays; what's below it scrolls inside the viewport, fading out as it
+   passes under the bar (clear below the bar's line, gone by the line itself). */
+.page-viewport {
+  position: absolute;
+  inset: 0;
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 84px, #000 112px);
+}
+
+.page-scroll {
+  position: absolute;
+  inset: 0;
   transition: transform var(--dur-focus) var(--ease-focus);
 }
 
@@ -121,6 +134,38 @@ button {
   -webkit-text-stroke: 1.5px currentColor;
 }
 
+/* am/pm, with the battery under it: its icon, then the percentage. */
+.clock-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.battery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  -webkit-text-stroke: 0;
+}
+
+.battery-icon {
+  width: 25px;
+  height: 14px;
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.battery.low {
+  color: #ff5a4f;
+}
+
 .clock .meridiem {
   margin-top: 6px;
   font-size: var(--text-meta);
@@ -139,14 +184,10 @@ button {
   pointer-events: none;
 }
 
-.nav .pill-top {
-  left: 8.53px;
-  top: 0;
-}
-
-.nav .pill-bottom {
+/* Both lines in one drawing; its upper line sits where the old one did (the shadow needs the room above). */
+.nav .nav-line {
   left: 0;
-  top: 6.7px;
+  top: -2.8px;
 }
 
 .nav-tabs {

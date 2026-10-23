@@ -69,38 +69,41 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   const firstFilled = rows?.find((row) => row.items.length)?.id
 
   return (
-    <div className="page" {...scroll}>
+    <div className="page">
       <NavBar active={screen} onNavigate={onNavigate} />
-
-      <div className={`collection-rows ${tab?.layout ?? 'rows'}`}>
-        {rows?.length === 0 && <p className="empty-note">{empty}</p>}
-        {rows?.map((row) => (
-          <div key={row.id}>
-            {row.items.length && (row.id === 'recent' ? tab?.recentsLayout : tab?.layout) === 'grid' ? (
-              <CollectionGrid
-                title={titleWithCount(row)}
-                items={row.items}
-                memoryKey={`collection:${row.id}`}
-                hasDefault={row.id === firstFilled}
-                note={notInstalledNote(row.notInstalled) ?? row.hint}
-              />
-            ) : row.items.length ? (
-              <CardRow
-                title={titleWithCount(row)}
-                items={row.items}
-                logos={logos}
-                memoryKey={`collection:${row.id}`}
-                hasDefault={row.id === firstFilled}
-                note={notInstalledNote(row.notInstalled) ?? row.hint}
-              />
-            ) : (
-              <>
-                <h2 className="section-label display">{titleWithCount(row)}</h2>
-                <p className="empty-note">No games here.</p>
-              </>
-            )}
+      <div className="page-viewport">
+        <div className="page-scroll" {...scroll}>
+          <div className={`collection-rows ${tab?.layout ?? 'rows'}`}>
+            {rows?.length === 0 && <p className="empty-note">{empty}</p>}
+            {rows?.map((row) => (
+              <div key={row.id}>
+                {row.items.length && (row.id === 'recent' ? tab?.recentsLayout : tab?.layout) === 'grid' ? (
+                  <CollectionGrid
+                    title={titleWithCount(row)}
+                    items={row.items}
+                    memoryKey={`collection:${row.id}`}
+                    hasDefault={row.id === firstFilled}
+                    note={notInstalledNote(row.notInstalled) ?? row.hint}
+                  />
+                ) : row.items.length ? (
+                  <CardRow
+                    title={titleWithCount(row)}
+                    items={row.items}
+                    logos={logos}
+                    memoryKey={`collection:${row.id}`}
+                    hasDefault={row.id === firstFilled}
+                    note={notInstalledNote(row.notInstalled) ?? row.hint}
+                  />
+                ) : (
+                  <>
+                    <h2 className="section-label display">{titleWithCount(row)}</h2>
+                    <p className="empty-note">No games here.</p>
+                  </>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   )

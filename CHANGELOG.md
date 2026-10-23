@@ -12,6 +12,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - An intro video as vaporTV opens; any button skips it. Choose it, turn it off, or use your own (any video in `~/Videos/vaporTV Intros`) in Settings → General → Intro.
 - Setup can make the vaporTV intro Steam's startup movie, so the box boots into it (vaporTV then skips its own copy straight after).
 - The screensaver shows the vaporTV logo in its top-right corner (it shifts a few pixels every minute, so it can't burn into the screen).
+- The top bar stays in place while the page scrolls; what's below it fades out as it passes under.
+- A remote's Back (Backspace) works in YouTube, which only goes back on Escape.
+- Steam Deck (experimental, handheld): the battery shows beside the clock, and the picture is centred on the Deck's taller screen instead of leaving a strip along the bottom.
 - Updates: vaporTV checks for new versions, shows what changed in each one since yours, and installs it from the couch (Settings → General → Updates).
 - Netflix's arrow-key controls install with the rest of setup (it asks for the admin password once, along with controller wake).
 - A Sofabaton (or other remote) can open Steam's menu with F11, and its Home button closes apps.
@@ -22,5 +25,6 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - App tiles and their small card icons now come from SteamGridDB (with your key in Settings → Artwork) instead of being built in; without a key, a tile shows the app's name.
 
 ### Fixed
+- Home no longer mistakes vaporTV's own background helpers for a game, which could leave YouTube open.
 - Netflix: the arrows move between profiles on "Who's watching?".
 - Kodi (and other apps vaporTV opens itself) no longer keep running unseen after you go back to vaporTV through Steam's menu.

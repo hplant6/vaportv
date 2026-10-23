@@ -10,30 +10,33 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
   const scroll = usePageScroll()
 
   return (
-    <div className="page" {...scroll}>
+    <div className="page">
       <NavBar active="home" onNavigate={onNavigate} />
-
-      {data.recentsLayout === 'grid' && data.recents.length > 0 ? (
-        // Grid: Recents grows downward, so Favorite Apps follows it down the page.
-        <div className="home-flow">
-          <CollectionGrid title="Recents" items={data.recents} memoryKey="recents" hasDefault />
-          <FavoriteApps data={data} variant="flow" />
-        </div>
-      ) : (
-        <>
-          {data.recents.length > 0 && (
-            <CardRow
-              className="recents"
-              title="Recents"
-              items={data.recents}
-              logos={data.platformLogos}
-              memoryKey="recents"
-              hasDefault
-            />
+      <div className="page-viewport">
+        <div className="page-scroll" {...scroll}>
+          {data.recentsLayout === 'grid' && data.recents.length > 0 ? (
+            // Grid: Recents grows downward, so Favorite Apps follows it down the page.
+            <div className="home-flow">
+              <CollectionGrid title="Recents" items={data.recents} memoryKey="recents" hasDefault />
+              <FavoriteApps data={data} variant="flow" />
+            </div>
+          ) : (
+            <>
+              {data.recents.length > 0 && (
+                <CardRow
+                  className="recents"
+                  title="Recents"
+                  items={data.recents}
+                  logos={data.platformLogos}
+                  memoryKey="recents"
+                  hasDefault
+                />
+              )}
+              <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
+            </>
           )}
-          <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
-        </>
-      )}
+        </div>
+      </div>
     </div>
   )
 }

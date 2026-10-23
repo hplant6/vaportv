@@ -84,7 +84,7 @@ All but the D-pad and Select + Start can be moved to other buttons in **Settings
 
 ## Requirements
 
-SteamOS 3.7 or later in Gaming Mode, on a TV. The Steam Deck works on a TV now; handheld play is planned. Emulated games need [EmuDeck](https://www.emudeck.com/).
+SteamOS 3.7 or later in Gaming Mode, on a TV. A Steam Deck works docked to a TV. Handheld play is **experimental**: vaporTV runs and shows the battery, but its layout is made for a TV (with thin bars on the Deck's taller screen) and the live backdrops aren't tuned for battery life yet. Emulated games need [EmuDeck](https://www.emudeck.com/).
 
 ## Building
 

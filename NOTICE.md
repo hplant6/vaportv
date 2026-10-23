@@ -22,6 +22,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
 | RetroArch icon (arcade card footers, recoloured white) | `src/renderer/public/fixtures/logos/retroarch.svg` | Simple Icons; the RetroArch logo is libretro's trademark | CC0 1.0 (SVG data) |
 | Emulator icons (card footers: Ryujinx, RPCS3, Xenia, Dolphin, Flycast) | `src/renderer/public/fixtures/logos/` | the emulator projects; each logo is its project's mark | the projects' own (licences not yet confirmed) |
+| Battery icons (top bar) | `src/renderer/src/assets/battery/` | Henry Plant, from his alpha-es-de theme for ES-DE | CC0 1.0 |
 | UI sounds | `src/renderer/src/assets/sounds/` | alpha-es-de theme for ES-DE | CC0 1.0 |
 | ES-DE logo (Apps tile) | `src/renderer/public/fixtures/tiles/esde.webp` | ES-DE (Northwestern Software AB, Leon Styhre) | MIT |
 | Controller button icons (welcome tour, Settings → Controller) | `src/renderer/src/assets/buttons/` | alpha-es-de theme for ES-DE | CC0-1.0 |

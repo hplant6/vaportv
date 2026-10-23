@@ -35,19 +35,26 @@ const HOME_REFRESH = 5 * 60 * 1000
 /** Shown only when the WebGL background can't run. */
 const FALLBACK_BACKGROUND = 'fixtures/background.jpg'
 
-function useStageScale(): number {
-  const measure = (): number => Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H)
-  const [scale, setScale] = useState(measure)
+/**
+ * The 1920×1080 stage scaled to fit the window, and centred: a screen of another shape
+ * (the Steam Deck's 16:10) gets even bars rather than one strip along the bottom.
+ */
+function useStageFit(): { scale: number; x: number; y: number } {
+  const measure = (): { scale: number; x: number; y: number } => {
+    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H)
+    return { scale, x: Math.round((window.innerWidth - STAGE_W * scale) / 2), y: Math.round((window.innerHeight - STAGE_H * scale) / 2) }
+  }
+  const [fit, setFit] = useState(measure)
   useEffect(() => {
-    const onResize = (): void => setScale(measure())
+    const onResize = (): void => setFit(measure())
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
-  return scale
+  return fit
 }
 
 export function App() {
-  const scale = useStageScale()
+  const fit = useStageFit()
   const [home, setHome] = useState<HomeData | null>(null)
   const [screen, setScreen] = useState<Screen>('home')
   const screenRef = useRef(screen)
@@ -183,7 +190,7 @@ export function App() {
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }
 
   return (
-    <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `scale(${scale})` }}>
+    <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})` }}>
       {!webgl ? (
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (

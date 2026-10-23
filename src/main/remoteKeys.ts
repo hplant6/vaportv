@@ -3,12 +3,14 @@ import { readKeys } from './evdev'
 import type { Foreground } from './hotkey'
 import { power, sleepBlocker } from './power'
 import { pressSteamButton } from './steamButton'
+import { pressVirtualKey } from './virtualKeys'
 
 // Remotes' buttons that work whatever is on screen. Power puts the box to sleep (SteamOS
 // ignores the Power key, as Steam handles the box's own button). Home closes what's in
 // front and comes back to vaporTV, as Select + Start held does on a controller: at once
 // for an app (Kodi, Netflix), on a second press for a game, which would lose its progress.
-// F11 (a Sofabaton button mapped to it) opens Steam's menu, as a controller's Steam
+// Back (Backspace) over YouTube also presses Escape, the only key its TV app goes back
+// on; `backIsEscape` says when. F11 (a Sofabaton button mapped to it) opens Steam's menu, as a controller's Steam
 // button does. Home and F11 only from remotes (a Sofabaton hub, a USB TV remote): on a real keyboard it's a key
 // that games and text boxes use.
 
@@ -17,6 +19,7 @@ const KEY_HOME = 102
 /** Keypad 7, which is Home with Num Lock off: the Sofabaton app's "Home1" sends it. */
 const KEY_KP7 = 71
 const KEY_F11 = 87
+const KEY_BACKSPACE = 14
 /** After waking, Power and Home are ignored this long: a remote's "on" sends one to wake the box. */
 const AFTER_WAKE_MS = 15_000
 /** A game closes when Home is pressed again within this long. */
@@ -55,8 +58,11 @@ export function remoteKeyboards(devices: string): { path: string; remote: boolea
     .map((d) => ({ path: `/dev/input/${d.event}`, remote: d.remote }))
 }
 
-/** `foreground`: what's in front, and closing it, as Select + Start does (from startHotkey). */
-export function startRemoteKeys(log: Log, foreground: Foreground): void {
+/**
+ * `foreground`: what's in front, and closing it, as Select + Start does (from startHotkey).
+ * `backIsEscape`: whether the app in front wants Escape for a remote's Back (YouTube).
+ */
+export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: () => Promise<boolean>): void {
   if (process.platform !== 'linux') return
   const watched = new Set<string>()
   let lastTick = Date.now()
@@ -104,7 +110,15 @@ export function startRemoteKeys(log: Log, foreground: Foreground): void {
         if (value !== 1) return
         if (code === KEY_POWER) pressedPower().catch((err) => log(`remote power: ${err}`))
         else if ((code === KEY_HOME || code === KEY_KP7) && remote) pressedHome().catch((err) => log(`remote home: ${err}`))
-        else if (code === KEY_F11 && remote) {
+        else if (code === KEY_BACKSPACE && remote) {
+          backIsEscape()
+            .then((yes) => {
+              if (!yes) return
+              log('remote back: Escape for YouTube')
+              pressVirtualKey('KEY_ESC', log)
+            })
+            .catch((err) => log(`remote back: ${err}`))
+        } else if (code === KEY_F11 && remote) {
           log('remote F11: Steam menu')
           pressSteamButton(log)
         }

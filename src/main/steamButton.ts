@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { ownHelper } from './helpers'
 
 // Steam's menu from a remote. Steam opens it only for a controller's Steam button (in
 // Gaming Mode no key does it), so this makes a virtual Xbox pad and presses its Guide
@@ -52,6 +53,7 @@ export function pressSteamButton(log: (line: string) => void): void {
     child.on('exit', () => {
       if (helper === child) helper = null
     })
+    ownHelper(child)
     helper = child
   }
   helper.stdin?.write('press\n')

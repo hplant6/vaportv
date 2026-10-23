@@ -329,6 +329,13 @@ export interface InstallStatus {
   steamRunning: boolean
 }
 
+/** The system's own battery (a Steam Deck's), for the top bar. */
+export interface BatteryState {
+  percent: number
+  /** Plugged in: charging, or full. */
+  charging: boolean
+}
+
 /** Settings → General → Intro, and what the intro plays. */
 export interface IntroSettings {
   /** 'off', 'default' (vaporTV's own) or a file in the intro folder. */
@@ -494,6 +501,8 @@ export interface SteamTvApi {
     set(place: PlaceMatch | null): Promise<void>
     setUnit(unit: TemperatureUnit): Promise<void>
   }
+  /** The system's battery, or null for a box without one (controllers' batteries don't count). */
+  getBattery(): Promise<BatteryState | null>
   /** The intro video as vaporTV opens. */
   intro: {
     get(): Promise<IntroSettings>

@@ -20,6 +20,7 @@ import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
 import { bootVideoSelected, steamJustStarted } from './bootVideo'
+import { systemBattery } from './battery'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -89,10 +90,16 @@ function logInput(line: string): void {
 }
 ipcMain.on('input:log', (_event, line: string) => logInput(line))
 
+const windowSize = (): [number, number] | undefined => {
+  const m = /^(\d+)x(\d+)$/.exec(process.env.STEAMTV_WINDOW ?? '')
+  return m ? [Number(m[1]), Number(m[2])] : undefined
+}
+
 function createWindow(): void {
   const window = new BrowserWindow({
-    width: setupMode ? 960 : 1920,
-    height: setupMode ? 720 : 1080,
+    // STEAMTV_WINDOW (e.g. 1280x800, a Steam Deck's screen): another size, for screenshots.
+    width: setupMode ? 960 : windowSize()?.[0] ?? 1920,
+    height: setupMode ? 720 : windowSize()?.[1] ?? 1080,
     useContentSize: true,
     fullscreen: !devUrl && !screenshot && !setupMode,
     frame: !!devUrl || setupMode,
@@ -333,6 +340,8 @@ ipcMain.handle('update:install', async (event): Promise<string | null> => {
   await restartAfterUpdate()
   return null
 })
+
+ipcMain.handle('battery:get', () => systemBattery())
 
 // No intro in screenshot runs (they want the page as it settles).
 ipcMain.handle('intro:get', async () => {
@@ -625,7 +634,9 @@ app.whenReady().then(async () => {
       log: logInput
     })
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).
-    startRemoteKeys(logInput, foreground)
+    // YouTube's TV app (VacuumTube) goes back on Escape only; remotes' Back sends Backspace.
+    // Not while vaporTV is in front, where Escape would go back a second time.
+    startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)))
     // Back in vaporTV some other way (Steam's menu) with an app it opened still running
     // behind: that app is done with, so it's closed rather than left running unseen.
     // Not in an app's first seconds (Kodi's window comes and goes as it starts), and

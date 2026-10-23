@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { readdir, readFile, readlink } from 'node:fs/promises'
 import { readKeys } from './evdev'
+import { isOwnHelper } from './helpers'
 
 // Hold Select + Start to always get back to steamtv: it closes whatever is in front
 // (a game, a streaming app, an emulator), or just brings steamtv forward over
@@ -171,6 +172,8 @@ async function launchedBySteamtv(): Promise<number[]> {
   for (let pid = parents.get(process.pid); pid; pid = parents.get(pid)) ours.add(pid)
   // Under Steam, everything in vaporTV's Steam session; without it (development), its children.
   const session = STEAMTV_APPID === null ? descendants(process.pid, parents) : await steamLaunchProcesses(STEAMTV_APPID)
+  // vaporTV's own helpers (virtual keyboard and controller) aren't something it launched.
+  for (const pid of session) if (isOwnHelper(pid)) for (const p of [pid, ...descendants(pid, parents)]) ours.add(p)
   const candidates = session.filter((pid) => !ours.has(pid))
   // The AppImage runtime sits beside steamtv in the session and keeps its files
   // mounted; closing it pulls steamtv's own files away and crashes it.
@@ -251,6 +254,19 @@ export interface Foreground {
   kind: () => Promise<'game' | 'app' | null>
   /** An app vaporTV opened itself (Kodi, Plex) left running behind it: close it. Games are left alone. */
   closeAppBehind: () => Promise<void>
+  /** Whether what's in front (a Steam app, or one vaporTV opened itself) runs a program matching `pattern`. */
+  runs: (pattern: RegExp) => Promise<boolean>
+}
+
+async function frontRuns(pattern: RegExp): Promise<boolean> {
+  const appid = await appOnScreen()
+  if (appid === null || appid === STEAM_UI_APPID) return false
+  const pids = appid === STEAMTV_APPID ? await launchedBySteamtv() : await steamLaunchProcesses(appid)
+  for (const pid of pids) {
+    const command = (await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).replace(/\0/g, ' ')
+    if (pattern.test(command)) return true
+  }
+  return false
 }
 
 /** Watches controllers for Select + Start; returns the same closing for other triggers. */
@@ -266,7 +282,8 @@ export function startHotkey(options: HotkeyOptions): Foreground {
       if (!pids.length) return
       options.log(`hotkey: ${options.nameFor('emulator') ?? 'an app'} was left running behind vaporTV; closing it (${pids.length} processes)`)
       await terminate(pids, options.log)
-    }
+    },
+    runs: frontRuns
   }
   if (process.platform !== 'linux') return foreground
   logXprop = options.log
