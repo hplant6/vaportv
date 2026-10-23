@@ -20,6 +20,7 @@ const SYSTEMS: Record<string, string[]> = {
   ps2: ['Sony - PlayStation 2'],
   xbox: ['Microsoft - Xbox'],
   dreamcast: ['Sega - Dreamcast'],
+  n64: ['Nintendo - Nintendo 64'],
   ps3: ['Sony - PlayStation 3'],
   xbox360: ['Microsoft - Xbox 360'],
   atomiswave: ['Atomiswave', 'MAME'],

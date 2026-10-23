@@ -57,8 +57,9 @@ export function cleanNoIntroTitle(file: string): string {
       .replace(/\s+v\d+(\.\d+)*$/i, '')
       .replace(/\s+/g, ' ')
       .trim()
-      // No-Intro puts articles last: "House of the Dead 2, The"
-      .replace(/^(.*), (The|A|An)$/, '$2 $1')
+      // No-Intro puts articles last, before any subtitle: "House of the Dead 2, The",
+      // "Legend of Zelda, The - Ocarina of Time"
+      .replace(/^(.*?), (The|A|An)(?= - |$)/, '$2 $1')
   )
 }
 

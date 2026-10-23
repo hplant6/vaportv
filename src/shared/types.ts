@@ -115,14 +115,14 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'n64' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
 /** Where the tabs go, in order: the top bar (after Home) and More's row. */
 export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'n64' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -190,6 +190,7 @@ export interface Settings {
   gamecubeLayout: SteamLayout
   wiiLayout: SteamLayout
   dreamcastLayout: SteamLayout
+  n64Layout: SteamLayout
   arcadeLayout: SteamLayout
   /** Arcade tab carousels turned off. */
   arcadeRowsHidden: ArcadeRow[]
@@ -501,6 +502,8 @@ export interface SteamTvApi {
   getGameCubeTab(): Promise<LibraryTab>
   /** The Dreamcast tab: Flycast disc images. */
   getDreamcastTab(): Promise<LibraryTab>
+  /** The N64 tab: cartridge dumps for Mupen64Plus-Next. */
+  getN64Tab(): Promise<LibraryTab>
   /** The Arcade tab: ROM sets from the Atomiswave, NAOMI, CPS, Neo Geo and arcade folders. */
   getArcadeTab(): Promise<LibraryTab>
   /** Adds or removes a Switch game from Favorites; resolves with whether it's now a favourite. */

@@ -9,6 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- An N64 tab: Nintendo 64 games (from EmuDeck's roms/n64) open in RetroArch's Mupen64Plus-Next core.
 - Background sound in two layers: music, with ambience under it, each with its own track (or Shuffle, for all of them in random order) and volume.
 - Three more built-in ambiences, alongside Rain: Crickets, Ocean waves and Birdsong (CC0, from freesound.org).
 - Settings → Music → Add your own: pick an audio file from a USB drive, SD card or this machine, say whether it's music or ambience, and vaporTV copies it in.
@@ -21,10 +22,12 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Changed
 - The settings and power icons are the height of the tab names, and sit a little further out.
 - Settings has a new look: the categories in a panel on the left, each group of settings in its own panel on the right, and the backdrop dimmed behind them.
-- The tab you're on is gold without an underline; the one the cursor is on is yellow.
+- The tab you're on is gold and glowing, without an underline.
 - Games without art show their name on a black band across the card.
 
 ### Fixed
+- Your videos no longer freeze on their last frame: videos (and music) are served so they can seek, which MP4s with their index at the end need to loop.
+- Titles with the article moved to the end before a subtitle read properly: "The Legend of Zelda - The Wind Waker", not "Legend of Zelda, The - …".
 - When a game is there both released and as a beta or demo, its tab opens the released one.
 
 ## 0.9.0

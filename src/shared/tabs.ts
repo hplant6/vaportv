@@ -17,6 +17,7 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'gamecube', label: 'GameCube' },
   { id: 'wii', label: 'Wii' },
   { id: 'dreamcast', label: 'Dreamcast' },
+  { id: 'n64', label: 'N64' },
   { id: 'arcade', label: 'Arcade' }
 ]
 

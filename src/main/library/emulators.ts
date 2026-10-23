@@ -28,6 +28,7 @@ export const XEMU = ['flatpak', 'run', 'app.xemu.xemu']
 export const RETROARCH = ['flatpak', 'run', 'org.libretro.RetroArch']
 const CORES = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores')
 export const FLYCAST_CORE = join(CORES, 'flycast_libretro.so')
+export const MUPEN64_CORE = join(CORES, 'mupen64plus_next_libretro.so')
 
 /** The RetroArch cores the Arcade tab uses by default, by board family. */
 export type ArcadeCore = 'flycast' | 'fbneo' | 'mame'
@@ -71,6 +72,8 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return canRun(config.dolphin ?? DOLPHIN)
     case 'dreamcast':
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.flycastCore ?? FLYCAST_CORE)
+    case 'n64':
+      return canRun(config.retroarch ?? RETROARCH) && existsSync(config.mupen64Core ?? MUPEN64_CORE)
     case 'arcade':
       return canRun(config.retroarch ?? RETROARCH) && (['flycast', 'fbneo', 'mame'] as const).some((core) => existsSync(arcadeCoreFile(config, core)))
   }

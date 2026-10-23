@@ -302,6 +302,16 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'n64' && home && (
+        <Library
+          screen="n64"
+          load={window.steamtv.getN64Tab}
+          empty="No N64 games found. vaporTV looks in your EmuDeck roms/n64 folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'arcade' && home && (
         <Library
           screen="arcade"

@@ -9,6 +9,7 @@ import { steamRoot } from './library/recents'
 import { activeUserDir, isServiceName } from './library/steam'
 import { arcadeCommand, arcadeGames } from './library/arcade'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
+import { loadN64Games, mupen64Command } from './library/n64Tab'
 import { rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
 import { loadPs2Games, pcsx2Command } from './library/ps2Tab'
@@ -23,7 +24,7 @@ import { childObject, childString, parseBinaryVdf } from './library/vdf'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
-// Emulated games (Switch, PS2, PS3, Xbox, Xbox 360, GameCube, Wii, Dreamcast, arcade) open in their emulator directly.
+// Emulated games (Switch, PS2, PS3, Xbox, Xbox 360, GameCube, Wii, Dreamcast, N64, arcade) open in their emulator directly.
 
 // Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
 // the first of several names that exists). Override or extend with `favorites` in config.json.
@@ -236,6 +237,19 @@ async function launchDreamcast(config: Config, id: string): Promise<boolean> {
   return true
 }
 
+/** N64 games open in RetroArch's Mupen64Plus-Next core. */
+async function launchN64(config: Config, id: string): Promise<boolean> {
+  const game = (await loadN64Games(config)).find((g) => g.id === id)
+  if (!game) return false
+  const { command, args } = mupen64Command(config, game)
+  console.log(`steamtv: launching ${game.path} in Mupen64Plus-Next`)
+  run(command, args)
+  emulatorGame = game.title
+  directIsApp = false
+  await recordPlay(id)
+  return true
+}
+
 /** Arcade games open in RetroArch with their board's core (Flycast, FBNeo or MAME). */
 async function launchArcade(config: Config, id: string): Promise<boolean> {
   const game = (await arcadeGames(config)).find((g) => g.id === id)
@@ -259,6 +273,7 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('gamecube:')) return launchGameCube(config, id)
   if (id.startsWith('wii:')) return launchWii(config, id)
   if (id.startsWith('dreamcast:')) return launchDreamcast(config, id)
+  if (id.startsWith('n64:')) return launchN64(config, id)
   if (id.startsWith('arcade:')) return launchArcade(config, id)
   // An app opened directly before (from Recents) opens the same way.
   if (id.startsWith('app:')) return launch(config, 'app', id.slice(4), name)

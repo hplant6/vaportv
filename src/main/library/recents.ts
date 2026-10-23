@@ -7,6 +7,7 @@ import { artUrl } from './art'
 import { isoDate } from './dates'
 import { arcadeGames } from './arcade'
 import { dreamcastGames } from './dreamcastTab'
+import { n64Games } from './n64Tab'
 import { playedEmulated, type EmulatedGame } from './emulated'
 import { gamecubeGames } from './gamecubeTab'
 import { ps2Games } from './ps2Tab'
@@ -134,6 +135,7 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await gamecubeGames(config)),
       ...(await wiiGames(config)),
       ...(await dreamcastGames(config)),
+      ...(await n64Games(config)),
       ...(await arcadeGames(config))
     ])
   ])

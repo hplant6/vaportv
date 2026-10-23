@@ -87,6 +87,7 @@
     "gamecube": "fixtures/logos/dolphin.png",
     "wii": "fixtures/logos/dolphin.png",
     "dreamcast": "fixtures/logos/flycast-white.png",
+    "n64": "fixtures/logos/retroarch.svg",
     "atomiswave": "fixtures/logos/retroarch.svg",
     "naomi": "fixtures/logos/retroarch.svg",
     "naomi2": "fixtures/logos/retroarch.svg",

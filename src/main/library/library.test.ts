@@ -1041,3 +1041,23 @@ describe('Wii', () => {
     expect(games.find((g) => g.title === 'Fishing Master World Tour')!.path).toMatch(/\(En,Fr,Es\)\.rvz$/)
   })
 })
+
+describe('n64', () => {
+  it('lists one game per cartridge, released over beta, with No-Intro titles tidied', async () => {
+    const { scanN64 } = await import('./n64')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-n64-'))
+    for (const name of [
+      'Super Mario 64 (USA).zip',
+      "Legend of Zelda, The - Ocarina of Time (USA).zip",
+      'Bust-A-Move 3 DX (USA) (Beta) (1998-08-28).zip',
+      'Bust-A-Move 3 DX (USA).z64',
+      'Mario Kart 64 (USA) (LodgeNet).zip',
+      'metadata.txt'
+    ])
+      await writeFile(join(root, name), '')
+    const games = await scanN64(root)
+    expect(games.map((g) => g.title)).toEqual(['Bust-A-Move 3 DX', 'Mario Kart 64', 'Super Mario 64', 'The Legend of Zelda - Ocarina of Time'])
+    expect(games.find((g) => g.title === 'Bust-A-Move 3 DX')!.path).toMatch(/\(USA\)\.z64$/)
+    expect(games[0].id).toBe('n64:Bust-A-Move 3 DX (USA).z64')
+  })
+})

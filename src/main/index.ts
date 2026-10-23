@@ -24,6 +24,7 @@ import { systemBattery } from './battery'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
+import { fillN64Art, loadN64Tab, n64Games } from './library/n64Tab'
 import { emulatorInstalled } from './library/emulators'
 import type { EmulatedGame } from './library/emulated'
 import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
@@ -190,7 +191,7 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
-  const [sw, ps2, ps3, xb, x360, gc, wii, dc, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, arcadeGames].map(has))
+  const [sw, ps2, ps3, xb, x360, gc, wii, dc, n64, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, n64Games, arcadeGames].map(has))
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
@@ -202,6 +203,7 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
     gamecube: gc && emulatorInstalled(config, 'gamecube'),
     wii: wii && emulatorInstalled(config, 'wii'),
     dreamcast: dc && emulatorInstalled(config, 'dreamcast'),
+    n64: n64 && emulatorInstalled(config, 'n64'),
     arcade: arc && emulatorInstalled(config, 'arcade')
   }
   tabsCache = { at: Date.now(), tabs }
@@ -227,7 +229,7 @@ async function setupRun(
 
 /** The console game behind a card id (Recents or a console tab), for the Artwork window. */
 async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | undefined> {
-  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, arcadeGames]
+  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, n64Games, arcadeGames]
   for (const load of loaders) {
     const game = (await load(config).catch(() => [])).find((g) => g.id === id)
     if (game) return game
@@ -259,6 +261,7 @@ const WEB_QUERY: Record<string, string> = {
   gamecube: 'GameCube box art',
   wii: 'Wii box art',
   dreamcast: 'Dreamcast box art',
+  n64: 'Nintendo 64 box art',
   atomiswave: 'arcade flyer',
   naomi: 'arcade flyer',
   naomi2: 'arcade flyer',
@@ -274,7 +277,7 @@ function favoriteAppIds(config: Config): string[] {
   return config.favoriteApps ?? home.apps.map((app) => app.id)
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'dreamcast', 'arcade']
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'dreamcast', 'n64', 'arcade']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -507,6 +510,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     gamecubeLayout: config.gamecubeLayout ?? 'rows',
     wiiLayout: config.wiiLayout ?? 'rows',
     dreamcastLayout: config.dreamcastLayout ?? 'rows',
+    n64Layout: config.n64Layout ?? 'rows',
     arcadeLayout: config.arcadeLayout ?? 'rows',
     arcadeRowsHidden: config.arcadeRowsHidden ?? [],
     favoritesLayout: config.favoritesLayout ?? 'rows',
@@ -629,7 +633,7 @@ function fillArt(): void {
       const updated = (): void => {
         if (win && !win.isDestroyed()) win.webContents.send('art:updated')
       }
-      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
+      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillN64Art, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
     }
   )
@@ -675,6 +679,7 @@ ipcMain.handle('dreamcast-tab:get', async () => {
   fillArt()
   return loadDreamcastTab(config)
 })
+ipcMain.handle('n64-tab:get', async () => loadN64Tab(await loadConfig()))
 ipcMain.handle('xbox-tab:get', async () => {
   const config = await loadConfig()
   fillArt()

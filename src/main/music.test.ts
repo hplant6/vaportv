@@ -73,3 +73,15 @@ describe('background music', () => {
     expect((await musicTracks(config)).music.map((t) => t.name)).toContain('New tune (2)')
   })
 })
+
+describe('media ranges', () => {
+  it('reads Range headers as a web server would', async () => {
+    const { parseRange } = await import('./library/mediaRange')
+    expect(parseRange(null, 1000)).toBeNull()
+    expect(parseRange('bytes=0-', 1000)).toEqual({ start: 0, end: 999 })
+    expect(parseRange('bytes=100-199', 1000)).toEqual({ start: 100, end: 199 })
+    expect(parseRange('bytes=900-5000', 1000)).toEqual({ start: 900, end: 999 })
+    expect(parseRange('bytes=-200', 1000)).toEqual({ start: 800, end: 999 })
+    expect(parseRange('bytes=1000-', 1000)).toBe('unsatisfiable')
+  })
+})

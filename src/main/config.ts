@@ -87,6 +87,8 @@ export interface Config {
   dolphin?: string[]
   /** How the Dreamcast tab lays out its games (default rows). Set from Settings. */
   dreamcastLayout?: SteamLayout
+  /** How the N64 tab lays out its games (default rows). Set from Settings. */
+  n64Layout?: SteamLayout
   /** How the Arcade tab lays out its games (default rows). Set from Settings. */
   arcadeLayout?: SteamLayout
   /** Arcade game names by ROM set (e.g. "ngfrog": "Frog Feast"), for sets MAME's list doesn't know. */
@@ -103,10 +105,14 @@ export interface Config {
   favoritesLayout?: SteamLayout
   /** Name overrides for Dreamcast games, by file name (relative to roms/dreamcast). */
   dreamcastTitles?: Record<string, string>
+  /** Name overrides for N64 games, by file name (relative to roms/n64). */
+  n64Titles?: Record<string, string>
   /** Command that runs RetroArch (default ["flatpak", "run", "org.libretro.RetroArch"]). */
   retroarch?: string[]
   /** Flycast core for RetroArch (default the Flatpak's cores/flycast_libretro.so). */
   flycastCore?: string
+  /** RetroArch's Mupen64Plus-Next core for the N64 tab (default: the Flatpak's cores folder). */
+  mupen64Core?: string
   /** Ryujinx launcher (default ~/Applications/publish/Ryujinx.sh). */
   ryujinx?: string
   /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */

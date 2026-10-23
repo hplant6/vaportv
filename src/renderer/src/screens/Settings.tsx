@@ -642,6 +642,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">N64 tab layout</h3>
+          <p className="settings-help">How the N64 tab shows your games.</p>
+          {settings && <LayoutChoice tab="n64" value={settings.n64Layout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="n64" value={settings.recentsLayouts.n64} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Arcade tab layout</h3>
           <p className="settings-help">How the Arcade tab shows each board's games.</p>
           {settings && <LayoutChoice tab="arcade" value={settings.arcadeLayout} onChoose={chooseLayout} />}

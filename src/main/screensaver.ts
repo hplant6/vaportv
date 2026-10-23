@@ -5,6 +5,7 @@ import type { ScreensaverData, ScreensaverPhoto, ScreensaverSources, Screensaver
 import type { Config } from './config'
 import { artUrl } from './library/art'
 import { dreamcastGames } from './library/dreamcastTab'
+import { n64Games } from './library/n64Tab'
 import { gamecubeGames } from './library/gamecubeTab'
 import { ps2Games } from './library/ps2Tab'
 import { xboxGames } from './library/xboxTab'
@@ -67,7 +68,7 @@ async function gameArt(config: Config): Promise<ScreensaverPhoto[]> {
       }
     }
   }
-  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, arcadeGames]
+  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, n64Games, arcadeGames]
   const emulated = (await Promise.all(loaders.map((load) => load(config).catch(() => [])))).flat()
   for (const game of emulated) {
     const { hero } = await cachedArt(game.artKey)
