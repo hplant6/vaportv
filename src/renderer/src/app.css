@@ -443,6 +443,11 @@ button {
   color: var(--color-accent);
 }
 
+/* Delete game (Select's game options) waiting for its second press. */
+.setting-row.danger {
+  color: #ff6b5a;
+}
+
 /* Power Off waiting for its second press. */
 .power-item.confirm {
   color: #ff6b5a;

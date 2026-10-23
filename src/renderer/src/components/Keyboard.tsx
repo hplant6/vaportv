@@ -24,6 +24,7 @@ export function OnScreenKeyboard({
   title,
   prompt,
   secret = false,
+  initial = '',
   onDone,
   onCancel
 }: {
@@ -31,11 +32,13 @@ export function OnScreenKeyboard({
   prompt?: string
   /** A password: shown as dots until Show. */
   secret?: boolean
+  /** Text to start from (a name being changed). */
+  initial?: string
   onDone: (text: string) => void
   onCancel: () => void
 }) {
   const panel = useRef<HTMLDivElement>(null)
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initial)
   const [shift, setShift] = useState(false)
   const [symbols, setSymbols] = useState(false)
   const [reveal, setReveal] = useState(!secret)

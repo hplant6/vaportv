@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { discContent, dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { KRONOS_CORE, RETROARCH } from './emulators'
 import { scanSaturn, type SaturnGame } from './saturn'
@@ -20,7 +20,7 @@ function asEmulated(game: SaturnGame): EmulatedGame {
 }
 
 export async function saturnGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadSaturnGames(config)).map(asEmulated)
+  return withNames(config, (await loadSaturnGames(config)).map(asEmulated))
 }
 
 export async function loadSaturnTab(config: Config): Promise<LibraryTab> {

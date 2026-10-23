@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { GENESIS_PLUS_GX_CORE, RETROARCH } from './emulators'
 import { scanGenesis, type GenesisGame } from './genesis'
@@ -20,7 +20,7 @@ function asEmulated(game: GenesisGame): EmulatedGame {
 }
 
 export async function genesisGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadGenesisGames(config)).map(asEmulated)
+  return withNames(config, (await loadGenesisGames(config)).map(asEmulated))
 }
 
 export async function loadGenesisTab(config: Config): Promise<LibraryTab> {

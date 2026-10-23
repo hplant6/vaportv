@@ -1,4 +1,4 @@
-import { activate, back, coreMenu, favorite, move, options, switchTab, type Direction } from './focus'
+import { activate, back, coreMenu, favorite, gameMenu, move, options, switchTab, type Direction } from './focus'
 import { noteInput } from './idle'
 import { stepVolume } from './volume'
 import { ASSIGNABLE_BUTTONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
@@ -27,6 +27,7 @@ let backDown = false
 let favoriteDown = false
 let optionsDown = false
 let coreDown = false
+let gameMenuDown = false
 let anyDown = false
 let previousTabDown = false
 let nextTabDown = false
@@ -97,6 +98,7 @@ function poll(now: number): void {
   let favoritePressed = false
   let optionsPressed = false
   let corePressed = false
+  let gameMenuPressed = false
   let previousTab = false
   let nextTab = false
   let volumeDown = false
@@ -111,6 +113,7 @@ function poll(now: number): void {
     favoritePressed ||= down(pad, 'favorite')
     optionsPressed ||= down(pad, 'options')
     corePressed ||= down(pad, 'core')
+    gameMenuPressed ||= down(pad, 'gameMenu')
     previousTab ||= down(pad, 'previousTab')
     nextTab ||= down(pad, 'nextTab')
     volumeDown ||= down(pad, 'volumeDown')
@@ -118,7 +121,7 @@ function poll(now: number): void {
   }
 
   if (waitForRelease) {
-    if (direction || confirm || backPressed || favoritePressed || optionsPressed || corePressed || previousTab || nextTab || volumeDown || volumeUp) return
+    if (direction || confirm || backPressed || favoritePressed || optionsPressed || corePressed || gameMenuPressed || previousTab || nextTab || volumeDown || volumeUp) return
     waitForRelease = false
   }
 
@@ -154,6 +157,8 @@ function poll(now: number): void {
   optionsDown = optionsPressed
   if (corePressed && !coreDown) coreMenu()
   coreDown = corePressed
+  if (gameMenuPressed && !gameMenuDown) gameMenu()
+  gameMenuDown = gameMenuPressed
   if (previousTab && !previousTabDown) switchTab(-1)
   previousTabDown = previousTab
   if (nextTab && !nextTabDown) switchTab(1)

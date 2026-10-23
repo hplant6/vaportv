@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { scanWii, type WiiGame } from './wii'
 import { romRoot } from './emudeck'
 import { dumpName } from './discs'
@@ -21,7 +21,7 @@ function asEmulated(game: WiiGame): EmulatedGame {
 }
 
 export async function wiiGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadWiiGames(config)).map(asEmulated)
+  return withNames(config, (await loadWiiGames(config)).map(asEmulated))
 }
 
 export async function loadWiiTab(config: Config): Promise<LibraryTab> {

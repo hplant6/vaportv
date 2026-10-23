@@ -125,6 +125,25 @@ export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
+/** Select on a console game: the game options window. */
+export interface EmulatorChoice {
+  /** A RetroArch core's name (`swanstation`), or '' for the console's own default. */
+  id: string
+  name: string
+}
+
+export interface GameOptions {
+  title: string
+  /** The name before any rename. */
+  originalTitle: string
+  renamed: boolean
+  emulators: EmulatorChoice[]
+  /** The choice in use ('' = the default). */
+  emulator: string
+  /** What Delete removes. */
+  files: { count: number; bytes: number }
+}
+
 export interface LibraryTab {
   layout: SteamLayout
   /** For the "Recently played" row, which can differ from the others. */
@@ -482,6 +501,16 @@ export interface SteamTvApi {
     get(id: string): Promise<ArcadeCores>
     /** Saves the game's core (null: its board's default); resolves with the core's name. */
     set(id: string, core: string | null): Promise<string>
+  }
+  /** Select on a console game: rename it, move it to another emulator, or delete it. */
+  game: {
+    options(id: string): Promise<GameOptions>
+    /** A new name, or null for the file's own. */
+    rename(id: string, name: string | null): Promise<void>
+    /** A RetroArch core's name, or '' for the console's default. */
+    setEmulator(id: string, emulator: string): Promise<void>
+    /** Deletes the game's files from the drive for good. */
+    delete(id: string): Promise<void>
   }
   /** Desktop Mode setup. Install and uninstall resolve with an error message, or null when done. */
   setup: {

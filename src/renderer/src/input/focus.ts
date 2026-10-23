@@ -194,6 +194,15 @@ export function coreMenu(): void {
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(CORE_EVENT, { detail: el }))
 }
 
+/** Select on a controller, G on a keyboard: the focused game's options (name, emulator, art, delete). */
+export const GAME_MENU_EVENT = 'steamtv:game-menu'
+
+export function gameMenu(): void {
+  if (trap()) return
+  const el = current()
+  if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(GAME_MENU_EVENT, { detail: el }))
+}
+
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'
 

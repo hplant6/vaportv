@@ -5,7 +5,7 @@ import { arcadeRowName, type ArcadeRow } from '../../shared/arcade'
 import type { CollectionRow, LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { readFavorites, readHistory } from '../history'
-import { emulatedItem, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedItem, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { arcadeCoreFile, RETROARCH, type ArcadeCore as Core } from './emulators'
 
@@ -162,7 +162,7 @@ export async function arcadeGames(config: Config): Promise<ArcadeGame[]> {
     const full = titles[set] ?? known[set]?.[0]
     if (full) game.title = full
   }
-  return found.sort((a, b) => a.title.localeCompare(b.title))
+  return withNames(config, found.sort((a, b) => a.title.localeCompare(b.title)))
 }
 
 export async function loadArcadeTab(config: Config): Promise<LibraryTab> {

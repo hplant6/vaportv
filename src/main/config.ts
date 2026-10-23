@@ -122,6 +122,10 @@ export interface Config {
   arcadeCores?: Partial<Record<'flycast' | 'fbneo' | 'mame', string>>
   /** RetroArch core chosen for one arcade game (game id → core name, e.g. "mame2003_plus"). */
   arcadeGameCores?: Record<string, string>
+  /** Console games renamed from Select's game options (card id → name). */
+  gameTitles?: Record<string, string>
+  /** Console games moved to another RetroArch core from Select's game options (card id → core, e.g. "swanstation"). */
+  gameEmulators?: Record<string, string>
   /** Recents layout per screen, where chosen; see recentsLayout(). */
   recentsLayouts?: Partial<Record<RecentsTab, SteamLayout>>
   /** Home's Favorite Apps: a sideways row (default) or the grid. */

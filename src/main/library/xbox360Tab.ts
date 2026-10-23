@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { steamRoot } from './recents'
 import { romRoot, xeniaPrefix } from './emudeck'
 import { protonPath, xeniaPath } from './emulators'
@@ -24,7 +24,7 @@ function asEmulated(game: Xbox360Game): EmulatedGame {
 }
 
 export async function xbox360Games(config: Config): Promise<EmulatedGame[]> {
-  return (await loadXbox360Games(config)).map(asEmulated)
+  return withNames(config, (await loadXbox360Games(config)).map(asEmulated))
 }
 
 export async function loadXbox360Tab(config: Config): Promise<LibraryTab> {

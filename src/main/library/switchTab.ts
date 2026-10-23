@@ -1,7 +1,7 @@
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { romRoot } from './emudeck'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { scanSwitch, type SwitchGame } from './switch'
 
 export function switchRoot(config: Config): string {
@@ -18,7 +18,7 @@ function asEmulated(game: SwitchGame): EmulatedGame {
 }
 
 export async function switchGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadSwitchGames(config)).map(asEmulated)
+  return withNames(config, (await loadSwitchGames(config)).map(asEmulated))
 }
 
 export async function loadSwitchTab(config: Config): Promise<LibraryTab> {

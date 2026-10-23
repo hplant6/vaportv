@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { cemuPath } from './emulators'
 import { scanWiiU, type WiiUGame } from './wiiu'
@@ -19,7 +19,7 @@ function asEmulated(game: WiiUGame): EmulatedGame {
 }
 
 export async function wiiUGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadWiiUGames(config)).map(asEmulated)
+  return withNames(config, (await loadWiiUGames(config)).map(asEmulated))
 }
 
 export async function loadWiiUTab(config: Config): Promise<LibraryTab> {

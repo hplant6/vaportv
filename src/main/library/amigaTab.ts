@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { PUAE_CORE, RETROARCH } from './emulators'
 import { scanAmiga, type AmigaGame } from './amiga'
@@ -20,7 +20,7 @@ function asEmulated(game: AmigaGame): EmulatedGame {
 }
 
 export async function amigaGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadAmigaGames(config)).map(asEmulated)
+  return withNames(config, (await loadAmigaGames(config)).map(asEmulated))
 }
 
 export async function loadAmigaTab(config: Config): Promise<LibraryTab> {

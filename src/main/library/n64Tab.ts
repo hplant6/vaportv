@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { MUPEN64_CORE, RETROARCH } from './emulators'
 import { scanN64, type N64Game } from './n64'
@@ -20,7 +20,7 @@ function asEmulated(game: N64Game): EmulatedGame {
 }
 
 export async function n64Games(config: Config): Promise<EmulatedGame[]> {
-  return (await loadN64Games(config)).map(asEmulated)
+  return withNames(config, (await loadN64Games(config)).map(asEmulated))
 }
 
 export async function loadN64Tab(config: Config): Promise<LibraryTab> {

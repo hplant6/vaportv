@@ -105,6 +105,12 @@ const api: SteamTvApi = {
     get: (id) => ipcRenderer.invoke('arcade:cores', id),
     set: (id, core) => ipcRenderer.invoke('arcade:setCore', id, core)
   },
+  game: {
+    options: (id) => ipcRenderer.invoke('game:options', id),
+    rename: (id, name) => ipcRenderer.invoke('game:rename', id, name),
+    setEmulator: (id, emulator) => ipcRenderer.invoke('game:setEmulator', id, emulator),
+    delete: (id) => ipcRenderer.invoke('game:delete', id)
+  },
   setup: {
     status: () => ipcRenderer.invoke('setup:status'),
     install: (options) => ipcRenderer.invoke('setup:install', options),

@@ -7,9 +7,9 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
-import { toggleFavorite } from './history'
+import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { startRemoteKeys } from './remoteKeys'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
@@ -25,6 +25,7 @@ import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
 import { fillN64Art, loadN64Tab, n64Games } from './library/n64Tab'
+import { deleteGame, gameOptions } from './library/gameOptions'
 import { fillSaturnArt, loadSaturnTab, saturnGames } from './library/saturnTab'
 import { fillNesArt, loadNesTab, nesGames } from './library/nesTab'
 import { fillSnesArt, loadSnesTab, snesGames } from './library/snesTab'
@@ -688,6 +689,46 @@ ipcMain.handle('xbox360-tab:get', async () => {
   const config = await loadConfig()
   fillArt()
   return loadXbox360Tab(config)
+})
+// Select on a console game: its name, emulator and deleting it (art has its own window).
+ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> => {
+  const config = await loadConfig()
+  // The card shows the given name; the options want the name before it too.
+  const game = await emulatedGame({ ...config, gameTitles: {} }, id)
+  if (!game) throw new Error('Only console games have options here.')
+  return gameOptions(config, id, game.title)
+})
+ipcMain.handle('game:rename', async (_event, id: string, name: string | null) => {
+  const config = await loadConfig()
+  const names = { ...config.gameTitles }
+  if (name?.trim()) names[id] = name.trim()
+  else delete names[id]
+  await saveConfig({ gameTitles: names })
+  win?.webContents.send('art:updated')
+})
+ipcMain.handle('game:setEmulator', async (_event, id: string, emulator: string) => {
+  const config = await loadConfig()
+  if (id.startsWith('arcade:')) {
+    const cores = { ...config.arcadeGameCores }
+    if (emulator) cores[id] = emulator
+    else delete cores[id]
+    await saveConfig({ arcadeGameCores: cores })
+    return
+  }
+  const emulators = { ...config.gameEmulators }
+  if (emulator) emulators[id] = emulator
+  else delete emulators[id]
+  await saveConfig({ gameEmulators: emulators })
+})
+ipcMain.handle('game:delete', async (_event, id: string) => {
+  const config = await loadConfig()
+  await deleteGame(config, id)
+  await forgetGame(id)
+  const drop = (map: Record<string, string> | undefined): Record<string, string> => Object.fromEntries(Object.entries(map ?? {}).filter(([key]) => key !== id))
+  await saveConfig({ gameTitles: drop(config.gameTitles), gameEmulators: drop(config.gameEmulators), arcadeGameCores: drop(config.arcadeGameCores) })
+  // The last game of a console takes its tab with it.
+  tabsCache = null
+  win?.webContents.send('art:updated')
 })
 ipcMain.handle('arcade:cores', async (_event, id: string): Promise<ArcadeCores> => {
   const config = await loadConfig()

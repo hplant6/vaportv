@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { PPSSPP } from './emulators'
 import { scanPsp, type PspGame } from './psp'
@@ -20,7 +20,7 @@ function asEmulated(game: PspGame): EmulatedGame {
 }
 
 export async function pspGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadPspGames(config)).map(asEmulated)
+  return withNames(config, (await loadPspGames(config)).map(asEmulated))
 }
 
 export async function loadPspTab(config: Config): Promise<LibraryTab> {

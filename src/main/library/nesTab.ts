@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { MESEN_CORE, RETROARCH } from './emulators'
 import { scanNes, type NesGame } from './nes'
@@ -20,7 +20,7 @@ function asEmulated(game: NesGame): EmulatedGame {
 }
 
 export async function nesGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadNesGames(config)).map(asEmulated)
+  return withNames(config, (await loadNesGames(config)).map(asEmulated))
 }
 
 export async function loadNesTab(config: Config): Promise<LibraryTab> {

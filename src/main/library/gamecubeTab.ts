@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { scanGameCube, type GameCubeGame } from './gamecube'
 import { romRoot } from './emudeck'
 import { dumpName } from './discs'
@@ -20,7 +20,7 @@ function asEmulated(game: GameCubeGame): EmulatedGame {
 }
 
 export async function gamecubeGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadGameCubeGames(config)).map(asEmulated)
+  return withNames(config, (await loadGameCubeGames(config)).map(asEmulated))
 }
 
 export async function loadGameCubeTab(config: Config): Promise<LibraryTab> {

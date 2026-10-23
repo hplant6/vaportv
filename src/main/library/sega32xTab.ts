@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { dumpName } from './discs'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { PICODRIVE_CORE, RETROARCH } from './emulators'
 import { scanSega32x, type Sega32xGame } from './sega32x'
@@ -20,7 +20,7 @@ function asEmulated(game: Sega32xGame): EmulatedGame {
 }
 
 export async function sega32xGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadSega32xGames(config)).map(asEmulated)
+  return withNames(config, (await loadSega32xGames(config)).map(asEmulated))
 }
 
 export async function loadSega32xTab(config: Config): Promise<LibraryTab> {

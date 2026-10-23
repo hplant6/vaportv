@@ -35,3 +35,14 @@ export async function toggleFavorite(id: string): Promise<boolean> {
   await writeJson(FAVORITES, on ? [...favorites, id] : favorites.filter((f) => f !== id))
   return on
 }
+
+/** A deleted game: out of the play history and favourites. */
+export async function forgetGame(id: string): Promise<void> {
+  const history = await readHistory()
+  if (id in history) {
+    delete history[id]
+    await writeJson(HISTORY, history)
+  }
+  const favorites = await readFavorites()
+  if (favorites.includes(id)) await writeJson(FAVORITES, favorites.filter((f) => f !== id))
+}

@@ -20,7 +20,7 @@ import { cemuCommand, loadWiiUGames } from './library/wiiuTab'
 import { duckstationCommand, loadPsxGames } from './library/psxTab'
 import { discContent } from './library/discs'
 import { loadPspGames, ppssppCommand } from './library/pspTab'
-import { rpcs3Path, ryujinxPath } from './library/emulators'
+import { RETROARCH, rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
 import { loadPs2Games, pcsx2Command } from './library/ps2Tab'
 import { loadXboxGames, xemuCommand } from './library/xboxTab'
@@ -31,6 +31,7 @@ import { loadXbox360Games, xeniaCommand } from './library/xbox360Tab'
 import { directCommand } from './appSetup'
 import { customApps } from './customApps'
 import { childObject, childString, parseBinaryVdf } from './library/vdf'
+import { coreLaunch } from './library/gameOptions'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
@@ -392,7 +393,22 @@ async function launchArcade(config: Config, id: string): Promise<boolean> {
 }
 
 /** Hands the URL to the running Steam client. Returns false if there is nothing to launch. */
+/** A console game moved to another RetroArch core in Select's game options. */
+async function launchInCore(config: Config, id: string, core: string): Promise<boolean> {
+  const target = await coreLaunch(config, id, core)
+  if (!target) return false
+  const [command, ...args] = config.retroarch ?? RETROARCH
+  console.log(`steamtv: launching ${target.content} in RetroArch's ${core} core`)
+  run(command, [...args, '-L', target.core, '-f', target.content])
+  emulatorGame = config.gameTitles?.[id] ?? target.title
+  directIsApp = false
+  await recordPlay(id)
+  return true
+}
+
 export async function launch(config: Config, kind: LaunchKind, id: string, name?: string): Promise<boolean> {
+  const core = config.gameEmulators?.[id]
+  if (core && (await launchInCore(config, id, core))) return true
   if (id.startsWith('switch:')) return launchSwitch(config, id)
   if (id.startsWith('ps3:')) return launchPs3(config, id)
   if (id.startsWith('xbox360:')) return launchXbox360(config, id)

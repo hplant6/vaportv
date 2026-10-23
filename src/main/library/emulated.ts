@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import type { LibraryTab, RecentItem, SteamLayout } from '../../shared/types'
+import type { Config } from '../config'
 import { readFavorites, readHistory } from '../history'
 import { artUrl } from './art'
 import { isoDate } from './dates'
@@ -26,6 +27,13 @@ export interface EmulatedGame {
   localWide?: string
   /** SteamGridDB art to fetch, when more than a game's (an app's icon too). */
   artKinds?: ArtKind[]
+}
+
+/** Games with the names they were given in Select's game options, A–Z again. Art stays keyed by the old name. */
+export function withNames<T extends EmulatedGame>(config: Config, games: T[]): T[] {
+  const names = config.gameTitles ?? {}
+  if (!games.some((game) => names[game.id])) return games
+  return games.map((game) => (names[game.id] ? { ...game, title: names[game.id] } : game)).sort((a, b) => a.title.localeCompare(b.title))
 }
 
 async function art(game: EmulatedGame): Promise<Played['art']> {

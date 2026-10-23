@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -584,7 +584,8 @@ describe('controls', () => {
     expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10 })
   })
   it('fills saved choices over the defaults and drops unusable ones', () => {
-    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8 })
+    // Game options' default (Select) went to Back, so it takes the free B.
+    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, gameMenu: 1 })
     expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
   })
 })
@@ -1112,6 +1113,63 @@ describe('cartridge and floppy tabs', () => {
       await writeFile(join(amiga, name), '')
     const games = await scanAmiga(amiga)
     expect(games.map((g) => g.id)).toEqual(['amiga:Turrican II - The Final Fight (Europe).zip', "amiga:Worms - The Director's Cut (Europe) (AGA).zip"])
+  })
+})
+
+describe('renamed games', () => {
+  it('show their new name, A–Z again, with art still keyed by the old one', async () => {
+    const { withNames } = await import('./emulated')
+    const game = (id: string, title: string) => ({ id, title, platform: 'snes', artKey: `snes:${title}` })
+    const games = [game('snes:a', 'Aero Fighters'), game('snes:b', 'Brain Lord')]
+    const renamed = withNames({ gameTitles: { 'snes:a': 'Zzz' } }, games)
+    expect(renamed.map((g) => g.title)).toEqual(['Brain Lord', 'Zzz'])
+    expect(renamed[1].artKey).toBe('snes:Aero Fighters')
+    expect(withNames({}, games)).toBe(games)
+  })
+})
+
+describe('deleting a game', () => {
+  it('removes its own files and folder, never a neighbour', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-delete-'))
+    const files = [
+      'Bug! (USA).zip',
+      'DecAthlete (Japan) (1M)/DecAthlete (Japan) (1M).cue',
+      'DecAthlete (Japan) (1M)/DecAthlete (Japan) (1M) (Track 01).bin',
+      'Collection/Alpha (USA).cue',
+      'Collection/Alpha (USA) (Track 1).bin',
+      'Collection/Beta (USA).cue',
+      'Collection/Beta (USA) (Track 1).bin',
+      'Saga (USA)/Saga (USA) (Disc 1).zip',
+      'Saga (USA)/Saga (USA) (Disc 2).zip'
+    ]
+    for (const file of files) {
+      await mkdir(join(root, file, '..'), { recursive: true })
+      await writeFile(join(root, file), file.endsWith('.cue') ? `FILE "${file.split('/').pop()!.replace('.cue', ' (Track 1).bin').replace('(1M) (Track 1)', '(1M) (Track 01)')}" BINARY\n` : 'x')
+    }
+    process.env.STEAMTV_SATURN_ROMS = root
+    const { deleteGame, gameOptions } = await import('./gameOptions')
+    const left = async (): Promise<string[]> => {
+      const out: string[] = []
+      const walk = async (dir: string): Promise<void> => {
+        for (const entry of await readdir(join(root, dir), { withFileTypes: true })) {
+          const rel = dir ? `${dir}/${entry.name}` : entry.name
+          if (entry.isDirectory()) await walk(rel)
+          else out.push(rel)
+        }
+      }
+      await walk('')
+      return out.sort()
+    }
+    expect((await gameOptions({}, 'saturn:Collection/Alpha (USA).cue', 'Alpha')).files.count).toBe(2)
+    await deleteGame({}, 'saturn:Collection/Alpha (USA).cue')
+    await deleteGame({}, 'saturn:DecAthlete (Japan) (1M)/DecAthlete (Japan) (1M).cue')
+    await deleteGame({}, 'saturn:Saga (USA)/Saga (USA) (Disc 1).zip')
+    expect(await left()).toEqual(['Bug! (USA).zip', 'Collection/Beta (USA) (Track 1).bin', 'Collection/Beta (USA).cue'])
+    // The game folders went whole; the shared one stayed.
+    expect(existsSync(join(root, 'DecAthlete (Japan) (1M)'))).toBe(false)
+    expect(existsSync(join(root, 'Saga (USA)'))).toBe(false)
+    await expect(deleteGame({}, 'saturn:Nothing (USA).zip')).rejects.toThrow()
+    delete process.env.STEAMTV_SATURN_ROMS
   })
 })
 

@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { scanPs3, type Ps3Game } from './ps3'
 
 const RPCS3_CONFIG = join(homedir(), '.config', 'rpcs3')
@@ -32,7 +32,7 @@ function asEmulated(game: Ps3Game): EmulatedGame {
 }
 
 export async function ps3Games(config: Config): Promise<EmulatedGame[]> {
-  return (await loadPs3Games(config)).map(asEmulated)
+  return withNames(config, (await loadPs3Games(config)).map(asEmulated))
 }
 
 export async function loadPs3Tab(config: Config): Promise<LibraryTab> {

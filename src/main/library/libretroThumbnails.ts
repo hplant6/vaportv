@@ -40,6 +40,11 @@ const SYSTEMS: Record<string, string[]> = {
   arcade: ['MAME', 'FBNeo - Arcade Games']
 }
 
+/** The libretro database names for a platform (what RetroArch's core info files list too), best first. */
+export function libretroSystems(platform: string): string[] {
+  return SYSTEMS[platform] ?? []
+}
+
 /** File names swap these characters for "_" ("Street Fighter II: …" → "Street Fighter II_ …"). */
 export function thumbnailName(name: string): string {
   return name.replace(/[&*/:`<>?\\|"]/g, '_')

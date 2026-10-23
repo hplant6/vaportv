@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import type { LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { scanDreamcast, type DreamcastGame } from './dreamcast'
-import { emulatedTab, fillEmulatedArt, type EmulatedGame } from './emulated'
+import { emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { discContent, dumpName } from './discs'
 import { FLYCAST_CORE, RETROARCH } from './emulators'
@@ -20,7 +20,7 @@ function asEmulated(game: DreamcastGame): EmulatedGame {
 }
 
 export async function dreamcastGames(config: Config): Promise<EmulatedGame[]> {
-  return (await loadDreamcastGames(config)).map(asEmulated)
+  return withNames(config, (await loadDreamcastGames(config)).map(asEmulated))
 }
 
 export async function loadDreamcastTab(config: Config): Promise<LibraryTab> {
