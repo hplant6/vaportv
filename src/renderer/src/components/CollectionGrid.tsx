@@ -43,7 +43,9 @@ export function CollectionGrid({
                 <img className="wide-card-poster" src={item.cover} alt="" />
               </>
             ) : (
-              <span className="wide-card-title display">{item.title}</span>
+              <span className="wide-card-title display">
+                <span className="no-art-band">{item.title}</span>
+              </span>
             )}
           </button>
         ))}

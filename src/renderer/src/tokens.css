@@ -21,7 +21,13 @@
   --color-text: #ffffff;
   --color-accent: #ee960d;
   --color-accent-line: #fca10f;
+  /* The tab the cursor is on, when it isn't the one you're on. */
+  --color-nav-hover: #f5da40;
   --color-card-footer: #060408;
+  /* Settings' panels: a faint warm tint, a warm hairline, and the amber tint under the cursor. */
+  --color-panel: rgba(190, 147, 111, 0.08);
+  --color-panel-line: rgba(255, 226, 183, 0.18);
+  --color-focus-tint: rgba(238, 150, 13, 0.15);
 
   /* Menus and titles: Marvin Visions Big Bold where the build has it (licensed; see
      fonts.ts), else Tilt Warp, wide and easy to read from the couch. Tilt Warp has one

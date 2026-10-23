@@ -16,6 +16,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Changed
 - The settings and power icons are the height of the tab names, and sit a little further out.
+- Settings has a new look: the categories in a panel on the left, each group of settings in its own panel on the right, and the backdrop dimmed behind them.
+- The tab you're on is gold without an underline; the one the cursor is on is yellow.
+- Games without art show their name on a black band across the card.
 
 ### Fixed
 - When a game is there both released and as a beta or demo, its tab opens the released one.

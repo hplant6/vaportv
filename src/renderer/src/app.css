@@ -262,28 +262,21 @@ button {
     text-shadow var(--dur-focus) var(--ease-focus);
 }
 
-/* The tab you're on: gold, underlined and glowing. */
+/* The tab you're on: gold and glowing. */
 .nav-tab.active {
-  height: 40px;
   color: var(--color-accent);
-  border-bottom: 3px solid var(--color-accent-line);
   text-shadow: 0 0 18px var(--color-accent-line);
 }
 
-/* The tab the cursor is on: gold, no glow. */
-.nav-tab:focus {
-  color: var(--color-accent);
+/* The tab the cursor is on: yellow, no glow (the one you're on stays gold). */
+.nav-tab:focus:not(.active) {
+  color: var(--color-nav-hover);
 }
 
 /* Icon tabs (Settings gear, power): same colours as the text tabs. */
 .nav-icon-tab {
   align-items: center;
   height: 27px;
-}
-
-/* An icon shows it's the screen you're on by colour and glow alone: no underline, no shift. */
-.nav-icon-tab.active {
-  border-bottom: none;
 }
 
 /* As tall as the tabs' capitals (17px drawn), with a heavier line so they match the text's weight. */
@@ -407,13 +400,24 @@ button {
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 24px;
   font-size: var(--text-label);
   text-align: center;
   overflow-wrap: anywhere;
   /* No art yet: the title over vaporTV's own static. */
   background: center / cover url('./assets/empty/portrait.webp');
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
+/* No art: the title on a black band across the card's full width, over the static. */
+.no-art-band {
+  width: 100%;
+  padding: 48px 24px;
+  background: #000;
+}
+
+/* Wide cards are shorter, so a thinner band. */
+.app-tile-name .no-art-band,
+.wide-card-title .no-art-band {
+  padding: 24px;
 }
 
 .recent-art img {
@@ -646,9 +650,7 @@ button {
 
 .settings {
   position: absolute;
-  left: 36px;
-  top: 118px;
-  width: 1848px;
+  inset: 0;
 }
 
 .settings-group {
@@ -862,11 +864,9 @@ button {
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 24px;
   font-size: 40px;
   text-align: center;
   background: center / cover url('./assets/empty/wide.webp');
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 .wide-card-title {
@@ -875,11 +875,9 @@ button {
   justify-content: center;
   align-self: stretch;
   width: 100%;
-  padding: 24px;
   font-size: var(--text-label);
   text-align: center;
   background: center / cover url('./assets/empty/wide.webp');
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
 }
 
 .setting-input {
@@ -1249,61 +1247,161 @@ button {
 
 /* ── Settings: categories on the left, the chosen one's settings on the right ── */
 
-.settings-columns {
+/* Settings dims the backdrop, so the panels read as the surface. */
+.settings-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* The panels: a faint warm tint, lifted by a shadow. */
+.settings-sidebar,
+.settings-pane .settings-group {
+  background: var(--color-panel);
+  box-shadow: 0 4px 9.1px 0 rgba(0, 0, 0, 0.9);
+  border-radius: 18px;
+}
+
+/* Runs off the left edge, so only its right corners show; its list sits against the right. */
+.settings-sidebar {
+  position: absolute;
+  left: -99px;
+  top: 102px;
+  width: 711px;
+  height: calc(var(--stage-h) - 116px);
   display: flex;
-  gap: 56px;
-  margin-top: 24px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 9px;
+  padding: 10px 43px 16px;
+}
+
+.settings-title {
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: 256px;
+  height: 83px;
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.27;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-panel-line);
 }
 
 .settings-categories {
-  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  width: 360px;
+  gap: 9px;
+  width: 256px;
 }
 
 .settings-category {
   display: flex;
   align-items: center;
-  height: 56px;
-  padding: 0 28px;
-  border-radius: var(--card-radius);
+  height: 55px;
+  padding: 0 24px;
+  border-radius: 8px;
   font-size: var(--text-label);
+  letter-spacing: 0.04em;
   text-align: left;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text);
   background: transparent;
-  outline: 3px solid transparent;
   transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
 }
 
-/* The category on show: gold, like the current nav tab. */
-.settings-category.active {
-  color: var(--color-accent);
-  background: var(--color-card-footer);
-}
-
+/* The category on show, and the one the cursor is on: gold on an amber tint. */
+.settings-category.active,
 .settings-category:focus {
   color: var(--color-accent);
-  background: var(--color-card-footer);
-  outline-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
 }
 
-/* Clips the pane's own scrolling; padded so a focused row's grow and outline aren't cut off. */
+/* Clips the pane's own scrolling. Runs to the right edge, like the sidebar runs off the left. */
 .settings-pane {
-  height: calc(var(--stage-h) - 195px);
-  width: 1040px;
-  margin: -16px 0 0 -24px;
-  padding: 16px 24px 0;
+  position: absolute;
+  left: 627px;
+  top: 101px;
+  right: 0;
+  height: calc(var(--stage-h) - 101px);
   overflow: hidden;
 }
 
 .settings-pane-content {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
   transition: transform var(--dur-focus) var(--ease-focus);
 }
 
-.settings-pane .settings-group:first-child {
-  margin-top: 0;
+/* Each group is its own panel; its rows keep to the heading's width. */
+.settings-pane .settings-group {
+  margin: 0;
+  width: auto;
+  padding: 9px 43px 43px;
+}
+
+.settings-pane .settings-group > * {
+  max-width: 903px;
+}
+
+.settings-pane .settings-heading {
+  font-size: 36px;
+  line-height: 2.3;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-panel-line);
+}
+
+.settings-pane .settings-help {
+  margin: 20px 32px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+/* Rows sit flat on the panel; the cursor shows as an amber tint, nothing grows. */
+.settings-pane .setting-list {
+  gap: 0;
+}
+
+.settings-pane .setting-row {
+  height: 100px;
+  gap: 15px;
+  padding: 0 32px;
+  border-radius: 19px;
+  background: transparent;
+  outline: none;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.settings-pane .setting-row:focus {
+  background: var(--color-focus-tint);
+  transform: none;
+}
+
+.settings-pane .setting-name {
+  letter-spacing: 0.04em;
+}
+
+.settings-pane .setting-detail {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  opacity: 1;
+}
+
+/* Radio: a light ring, gold where the cursor is; chosen adds a gold dot with a clear gap. */
+.settings-pane .radio {
+  margin: 0;
+  border-color: #d9d9d9;
+}
+
+.settings-pane .setting-row:focus .radio {
+  border-color: var(--color-accent);
+}
+
+.settings-pane .setting-row.on .radio {
+  border-color: var(--color-accent);
+  box-shadow: none;
+  background: radial-gradient(circle, var(--color-accent) 7.5px, transparent 8.3px);
 }
 
 /* Favorite Apps as a carousel: the grid's first row, carried on to the right. */

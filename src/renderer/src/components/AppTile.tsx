@@ -34,7 +34,9 @@ export function AppTile({
         <img src={app.tile} alt="" />
       ) : (
         // No art yet (it comes from SteamGridDB, with a key): its name over vaporTV's static.
-        <span className="app-tile-name display">{app.name}</span>
+        <span className="app-tile-name display">
+          <span className="no-art-band">{app.name}</span>
+        </span>
       )}
       {needsSetup && <span className="app-setup-badge display">Set up</span>}
       {showFavorite && app.favorite && (

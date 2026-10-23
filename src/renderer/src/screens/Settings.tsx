@@ -210,7 +210,7 @@ const CATEGORIES: { id: Category; name: string }[] = [
 ]
 
 /** Space between the top of the settings pane and the bottom of the screen. */
-const PANE_HEIGHT = stageHeight() - 195
+const PANE_HEIGHT = stageHeight() - 101
 
 /**
  * One category's settings. It scrolls on its own, so the categories stay put; B in
@@ -923,11 +923,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   return (
     <div className="page">
+      <div className="settings-scrim" aria-hidden="true" />
       <NavBar active="settings" onNavigate={onNavigate} />
 
       <section className="settings">
-        <h2 className="section-label display">Settings</h2>
-        <div className="settings-columns">
+        <div className="settings-sidebar">
+          <h2 className="settings-title display">Settings</h2>
           <div className="settings-categories" data-focus-memory="settings-categories" data-nav-scope="">
             {CATEGORIES.map((c, i) => (
               <button
@@ -950,10 +951,10 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               </button>
             ))}
           </div>
-          <SettingsPane key={category} backTo={`#settings-category-${category}`}>
-            {panes[category]}
-          </SettingsPane>
         </div>
+        <SettingsPane key={category} backTo={`#settings-category-${category}`}>
+          {panes[category]}
+        </SettingsPane>
       </section>
     </div>
   )

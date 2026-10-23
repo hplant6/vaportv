@@ -35,7 +35,9 @@ export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
             <img className="recent-art-centred" src={item.wide} alt="" />
           </>
         ) : (
-          <div className="recent-no-art display">{item.title}</div>
+          <div className="recent-no-art display">
+            <span className="no-art-band">{item.title}</span>
+          </div>
         )}
       </div>
       <div className="recent-footer">
