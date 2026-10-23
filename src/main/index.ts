@@ -27,6 +27,7 @@ import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dr
 import { emulatorInstalled } from './library/emulators'
 import type { EmulatedGame } from './library/emulated'
 import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
+import { fillPs2Art, loadPs2Tab, ps2Games } from './library/ps2Tab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
@@ -158,11 +159,12 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
-  const [sw, ps3, x360, gc, dc, arc] = await Promise.all([switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames].map(has))
+  const [sw, ps2, ps3, x360, gc, dc, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames].map(has))
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
     switch: sw && emulatorInstalled(config, 'switch'),
+    ps2: ps2 && emulatorInstalled(config, 'ps2'),
     ps3: ps3 && emulatorInstalled(config, 'ps3'),
     xbox360: x360 && emulatorInstalled(config, 'xbox360'),
     gamecube: gc && emulatorInstalled(config, 'gamecube'),
@@ -192,7 +194,7 @@ async function setupRun(
 
 /** The console game behind a card id (Recents or a console tab), for the Artwork window. */
 async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | undefined> {
-  const loaders = [switchGames, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames]
+  const loaders = [switchGames, ps2Games, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames]
   for (const load of loaders) {
     const game = (await load(config).catch(() => [])).find((g) => g.id === id)
     if (game) return game
@@ -217,6 +219,7 @@ async function artGame(id: string): Promise<{ key: string; game: EmulatedGame }>
 /** How the web search names each platform: box art for consoles, flyers for arcade boards. */
 const WEB_QUERY: Record<string, string> = {
   switch: 'Nintendo Switch box art',
+  ps2: 'PS2 box art',
   ps3: 'PS3 box art',
   xbox360: 'Xbox 360 box art',
   gamecube: 'GameCube box art',
@@ -236,7 +239,7 @@ function favoriteAppIds(config: Config): string[] {
   return config.favoriteApps ?? home.apps.map((app) => app.id)
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps3', 'xbox360', 'gamecube', 'dreamcast', 'arcade']
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox360', 'gamecube', 'dreamcast', 'arcade']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -434,6 +437,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     steamCollections: config.steamCollections ?? DEFAULT_STEAM_COLLECTIONS,
     steamLayout: config.steamLayout ?? 'rows',
     switchLayout: config.switchLayout ?? 'rows',
+    ps2Layout: config.ps2Layout ?? 'rows',
     ps3Layout: config.ps3Layout ?? 'rows',
     xbox360Layout: config.xbox360Layout ?? 'rows',
     gamecubeLayout: config.gamecubeLayout ?? 'rows',
@@ -543,7 +547,7 @@ function fillArt(): void {
       const updated = (): void => {
         if (win && !win.isDestroyed()) win.webContents.send('art:updated')
       }
-      ;[fillSwitchArt, fillPs3Art, fillXbox360Art, fillGameCubeArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
+      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXbox360Art, fillGameCubeArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
     }
   )
@@ -588,6 +592,11 @@ ipcMain.handle('dreamcast-tab:get', async () => {
   const config = await loadConfig()
   fillArt()
   return loadDreamcastTab(config)
+})
+ipcMain.handle('ps2-tab:get', async () => {
+  const config = await loadConfig()
+  fillArt()
+  return loadPs2Tab(config)
 })
 ipcMain.handle('gamecube-tab:get', async () => {
   const config = await loadConfig()

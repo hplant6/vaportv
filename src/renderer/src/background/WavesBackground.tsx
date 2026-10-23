@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { stageHeight } from '../stage'
+import { pacer } from './pace'
 
 // Chromatic Waves: RGB-split sine lines on black, each colour sampling the wave at a
 // slightly shifted x, so the lines fringe red and blue as they curve. A port of the
@@ -6,7 +8,8 @@ import { useEffect, useRef } from 'react'
 // band through the middle and the navy tint over it are from that tuning.
 
 const WIDTH = 1920
-const HEIGHT = 1080
+// The stage's height (taller than 1080 on a taller screen, e.g. a Steam Deck's).
+const HEIGHT = stageHeight()
 
 /** How fast the waves travel (the site's tuning; the pen's own was a little faster). */
 const SPEED = 0.6
@@ -82,6 +85,7 @@ function start(canvas: HTMLCanvasElement): () => void {
   let time = 0
   let last: number | null = null
   let raf = 0
+  const pace = pacer()
   const frame = (now: number): void => {
     raf = requestAnimationFrame(frame)
     // Nothing to draw for while a game or app is in front; pick up where it left off.
@@ -89,6 +93,8 @@ function start(canvas: HTMLCanvasElement): () => void {
       last = null
       return
     }
+    // On battery, fewer frames (the time since the last one still counts).
+    if (!pace(now)) return
     time += last === null ? 0 : Math.min((now - last) / 1000, 0.1) * SPEED
     last = now
     gl.uniform1f(uTime, time)

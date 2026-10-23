@@ -23,6 +23,7 @@ either version 3 of the License, or (at your option) any later version. See
 | RetroArch icon (arcade card footers, recoloured white) | `src/renderer/public/fixtures/logos/retroarch.svg` | Simple Icons; the RetroArch logo is libretro's trademark | CC0 1.0 (SVG data) |
 | Ryujinx icon (Switch card footers; Ryubing's design) | `src/renderer/public/fixtures/logos/ryujinx.png` | EmuDeck's icon pack ([dragoonDorise/EmuDeck](https://github.com/dragoonDorise/EmuDeck)); the Ryujinx/Ryubing project's mark (its code is MIT) | GPL-3.0 (EmuDeck) |
 | RPCS3 icon (PS3 card footers) | `src/renderer/public/fixtures/logos/rpcs3.png` | RPCS3's own icon (`rpcs3.svg` from its AppImage), RPCS3 team | GPL-2.0-only (shipped as a separate image) |
+| PCSX2 icon (PS2 card footers) | `src/renderer/public/fixtures/logos/pcsx2.png` | EmuDeck's icon pack; the PCSX2 project's mark (its code is GPL-3.0) | GPL-3.0 (EmuDeck) |
 | Xenia icon (Xbox 360 card footers) | `src/renderer/public/fixtures/logos/xenia.png` | EmuDeck's icon pack; the Xenia project's mark (its code is BSD-3-Clause) | GPL-3.0 (EmuDeck) |
 | Dolphin icon (GameCube card footers) | `src/renderer/public/fixtures/logos/dolphin.png` | Dolphin's own icon (from its Flatpak), Dolphin Emulator Project; its designer has also released the logo as CC0 | GPL-2.0-or-later |
 | Flycast icon, and a white copy (Dreamcast card footers) | `src/renderer/public/fixtures/logos/flycast.png`, `flycast-white.png` | EmuDeck's icon pack; the Flycast project's mark (its code is GPL-2.0) | GPL-3.0 (EmuDeck) |
@@ -31,6 +32,7 @@ either version 3 of the License, or (at your option) any later version. See
 | ES-DE logo (Apps tile) | `src/renderer/public/fixtures/tiles/esde.webp` | ES-DE (Northwestern Software AB, Leon Styhre) | MIT |
 | Controller button icons (welcome tour, Settings → Controller) | `src/renderer/src/assets/buttons/` | alpha-es-de theme for ES-DE | CC0-1.0 |
 | IBM Plex Sans (descriptions and help text) | npm `@fontsource/ibm-plex-sans` | IBM | SIL Open Font License 1.1 |
+| Marvin Visions Big Bold (headings, tabs, clock and date) | not in this repository; added to Henry's builds from a private folder by `scripts/private-assets.mjs` (cut down to Latin characters, WOFF2) | Atelier Triay Ltd ([readvisions.com](https://www.readvisions.com/marvin)) | Commercial licence held by Henry Plant for vaporTV. **Not** covered by the GPL and not redistributable; builds without it use Tilt Warp and Big Shoulders |
 | Tilt Warp (menus and titles) | `src/renderer/src/assets/fonts/` | Andy Clymer (The Tilt Project Authors) | SIL Open Font License 1.1 (`TiltWarp-OFL.txt`) |
 | Big Shoulders (clock and date) | `src/renderer/src/assets/fonts/` | Patric King (The Big Shoulders Project Authors) | SIL Open Font License 1.1 (`BigShoulders-OFL.txt`) |
 | React, three.js, React Three Fiber, drei, postprocessing, qrcode and other npm dependencies | `package.json` | their authors | MIT / Apache-2.0 / ISC (see each package) |

@@ -16,6 +16,7 @@ const LISTING_TTL = 7 * 24 * 60 * 60 * 1000
 /** The thumbnail sets for each platform, best first. Switch has none. */
 const SYSTEMS: Record<string, string[]> = {
   gamecube: ['Nintendo - GameCube'],
+  ps2: ['Sony - PlayStation 2'],
   dreamcast: ['Sega - Dreamcast'],
   ps3: ['Sony - PlayStation 3'],
   xbox360: ['Microsoft - Xbox 360'],

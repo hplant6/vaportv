@@ -12,6 +12,7 @@ export const ryujinxPath = (config: Config): string =>
   config.ryujinx ?? join(homedir(), 'Applications', 'publish', 'Ryujinx.sh')
 
 export const rpcs3Path = (config: Config): string => config.rpcs3 ?? join(homedir(), 'Applications', 'rpcs3.AppImage')
+export const pcsx2Path = (config: Config): string => config.pcsx2 ?? join(homedir(), 'Applications', 'pcsx2-Qt.AppImage')
 
 export const xeniaPath = (config: Config): string => config.xenia ?? join(romRoot(config), 'xbox360', 'xenia_canary.exe')
 
@@ -58,6 +59,8 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return existsSync(ryujinxPath(config))
     case 'ps3':
       return existsSync(rpcs3Path(config))
+    case 'ps2':
+      return existsSync(pcsx2Path(config))
     case 'xbox360':
       return existsSync(xeniaPath(config)) && existsSync(protonPath(config))
     case 'gamecube':

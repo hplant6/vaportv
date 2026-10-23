@@ -38,6 +38,18 @@ export async function captureAndQuit(win: BrowserWindow, path: string): Promise<
     await win.webContents.executeJavaScript(process.env.STEAMTV_EVAL)
     await wait(1500)
   }
+  // STEAMTV_DRAG=x1,y1,x2,y2 (window px): a mouse drag, as a finger's would be.
+  const drag = (process.env.STEAMTV_DRAG ?? '').split(',').map(Number)
+  if (drag.length === 4 && drag.every(Number.isFinite)) {
+    const [x1, y1, x2, y2] = drag
+    win.webContents.sendInputEvent({ type: 'mouseDown', x: x1, y: y1, button: 'left', clickCount: 1 })
+    for (let i = 1; i <= 12; i++) {
+      win.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(x1 + ((x2 - x1) * i) / 12), y: Math.round(y1 + ((y2 - y1) * i) / 12), button: 'left' })
+      await wait(16)
+    }
+    win.webContents.sendInputEvent({ type: 'mouseUp', x: x2, y: y2, button: 'left', clickCount: 1 })
+    await wait(300)
+  }
   await wait(800)
   const image = await win.webContents.capturePage()
   await writeFile(path, image.toPNG())

@@ -63,6 +63,12 @@ export interface Config {
   xeniaPrefix?: string
   /** Proton used to run Xenia (default Steam's "Proton - Experimental"). */
   proton?: string
+  /** How the PS2 tab lays out its games (default rows). Set from Settings. */
+  ps2Layout?: SteamLayout
+  /** Name overrides for PS2 games, by file name (relative to roms/ps2). */
+  ps2Titles?: Record<string, string>
+  /** PCSX2's AppImage (default EmuDeck's, ~/Applications/pcsx2-Qt.AppImage). */
+  pcsx2?: string
   /** How the GameCube tab lays out its games (default rows). Set from Settings. */
   gamecubeLayout?: SteamLayout
   /** Name overrides for GameCube games, by file name (relative to roms/gc). */

@@ -7,7 +7,7 @@ import { BatteryIndicator } from './BatteryIndicator'
 import { DateWeather } from './DateWeather'
 import { PowerMenu } from './PowerMenu'
 
-export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade' | 'settings'
+export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade' | 'settings'
 
 const TABS: { id: Screen; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -16,6 +16,7 @@ const TABS: { id: Screen; label: string }[] = [
   { id: 'switch', label: 'Switch' },
   { id: 'ps3', label: 'PS3' },
   { id: 'xbox360', label: 'Xbox 360' },
+  { id: 'ps2', label: 'PS2' },
   { id: 'gamecube', label: 'GameCube' },
   { id: 'dreamcast', label: 'Dreamcast' },
   { id: 'arcade', label: 'Arcade' }
@@ -42,19 +43,16 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     </button>
   )
 
-  // Settings sits after the date, power before the time: the bar keeps its room for the tabs.
+  // Settings and power are pinned to either end of the bar; the tabs are centred between them.
   return (
     <>
-      <DateWeather after={<span className="nav-edge" data-focus-memory="nav">{tab('settings', <GearIcon />, 'Settings', true)}</span>} />
+      <DateWeather />
       <nav className="nav">
         <img className="nav-line" src={navLine} alt="" />
         <div className="nav-tabs" data-focus-memory="nav">
-          {TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}
-        </div>
-      </nav>
-      <Clock
-        before={
-          <span className="nav-edge power" data-focus-memory="nav">
+          {tab('settings', <GearIcon />, 'Settings', true)}
+          <div className="nav-tab-list">{TABS.filter((t) => shown(t.id)).map((t) => tab(t.id, t.label, t.label))}</div>
+          <span className="nav-power">
             <button
               id="power-button"
               className={`nav-tab display nav-icon-tab${powerOpen ? ' open' : ''}`}
@@ -70,9 +68,9 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
             </button>
             {powerOpen && <PowerMenu onClose={() => setPowerOpen(false)} />}
           </span>
-        }
-        battery={<BatteryIndicator />}
-      />
+        </div>
+      </nav>
+      <Clock battery={<BatteryIndicator />} />
     </>
   )
 }

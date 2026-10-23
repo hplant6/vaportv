@@ -23,14 +23,15 @@
   --color-accent-line: #fca10f;
   --color-card-footer: #060408;
 
-  /* Menus and titles: Tilt Warp, wide and easy to read from the couch. It has one weight,
-     so these stay at 400; asking for more would make the browser smear a fake bold. */
-  --font-display: 'Tilt Warp', sans-serif;
+  /* Menus and titles: Marvin Visions Big Bold where the build has it (licensed; see
+     fonts.ts), else Tilt Warp, wide and easy to read from the couch. Tilt Warp has one
+     weight, so these stay at 400; asking for more would make the browser smear a fake bold. */
+  --font-display: 'Marvin Visions', 'Tilt Warp', sans-serif;
   --display-width: 100%;
   --display-weight: 400;
   --nav-weight: 400;
-  /* The clock and date: Big Shoulders at its heaviest. */
-  --font-clock: 'Big Shoulders', sans-serif;
+  /* The clock and date: Marvin Visions too, else Big Shoulders at its heaviest. */
+  --font-clock: 'Marvin Visions', 'Big Shoulders', sans-serif;
   --clock-weight: 900;
   /* Descriptions, help and other small text: IBM Plex Sans. */
   --font-body: 'IBM Plex Sans', sans-serif;

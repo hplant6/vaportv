@@ -7,6 +7,7 @@ import { App } from './App'
 import { startGamepad } from './input/gamepad'
 import { startKeyboard } from './input/keyboard'
 import { Setup } from './screens/Setup'
+import './fonts'
 
 // The AppImage opened in Desktop Mode: the install window, used with a mouse.
 if (new URLSearchParams(location.search).has('setup')) {

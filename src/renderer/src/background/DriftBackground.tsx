@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { presets, withDirection, type DistortLayerConfig, type DriftConfig, type DriftDirection } from './drift/presets'
 import { blurFrag, circlesFrag, distortFrag, fullscreenVert, MAX_CIRCLES } from './drift/shaders'
+import { stageHeight } from '../stage'
+import { pacer } from './pace'
 
 // Gradient Drift (Liam Egan's pen, MIT): soft colour circles drifting behind a
 // gaussian blur and two panes of reeded glass. Plain WebGL2, four fullscreen passes:
@@ -8,7 +10,8 @@ import { blurFrag, circlesFrag, distortFrag, fullscreenVert, MAX_CIRCLES } from 
 
 // Render at the stage size; the stage itself is scaled up to the display.
 const WIDTH = 1920
-const HEIGHT = 1080
+// The stage's height (taller than 1080 on a taller screen, e.g. a Steam Deck's).
+const HEIGHT = stageHeight()
 
 /** Deterministic seeded PRNG (mulberry32): the same seed gives the same circles. */
 function mulberry32(seed: number): () => number {
@@ -239,6 +242,7 @@ function start(canvas: HTMLCanvasElement, config: DriftConfig): () => void {
   let time = 0
   let last: number | null = null
   let raf = 0
+  const pace = pacer()
   const frame = (now: number): void => {
     raf = requestAnimationFrame(frame)
     // Nothing to draw for while a game or app is in front; pick up where it left off.
@@ -246,6 +250,8 @@ function start(canvas: HTMLCanvasElement, config: DriftConfig): () => void {
       last = null
       return
     }
+    // On battery, fewer frames (the time since the last one still counts).
+    if (!pace(now)) return
     time += last === null ? 0 : Math.min((now - last) / 1000, 0.25)
     last = now
     draw(time)

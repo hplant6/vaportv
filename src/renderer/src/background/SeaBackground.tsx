@@ -4,13 +4,16 @@ import { WEATHER_CHANGED_EVENT } from '../components/LocationDialog'
 import { FS, VS } from './seaShader'
 import { heldMinutes, minutesOfDay, sceneAt } from './timeOfDay'
 import type { BackdropTime } from '../../../shared/types'
+import { stageHeight } from '../stage'
+import { pacer } from './pace'
 
 /** Fired by Settings after the backdrop time changes. */
 export const BACKDROP_CHANGED_EVENT = 'steamtv:backdrop-changed'
 
 // Render at the stage size; the stage itself is scaled up to the display.
 const WIDTH = 1920
-const HEIGHT = 1080
+// The stage's height (taller than 1080 on a taller screen, e.g. a Steam Deck's).
+const HEIGHT = stageHeight()
 
 // Adaptive render scale, as in the original pen but allowed to drop further:
 // the scene is soft enough to upscale and the box's GPU is shared with games.
@@ -135,12 +138,13 @@ function start(canvas: HTMLCanvasElement): () => void {
   const t0 = performance.now()
   let last = t0
   let raf = 0
+  const pace = pacer()
   const frame = (now: number): void => {
     raf = requestAnimationFrame(frame)
     const dt = (now - last) / 1000
     last = now
-    // Nothing to draw for while a game or app is in front.
-    if (document.hidden) return
+    // Nothing to draw for while a game or app is in front; on battery, fewer frames.
+    if (document.hidden || !pace(now)) return
     // A long gap is a pause, not a slow frame; don't let it drag quality down.
     if (dt < 0.25) adaptQuality(dt)
 

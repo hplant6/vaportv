@@ -1,12 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import type { Weather } from '../../../shared/types'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { useNow } from './useNow'
 
 const REFRESH = 15 * 60 * 1000
 
-/** Top left: temperature and date, then `after` (the Settings button). */
-export function DateWeather({ after }: { after?: ReactNode }) {
+/** Top left: temperature and date. */
+export function DateWeather() {
   const now = useNow()
   const [weather, setWeather] = useState<Weather | null>(null)
 
@@ -27,7 +27,6 @@ export function DateWeather({ after }: { after?: ReactNode }) {
     <div className="date-weather display">
       {weather && <span className="temp">{weather.temperature}°</span>}
       <span className="date">{date}</span>
-      {after}
     </div>
   )
 }

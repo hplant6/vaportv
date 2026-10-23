@@ -27,22 +27,22 @@ import { Apps } from './screens/Apps'
 import { Home } from './screens/Home'
 import { Settings } from './screens/Settings'
 import { Library } from './screens/Library'
+import { STAGE_W, stageHeight } from './stage'
 
-const STAGE_W = 1920
-const STAGE_H = 1080
 /** Recents also reload whenever the window regains focus, e.g. on returning from a game. */
 const HOME_REFRESH = 5 * 60 * 1000
 /** Shown only when the WebGL background can't run. */
 const FALLBACK_BACKGROUND = 'fixtures/background.jpg'
 
 /**
- * The 1920×1080 stage scaled to fit the window, and centred: a screen of another shape
- * (the Steam Deck's 16:10) gets even bars rather than one strip along the bottom.
+ * The stage (see stage.ts) scaled to fit the window, and centred: a screen wider than
+ * 16:9 gets even bars at the sides. A taller one (the Steam Deck's) gets a taller stage.
  */
-function useStageFit(): { scale: number; x: number; y: number } {
-  const measure = (): { scale: number; x: number; y: number } => {
-    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H)
-    return { scale, x: Math.round((window.innerWidth - STAGE_W * scale) / 2), y: Math.round((window.innerHeight - STAGE_H * scale) / 2) }
+function useStageFit(): { scale: number; x: number; y: number; height: number } {
+  const measure = (): { scale: number; x: number; y: number; height: number } => {
+    const height = stageHeight()
+    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / height)
+    return { scale, height, x: Math.round((window.innerWidth - STAGE_W * scale) / 2), y: Math.round((window.innerHeight - height * scale) / 2) }
   }
   const [fit, setFit] = useState(measure)
   useEffect(() => {
@@ -190,7 +190,7 @@ export function App() {
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }
 
   return (
-    <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})` }}>
+    <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
       {!webgl ? (
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
@@ -241,6 +241,16 @@ export function App() {
           screen="xbox360"
           load={window.steamtv.getXbox360Tab}
           empty="No Xbox 360 games found. vaporTV looks in your EmuDeck roms/xbox360/roms folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'ps2' && home && (
+        <Library
+          screen="ps2"
+          load={window.steamtv.getPs2Tab}
+          empty="No PS2 games found. vaporTV looks in your EmuDeck roms/ps2 folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}

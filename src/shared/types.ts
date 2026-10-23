@@ -115,10 +115,10 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -152,6 +152,7 @@ export interface Settings {
   switchLayout: SteamLayout
   ps3Layout: SteamLayout
   xbox360Layout: SteamLayout
+  ps2Layout: SteamLayout
   gamecubeLayout: SteamLayout
   dreamcastLayout: SteamLayout
   arcadeLayout: SteamLayout
@@ -448,6 +449,8 @@ export interface SteamTvApi {
   getPs3Tab(): Promise<LibraryTab>
   /** The Xbox 360 tab: Xenia disc images. */
   getXbox360Tab(): Promise<LibraryTab>
+  /** The PS2 tab: PCSX2 disc images. */
+  getPs2Tab(): Promise<LibraryTab>
   /** The GameCube tab: Dolphin disc images. */
   getGameCubeTab(): Promise<LibraryTab>
   /** The Dreamcast tab: Flycast disc images. */

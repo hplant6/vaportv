@@ -80,6 +80,7 @@
   ],
   "platformLogos": {
     "switch": "fixtures/logos/ryujinx.png",
+    "ps2": "fixtures/logos/pcsx2.png",
     "ps3": "fixtures/logos/rpcs3.png",
     "xbox360": "fixtures/logos/xenia.png",
     "gamecube": "fixtures/logos/dolphin.png",

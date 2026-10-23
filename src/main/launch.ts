@@ -11,6 +11,7 @@ import { arcadeCommand, arcadeGames } from './library/arcade'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
 import { rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
+import { loadPs2Games, pcsx2Command } from './library/ps2Tab'
 import { loadPs3Games, rpcs3Args } from './library/ps3Tab'
 import { loadSwitchGames } from './library/switchTab'
 import { loadXbox360Games, xeniaCommand } from './library/xbox360Tab'
@@ -20,7 +21,7 @@ import { childObject, childString, parseBinaryVdf } from './library/vdf'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
-// Emulated games (Switch, PS3, Xbox 360, GameCube, Dreamcast, arcade) open in their emulator directly.
+// Emulated games (Switch, PS2, PS3, Xbox 360, GameCube, Dreamcast, arcade) open in their emulator directly.
 
 // Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
 // the first of several names that exists). Override or extend with `favorites` in config.json.
@@ -168,6 +169,19 @@ async function launchXbox360(config: Config, id: string): Promise<boolean> {
   return true
 }
 
+/** PS2 games open in PCSX2. */
+async function launchPs2(config: Config, id: string): Promise<boolean> {
+  const game = (await loadPs2Games(config)).find((g) => g.id === id)
+  if (!game) return false
+  const { command, args } = pcsx2Command(config, game)
+  console.log(`steamtv: launching ${game.path} in PCSX2`)
+  run(command, args)
+  emulatorGame = game.title
+  directIsApp = false
+  await recordPlay(id)
+  return true
+}
+
 /** GameCube games open in Dolphin. */
 async function launchGameCube(config: Config, id: string): Promise<boolean> {
   const game = (await loadGameCubeGames(config)).find((g) => g.id === id)
@@ -212,6 +226,7 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('switch:')) return launchSwitch(config, id)
   if (id.startsWith('ps3:')) return launchPs3(config, id)
   if (id.startsWith('xbox360:')) return launchXbox360(config, id)
+  if (id.startsWith('ps2:')) return launchPs2(config, id)
   if (id.startsWith('gamecube:')) return launchGameCube(config, id)
   if (id.startsWith('dreamcast:')) return launchDreamcast(config, id)
   if (id.startsWith('arcade:')) return launchArcade(config, id)

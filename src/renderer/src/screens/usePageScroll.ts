@@ -1,21 +1,25 @@
 import { useRef, useState, type CSSProperties, type FocusEvent, type RefObject } from 'react'
+import { useDrag } from '../input/drag'
+import { stageHeight } from '../stage'
 
-const STAGE_H = 1080
 /** Space kept below the focused element, matching the Figma frame's bottom margin. */
 const BOTTOM_MARGIN = 45
 
 /**
- * Scrolls a page taller than the screen so the focused element stays in view.
- * Spread the result onto the page element. `viewportHeight` is how much of it shows
- * (the whole screen by default; less for a pane lower down).
+ * Scrolls a page taller than the screen so the focused element stays in view, and with a
+ * finger or mouse (dragged up and down). Spread the result onto the page element.
+ * `viewportHeight` is how much of it shows (the whole screen by default; less for a pane
+ * lower down).
  */
-export function usePageScroll(viewportHeight = STAGE_H): {
+export function usePageScroll(viewportHeight = stageHeight()): {
   ref: RefObject<HTMLDivElement | null>
   onFocus: (event: FocusEvent<HTMLDivElement>) => void
   style: CSSProperties
-} {
+  'data-dragging'?: ''
+} & ReturnType<typeof useDrag>['handlers'] {
   const ref = useRef<HTMLDivElement>(null)
   const [scrollY, setScrollY] = useState(0)
+  const drag = useDrag('y', scrollY, setScrollY, () => Math.max(0, (ref.current?.scrollHeight ?? 0) - viewportHeight))
 
   // Layout offsets ignore transforms, so this is stable mid-animation.
   const onFocus = (event: FocusEvent<HTMLDivElement>): void => {
@@ -34,5 +38,11 @@ export function usePageScroll(viewportHeight = STAGE_H): {
     setScrollY(Math.max(0, top + height + BOTTOM_MARGIN - viewportHeight))
   }
 
-  return { ref, onFocus, style: { transform: `translateY(${-scrollY}px)` } }
+  return {
+    ref,
+    onFocus,
+    style: { transform: `translateY(${-scrollY}px)` },
+    ...(drag.dragging ? { 'data-dragging': '' as const } : {}),
+    ...drag.handlers
+  }
 }

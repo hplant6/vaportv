@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { stageHeight } from '../stage'
+import { pacer } from './pace'
 
 // Star Tunnel: flying slowly down a tube of glowing dots, the tube turning as it
 // goes. A port of the CodePen "Star Tunnel" by alphardex (pen XWZKzjE, MIT), with
@@ -18,7 +20,8 @@ const PALETTES: Record<TunnelColors, [string, string, string]> = {
 const rgb = (hex: string): number[] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
 
 const WIDTH = 1920
-const HEIGHT = 1080
+// The stage's height (taller than 1080 on a taller screen, e.g. a Steam Deck's).
+const HEIGHT = stageHeight()
 
 /** The original pen's count (the site's tuning had 30,000): sparser, more like open space. */
 const COUNT = 10000
@@ -153,6 +156,7 @@ function start(canvas: HTMLCanvasElement, colors: TunnelColors): () => void {
   let time = 0
   let last: number | null = null
   let raf = 0
+  const pace = pacer()
   const frame = (now: number): void => {
     raf = requestAnimationFrame(frame)
     // Nothing to draw for while a game or app is in front; pick up where it left off.
@@ -160,6 +164,8 @@ function start(canvas: HTMLCanvasElement, colors: TunnelColors): () => void {
       last = null
       return
     }
+    // On battery, fewer frames (the time since the last one still counts).
+    if (!pace(now)) return
     time += last === null ? 0 : Math.min((now - last) / 1000, 0.1)
     last = now
     gl.uniform1f(uTime, time)

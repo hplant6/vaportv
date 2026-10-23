@@ -9,6 +9,8 @@ import * as THREE from "three";
 import { Floor } from "./Floor";
 import { Lights } from "./Lights";
 import { Rain } from "./Rain";
+import { useBattery } from "../../power";
+import { BATTERY_FPS } from "../pace";
 
 /** How far above the ground the camera looks down at the puddle, in degrees (the demo's view). */
 const ELEVATION = 23.4;
@@ -57,6 +59,8 @@ export default function RainScene() {
   const rainProgressRef = React.useRef(0);
 
   // Nothing to draw while a game or app is in front.
+  const power = useBattery();
+  const battery = !!power && !power.charging;
   const [hidden, setHidden] = React.useState(document.hidden);
   React.useEffect(() => {
     const update = () => setHidden(document.hidden);
@@ -71,7 +75,8 @@ export default function RainScene() {
         // Measure without the stage's scale-to-fit transform: the scene renders at stage
         // size (1920x1080) and is scaled with the page, like the other backdrops.
         resize={{ offsetSize: true }}
-        frameloop={hidden ? "never" : "always"}
+        // On battery it draws on request instead, BATTERY_FPS times a second (BatteryPace).
+        frameloop={hidden ? "never" : battery ? "demand" : "always"}
         shadows={false}
         // Opaque, on the demo page's own background colour: a transparent canvas leaves a
         // bright rim where the puddle fades out at its edge.
@@ -79,6 +84,7 @@ export default function RainScene() {
         onCreated={({ gl }) => gl.setClearColor("#00010b")}
         style={{ filter: "contrast(1.2) saturate(1.1) brightness(1.1)" }}
       >
+        <BatteryPace on={battery} />
         <PerspectiveCamera makeDefault position={VIEW_DIRECTION.clone().multiplyScalar(DISTANCE)} />
         <Director rainProgressRef={rainProgressRef} />
 
@@ -105,4 +111,15 @@ export default function RainScene() {
       <div style={{ ...overlay, background: "linear-gradient(to top, rgba(0, 0, 0, 0) 40%, rgba(255, 222, 165, 0.2) 100%)" }} />
     </div>
   );
+}
+
+/** On battery the scene draws on request: this asks BATTERY_FPS times a second. */
+function BatteryPace({ on }: { on: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+  React.useEffect(() => {
+    if (!on) return;
+    const timer = setInterval(() => invalidate(), 1000 / BATTERY_FPS);
+    return () => clearInterval(timer);
+  }, [on, invalidate]);
+  return null;
 }

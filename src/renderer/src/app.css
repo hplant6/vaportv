@@ -83,6 +83,21 @@ button {
   transition: transform var(--dur-focus) var(--ease-focus);
 }
 
+/* Following a finger (or mouse) drag: no easing, so it tracks it exactly. Touch scrolling
+   is ours, not the browser's. */
+[data-dragging],
+.recents-track.dragging,
+.favorites-track.dragging {
+  transition: none;
+}
+
+.page-scroll,
+.recents-track,
+.favorites-track,
+.settings-pane-content {
+  touch-action: none;
+}
+
 .display {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
@@ -94,9 +109,10 @@ button {
 
 /* ── Header ─────────────────────────────────────────── */
 
+/* Its text lines up with the section titles below (37px in); the clock mirrors it on the right. */
 .date-weather {
   position: absolute;
-  left: 44.86px;
+  left: 35.86px;
   top: 24px;
   display: flex;
   align-items: flex-start;
@@ -105,6 +121,8 @@ button {
 
 .date-weather .temp {
   margin-top: 6px;
+  /* Closer to the date than the bar's other gaps: the same space as between the time and am/pm. */
+  margin-right: -5.5px;
   font-size: var(--text-meta);
 }
 
@@ -114,7 +132,7 @@ button {
 
 .clock {
   position: absolute;
-  right: 77.99px;
+  right: 34.99px;
   top: 24px;
   display: flex;
   align-items: flex-start;
@@ -132,6 +150,13 @@ button {
   font-weight: var(--clock-weight);
   font-variation-settings: 'opsz' 10;
   -webkit-text-stroke: 1.5px currentColor;
+}
+
+/* Marvin Visions is bold enough as drawn: no outline thickening it, no Big Shoulders axes. */
+.licensed-display .clock,
+.licensed-display .date-weather {
+  font-variation-settings: normal;
+  -webkit-text-stroke: 0;
 }
 
 /* am/pm, with the battery under it: its icon, then the percentage. */
@@ -196,26 +221,24 @@ button {
   top: 9.09px;
   width: 1177px;
   padding: 0 8px;
+  /* Settings pinned to the left end, power to the right, the tabs centred between. */
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+}
+
+/* Centred with a fixed gap, so leaving out tabs (no emulator, no games) doesn't spread the
+   rest apart; 30px gaps fit all ten between the icons. */
+.nav-tab-list {
   display: flex;
-  /* Centred with a fixed gap, so leaving out tabs (no emulator, no games) doesn't spread the rest apart. */
   justify-content: center;
-  gap: 40px;
+  gap: 30px;
 }
 
-/* Settings after the date and power before the time, outside the bar, centred on the text. */
-.nav-edge {
-  align-self: center;
+/* The power menu drops down from the power button. */
+.nav-power {
+  position: relative;
   display: flex;
-  font-family: var(--font-display);
-  -webkit-text-stroke: 0;
-}
-
-.date-weather .nav-edge {
-  margin-left: 14px;
-}
-
-.clock .nav-edge {
-  margin-right: 14px;
 }
 
 .nav-tab {
@@ -329,7 +352,7 @@ button {
 
 .recents {
   position: absolute;
-  left: 30px;
+  left: 36px;
   top: 118px;
 }
 
@@ -462,7 +485,7 @@ button {
 /* Recents as a grid: it and Favorite Apps stack down the page. */
 .home-flow {
   position: absolute;
-  left: 30px;
+  left: 36px;
   top: 118px;
   display: flex;
   flex-direction: column;
@@ -472,7 +495,6 @@ button {
 
 .favorites.flow {
   position: static;
-  margin-left: 6px;
 }
 
 .favorites-grid {
@@ -650,7 +672,6 @@ button {
   padding: 0 28px;
   border-radius: var(--card-radius);
   background: var(--color-card-footer);
-  box-shadow: var(--shadow-card);
   text-align: left;
   outline: 3px solid transparent;
   transition:
@@ -730,7 +751,7 @@ button {
 
 .collection-rows {
   position: absolute;
-  left: 30px;
+  left: 36px;
   top: 118px;
   display: flex;
   flex-direction: column;
@@ -761,9 +782,8 @@ button {
   gap: 56px;
 }
 
-/* A grid row lines up with Favorite Apps, whether the rest of its tab is rows or grid. */
+/* Every page's titles and first cards start 36px in, under the date. */
 .collection-grid {
-  margin-left: 6px;
   width: 1848px;
 }
 
@@ -1229,14 +1249,14 @@ button {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   width: 360px;
 }
 
 .settings-category {
   display: flex;
   align-items: center;
-  height: 72px;
+  height: 56px;
   padding: 0 28px;
   border-radius: var(--card-radius);
   font-size: var(--text-label);
@@ -1261,7 +1281,7 @@ button {
 
 /* Clips the pane's own scrolling; padded so a focused row's grow and outline aren't cut off. */
 .settings-pane {
-  height: 885px;
+  height: calc(var(--stage-h) - 195px);
   width: 1040px;
   margin: -16px 0 0 -24px;
   padding: 16px 24px 0;

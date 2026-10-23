@@ -143,6 +143,7 @@ const api: SteamTvApi = {
   getSwitchTab: () => ipcRenderer.invoke('switch-tab:get'),
   getPs3Tab: () => ipcRenderer.invoke('ps3-tab:get'),
   getXbox360Tab: () => ipcRenderer.invoke('xbox360-tab:get'),
+  getPs2Tab: () => ipcRenderer.invoke('ps2-tab:get'),
   getGameCubeTab: () => ipcRenderer.invoke('gamecube-tab:get'),
   getDreamcastTab: () => ipcRenderer.invoke('dreamcast-tab:get'),
   getArcadeTab: () => ipcRenderer.invoke('arcade-tab:get'),

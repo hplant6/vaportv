@@ -14,6 +14,7 @@ import { NavBar, type Screen } from '../components/NavBar'
 import { focus, focusContentDefault } from '../input/focus'
 import { EXTRAS } from '../../../shared/build'
 import { usePageScroll } from './usePageScroll'
+import { stageHeight } from '../stage'
 
 function CollectionRow({
   collection,
@@ -208,7 +209,7 @@ const CATEGORIES: { id: Category; name: string }[] = [
 ]
 
 /** Space between the top of the settings pane and the bottom of the screen. */
-const PANE_HEIGHT = 885
+const PANE_HEIGHT = stageHeight() - 195
 
 /**
  * One category's settings. It scrolls on its own, so the categories stay put; B in
@@ -574,6 +575,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           {settings && (
             <RecentsChoice tab="xbox360" value={settings.recentsLayouts.xbox360} onChoose={chooseRecentsLayout} />
           )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">PS2 tab layout</h3>
+          <p className="settings-help">How the PS2 tab shows your games.</p>
+          {settings && <LayoutChoice tab="ps2" value={settings.ps2Layout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="ps2" value={settings.recentsLayouts.ps2} onChoose={chooseRecentsLayout} />}
         </div>
 
         <div className="settings-group">

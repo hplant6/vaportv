@@ -37,9 +37,19 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   const scroll = usePageScroll()
   const [tab, setTab] = useState<LibraryTab | null>(null)
 
+  // Loaded on opening, again when art arrives, and on coming back from a game (so what
+  // was just played shows under Recently played straight away, as on Home).
   useEffect(() => {
-    load().then(setTab)
-    return window.steamtv.onArtUpdated(() => load().then(setTab))
+    const reload = (): void => {
+      load().then(setTab)
+    }
+    reload()
+    window.addEventListener('focus', reload)
+    const offArt = window.steamtv.onArtUpdated(reload)
+    return () => {
+      window.removeEventListener('focus', reload)
+      offArt()
+    }
   }, [load])
 
   useEffect(() => {

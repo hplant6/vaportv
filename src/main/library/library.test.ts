@@ -951,3 +951,29 @@ describe('boot video', () => {
     expect(await startupMovie(withStartupMovie(partial, '/m.webm'))).toEqual({ Shuffle: '0', MovieID: '0', LocalPath: '/m.webm' })
   })
 })
+
+describe('PS2', () => {
+  it('finds isos, cue/bin games in folders, a loose bin, and one entry per multi-disc game', async () => {
+    const { scanPs2 } = await import('./ps2')
+    const root = await mkdtemp(join(tmpdir(), 'ps2-'))
+    const files = [
+      'Ape Escape 2 (USA).iso',
+      'Ico (USA)/Ico (USA).bin',
+      'Ico (USA)/Ico (USA).cue',
+      'MDK2 - Armageddon (USA) (Beta) (2001-03-09).bin',
+      'Metal Gear Solid 3 - Subsistence/Metal Gear Solid 3 - Subsistence (USA) (En,Es) (Disc 1) (Subsistence).iso',
+      'Metal Gear Solid 3 - Subsistence/Metal Gear Solid 3 - Subsistence (USA) (En,Es) (Disc 2) (Persistence).iso',
+      'Metal Gear Solid 3 - Subsistence/Metal Gear Solid 3 - Subsistence (USA) (En,Es) (Disc 3) (Existence) (Limited Edition).iso',
+      'systeminfo.txt'
+    ]
+    for (const file of files) {
+      await mkdir(join(root, file, '..'), { recursive: true })
+      await writeFile(join(root, file), '')
+    }
+    const games = await scanPs2(root)
+    const byTitle = Object.fromEntries(games.map((g) => [g.title, g.path.slice(root.length + 1)]))
+    expect(Object.keys(byTitle).sort()).toEqual(['Ape Escape 2', 'Ico', 'MDK2 - Armageddon', 'Metal Gear Solid 3 - Subsistence'])
+    expect(byTitle['Ico']).toBe('Ico (USA)/Ico (USA).cue')
+    expect(byTitle['Metal Gear Solid 3 - Subsistence']).toMatch(/\(Disc 1\)/)
+  })
+})
