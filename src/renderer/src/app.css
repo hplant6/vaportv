@@ -52,6 +52,11 @@ button {
   height: 100%;
 }
 
+/* Your own picture or video: filling the screen, cropped rather than letterboxed. */
+.stage-custom {
+  object-fit: cover;
+}
+
 /* Keeps white text readable over the brightest (midday) sky. */
 .stage-scrim {
   position: absolute;
@@ -1639,6 +1644,29 @@ button {
   max-height: 600px;
   padding: 8px 16px;
   overflow: hidden;
+}
+
+/* Add your own music: the list scrolls with the cursor and shows where it is with a bar.
+   Scroll padding keeps a focused row's outline and grow clear of the edges. */
+.browse-list {
+  overflow-y: auto;
+  scroll-padding: 14px 0;
+  /* Room each side for a focused row's grow and outline, clear of the bar. */
+  padding: 8px 20px 14px;
+}
+
+.browse-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.browse-list::-webkit-scrollbar-track {
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.browse-list::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--color-accent);
 }
 
 .artwork-covers {

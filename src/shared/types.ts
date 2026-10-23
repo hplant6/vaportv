@@ -151,18 +151,30 @@ export interface MusicLayer {
   volume: number
 }
 
-/** A place in Settings → Music's file browser: a home folder, a drive, a subfolder, or an audio file. */
+/** What a file browser shows besides folders: audio (music), or pictures and videos (backdrops). */
+export type BrowseKind = 'audio' | 'backdrop'
+
+/** A place in the file browser (adding your own music or backdrops): a home folder, a drive, a subfolder, or a file. */
 export interface BrowseEntry {
   name: string
   path: string
-  kind: 'folder' | 'drive' | 'audio'
+  kind: 'folder' | 'drive' | 'file'
 }
 
 /** The backdrop's time of day: following the clock, or held at one moment. */
 export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 
 /** Which animated backdrop is drawn behind every screen. */
-export type BackdropStyle = 'sea' | 'rain' | 'drift' | 'waves' | 'tunnel'
+export type BackdropStyle = 'sea' | 'rain' | 'drift' | 'waves' | 'tunnel' | 'custom'
+
+/** One of your own backdrops: a picture or video in ~/Pictures/vaporTV Backdrops. */
+export interface CustomBackdrop {
+  /** Its file name in the folder; what's saved. */
+  file: string
+  name: string
+  kind: 'image' | 'video'
+  url: string
+}
 
 export interface Settings {
   /** Every Steam collection, Favorites first. */
@@ -192,6 +204,9 @@ export interface Settings {
   musicVolume: MusicVolume
   ambienceVolume: MusicVolume
   backdrop: BackdropStyle
+  /** With backdrop 'custom': which of your own it is (its file). */
+  backdropFile: string | null
+  customBackdrops: CustomBackdrop[]
   backdropTime: BackdropTime
   /** Gradient Drift's colours: a preset name, or 'random' for a new one each start. */
   driftPreset: string
@@ -502,17 +517,23 @@ export interface SteamTvApi {
   setMusicVolume(kind: MusicKind, volume: MusicVolume): Promise<void>
   /** Adding your own: browse home folders and drives (null for the places to start), then copy a file in as music or ambience. */
   musicFiles: {
-    browse(dir: string | null): Promise<BrowseEntry[]>
     add(path: string, kind: MusicKind): Promise<string>
   }
+  /** Browse home folders and drives (null for the places to start), showing folders and files of a kind. */
+  browseFiles(dir: string | null, kind: BrowseKind): Promise<BrowseEntry[]>
+  /** Copies a picture or video in as one of your own backdrops; returns its file name. */
+  addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{
     style: BackdropStyle
     time: BackdropTime
     drift: string
     driftDirection: 'vertical' | 'horizontal'
     tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
+    /** With style 'custom': the picture or video to show. */
+    custom: CustomBackdrop | null
   }>
-  setBackdrop(style: BackdropStyle): Promise<void>
+  /** For 'custom', `file` says which of your own. */
+  setBackdrop(style: BackdropStyle, file?: string): Promise<void>
   setDriftPreset(name: string): Promise<void>
   setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>

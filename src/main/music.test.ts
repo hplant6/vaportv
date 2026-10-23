@@ -2,7 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { browseMusic, currentMusic, importMusic, musicChoices, musicTracks } from './music'
+import { browseFiles } from './browse'
+import { currentMusic, importMusic, musicChoices, musicTracks } from './music'
 
 // The browser and importer only touch home and drive mounts, so the fixture lives in home.
 let root: string
@@ -22,6 +23,8 @@ beforeAll(async () => {
   await writeFile(join(music, 'Ambience', 'Waves.wav'), 'c')
   await writeFile(join(source, 'New tune.mp3'), 'tune')
   await writeFile(join(source, 'notes.txt'), 'x')
+  await writeFile(join(source, 'Beach.jpg'), 'img')
+  await writeFile(join(source, 'Fire.mp4'), 'vid')
 })
 
 afterAll(() => rm(root, { recursive: true, force: true }))
@@ -47,13 +50,18 @@ describe('background music', () => {
     expect(layers.ambience.urls).toHaveLength(1)
   })
 
-  it('browses folders and audio only, and nothing outside home and the drives', async () => {
-    const entries = await browseMusic({ musicFolder: music }, source)
-    expect(entries.map((e) => [e.name, e.kind])).toEqual([
+  it('browses folders and the files asked for, and nothing outside home and the drives', async () => {
+    const names = async (kind: 'audio' | 'backdrop'): Promise<string[][]> => (await browseFiles(source, kind)).map((e) => [e.name, e.kind])
+    expect(await names('audio')).toEqual([
       ['Sub', 'folder'],
-      ['New tune.mp3', 'audio']
+      ['New tune.mp3', 'file']
     ])
-    await expect(browseMusic({ musicFolder: music }, '/etc')).rejects.toThrow()
+    expect(await names('backdrop')).toEqual([
+      ['Sub', 'folder'],
+      ['Beach.jpg', 'file'],
+      ['Fire.mp4', 'file']
+    ])
+    await expect(browseFiles('/etc', 'audio')).rejects.toThrow()
   })
 
   it('copies a file in as its kind, without overwriting one of the same name', async () => {

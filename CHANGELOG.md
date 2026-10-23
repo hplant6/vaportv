@@ -11,6 +11,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Added
 - Background sound in two layers: music, with ambience under it, each with its own track (or Shuffle, for all of them in random order) and volume.
 - Settings → Music → Add your own: pick an audio file from a USB drive, SD card or this machine, say whether it's music or ambience, and vaporTV copies it in.
+- Settings → Backdrop → Add your own: use your own picture or video (muted, on a loop) as the backdrop, from a USB drive, SD card or this machine.
 - Settings → Tabs: put each tab in the top bar or under More, in any order, or switch it off (Home always comes first).
 - An Xbox tab: original Xbox games (from EmuDeck's roms/xbox) open in xemu.
 - A Wii tab: Wii games (from EmuDeck's roms/wii) open in Dolphin.

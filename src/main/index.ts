@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -43,7 +43,9 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { browseMusic, currentMusic, importMusic, musicChoices, musicFolder, musicTracks } from './music'
+import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks } from './music'
+import { browseFiles } from './browse'
+import { addBackdrop, BACKDROP_FOLDER, customBackdrops } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
 import { bluetoothStatus, connectBluetooth, disconnectBluetooth, findBluetoothDevices, forgetBluetooth, pairBluetooth, setBluetoothPowered } from './bluetooth'
@@ -134,10 +136,14 @@ registerArtScheme()
 
 // Recents come from the Steam install; without one (a dev PC with no snapshot)
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
-/** The chosen backdrop, or the sea if it's one that's since been removed (Particles). */
-function backdropStyle(config: Config): BackdropStyle {
+/** The chosen backdrop, or the sea if it's one that's since been removed (Particles, or your own file gone). */
+async function backdropChoice(config: Config): Promise<{ style: BackdropStyle; custom: CustomBackdrop | null }> {
   const offered: BackdropStyle[] = ['sea', 'rain', 'drift', 'waves', 'tunnel']
-  return config.backdrop && offered.includes(config.backdrop) ? config.backdrop : 'sea'
+  if (config.backdrop === 'custom') {
+    const custom = (await customBackdrops()).find((b) => b.file === config.backdropFile)
+    return custom ? { style: 'custom', custom } : { style: 'sea', custom: null }
+  }
+  return { style: config.backdrop && offered.includes(config.backdrop) ? config.backdrop : 'sea', custom: null }
 }
 
 const DEFAULT_DRIFT_PRESET = 'molten'
@@ -489,7 +495,9 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     ...musicChoices(config),
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
-    backdrop: backdropStyle(config),
+    backdrop: (await backdropChoice(config)).style,
+    backdropFile: config.backdrop === 'custom' ? (config.backdropFile ?? null) : null,
+    customBackdrops: await customBackdrops(),
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
     driftDirection: config.driftDirection ?? 'vertical',
@@ -532,16 +540,19 @@ ipcMain.handle('settings:music', async (_event, kind: MusicKind, choice: string 
 ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
   saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
 )
-ipcMain.handle('music:browse', async (_event, dir: string | null) => browseMusic(await loadConfig(), dir))
+// Adding your own: the browser leaves out vaporTV's own folders (files there are already in).
+ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKind) => browseFiles(dir, kind, [musicFolder(await loadConfig()), BACKDROP_FOLDER]))
+ipcMain.handle('backdrops:add', (_event, path: string) => addBackdrop(path))
 ipcMain.handle('music:add', async (_event, path: string, kind: MusicKind) => importMusic(await loadConfig(), path, kind))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
-ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle) => saveConfig({ backdrop: style }))
+ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle, file?: string) => saveConfig({ backdrop: style, backdropFile: style === 'custom' ? file : undefined }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
 ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
-  return { style: backdropStyle(config), time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula' }
+  const { style, custom } = await backdropChoice(config)
+  return { style, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula' }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
@@ -680,7 +691,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, ...screensaverFolders(config)])
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, ...screensaverFolders(config)])
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()
   createWindow()

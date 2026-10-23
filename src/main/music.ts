@@ -1,12 +1,10 @@
-import { copyFile, mkdir, readdir, stat } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
-import { homedir, userInfo } from 'node:os'
-import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
-import type { BrowseEntry, MusicKind, MusicLayer, MusicTrack, MusicVolume } from '../shared/types'
+import { readdir } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join, relative, sep } from 'node:path'
+import type { MusicKind, MusicLayer, MusicTrack, MusicVolume } from '../shared/types'
+import { AUDIO, copyInto } from './browse'
 import type { Config } from './config'
 import { artUrl } from './library/art'
-
-const AUDIO = /\.(mp3|ogg|oga|flac|wav|m4a|aac|opus)$/i
 
 /** Volume levels for background music: quiet enough to sit under menu sounds. */
 export const MUSIC_VOLUME: Record<MusicVolume, number> = { low: 0.12, medium: 0.25, high: 0.45 }
@@ -88,66 +86,9 @@ export async function currentMusic(config: Config): Promise<Record<MusicKind, Mu
   return { music: layer('music', config.musicVolume), ambience: layer('ambience', config.ambienceVolume) }
 }
 
-// ── Adding your own: a browser over this machine's folders and removable drives ──
-
-/** Where SteamOS (and most desktops) mount USB drives and SD cards. */
-function driveParents(): string[] {
-  const user = userInfo().username
-  return [join('/run/media', user), '/run/media', '/media', join('/media', user)]
-}
-
-/** The browser may only look inside home and the drive mounts. */
-function allowed(path: string): boolean {
-  const full = resolve(path)
-  return [homedir(), '/run/media', '/media'].some((root) => full === root || full.startsWith(root + sep))
-}
-
-/** The places to start from: home folders that exist, then each mounted drive. */
-async function browseRoots(config: Config): Promise<BrowseEntry[]> {
-  const home = homedir()
-  const music = resolve(musicFolder(config))
-  const places = [
-    { name: 'Downloads', path: join(home, 'Downloads') },
-    { name: 'Desktop', path: join(home, 'Desktop') },
-    { name: 'Home', path: home }
-  ].filter((p) => existsSync(p.path) && resolve(p.path) !== music)
-  const drives: BrowseEntry[] = []
-  const seen = new Set<string>()
-  for (const parent of driveParents()) {
-    for (const entry of await readdir(parent, { withFileTypes: true }).catch(() => [])) {
-      const path = join(parent, entry.name)
-      // /run/media holds the user's folder too; only drives themselves.
-      if (!entry.isDirectory() || entry.name.startsWith('.') || seen.has(path) || driveParents().includes(path)) continue
-      seen.add(path)
-      drives.push({ name: entry.name, path, kind: 'drive' })
-    }
-  }
-  return [...places.map((p) => ({ ...p, kind: 'folder' as const })), ...drives]
-}
-
-/** A folder's subfolders, then its audio files (hidden ones left out); with no folder, the places to start. */
-export async function browseMusic(config: Config, dir: string | null): Promise<BrowseEntry[]> {
-  if (!dir) return browseRoots(config)
-  if (!allowed(dir)) throw new Error('That folder is outside home and the drives')
-  const entries = await readdir(dir, { withFileTypes: true })
-  const visible = entries.filter((e) => !e.name.startsWith('.'))
-  const byName = (a: BrowseEntry, b: BrowseEntry): number => a.name.localeCompare(b.name, undefined, { numeric: true })
-  const folders = visible.filter((e) => e.isDirectory()).map((e) => ({ name: e.name, path: join(dir, e.name), kind: 'folder' as const }))
-  const files = visible.filter((e) => e.isFile() && AUDIO.test(e.name)).map((e) => ({ name: e.name, path: join(dir, e.name), kind: 'audio' as const }))
-  return [...folders.sort(byName), ...files.sort(byName)]
-}
-
 /** Copies an audio file into the music folder's Music or Ambience folder; returns its saved name (relative). */
 export async function importMusic(config: Config, source: string, kind: MusicKind): Promise<string> {
-  if (!allowed(source) || !AUDIO.test(source) || !(await stat(source)).isFile()) throw new Error("That isn't an audio file vaporTV can add")
-  const folder = join(musicFolder(config), KIND_FOLDER[kind])
-  await mkdir(folder, { recursive: true })
-  const ext = extname(source)
-  const stem = basename(source, ext)
-  let target = join(folder, basename(source))
-  for (let n = 2; existsSync(target); n++) target = join(folder, `${stem} (${n})${ext}`)
-  // Already in place (picked from the music folder itself): nothing to copy.
-  if (resolve(dirname(source)) !== resolve(folder)) await copyFile(source, target)
-  else target = source
+  if (!AUDIO.test(source)) throw new Error("That isn't an audio file vaporTV can add")
+  const target = await copyInto(source, join(musicFolder(config), KIND_FOLDER[kind]))
   return relative(musicFolder(config), target)
 }

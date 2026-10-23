@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { BackdropStyle } from '../../shared/types'
+import type { BackdropStyle, CustomBackdrop } from '../../shared/types'
+import { CustomBackground } from './background/CustomBackground'
 import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
 import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
@@ -66,13 +67,15 @@ export function App() {
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
+  const [custom, setCustom] = useState<CustomBackdrop | null>(null)
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors }) => {
+      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors, custom }) => {
         setTunnelColors(tunnelColors)
+        setCustom(custom)
         setBackdrop(style)
         setDriftPreset(drift)
         setDriftDirection(driftDirection)
@@ -191,7 +194,10 @@ export function App() {
 
   return (
     <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
-      {!webgl ? (
+      {backdrop === 'custom' && custom ? (
+        // Your own picture or video needs no WebGL.
+        <CustomBackground backdrop={custom} />
+      ) : !webgl ? (
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />

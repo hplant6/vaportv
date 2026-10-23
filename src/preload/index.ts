@@ -22,11 +22,12 @@ const api: SteamTvApi = {
   setMusic: (kind, choice) => ipcRenderer.invoke('settings:music', kind, choice),
   setMusicVolume: (kind, volume) => ipcRenderer.invoke('settings:musicVolume', kind, volume),
   musicFiles: {
-    browse: (dir) => ipcRenderer.invoke('music:browse', dir),
     add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)
   },
+  browseFiles: (dir, kind) => ipcRenderer.invoke('files:browse', dir, kind),
+  addBackdrop: (path) => ipcRenderer.invoke('backdrops:add', path),
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
-  setBackdrop: (style) => ipcRenderer.invoke('settings:backdrop', style),
+  setBackdrop: (style, file) => ipcRenderer.invoke('settings:backdrop', style, file),
   setTunnelColors: (colors) => ipcRenderer.invoke('settings:tunnelColors', colors),
   setDriftDirection: (direction) => ipcRenderer.invoke('settings:driftDirection', direction),
   setDriftPreset: (name) => ipcRenderer.invoke('settings:driftPreset', name),

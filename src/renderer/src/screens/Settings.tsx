@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { AddMusicRow } from '../components/AddMusic'
+import { AddBackdropRow } from '../components/AddBackdrop'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
@@ -220,7 +221,8 @@ const PANE_HEIGHT = stageHeight()
  * here goes back to its category (`backTo`), and B there goes Home.
  */
 function SettingsPane({ backTo, children }: { backTo: string; children: ReactNode }) {
-  const scroll = usePageScroll(PANE_HEIGHT)
+  // The cursor stays near the middle of the screen as it moves down a long list.
+  const scroll = usePageScroll(PANE_HEIGHT, { center: true })
   return (
     <div className="settings-pane" data-back-focus={backTo} data-nav-left={backTo} data-nav-scope="">
       <div className="settings-pane-content" {...scroll}>
@@ -446,8 +448,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   const chooseBackdrop = (style: BackdropStyle): void => {
     if (!settings || settings.backdrop === style) return
-    setSettings({ ...settings, backdrop: style })
+    setSettings({ ...settings, backdrop: style, backdropFile: null })
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  /** One of your own pictures or videos (by file name). */
+  const chooseCustomBackdrop = (file: string): void => {
+    if (settings?.backdrop === 'custom' && settings.backdropFile === file) return
+    setSettings((current) => current && { ...current, backdrop: 'custom', backdropFile: file })
+    window.steamtv.setBackdrop('custom', file).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseTunnelColors = (colors: SettingsData['tunnelColors']): void => {
@@ -659,6 +668,30 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   onSelect={() => chooseBackdrop(b.id)}
                 />
               ))}
+            {settings?.customBackdrops.map((b) => (
+              <ChoiceRow
+                key={`custom:${b.file}`}
+                label={b.name}
+                detail={b.kind === 'video' ? 'Your video' : 'Your picture'}
+                selected={settings.backdrop === 'custom' && settings.backdropFile === b.file}
+                onSelect={() => chooseCustomBackdrop(b.file)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Add your own</h3>
+          <p className="settings-help">Copies a picture or video into ~/Pictures/vaporTV Backdrops and shows it. Videos play muted, on a loop.</p>
+          <div className="setting-list" data-focus-memory="settings-backdrop-add">
+            <AddBackdropRow
+              onAdded={(file) =>
+                window.steamtv.getSettings().then((next) => {
+                  setSettings(next)
+                  chooseCustomBackdrop(file)
+                })
+              }
+            />
           </div>
         </div>
 
