@@ -21,3 +21,15 @@ export function PowerIcon() {
     </svg>
   )
 }
+
+/** Henry's 18-separate-y.svg: the grip on a tab you can move up and down (Settings → Tabs). */
+export function MoveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="11.5 4.25 9 1.75 6.5 4.25" />
+      <line x1="15.25" y1="7.25" x2="2.75" y2="7.25" />
+      <line x1="15.25" y1="10.75" x2="2.75" y2="10.75" />
+      <polyline points="11.5 13.75 9 16.25 6.5 13.75" />
+    </svg>
+  )
+}

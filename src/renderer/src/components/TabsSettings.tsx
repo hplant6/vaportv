@@ -4,6 +4,7 @@ import { BAR_TABS, MORE_TABS, TAB_LIST } from '../../../shared/tabs'
 import { focus, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, type Direction } from '../input/focus'
 import { refreshTabs } from '../availableTabs'
 import { toast } from './Toast'
+import { MoveIcon } from './icons'
 
 type Place = 'bar' | 'more' | 'off'
 type Places = Record<Place, HideableTab[]>
@@ -17,7 +18,9 @@ const label = (id: HideableTab | 'home'): string => TAB_LIST.find((t) => t.id ==
 
 /**
  * One step up or down for a picked-up tab: within its place, or over the edge into the next
- * place (the end of the one above, the start of the one below). Null if it can't go.
+ * place (the end of the one above, the start of the one below). Moving up into a full place
+ * pushes that place's last tab down to take its spot (a full bar's last tab goes to More);
+ * moving down into a full one can't. Null if it can't go, or a message if it's full.
  */
 function step(places: Places, id: HideableTab, direction: 'up' | 'down'): Places | string | null {
   const from = PLACES.find((p) => places[p].includes(id))!
@@ -31,7 +34,11 @@ function step(places: Places, id: HideableTab, direction: 'up' | 'down'): Places
   }
   const to = PLACES[PLACES.indexOf(from) + (direction === 'up' ? -1 : 1)]
   if (!to) return null
-  if (places[to].length >= ROOM[to]) return FULL[to]
+  if (places[to].length >= ROOM[to]) {
+    if (direction === 'down') return FULL[to]
+    const bumped = places[to][places[to].length - 1]
+    return { ...places, [to]: [...places[to].slice(0, -1), id], [from]: [bumped, ...list.filter((t) => t !== id)] }
+  }
   return {
     ...places,
     [from]: list.filter((t) => t !== id),
@@ -108,7 +115,7 @@ export function TabsSettings() {
         {...(moving ? { 'data-grabbed': '' } : {})}
         onClick={() => press(id)}
       >
-        <span className="tab-grip" aria-hidden="true" />
+        <MoveIcon className="tab-grip" />
         <span className="setting-name display">{label(id)}</span>
         <span className="setting-detail">{moving ? 'Up or down to move · A to put down · B to cancel' : 'A to move'}</span>
       </button>
@@ -133,10 +140,10 @@ export function TabsSettings() {
       {group(
         'bar',
         'Top bar',
-        `Up to ${BAR_TABS} tabs, with Home always first. A picks a tab up; up and down move it, here or into More or Off.`,
+        `Up to ${BAR_TABS} tabs, with Home always first. A picks a tab up; up and down move it, here or into More or Off. Moving one up into a full bar sends its last tab to More.`,
         places.bar,
         <div className="setting-row tab-row fixed">
-          <span className="tab-grip" aria-hidden="true" />
+          <MoveIcon className="tab-grip" />
           <span className="setting-name display">Home</span>
           <span className="setting-detail">Always first</span>
         </div>

@@ -1494,11 +1494,8 @@ button {
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
 .tab-grip {
   flex: none;
-  width: 22px;
-  height: 14px;
-  margin: 0 4px;
-  background: linear-gradient(currentColor 0 0) top / 100% 2px no-repeat, linear-gradient(currentColor 0 0) center / 100% 2px no-repeat,
-    linear-gradient(currentColor 0 0) bottom / 100% 2px no-repeat;
+  width: 30px;
+  height: 30px;
   opacity: 0.6;
 }
 
@@ -1515,6 +1512,10 @@ button {
 /* Home: always first, so it can't be picked up. */
 .tab-row.fixed {
   opacity: 0.55;
+}
+
+.tab-row.fixed .tab-grip {
+  visibility: hidden;
 }
 
 .settings-pane .tab-empty {
