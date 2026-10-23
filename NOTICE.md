@@ -21,7 +21,11 @@ either version 3 of the License, or (at your option) any later version. See
 | Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |
 | Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
 | RetroArch icon (arcade card footers, recoloured white) | `src/renderer/public/fixtures/logos/retroarch.svg` | Simple Icons; the RetroArch logo is libretro's trademark | CC0 1.0 (SVG data) |
-| Emulator icons (card footers: Ryujinx, RPCS3, Xenia, Dolphin, Flycast) | `src/renderer/public/fixtures/logos/` | the emulator projects; each logo is its project's mark | the projects' own (licences not yet confirmed) |
+| Ryujinx icon (Switch card footers; Ryubing's design) | `src/renderer/public/fixtures/logos/ryujinx.png` | EmuDeck's icon pack ([dragoonDorise/EmuDeck](https://github.com/dragoonDorise/EmuDeck)); the Ryujinx/Ryubing project's mark (its code is MIT) | GPL-3.0 (EmuDeck) |
+| RPCS3 icon (PS3 card footers) | `src/renderer/public/fixtures/logos/rpcs3.png` | RPCS3's own icon (`rpcs3.svg` from its AppImage), RPCS3 team | GPL-2.0-only (shipped as a separate image) |
+| Xenia icon (Xbox 360 card footers) | `src/renderer/public/fixtures/logos/xenia.png` | EmuDeck's icon pack; the Xenia project's mark (its code is BSD-3-Clause) | GPL-3.0 (EmuDeck) |
+| Dolphin icon (GameCube card footers) | `src/renderer/public/fixtures/logos/dolphin.png` | Dolphin's own icon (from its Flatpak), Dolphin Emulator Project; its designer has also released the logo as CC0 | GPL-2.0-or-later |
+| Flycast icon, and a white copy (Dreamcast card footers) | `src/renderer/public/fixtures/logos/flycast.png`, `flycast-white.png` | EmuDeck's icon pack; the Flycast project's mark (its code is GPL-2.0) | GPL-3.0 (EmuDeck) |
 | Battery icons (top bar) | `src/renderer/src/assets/battery/` | Henry Plant, from his alpha-es-de theme for ES-DE | CC0 1.0 |
 | UI sounds | `src/renderer/src/assets/sounds/` | alpha-es-de theme for ES-DE | CC0 1.0 |
 | ES-DE logo (Apps tile) | `src/renderer/public/fixtures/tiles/esde.webp` | ES-DE (Northwestern Software AB, Leon Styhre) | MIT |
@@ -35,3 +39,4 @@ vaporTV ships no streaming-service or app logos. App tiles and their small icons
 downloaded on your own box from SteamGridDB (with your SteamGridDB key, Settings →
 Artwork), where the community uploads them; without a key a tile shows the app's name.
 Service names are trademarks of their owners; vaporTV is not affiliated with them.
+The emulator icons are their projects' marks, shown only to say which emulator runs a game.
