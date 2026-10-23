@@ -30,6 +30,7 @@ either version 3 of the License, or (at your option) any later version. See
 | xemu icon (Xbox card footers) | `src/renderer/public/fixtures/logos/xemu.png` | xemu's own icon (from its Flatpak), the xemu project | GPL-2.0 |
 | Xenia icon (Xbox 360 card footers) | `src/renderer/public/fixtures/logos/xenia.png` | EmuDeck's icon pack; the Xenia project's mark (its code is BSD-3-Clause) | GPL-3.0 (EmuDeck) |
 | Dolphin icon (GameCube card footers) | `src/renderer/public/fixtures/logos/dolphin.png` | Dolphin's own icon (from its Flatpak), Dolphin Emulator Project; its designer has also released the logo as CC0 | GPL-2.0-or-later |
+| Cemu icon (Wii U card footers) | `src/renderer/public/fixtures/logos/cemu.png` | Cemu's own icon (from its AppImage, scaled to 96px), the Cemu project | MPL-2.0 |
 | Flycast icon, and a white copy (Dreamcast card footers) | `src/renderer/public/fixtures/logos/flycast.png`, `flycast-white.png` | EmuDeck's icon pack; the Flycast project's mark (its code is GPL-2.0) | GPL-3.0 (EmuDeck) |
 | Battery icons (top bar) | `src/renderer/src/assets/battery/` | Henry Plant, from his alpha-es-de theme for ES-DE | CC0 1.0 |
 | UI sounds | `src/renderer/src/assets/sounds/` | alpha-es-de theme for ES-DE | CC0 1.0 |

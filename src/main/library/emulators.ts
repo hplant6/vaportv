@@ -13,6 +13,7 @@ export const ryujinxPath = (config: Config): string =>
 
 export const rpcs3Path = (config: Config): string => config.rpcs3 ?? join(homedir(), 'Applications', 'rpcs3.AppImage')
 export const pcsx2Path = (config: Config): string => config.pcsx2 ?? join(homedir(), 'Applications', 'pcsx2-Qt.AppImage')
+export const cemuPath = (config: Config): string => config.cemu ?? join(homedir(), 'Applications', 'Cemu.AppImage')
 
 export const xeniaPath = (config: Config): string => config.xenia ?? join(romRoot(config), 'xbox360', 'xenia_canary.exe')
 
@@ -70,6 +71,8 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
     case 'gamecube':
     case 'wii':
       return canRun(config.dolphin ?? DOLPHIN)
+    case 'wiiu':
+      return existsSync(cemuPath(config))
     case 'dreamcast':
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.flycastCore ?? FLYCAST_CORE)
     case 'n64':

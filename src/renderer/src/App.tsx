@@ -312,6 +312,16 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'wiiu' && home && (
+        <Library
+          screen="wiiu"
+          load={window.steamtv.getWiiUTab}
+          empty="No Wii U games found. vaporTV looks in your EmuDeck roms/wiiu folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'arcade' && home && (
         <Library
           screen="arcade"

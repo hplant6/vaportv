@@ -10,6 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - An N64 tab: Nintendo 64 games (from EmuDeck's roms/n64) open in RetroArch's Mupen64Plus-Next core.
+- A Wii U tab: Wii U games (title folders in EmuDeck's roms/wiiu) open in Cemu, named as the games name themselves.
 - Background sound in two layers: music, with ambience under it, each with its own track (or Shuffle, for all of them in random order) and volume.
 - Three more built-in ambiences, alongside Rain: Crickets, Ocean waves and Birdsong (CC0, from freesound.org).
 - Settings → Music → Add your own: pick an audio file from a USB drive, SD card or this machine, say whether it's music or ambience, and vaporTV copies it in.

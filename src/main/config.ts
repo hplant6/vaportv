@@ -75,6 +75,8 @@ export interface Config {
   ps2Titles?: Record<string, string>
   /** PCSX2's AppImage (default EmuDeck's, ~/Applications/pcsx2-Qt.AppImage). */
   pcsx2?: string
+  /** Cemu for the Wii U tab (default: EmuDeck's ~/Applications/Cemu.AppImage). */
+  cemu?: string
   /** How the Wii tab lays out its games (default rows). Set from Settings. */
   wiiLayout?: SteamLayout
   /** Name overrides for Wii games, by file name (relative to roms/wii). */
@@ -89,6 +91,8 @@ export interface Config {
   dreamcastLayout?: SteamLayout
   /** How the N64 tab lays out its games (default rows). Set from Settings. */
   n64Layout?: SteamLayout
+  /** How the Wii U tab lays out its games (default rows). Set from Settings. */
+  wiiuLayout?: SteamLayout
   /** How the Arcade tab lays out its games (default rows). Set from Settings. */
   arcadeLayout?: SteamLayout
   /** Arcade game names by ROM set (e.g. "ngfrog": "Frog Feast"), for sets MAME's list doesn't know. */
@@ -107,6 +111,8 @@ export interface Config {
   dreamcastTitles?: Record<string, string>
   /** Name overrides for N64 games, by file name (relative to roms/n64). */
   n64Titles?: Record<string, string>
+  /** Name overrides for Wii U games, by title folder name (in roms/wiiu). */
+  wiiuTitles?: Record<string, string>
   /** Command that runs RetroArch (default ["flatpak", "run", "org.libretro.RetroArch"]). */
   retroarch?: string[]
   /** Flycast core for RetroArch (default the Flatpak's cores/flycast_libretro.so). */

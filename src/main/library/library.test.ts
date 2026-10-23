@@ -1061,3 +1061,28 @@ describe('n64', () => {
     expect(games[0].id).toBe('n64:Bust-A-Move 3 DX (USA).z64')
   })
 })
+
+describe('wii u', () => {
+  it('lists title folders with a bootable .rpx, named from meta.xml', async () => {
+    const { scanWiiU, wiiUTitle } = await import('./wiiu')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-wiiu-'))
+    const game = async (folder: string, rpxs: string[], longname?: string, argstr?: string): Promise<void> => {
+      await mkdir(join(root, folder, 'code'), { recursive: true })
+      for (const rpx of rpxs) await writeFile(join(root, folder, 'code', rpx), '')
+      if (argstr) await writeFile(join(root, folder, 'code', 'cos.xml'), `<app><argstr type="string" length="4096">${argstr}</argstr></app>`)
+      if (longname) {
+        await mkdir(join(root, folder, 'meta'), { recursive: true })
+        await writeFile(join(root, folder, 'meta', 'meta.xml'), `<menu><longname_en type="string" length="512">${longname}</longname_en></menu>`)
+      }
+    }
+    await game('Mario Luigi Superstar Saga [Game] [0005000010157400]', ['WUP-AA8E.rpx'], 'Mario &amp; Luigi:\nSuperstar Saga')
+    await game('Need for Speed Most Wanted U [Game] [0005000010128800]', ['a.rpx', 'NFS.rpx'], 'Need for Speed™ Most Wanted U', 'NFS.rpx')
+    await game('Runbow [Game] [0005000010183000]', ['Runbow.rpx'])
+    await mkdir(join(root, 'mlc01', 'usr'), { recursive: true })
+    const games = await scanWiiU(root)
+    expect(games.map((g) => g.title)).toEqual(['Mario & Luigi: Superstar Saga', 'Need for Speed Most Wanted U', 'Runbow'])
+    expect(games[1].path).toMatch(/code\/NFS\.rpx$/)
+    expect(games[2].id).toBe('wiiu:Runbow [Game] [0005000010183000]')
+    expect(wiiUTitle(null, 'TANK TANK TANK DL [Game] [0005000010133800]')).toBe('TANK TANK TANK DL')
+  })
+})

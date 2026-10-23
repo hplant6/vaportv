@@ -633,6 +633,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">Wii U tab layout</h3>
+          <p className="settings-help">How the Wii U tab shows your games.</p>
+          {settings && <LayoutChoice tab="wiiu" value={settings.wiiuLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="wiiu" value={settings.recentsLayouts.wiiu} onChoose={chooseRecentsLayout} />}
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Dreamcast tab layout</h3>
           <p className="settings-help">How the Dreamcast tab shows your games.</p>
           {settings && <LayoutChoice tab="dreamcast" value={settings.dreamcastLayout} onChoose={chooseLayout} />}

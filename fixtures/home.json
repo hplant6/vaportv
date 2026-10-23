@@ -86,6 +86,7 @@
     "xbox360": "fixtures/logos/xenia.png",
     "gamecube": "fixtures/logos/dolphin.png",
     "wii": "fixtures/logos/dolphin.png",
+    "wiiu": "fixtures/logos/cemu.png",
     "dreamcast": "fixtures/logos/flycast-white.png",
     "n64": "fixtures/logos/retroarch.svg",
     "atomiswave": "fixtures/logos/retroarch.svg",

@@ -160,6 +160,7 @@ const api: SteamTvApi = {
   getWiiTab: () => ipcRenderer.invoke('wii-tab:get'),
   getDreamcastTab: () => ipcRenderer.invoke('dreamcast-tab:get'),
   getN64Tab: () => ipcRenderer.invoke('n64-tab:get'),
+  getWiiUTab: () => ipcRenderer.invoke('wiiu-tab:get'),
   getArcadeTab: () => ipcRenderer.invoke('arcade-tab:get'),
   toggleFavorite: (id) => ipcRenderer.invoke('favorite:toggle', id),
   onClosing: (callback) => {
