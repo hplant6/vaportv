@@ -389,7 +389,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           />
         )}
         {settings.musicTracks[kind].map((track) => (
-          <ChoiceRow key={track.file} label={track.name} selected={settings[kind] === track.file} onSelect={() => chooseMusic(kind, track.file)} />
+          <ChoiceRow
+            key={track.file}
+            label={track.name}
+            detail={track.credit}
+            selected={settings[kind] === track.file}
+            onSelect={() => chooseMusic(kind, track.file)}
+          />
         ))}
       </>
     )

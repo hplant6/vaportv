@@ -32,7 +32,10 @@ afterAll(() => rm(root, { recursive: true, force: true }))
 describe('background music', () => {
   it('splits tracks into music and ambience', async () => {
     const tracks = await musicTracks({ musicFolder: music })
-    expect(tracks.music.map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
+    // The built-in Chris Zabriskie tracks first, each with its credit, then the folder's.
+    expect(tracks.music).toHaveLength(9)
+    expect(tracks.music.slice(0, 7).every((t) => t.file.startsWith('builtin:zabriskie-') && t.credit?.includes('CC BY 4.0'))).toBe(true)
+    expect(tracks.music.slice(7).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
     expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Crickets (built in)', 'Ocean waves (built in)', 'Birdsong (built in)', 'Waves'])
   })
 
@@ -45,7 +48,7 @@ describe('background music', () => {
   it('plays every track of a layer when shuffled', async () => {
     const layers = await currentMusic({ musicFolder: music, music: 'shuffle', ambience: 'Ambience/Waves.wav' })
     expect(layers.music.shuffle).toBe(true)
-    expect(layers.music.urls).toHaveLength(2)
+    expect(layers.music.urls).toHaveLength(9)
     expect(layers.ambience).toMatchObject({ shuffle: false })
     expect(layers.ambience.urls).toHaveLength(1)
   })

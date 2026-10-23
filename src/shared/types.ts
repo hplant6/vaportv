@@ -156,6 +156,8 @@ export interface MusicTrack {
   file: string
   /** Shown in Settings. */
   name: string
+  /** Who made a built-in track and its licence, shown beside it (CC BY asks for credit). */
+  credit?: string
 }
 
 export type MusicVolume = 'low' | 'medium' | 'high'

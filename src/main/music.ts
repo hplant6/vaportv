@@ -25,7 +25,16 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
   // CC0, from freesound.org (credited in NOTICE.md): kkenny101 #852484, SamsterBirdies #578524, maarten91 #468449.
   { file: 'builtin:crickets', name: 'Crickets (built in)', url: 'music/crickets.ogg', kind: 'ambience' },
   { file: 'builtin:ocean-waves', name: 'Ocean waves (built in)', url: 'music/ocean-waves.ogg', kind: 'ambience' },
-  { file: 'builtin:birdsong', name: 'Birdsong (built in)', url: 'music/birdsong.ogg', kind: 'ambience' }
+  { file: 'builtin:birdsong', name: 'Birdsong (built in)', url: 'music/birdsong.ogg', kind: 'ambience' },
+  // Chris Zabriskie, CC BY 4.0 (chriszabriskie.com/use): Bandcamp FLACs re-encoded to Opus, credited here, in
+  // Settings beside each track, and in NOTICE.md.
+  { file: 'builtin:zabriskie-any-kind-of-black-magic-darkness-will-be-removed', name: 'Any Kind of Black Magic Darkness Will Be Removed', credit: 'Chris Zabriskie · Mayor Feedback · CC BY 4.0', url: 'music/zabriskie-any-kind-of-black-magic-darkness-will-be-removed.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-cut-to-rip-torn', name: 'Cut to Rip Torn', credit: 'Chris Zabriskie · Mayor Feedback · CC BY 4.0', url: 'music/zabriskie-cut-to-rip-torn.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-hitchcock-would-have-fucked-up-charade', name: 'Hitchcock Would Have Fucked Up Charade', credit: 'Chris Zabriskie · Angie\'s Sunday Service · CC BY 4.0', url: 'music/zabriskie-hitchcock-would-have-fucked-up-charade.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-i-fuck-you-not', name: 'I Fuck You Not', credit: 'Chris Zabriskie · Mayor Feedback · CC BY 4.0', url: 'music/zabriskie-i-fuck-you-not.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-i-hope-to-be-able-to-live', name: 'I Hope to Be Able to Live the Rest of My Life Without Ever Having to Make That Choice', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-i-hope-to-be-able-to-live.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-what-if-she-doesnt-need-a-scarf', name: 'What If She Doesn’t Need a Scarf?', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-what-if-she-doesnt-need-a-scarf.ogg', kind: 'music' },
+  { file: 'builtin:zabriskie-your-journey-is-resuming-now', name: 'Your Journey Is Resuming Now', credit: 'Chris Zabriskie · Abandon Babylon · CC BY 4.0', url: 'music/zabriskie-your-journey-is-resuming-now.ogg', kind: 'music' }
 ]
 
 export function musicFolder(config: Config): string {
@@ -36,7 +45,7 @@ export function musicFolder(config: Config): string {
 export async function musicTracks(config: Config): Promise<Record<MusicKind, MusicTrack[]>> {
   const found = await folderTracks(config)
   const of = (kind: MusicKind): MusicTrack[] => [
-    ...BUILT_IN.filter((t) => t.kind === kind).map(({ file, name }) => ({ file, name })),
+    ...BUILT_IN.filter((t) => t.kind === kind).map(({ file, name, credit }) => ({ file, name, credit })),
     ...found.filter((t) => t.kind === kind).map(({ file, name }) => ({ file, name }))
   ]
   return { music: of('music'), ambience: of('ambience') }
