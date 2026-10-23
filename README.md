@@ -14,7 +14,7 @@
   <a href="#controller">Controller</a>
 </p>
 
-![vaporTV's Home screen: Recents and Favorite Apps over the sea at sunset](docs/screenshots/home.jpg)
+![vaporTV's Home screen: Recents and Favorite Apps over the sea(docs/screenshots/home.jpg)
 
 > **Status: early.** vaporTV runs daily on its author's living-room box. This is its first public release; expect rough edges, and please [report them](https://github.com/hplant6/vaportv/issues).
 
@@ -22,7 +22,7 @@
 
 | | |
 |---|---|
-| ![The Arcade tab: Atomiswave and NAOMI carousels with cover art](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
+| ![The Arcade tab: Recently played and the Atomiswave carousel, with cover art](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
 | **Arcade:** Atomiswave, NAOMI, CPS, Neo Geo and MAME sets, named and with cover art | **Settings:** everything from the controller, in two columns |
 | ![Home over the Gradient Drift backdrop](docs/screenshots/home-drift.jpg) | ![The welcome tour's button guide](docs/screenshots/welcome.jpg) |
 | **Home**, here over the Gradient Drift backdrop | **A welcome tour** on the first start, showing the buttons |

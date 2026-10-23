@@ -1,6 +1,6 @@
 {
   "name": "steamtv",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "private": true,
   "description": "vaporTV: an Android TV-style front end for SteamOS",
   "main": "./out/main/index.js",
