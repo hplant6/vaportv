@@ -12,6 +12,7 @@ either version 3 of the License, or (at your option) any later version. See
 | What | Where | Author | Licence |
 |---|---|---|---|
 | "Puddle in rain" (Rain backdrop) | `src/renderer/src/background/rain/` | Faraz Shaikh | GPL-3.0 |
+| EZ-Tree (Forest backdrop: tree generation, bark and leaf textures; via npm `@dgreenheck/ez-tree`) and its demo's grass, flowers, ground textures and wind/ground shaders, reworked for instancing | `src/renderer/src/background/forest/`, `src/renderer/public/backdrops/forest/` | Daniel Greenheck | MIT (`forest/LICENSE`) |
 | "Gradient Drift" (Gradient Drift backdrop: shaders, presets, circle motion) | `src/renderer/src/background/drift/`, `DriftBackground.tsx` | Liam Egan (codepen.io/shubniggurath), ported from WebGL via wtc-gl to plain WebGL2 | MIT (CodePen public pen) |
 | "GLSL Sample027" (Chromatic Waves backdrop), with itshenry.me's tuning | `src/renderer/src/background/WavesBackground.tsx` | Web_yuki1027 (CodePen) | MIT (CodePen public pen) |
 | "Star Tunnel" (Star Tunnel backdrop), with itshenry.me's tuning | `src/renderer/src/background/StarTunnelBackground.tsx` | alphardex (CodePen, pen XWZKzjE) | MIT (CodePen public pen) |

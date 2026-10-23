@@ -4,6 +4,7 @@ import { CustomBackground } from './background/CustomBackground'
 import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
 import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
+import { ForestBackground } from './background/ForestBackground'
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
@@ -202,6 +203,8 @@ export function App() {
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
+      ) : backdrop === 'forest' ? (
+        <ForestBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'waves' ? (
         <WavesBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'tunnel' ? (

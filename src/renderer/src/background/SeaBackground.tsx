@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { DEFAULT_SUN_TIMES, type SunTimes } from '../../../shared/sun'
 import { WEATHER_CHANGED_EVENT } from '../components/LocationDialog'
 import { FS, VS } from './seaShader'
-import { heldMinutes, minutesOfDay, sceneAt } from './timeOfDay'
+import { heldMinutes, minutesOfDay, pinnedMinutes, sceneAt } from './timeOfDay'
 import type { BackdropTime } from '../../../shared/types'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
@@ -29,11 +29,6 @@ const FPS_HIGH_GRACE = 3.0
 
 const SUN_REFRESH = 60 * 60 * 1000
 
-/** Dev aid: ?time=HH:MM pins the scene to that time of day. */
-function pinnedMinutes(): number | null {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(new URLSearchParams(location.search).get('time') ?? '')
-  return match ? Number(match[1]) * 60 + Number(match[2]) : null
-}
 
 function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)!

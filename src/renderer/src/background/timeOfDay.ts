@@ -102,3 +102,9 @@ export function heldMinutes(time: BackdropTime, { sunrise, sunset }: SunTimes): 
       return null
   }
 }
+
+/** Dev aid: ?time=HH:MM pins the scene to that time of day. */
+export function pinnedMinutes(): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(new URLSearchParams(location.search).get('time') ?? '')
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null
+}
