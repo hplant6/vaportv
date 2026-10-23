@@ -23,18 +23,21 @@ export function CustomBackground({ items, start, shuffle }: { items: CustomBackd
   const fading = useRef(false)
   const nextKey = useRef(1)
 
-  // A new choice in Settings starts over on it.
+  // A new choice in Settings starts over on it; a change to what's shuffled carries on
+  // with the one showing, if it's still in.
   const mounted = useRef(false)
+  const playlist = items.map((b) => b.url).join('\n')
   useEffect(() => {
     if (!mounted.current) {
       mounted.current = true
       return
     }
+    if (shuffle && fading.current === false && items.some((b) => b.url === slots[front]?.item.url)) return
     setSlots([{ item: first, key: nextKey.current++ }, null])
     setFront(0)
     setLeaving(null)
     fading.current = false
-  }, [first.url, shuffle, items.length])
+  }, [first.url, shuffle, playlist])
 
   /** Brings the next one in on the back layer, then fades over to it. */
   const advance = (): void => {

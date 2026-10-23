@@ -10,8 +10,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Background sound in two layers: music, with ambience under it, each with its own track (or Shuffle, for all of them in random order) and volume.
+- Three more built-in ambiences, alongside Rain: Crickets, Ocean waves and Birdsong (CC0, from freesound.org).
 - Settings → Music → Add your own: pick an audio file from a USB drive, SD card or this machine, say whether it's music or ambience, and vaporTV copies it in.
-- Settings → Backdrop → Your videos: add your own videos (or pictures) from a USB drive, SD card or this machine, then loop one or shuffle them all, fading from one to the next. Remove them there too.
+- Settings → Backdrop → Your videos: add your own videos (or pictures) from a USB drive, SD card or this machine, then loop one or shuffle them all, fading from one to the next. Leave any out of the shuffle, or remove them.
 - Settings → Tabs: put each tab in the top bar or under More, in any order, or switch it off (Home always comes first).
 - An Xbox tab: original Xbox games (from EmuDeck's roms/xbox) open in xemu.
 - A Wii tab: Wii games (from EmuDeck's roms/wii) open in Dolphin.

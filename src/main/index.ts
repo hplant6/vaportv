@@ -138,11 +138,15 @@ registerArtScheme()
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
 /** Your own backdrops as chosen: the one that loops (the first, if its file has gone), or all of them shuffled. */
 async function customChoice(config: Config): Promise<{ items: CustomBackdrop[]; start: string; shuffle: boolean } | null> {
-  const items = await customBackdrops()
-  if (items.length === 0) return null
+  const all = await customBackdrops()
+  if (all.length === 0) return null
   const shuffle = config.backdropFile === SHUFFLE
-  const start = shuffle ? items[Math.floor(Math.random() * items.length)].file : (items.find((b) => b.file === config.backdropFile) ?? items[0]).file
-  return { items, start, shuffle }
+  if (!shuffle) return { items: all, start: (all.find((b) => b.file === config.backdropFile) ?? all[0]).file, shuffle }
+  // Shuffled: those left in (all of them, if every one's been left out).
+  const off = new Set(config.backdropShuffleOff ?? [])
+  const pool = all.filter((b) => !off.has(b.file))
+  const items = pool.length > 0 ? pool : all
+  return { items, start: items[Math.floor(Math.random() * items.length)].file, shuffle }
 }
 
 /** Your own backdrops' choice as Settings shows it: 'shuffle', or the file that loops (the first, if its file has gone). */
@@ -513,6 +517,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     ambienceVolume: config.ambienceVolume ?? 'medium',
     backdrop: (await backdropChoice(config)).style,
     backdropFile: customBackdropFile(config, await customBackdrops()),
+    backdropShuffleOff: config.backdropShuffleOff ?? [],
     customBackdrops: await customBackdrops(),
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
@@ -560,6 +565,7 @@ ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVo
 ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKind) => browseFiles(dir, kind, [musicFolder(await loadConfig()), BACKDROP_FOLDER]))
 ipcMain.handle('backdrops:add', (_event, path: string) => addBackdrop(path))
 ipcMain.handle('backdrops:remove', (_event, file: string) => removeBackdrop(file))
+ipcMain.handle('backdrops:shuffleOff', (_event, files: string[]) => saveConfig({ backdropShuffleOff: files }))
 ipcMain.handle('music:add', async (_event, path: string, kind: MusicKind) => importMusic(await loadConfig(), path, kind))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle, file?: string) => saveConfig(file ? { backdrop: style, backdropFile: file } : { backdrop: style }))

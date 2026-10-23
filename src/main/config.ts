@@ -118,6 +118,8 @@ export interface Config {
   backdrop?: BackdropStyle
   /** Your own backdrops (~/Pictures/vaporTV Backdrops): the file that loops, or 'shuffle'. Kept when another backdrop is chosen. */
   backdropFile?: string
+  /** Your own backdrops the shuffle leaves out. */
+  backdropShuffleOff?: string[]
   backdropTime?: BackdropTime
   /** Gradient Drift's colours (a preset name, or 'random'); default molten. */
   driftPreset?: string

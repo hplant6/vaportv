@@ -27,6 +27,7 @@ const api: SteamTvApi = {
   browseFiles: (dir, kind) => ipcRenderer.invoke('files:browse', dir, kind),
   addBackdrop: (path) => ipcRenderer.invoke('backdrops:add', path),
   removeBackdrop: (file) => ipcRenderer.invoke('backdrops:remove', file),
+  setBackdropShuffleOff: (files) => ipcRenderer.invoke('backdrops:shuffleOff', files),
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
   setBackdrop: (style, file) => ipcRenderer.invoke('settings:backdrop', style, file),
   setTunnelColors: (colors) => ipcRenderer.invoke('settings:tunnelColors', colors),

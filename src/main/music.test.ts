@@ -33,7 +33,7 @@ describe('background music', () => {
   it('splits tracks into music and ambience', async () => {
     const tracks = await musicTracks({ musicFolder: music })
     expect(tracks.music.map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
-    expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Waves'])
+    expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Crickets (built in)', 'Ocean waves (built in)', 'Birdsong (built in)', 'Waves'])
   })
 
   it('moves the old rain-as-music choice over to ambience', () => {

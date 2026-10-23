@@ -206,6 +206,8 @@ export interface Settings {
   backdrop: BackdropStyle
   /** Your own backdrops: the one that loops (its file), or 'shuffle' for all of them. */
   backdropFile: string | null
+  /** Your own backdrops left out of the shuffle (their files). */
+  backdropShuffleOff: string[]
   customBackdrops: CustomBackdrop[]
   backdropTime: BackdropTime
   /** Gradient Drift's colours: a preset name, or 'random' for a new one each start. */
@@ -536,6 +538,8 @@ export interface SteamTvApi {
   setBackdrop(style: BackdropStyle, file?: string): Promise<void>
   /** Deletes one of your own backdrops. */
   removeBackdrop(file: string): Promise<void>
+  /** Which of your own backdrops the shuffle leaves out (their files). */
+  setBackdropShuffleOff(files: string[]): Promise<void>
   setDriftPreset(name: string): Promise<void>
   setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>

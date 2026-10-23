@@ -20,6 +20,7 @@ import { EXTRAS } from '../../../shared/build'
 import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
+import { toast } from '../components/Toast'
 
 function CollectionRow({
   collection,
@@ -453,6 +454,16 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
+  /** Puts one of your own backdrops in the shuffle or leaves it out; at least one stays in. */
+  const toggleShuffled = (file: string): void => {
+    if (!settings) return
+    const off = settings.backdropShuffleOff.filter((f) => settings.customBackdrops.some((b) => b.file === f))
+    const next = off.includes(file) ? off.filter((f) => f !== file) : [...off, file]
+    if (next.length >= settings.customBackdrops.length) return toast('Keep at least one in the shuffle')
+    setSettings({ ...settings, backdropShuffleOff: next })
+    window.steamtv.setBackdropShuffleOff(next).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
   /** Your own: one to loop (by file name), or 'shuffle' for all of them. */
   const chooseCustomBackdrop = (file: string): void => {
     if (settings?.backdrop === 'custom' && settings.backdropFile === file) return
@@ -705,6 +716,18 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                 ))}
               </div>
             </div>
+
+            {settings.backdropFile === 'shuffle' && (
+              <div className="settings-group">
+                <h3 className="settings-heading display">In the shuffle</h3>
+                <p className="settings-help">Switch off any you'd rather not see. They stay in the list to loop on their own.</p>
+                <div className="setting-list" data-focus-memory="settings-custom-shuffle">
+                  {settings.customBackdrops.map((b) => (
+                    <ToggleRow key={b.file} label={b.name} on={!settings.backdropShuffleOff.includes(b.file)} onToggle={() => toggleShuffled(b.file)} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="settings-group">
               <h3 className="settings-heading display">Remove a video</h3>

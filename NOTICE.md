@@ -19,6 +19,9 @@ either version 3 of the License, or (at your option) any later version. See
 | Litter decal (`debris/`) | `src/renderer/public/backdrops/rain/debris/` | vaporTV, drawn by `scripts/make-debris-decal.mjs` (replaced the demo's Megascans decal) | GPL-3.0, as vaporTV |
 | Rain splash flipbook (`Splash.png`) | `src/renderer/public/backdrops/rain/` | Faraz Shaikh (rain demo) | GPL-3.0 |
 | Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |
+| Crickets (`crickets.ogg`): "Layered Cricket Ambience (Seamless Loop)", freesound.org/s/852484 | `src/renderer/public/music/` | kkenny101 (re-encoded to Opus) | CC0 |
+| Ocean waves (`ocean-waves.ogg`): "Calm ocean waves", freesound.org/s/578524 | `src/renderer/public/music/` | SamsterBirdies (re-encoded to Opus) | CC0 |
+| Birdsong (`birdsong.ogg`): "Binaural Birds LOOP 1", freesound.org/s/468449 | `src/renderer/public/music/` | maarten91 (re-encoded to Opus) | CC0 |
 | Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
 | RetroArch icon (arcade card footers, recoloured white) | `src/renderer/public/fixtures/logos/retroarch.svg` | Simple Icons; the RetroArch logo is libretro's trademark | CC0 1.0 (SVG data) |
 | Ryujinx icon (Switch card footers; Ryubing's design) | `src/renderer/public/fixtures/logos/ryujinx.png` | EmuDeck's icon pack ([dragoonDorise/EmuDeck](https://github.com/dragoonDorise/EmuDeck)); the Ryujinx/Ryubing project's mark (its code is MIT) | GPL-3.0 (EmuDeck) |
