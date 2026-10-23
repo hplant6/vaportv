@@ -1062,6 +1062,31 @@ describe('n64', () => {
   })
 })
 
+describe('saturn', () => {
+  it('lists zipped and loose discs, multi-disc games from their folder as one game', async () => {
+    const { scanSaturn } = await import('./saturn')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-saturn-'))
+    await mkdir(join(root, 'Panzer Dragoon Saga (USA)'))
+    await mkdir(join(root, 'DecAthlete (Japan) (1M)'))
+    for (const name of [
+      'Bug! (USA).zip',
+      'Daytona USA (Europe) (1S).zip',
+      'Panzer Dragoon Saga (USA)/Panzer Dragoon Saga (USA) (Disc 2).zip',
+      'Panzer Dragoon Saga (USA)/Panzer Dragoon Saga (USA) (Disc 1).zip',
+      'DecAthlete (Japan) (1M)/DecAthlete (Japan) (1M).cue',
+      'DecAthlete (Japan) (1M)/DecAthlete (Japan) (1M) (Track 01).bin',
+      'metadata.txt'
+    ])
+      await writeFile(join(root, name), '')
+    const games = await scanSaturn(root)
+    expect(games.map((g) => g.title)).toEqual(['Bug!', 'Daytona USA', 'DecAthlete', 'Panzer Dragoon Saga'])
+    const saga = games.find((g) => g.title === 'Panzer Dragoon Saga')!
+    expect(saga.path).toMatch(/\(Disc 1\)\.zip$/)
+    expect(saga.discs.map((d) => /\(Disc (\d)\)/.exec(d)![1])).toEqual(['1', '2'])
+    expect(games.find((g) => g.title === 'DecAthlete')!.path).toMatch(/\.cue$/)
+  })
+})
+
 describe('wii u', () => {
   it('lists title folders with a bootable .rpx, named from meta.xml', async () => {
     const { scanWiiU, wiiUTitle } = await import('./wiiu')

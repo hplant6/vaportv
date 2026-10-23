@@ -95,6 +95,8 @@ export interface Config {
   dreamcastLayout?: SteamLayout
   /** How the N64 tab lays out its games (default rows). Set from Settings. */
   n64Layout?: SteamLayout
+  /** How the Saturn tab lays out its games (default rows). Set from Settings. */
+  saturnLayout?: SteamLayout
   /** How the Wii U tab lays out its games (default rows). Set from Settings. */
   wiiuLayout?: SteamLayout
   /** How the PSX and PSP tabs lay out their games (default rows). Set from Settings. */
@@ -118,6 +120,8 @@ export interface Config {
   dreamcastTitles?: Record<string, string>
   /** Name overrides for N64 games, by file name (relative to roms/n64). */
   n64Titles?: Record<string, string>
+  /** Name overrides for Saturn games, by file name (relative to roms/saturn). */
+  saturnTitles?: Record<string, string>
   /** Name overrides for Wii U games, by title folder name (in roms/wiiu). */
   wiiuTitles?: Record<string, string>
   /** Name overrides for PSX and PSP games, by file name (relative to roms/psx, roms/psp). */
@@ -129,6 +133,8 @@ export interface Config {
   flycastCore?: string
   /** RetroArch's Mupen64Plus-Next core for the N64 tab (default: the Flatpak's cores folder). */
   mupen64Core?: string
+  /** RetroArch's Kronos core for the Saturn tab (default: the Flatpak's cores folder). */
+  kronosCore?: string
   /** Ryujinx launcher (default ~/Applications/publish/Ryujinx.sh). */
   ryujinx?: string
   /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */

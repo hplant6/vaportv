@@ -8,6 +8,7 @@ import { isoDate } from './dates'
 import { arcadeGames } from './arcade'
 import { dreamcastGames } from './dreamcastTab'
 import { n64Games } from './n64Tab'
+import { saturnGames } from './saturnTab'
 import { wiiUGames } from './wiiuTab'
 import { psxGames } from './psxTab'
 import { pspGames } from './pspTab'
@@ -139,6 +140,7 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await wiiGames(config)),
       ...(await dreamcastGames(config)),
       ...(await n64Games(config)),
+      ...(await saturnGames(config)),
       ...(await wiiUGames(config)),
       ...(await psxGames(config)),
       ...(await pspGames(config)),

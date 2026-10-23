@@ -90,6 +90,7 @@
     "wiiu": "fixtures/logos/cemu.png",
     "dreamcast": "fixtures/logos/flycast-white.png",
     "n64": "fixtures/logos/retroarch.svg",
+    "saturn": "fixtures/logos/retroarch.svg",
     "atomiswave": "fixtures/logos/retroarch.svg",
     "naomi": "fixtures/logos/retroarch.svg",
     "naomi2": "fixtures/logos/retroarch.svg",

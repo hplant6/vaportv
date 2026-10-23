@@ -302,6 +302,16 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'saturn' && home && (
+        <Library
+          screen="saturn"
+          load={window.steamtv.getSaturnTab}
+          empty="No Saturn games found. vaporTV looks in your EmuDeck roms/saturn folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'n64' && home && (
         <Library
           screen="n64"

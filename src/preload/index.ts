@@ -160,6 +160,7 @@ const api: SteamTvApi = {
   getWiiTab: () => ipcRenderer.invoke('wii-tab:get'),
   getDreamcastTab: () => ipcRenderer.invoke('dreamcast-tab:get'),
   getN64Tab: () => ipcRenderer.invoke('n64-tab:get'),
+  getSaturnTab: () => ipcRenderer.invoke('saturn-tab:get'),
   getWiiUTab: () => ipcRenderer.invoke('wiiu-tab:get'),
   getPsxTab: () => ipcRenderer.invoke('psx-tab:get'),
   getPspTab: () => ipcRenderer.invoke('psp-tab:get'),
