@@ -8,9 +8,10 @@ import { BACKDROP_CHANGED_EVENT } from '../SeaBackground'
 import { heldMinutes, minutesOfDay, pinnedMinutes, sceneAt } from '../timeOfDay'
 import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
+import { simplex2d } from './noise'
 import { GROUND_FRAGMENT, SKY_FRAGMENT, SKY_VERTEX, WIND_NOISE } from './shaders'
 
-// Forest: a slow walk round a grassy clearing ringed by trees, lit by the time of day.
+// Forest: a slow walk round a grassy clearing ringed by pines, lit by the time of day.
 // The trees are Daniel Greenheck's EZ-Tree (MIT); the grass, flowers and ground are
 // from its demo (src/app), with the wind shaders reworked for instancing. A handful
 // of trees are generated once, then each is drawn hundreds of times as instances.
@@ -19,33 +20,38 @@ const WIDTH = 1920
 const HEIGHT = stageHeight()
 const ASSETS = 'backdrops/forest/'
 
-/** Tree kinds and how many of each; every kind is one generated tree, instanced. */
+/** Tree kinds and how many of each; every kind is one generated tree, instanced. Several seeds per size, so no two look alike side by side. */
 const KINDS: { preset: string; count: number; seed: number }[] = [
-  { preset: 'Ash Large', count: 26, seed: 1201 },
-  { preset: 'Ash Medium', count: 30, seed: 3307 },
-  { preset: 'Oak Large', count: 18, seed: 517 },
-  { preset: 'Oak Medium', count: 26, seed: 9042 },
-  { preset: 'Aspen Medium', count: 30, seed: 7713 },
-  { preset: 'Pine Large', count: 24, seed: 2268 },
-  { preset: 'Pine Medium', count: 26, seed: 6650 },
-  { preset: 'Bush 1', count: 40, seed: 4410 },
-  { preset: 'Bush 2', count: 40, seed: 8128 }
+  { preset: 'Pine Large', count: 34, seed: 2268 },
+  { preset: 'Pine Large', count: 34, seed: 5193 },
+  { preset: 'Pine Large', count: 30, seed: 8821 },
+  { preset: 'Pine Medium', count: 40, seed: 6650 },
+  { preset: 'Pine Medium', count: 40, seed: 1407 },
+  { preset: 'Pine Medium', count: 36, seed: 9334 },
+  { preset: 'Pine Small', count: 30, seed: 3071 },
+  { preset: 'Pine Small', count: 30, seed: 7458 }
 ]
 /** Trees stand between these radii; the camera walks a ring well inside them. */
 const TREE_MIN_R = 85
 const TREE_MAX_R = 520
-/** Bushes come a little closer, to frame the clearing. */
-const BUSH_MIN_R = 70
+/** Saplings come a little closer, to frame the clearing. */
+const SAPLING_MIN_R = 82
 const WALK_R = 40
 const EYE_HEIGHT = 20
 /** Radians per second round the ring: once round in about 17 minutes. */
 const WALK_SPEED = 0.006
 
-const GRASS_COUNT = 60000
-const GRASS_MAX_R = 260
+/** Blades, planted in tufts of a few, with ground showing between them. */
+const GRASS_COUNT = 26000
+const GRASS_MAX_R = 280
+const TUFT_BLADES = { min: 3, max: 8 }
+const TUFT_RADIUS = 1.5
 const FLOWERS_PER_COLOR = 45
-const PATCH_SCALE = 100
-const PATCHINESS = 0.7
+/** Dirt patches: the noise's scale (world units), and the level above which it's bare (lower is more dirt). */
+const PATCH_SCALE = 90
+const PATCHINESS = 0.6
+/** How often a tuft still grows out on the dirt. */
+const DIRT_TUFTS = 0.08
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x))
 
@@ -154,11 +160,8 @@ function random(seed: number): () => number {
   }
 }
 
-/** Cheap value noise for the grass patches (the ground shader's patches are close enough). */
-function patchNoise(x: number, z: number): number {
-  const s = Math.sin(x * 0.0123 + Math.sin(z * 0.0171) * 1.7) * Math.cos(z * 0.0137 + Math.sin(x * 0.0091) * 1.3)
-  return 0.5 + 0.5 * s
-}
+/** 0..1, above PATCHINESS where the ground is bare dirt (the ground shader's own test). */
+const patchNoise = (x: number, z: number): number => 0.5 + 0.5 * simplex2d(x / PATCH_SCALE, z / PATCH_SCALE)
 
 /** `count` random spots on the ground between two radii, at least `gap` apart from each other. */
 function scatter(rand: () => number, count: number, minR: number, maxR: number, taken: THREE.Vector2[], gap: number): THREE.Vector2[] {
@@ -192,8 +195,8 @@ async function buildTrees(scene: THREE.Scene, wind: { uTime: { value: number } }
     tree.options.seed = kind.seed
     tree.generate()
 
-    const bush = kind.preset.startsWith('Bush')
-    const spots = scatter(rand, kind.count, bush ? BUSH_MIN_R : TREE_MIN_R, TREE_MAX_R, taken, bush ? 10 : 22)
+    const sapling = kind.preset.endsWith('Small')
+    const spots = scatter(rand, kind.count, sapling ? SAPLING_MIN_R : TREE_MIN_R, TREE_MAX_R, taken, sapling ? 9 : 15)
     const leaves = tree.leavesMesh.material as THREE.MeshPhongMaterial
     addWind(leaves, wind, { heightFrom: 'uv.y', strength: 0.5, frequency: 0.6, scale: 70 })
     const placements = spots.map((p) => {
@@ -236,20 +239,27 @@ async function buildGrass(scene: THREE.Scene, wind: { uTime: { value: number } }
   const mesh = new THREE.InstancedMesh(blade.geometry, material, GRASS_COUNT)
   const color = new THREE.Color()
   let n = 0
-  for (let i = 0; i < GRASS_COUNT * 2 && n < GRASS_COUNT; i++) {
+  for (let tries = 0; tries < GRASS_COUNT && n < GRASS_COUNT; tries++) {
     const r = Math.sqrt(rand()) * GRASS_MAX_R
     const theta = rand() * Math.PI * 2
-    const x = r * Math.cos(theta)
-    const z = r * Math.sin(theta)
-    // Bare patches, as on the ground underneath.
-    if (patchNoise(x, z) > PATCHINESS && rand() + 0.6 > PATCHINESS) continue
-    dummy.position.set(x, 0, z)
-    dummy.rotation.set(0, rand() * Math.PI * 2, 0)
-    dummy.scale.set(5 + rand(), 4 + 2 * rand(), 5 + rand())
-    dummy.updateMatrix()
-    mesh.setMatrixAt(n, dummy.matrix)
-    mesh.setColorAt(n, color.setRGB(0.25 + rand() * 0.1, 0.3 + rand() * 0.3, 0.1))
-    n++
+    const cx = r * Math.cos(theta)
+    const cz = r * Math.sin(theta)
+    // Bare dirt where the ground shader paints it, but for the odd lone tuft.
+    if (patchNoise(cx, cz) > PATCHINESS && rand() > DIRT_TUFTS) continue
+    const blades = TUFT_BLADES.min + Math.floor(rand() * (TUFT_BLADES.max - TUFT_BLADES.min + 1))
+    // A tuft shares a shade, each blade a little off it.
+    const g = 0.3 + rand() * 0.3
+    for (let b = 0; b < blades && n < GRASS_COUNT; b++) {
+      const a = rand() * Math.PI * 2
+      const d = Math.sqrt(rand()) * TUFT_RADIUS
+      dummy.position.set(cx + d * Math.cos(a), 0, cz + d * Math.sin(a))
+      dummy.rotation.set(0, rand() * Math.PI * 2, 0)
+      dummy.scale.set(4 + rand(), 3 + 2.5 * rand(), 4 + rand())
+      dummy.updateMatrix()
+      mesh.setMatrixAt(n, dummy.matrix)
+      mesh.setColorAt(n, color.setRGB(0.25 + rand() * 0.1, g + rand() * 0.06, 0.1))
+      n++
+    }
   }
   mesh.count = n
   mesh.receiveShadow = true
