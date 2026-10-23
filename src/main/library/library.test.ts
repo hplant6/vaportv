@@ -1086,3 +1086,56 @@ describe('wii u', () => {
     expect(wiiUTitle(null, 'TANK TANK TANK DL [Game] [0005000010133800]')).toBe('TANK TANK TANK DL')
   })
 })
+
+describe('psx and psp', () => {
+  const files = async (root: string, names: string[]): Promise<void> => {
+    for (const name of names) {
+      await mkdir(join(root, name, '..'), { recursive: true })
+      await writeFile(join(root, name), '')
+    }
+  }
+
+  it('psx: a folder per game, its .cue (or .ccd) not the track .bins', async () => {
+    const { scanPsx } = await import('./psx')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-psx-'))
+    await files(root, [
+      'Castlevania - Symphony of the Night/Castlevania - Symphony of the Night.cue',
+      'Castlevania - Symphony of the Night/Castlevania - Symphony of the Night (Track 1).bin',
+      'Castlevania - Symphony of the Night/Castlevania - Symphony of the Night (Track 2).bin',
+      'Metal Slug X/Metal Slug X.ccd',
+      'Metal Slug X/Metal Slug X.img',
+      'Metal Gear Solid/Metal Gear Solid (Disc 1)/Metal Gear Solid (Disc 1).cue',
+      'Metal Gear Solid/Metal Gear Solid (Disc 1)/Metal Gear Solid (Disc 1).bin',
+      'Metal Gear Solid/Metal Gear Solid (Disc 2)/Metal Gear Solid (Disc 2).cue',
+      'metadata.txt'
+    ])
+    const games = await scanPsx(root)
+    expect(games.map((g) => g.title)).toEqual(['Castlevania - Symphony of the Night', 'Metal Gear Solid', 'Metal Slug X'])
+    // Both discs, disc 1 first: opened as a disc list.
+    expect(games[1].discs.map((d) => d.split('/').pop())).toEqual(['Metal Gear Solid (Disc 1).cue', 'Metal Gear Solid (Disc 2).cue'])
+    expect(games[0].path).toMatch(/Night\.cue$/)
+  })
+
+  it('psx: CHDs with their own .m3u for multi-disc games', async () => {
+    const { scanPsx } = await import('./psx')
+    const { discContent } = await import('./discs')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-psx-chd-'))
+    await files(root, [
+      'Command & Conquer - Red Alert (USA) (Disc 1) (Allies).chd',
+      'Command & Conquer - Red Alert (USA) (Disc 2) (Soviet).chd',
+      'Command & Conquer - Red Alert (USA).m3u',
+      'Area 51 (v1.0).chd'
+    ])
+    const games = await scanPsx(root)
+    expect(games.map((g) => g.title)).toEqual(['Area 51', 'Command & Conquer - Red Alert'])
+    // The set's own list is what opens.
+    expect(await discContent(games[1])).toMatch(/Red Alert \(USA\)\.m3u$/)
+  })
+
+  it('psp: one entry for a game that is there loose and in a folder', async () => {
+    const { scanPsp } = await import('./psp')
+    const root = await mkdtemp(join(tmpdir(), 'steamtv-psp-'))
+    await files(root, ['Bomberman Land (USA).iso', 'Bomberman Land (USA)/Bomberman Land (USA).iso', 'Daxter (USA) (En,Fr,De,Es,It).iso'])
+    expect((await scanPsp(root)).map((g) => g.title)).toEqual(['Bomberman Land', 'Daxter'])
+  })
+})

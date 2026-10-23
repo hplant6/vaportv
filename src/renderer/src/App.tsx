@@ -322,6 +322,26 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'psx' && home && (
+        <Library
+          screen="psx"
+          load={window.steamtv.getPsxTab}
+          empty="No PSX games found. vaporTV looks in your EmuDeck roms/psx folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'psp' && home && (
+        <Library
+          screen="psp"
+          load={window.steamtv.getPspTab}
+          empty="No PSP games found. vaporTV looks in your EmuDeck roms/psp folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'arcade' && home && (
         <Library
           screen="arcade"

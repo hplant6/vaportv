@@ -26,6 +26,8 @@ import { collectionGames, isSupported, readCollections } from './library/collect
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
 import { fillN64Art, loadN64Tab, n64Games } from './library/n64Tab'
 import { fillWiiUArt, loadWiiUTab, wiiUGames } from './library/wiiuTab'
+import { fillPsxArt, loadPsxTab, psxGames } from './library/psxTab'
+import { fillPspArt, loadPspTab, pspGames } from './library/pspTab'
 import { emulatorInstalled } from './library/emulators'
 import type { EmulatedGame } from './library/emulated'
 import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
@@ -192,7 +194,7 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
-  const [sw, ps2, ps3, xb, x360, gc, wii, wiiu, dc, n64, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, dreamcastGames, n64Games, arcadeGames].map(has))
+  const [sw, ps2, psx, psp, ps3, xb, x360, gc, wii, wiiu, dc, n64, arc] = await Promise.all([switchGames, ps2Games, psxGames, pspGames, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, dreamcastGames, n64Games, arcadeGames].map(has))
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
@@ -206,6 +208,8 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
     dreamcast: dc && emulatorInstalled(config, 'dreamcast'),
     n64: n64 && emulatorInstalled(config, 'n64'),
     wiiu: wiiu && emulatorInstalled(config, 'wiiu'),
+    psx: psx && emulatorInstalled(config, 'psx'),
+    psp: psp && emulatorInstalled(config, 'psp'),
     arcade: arc && emulatorInstalled(config, 'arcade')
   }
   tabsCache = { at: Date.now(), tabs }
@@ -231,7 +235,7 @@ async function setupRun(
 
 /** The console game behind a card id (Recents or a console tab), for the Artwork window. */
 async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | undefined> {
-  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, dreamcastGames, n64Games, arcadeGames]
+  const loaders = [switchGames, ps2Games, psxGames, pspGames, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, dreamcastGames, n64Games, arcadeGames]
   for (const load of loaders) {
     const game = (await load(config).catch(() => [])).find((g) => g.id === id)
     if (game) return game
@@ -265,6 +269,8 @@ const WEB_QUERY: Record<string, string> = {
   dreamcast: 'Dreamcast box art',
   n64: 'Nintendo 64 box art',
   wiiu: 'Wii U box art',
+  psx: 'PlayStation box art',
+  psp: 'PSP box art',
   atomiswave: 'arcade flyer',
   naomi: 'arcade flyer',
   naomi2: 'arcade flyer',
@@ -280,7 +286,7 @@ function favoriteAppIds(config: Config): string[] {
   return config.favoriteApps ?? home.apps.map((app) => app.id)
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'wiiu', 'dreamcast', 'n64', 'arcade']
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'psx', 'psp', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'wiiu', 'dreamcast', 'n64', 'arcade']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -515,6 +521,8 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     dreamcastLayout: config.dreamcastLayout ?? 'rows',
     n64Layout: config.n64Layout ?? 'rows',
     wiiuLayout: config.wiiuLayout ?? 'rows',
+    psxLayout: config.psxLayout ?? 'rows',
+    pspLayout: config.pspLayout ?? 'rows',
     arcadeLayout: config.arcadeLayout ?? 'rows',
     arcadeRowsHidden: config.arcadeRowsHidden ?? [],
     favoritesLayout: config.favoritesLayout ?? 'rows',
@@ -637,7 +645,7 @@ function fillArt(): void {
       const updated = (): void => {
         if (win && !win.isDestroyed()) win.webContents.send('art:updated')
       }
-      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillN64Art, fillWiiUArt, fillArcadeArt].forEach((fill) => fill(config, updated))
+      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillN64Art, fillWiiUArt, fillPsxArt, fillPspArt, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
     }
   )
@@ -685,6 +693,8 @@ ipcMain.handle('dreamcast-tab:get', async () => {
 })
 ipcMain.handle('n64-tab:get', async () => loadN64Tab(await loadConfig()))
 ipcMain.handle('wiiu-tab:get', async () => loadWiiUTab(await loadConfig()))
+ipcMain.handle('psx-tab:get', async () => loadPsxTab(await loadConfig()))
+ipcMain.handle('psp-tab:get', async () => loadPspTab(await loadConfig()))
 ipcMain.handle('xbox-tab:get', async () => {
   const config = await loadConfig()
   fillArt()

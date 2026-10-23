@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
 import { idleMs, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
-import logo from '../assets/logo.svg'
+import logo from '../assets/screensaver-logo.png'
 
 /** Settings fires this after changing the delay, or to preview the screensaver (detail: 'preview'). */
 export const SCREENSAVER_EVENT = 'steamtv:screensaver'

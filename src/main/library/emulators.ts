@@ -14,6 +14,7 @@ export const ryujinxPath = (config: Config): string =>
 export const rpcs3Path = (config: Config): string => config.rpcs3 ?? join(homedir(), 'Applications', 'rpcs3.AppImage')
 export const pcsx2Path = (config: Config): string => config.pcsx2 ?? join(homedir(), 'Applications', 'pcsx2-Qt.AppImage')
 export const cemuPath = (config: Config): string => config.cemu ?? join(homedir(), 'Applications', 'Cemu.AppImage')
+export const duckstationPath = (config: Config): string => config.duckstation ?? join(homedir(), 'Applications', 'DuckStation.AppImage')
 
 export const xeniaPath = (config: Config): string => config.xenia ?? join(romRoot(config), 'xbox360', 'xenia_canary.exe')
 
@@ -27,6 +28,7 @@ export const protonPath = (config: Config): string =>
 export const DOLPHIN = ['flatpak', 'run', 'org.DolphinEmu.dolphin-emu']
 export const XEMU = ['flatpak', 'run', 'app.xemu.xemu']
 export const RETROARCH = ['flatpak', 'run', 'org.libretro.RetroArch']
+export const PPSSPP = ['flatpak', 'run', 'org.ppsspp.PPSSPP']
 const CORES = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores')
 export const FLYCAST_CORE = join(CORES, 'flycast_libretro.so')
 export const MUPEN64_CORE = join(CORES, 'mupen64plus_next_libretro.so')
@@ -64,6 +66,10 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return existsSync(rpcs3Path(config))
     case 'ps2':
       return existsSync(pcsx2Path(config))
+    case 'psx':
+      return existsSync(duckstationPath(config))
+    case 'psp':
+      return canRun(config.ppsspp ?? PPSSPP)
     case 'xbox':
       return canRun(config.xemu ?? XEMU)
     case 'xbox360':

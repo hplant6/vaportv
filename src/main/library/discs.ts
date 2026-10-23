@@ -1,4 +1,5 @@
-import { readdir } from 'node:fs/promises'
+import { mkdir, readdir, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { basename, extname, join } from 'node:path'
 
 // Disc-image libraries (Xbox 360, GameCube): a folder of No-Intro named images,
@@ -137,4 +138,20 @@ export async function scanDiscImages(root: string, options: DiscOptions): Promis
       }
     })
     .sort((a, b) => a.title.localeCompare(b.title))
+}
+
+// Disc lists vaporTV writes for multi-disc games (the ROM folders are left alone).
+const DISC_LISTS = join(homedir(), '.local', 'share', 'steamtv', 'disc-lists')
+
+/**
+ * What an emulator that takes disc lists opens: the game's file, or for a multi-disc game a
+ * .m3u listing every disc, so it can switch discs when the game asks.
+ */
+export async function discContent(game: DiscGame): Promise<string> {
+  // One disc, or a game that comes with its own list.
+  if (game.discs.length < 2 || /\.m3u$/i.test(game.path)) return game.path
+  await mkdir(DISC_LISTS, { recursive: true })
+  const list = join(DISC_LISTS, `${game.title.replace(/[/\\:*?"<>|]/g, '_')}.m3u`)
+  await writeFile(list, game.discs.join('\n') + '\n')
+  return list
 }

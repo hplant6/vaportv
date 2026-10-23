@@ -21,6 +21,8 @@ const SYSTEMS: Record<string, string[]> = {
   xbox: ['Microsoft - Xbox'],
   dreamcast: ['Sega - Dreamcast'],
   n64: ['Nintendo - Nintendo 64'],
+  psx: ['Sony - PlayStation'],
+  psp: ['Sony - PlayStation Portable'],
   wiiu: ['Nintendo - Wii U'],
   ps3: ['Sony - PlayStation 3'],
   xbox360: ['Microsoft - Xbox 360'],

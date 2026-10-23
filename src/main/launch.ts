@@ -11,6 +11,9 @@ import { arcadeCommand, arcadeGames } from './library/arcade'
 import { dreamcastContent, flycastCommand, loadDreamcastGames } from './library/dreamcastTab'
 import { loadN64Games, mupen64Command } from './library/n64Tab'
 import { cemuCommand, loadWiiUGames } from './library/wiiuTab'
+import { duckstationCommand, loadPsxGames } from './library/psxTab'
+import { discContent } from './library/discs'
+import { loadPspGames, ppssppCommand } from './library/pspTab'
 import { rpcs3Path, ryujinxPath } from './library/emulators'
 import { dolphinCommand, loadGameCubeGames } from './library/gamecubeTab'
 import { loadPs2Games, pcsx2Command } from './library/ps2Tab'
@@ -25,7 +28,7 @@ import { childObject, childString, parseBinaryVdf } from './library/vdf'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
-// Emulated games (Switch, PS2, PS3, Xbox, Xbox 360, GameCube, Wii, Wii U, Dreamcast, N64, arcade) open in their emulator directly.
+// Emulated games (Switch, PS2, PSX, PSP, PS3, Xbox, Xbox 360, GameCube, Wii, Wii U, Dreamcast, N64, arcade) open in their emulator directly.
 
 // Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
 // the first of several names that exists). Override or extend with `favorites` in config.json.
@@ -238,6 +241,33 @@ async function launchDreamcast(config: Config, id: string): Promise<boolean> {
   return true
 }
 
+/** PSX games open in DuckStation. */
+async function launchPsx(config: Config, id: string): Promise<boolean> {
+  const game = (await loadPsxGames(config)).find((g) => g.id === id)
+  if (!game) return false
+  // A multi-disc game opens as a disc list, so DuckStation can change discs.
+  const { command, args } = duckstationCommand(config, await discContent(game))
+  console.log(`steamtv: launching ${game.path} in DuckStation`)
+  run(command, args)
+  emulatorGame = game.title
+  directIsApp = false
+  await recordPlay(id)
+  return true
+}
+
+/** PSP games open in PPSSPP. */
+async function launchPsp(config: Config, id: string): Promise<boolean> {
+  const game = (await loadPspGames(config)).find((g) => g.id === id)
+  if (!game) return false
+  const { command, args } = ppssppCommand(config, game)
+  console.log(`steamtv: launching ${game.path} in PPSSPP`)
+  run(command, args)
+  emulatorGame = game.title
+  directIsApp = false
+  await recordPlay(id)
+  return true
+}
+
 /** Wii U games open in Cemu. */
 async function launchWiiU(config: Config, id: string): Promise<boolean> {
   const game = (await loadWiiUGames(config)).find((g) => g.id === id)
@@ -289,6 +319,8 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('dreamcast:')) return launchDreamcast(config, id)
   if (id.startsWith('n64:')) return launchN64(config, id)
   if (id.startsWith('wiiu:')) return launchWiiU(config, id)
+  if (id.startsWith('psx:')) return launchPsx(config, id)
+  if (id.startsWith('psp:')) return launchPsp(config, id)
   if (id.startsWith('arcade:')) return launchArcade(config, id)
   // An app opened directly before (from Recents) opens the same way.
   if (id.startsWith('app:')) return launch(config, 'app', id.slice(4), name)

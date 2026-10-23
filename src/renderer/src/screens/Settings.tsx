@@ -617,6 +617,20 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">PSX tab layout</h3>
+          <p className="settings-help">How the PSX tab shows your games.</p>
+          {settings && <LayoutChoice tab="psx" value={settings.psxLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="psx" value={settings.recentsLayouts.psx} onChoose={chooseRecentsLayout} />}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">PSP tab layout</h3>
+          <p className="settings-help">How the PSP tab shows your games.</p>
+          {settings && <LayoutChoice tab="psp" value={settings.pspLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="psp" value={settings.recentsLayouts.psp} onChoose={chooseRecentsLayout} />}
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">GameCube tab layout</h3>
           <p className="settings-help">How the GameCube tab shows your games.</p>
           {settings && <LayoutChoice tab="gamecube" value={settings.gamecubeLayout} onChoose={chooseLayout} />}

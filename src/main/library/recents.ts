@@ -9,6 +9,8 @@ import { arcadeGames } from './arcade'
 import { dreamcastGames } from './dreamcastTab'
 import { n64Games } from './n64Tab'
 import { wiiUGames } from './wiiuTab'
+import { psxGames } from './psxTab'
+import { pspGames } from './pspTab'
 import { playedEmulated, type EmulatedGame } from './emulated'
 import { gamecubeGames } from './gamecubeTab'
 import { ps2Games } from './ps2Tab'
@@ -138,6 +140,8 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await dreamcastGames(config)),
       ...(await n64Games(config)),
       ...(await wiiUGames(config)),
+      ...(await psxGames(config)),
+      ...(await pspGames(config)),
       ...(await arcadeGames(config))
     ])
   ])

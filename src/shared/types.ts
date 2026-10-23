@@ -115,14 +115,14 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'n64' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'n64' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
 /** Where the tabs go, in order: the top bar (after Home) and More's row. */
 export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'n64' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'n64' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -191,6 +191,8 @@ export interface Settings {
   wiiLayout: SteamLayout
   dreamcastLayout: SteamLayout
   n64Layout: SteamLayout
+  psxLayout: SteamLayout
+  pspLayout: SteamLayout
   wiiuLayout: SteamLayout
   arcadeLayout: SteamLayout
   /** Arcade tab carousels turned off. */
@@ -507,6 +509,10 @@ export interface SteamTvApi {
   getN64Tab(): Promise<LibraryTab>
   /** The Wii U tab: title folders for Cemu. */
   getWiiUTab(): Promise<LibraryTab>
+  /** The PSX tab: PlayStation discs for DuckStation. */
+  getPsxTab(): Promise<LibraryTab>
+  /** The PSP tab: UMD images for PPSSPP. */
+  getPspTab(): Promise<LibraryTab>
   /** The Arcade tab: ROM sets from the Atomiswave, NAOMI, CPS, Neo Geo and arcade folders. */
   getArcadeTab(): Promise<LibraryTab>
   /** Adds or removes a Switch game from Favorites; resolves with whether it's now a favourite. */
