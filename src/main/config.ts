@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -126,6 +126,8 @@ export interface Config {
   gameTitles?: Record<string, string>
   /** Console games moved to another RetroArch core from Select's game options (card id → core, e.g. "swanstation"). */
   gameEmulators?: Record<string, string>
+  /** Music playlists made in Settings; unset until one is changed (then the built-in one is a saved one). */
+  playlists?: Playlist[]
   /** Recents layout per screen, where chosen; see recentsLayout(). */
   recentsLayouts?: Partial<Record<RecentsTab, SteamLayout>>
   /** Home's Favorite Apps: a sideways row (default) or the grid. */

@@ -20,6 +20,7 @@ const api: SteamTvApi = {
   setBraveSearchKey: (key) => ipcRenderer.invoke('settings:braveSearchKey', key),
   setSteamGridDbKey: (key) => ipcRenderer.invoke('settings:steamGridDbKey', key),
   setMusic: (kind, choice) => ipcRenderer.invoke('settings:music', kind, choice),
+  setPlaylists: (playlists) => ipcRenderer.invoke('settings:playlists', playlists),
   setMusicVolume: (kind, volume) => ipcRenderer.invoke('settings:musicVolume', kind, volume),
   musicFiles: {
     add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)

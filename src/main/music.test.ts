@@ -45,6 +45,21 @@ describe('background music', () => {
     expect(musicChoices({ music: 'builtin:rain', ambience: '' })).toEqual({ music: 'builtin:rain', ambience: null })
   })
 
+  it('plays a playlist: the built-in one until any are saved, in its order, less missing tracks', async () => {
+    const builtIn = await currentMusic({ musicFolder: music, music: 'playlist:zabriskie' })
+    expect(builtIn.music.urls).toHaveLength(7)
+    expect(builtIn.music.shuffle).toBe(false)
+    const mine = await currentMusic({
+      musicFolder: music,
+      music: 'playlist:mine',
+      playlists: [{ id: 'mine', name: 'Mine', files: ['Loose song .wav', 'gone.mp3', 'builtin:zabriskie-cut-to-rip-torn'], shuffle: true }]
+    })
+    expect(mine.music.urls.map((u) => decodeURIComponent(u).split('/').pop())).toEqual(['Loose song .wav', 'zabriskie-cut-to-rip-torn.ogg'])
+    expect(mine.music.shuffle).toBe(true)
+    // Saved playlists replace the built-in one.
+    expect((await currentMusic({ musicFolder: music, music: 'playlist:zabriskie', playlists: [] })).music.urls).toEqual([])
+  })
+
   it('plays every track of a layer when shuffled', async () => {
     const layers = await currentMusic({ musicFolder: music, music: 'shuffle', ambience: 'Ambience/Waves.wav' })
     expect(layers.music.shuffle).toBe(true)

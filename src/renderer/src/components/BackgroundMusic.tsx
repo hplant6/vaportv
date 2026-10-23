@@ -18,8 +18,8 @@ export function BackgroundMusic() {
 }
 
 /**
- * One layer, playing quietly: its track looping, or (shuffled) a random track after each
- * ends. It fades out and pauses while a game or app is in front, and fades back in on return.
+ * One layer, playing quietly: its track looping, a playlist's tracks in turn, or (shuffled)
+ * a random track after each ends. It fades out and pauses while a game or app is in front, and fades back in on return.
  */
 function Layer({ kind }: { kind: MusicKind }) {
   const audio = useRef<HTMLAudioElement>(null)
@@ -29,6 +29,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     const el = audio.current!
     let fade: ReturnType<typeof setInterval> | undefined
     let playlist: string[] = []
+    let random = false
 
     const fadeTo = (volume: number, then?: () => void): void => {
       clearInterval(fade)
@@ -76,7 +77,9 @@ function Layer({ kind }: { kind: MusicKind }) {
           })
           return
         }
-        el.loop = !shuffle
+        // One track loops; several move on as each ends.
+        el.loop = !shuffle && playlist.length === 1
+        random = shuffle
         // Keep playing what's on if it's still in the list (a volume change, or Shuffle over the same track).
         if (!playlist.includes(el.src)) {
           el.src = shuffle ? pick() : playlist[0]
@@ -86,10 +89,10 @@ function Layer({ kind }: { kind: MusicKind }) {
       })
     }
 
-    // Shuffled: on to another track.
+    // On to another track: a random one when shuffled, else the next, round to the first again.
     const onEnded = (): void => {
       if (el.loop || playlist.length === 0) return
-      el.src = pick()
+      el.src = random ? pick() : playlist[(playlist.indexOf(el.src) + 1) % playlist.length]
       el.play().catch(() => {})
     }
 

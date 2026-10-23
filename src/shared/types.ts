@@ -167,9 +167,19 @@ export type MusicKind = 'music' | 'ambience'
 
 /** One layer as the page plays it: one track looping, or several in random order. */
 export interface MusicLayer {
+  /** One track loops; several play in this order, or at random when `shuffle`. */
   urls: string[]
   shuffle: boolean
   volume: number
+}
+
+/** A named list of music tracks, chosen in Settings → Music like a single track. */
+export interface Playlist {
+  id: string
+  name: string
+  /** Track files (as MusicTrack.file), in play order. */
+  files: string[]
+  shuffle: boolean
 }
 
 /** What a file browser shows besides folders: audio (music), or pictures and videos (backdrops). */
@@ -229,7 +239,9 @@ export interface Settings {
   favoritesLayout: SteamLayout
   /** Each layer's tracks: built in, then those in the music folder (Ambience/ for ambience, the rest music). */
   musicTracks: Record<MusicKind, MusicTrack[]>
-  /** Each layer's choice: a track (its file), 'shuffle' for all of them at random, or null for none. */
+  /** Music's playlists: those made in Settings, or the built-in one until any are changed. */
+  playlists: Playlist[]
+  /** Each layer's choice: a track (its file), 'shuffle' for all of them at random, 'playlist:<id>', or null for none. */
   music: string | null
   ambience: string | null
   musicVolume: MusicVolume
@@ -577,6 +589,8 @@ export interface SteamTvApi {
   setSteamGridDbKey(key: string): Promise<void>
   /** A layer's choice: a track's file, 'shuffle', or null for none. */
   setMusic(kind: MusicKind, choice: string | null): Promise<void>
+  /** Saves every playlist (new, changed, or without the ones deleted). */
+  setPlaylists(playlists: Playlist[]): Promise<void>
   setMusicVolume(kind: MusicKind, volume: MusicVolume): Promise<void>
   /** Adding your own: browse home folders and drives (null for the places to start), then copy a file in as music or ambience. */
   musicFiles: {

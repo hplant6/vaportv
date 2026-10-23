@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicVolume, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { AddMusicRow } from '../components/AddMusic'
 import { AddBackdropRow } from '../components/AddBackdrop'
@@ -22,6 +22,8 @@ import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
 import { toast } from '../components/Toast'
 import logo from '../assets/screensaver-logo.png'
+import { PlaylistDialog } from '../components/PlaylistDialog'
+import { ActionRow, OverStage } from '../components/GooglePhotos'
 
 function CollectionRow({
   collection,
@@ -325,6 +327,8 @@ function ChoiceRow({ label, detail, selected, onSelect }: { label: string; detai
 export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [category, setCategory] = useState<Category>('general')
+  /** The playlist being edited (null: a new one), and the row to go back to. */
+  const [editing, setEditing] = useState<{ playlist: Playlist | null; from: HTMLElement | null } | null>(null)
 
   useEffect(() => {
     window.steamtv.getSettings().then(setSettings)
@@ -363,6 +367,21 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setBraveSearchKey(trimmed)
   }
 
+  const savePlaylists = (next: Playlist[]): void => {
+    if (!settings) return
+    const stillThere = !settings.music?.startsWith('playlist:') || next.some((p) => `playlist:${p.id}` === settings.music)
+    setSettings({ ...settings, playlists: next, music: stillThere ? settings.music : null })
+    window.steamtv.setPlaylists(next).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
+  }
+
+  const editPlaylist = (playlist: Playlist | null): void => setEditing({ playlist, from: document.activeElement as HTMLElement | null })
+
+  const closePlaylist = (): void => {
+    const from = editing?.from
+    setEditing(null)
+    if (from?.isConnected) focus(from)
+  }
+
   const chooseMusic = (kind: MusicKind, choice: string | null): void => {
     if (!settings || settings[kind] === choice) return
     setSettings({ ...settings, [kind]: choice })
@@ -389,6 +408,16 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             onSelect={() => chooseMusic(kind, 'shuffle')}
           />
         )}
+        {kind === 'music' &&
+          settings.playlists.map((playlist) => (
+            <ChoiceRow
+              key={playlist.id}
+              label={playlist.name}
+              detail={`Playlist · ${playlist.files.length} ${playlist.files.length === 1 ? 'track' : 'tracks'}${playlist.shuffle ? ', shuffled' : ''}`}
+              selected={settings.music === `playlist:${playlist.id}`}
+              onSelect={() => chooseMusic('music', `playlist:${playlist.id}`)}
+            />
+          ))}
         {settings.musicTracks[kind].map((track) => (
           <ChoiceRow
             key={track.file}
@@ -943,6 +972,22 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">Playlists</h3>
+          <p className="settings-help">Your own lists of music tracks, to choose above like a track.</p>
+          <div className="setting-list" data-focus-memory="settings-playlists">
+            {settings?.playlists.map((playlist) => (
+              <ActionRow
+                key={playlist.id}
+                label={playlist.name}
+                detail={`Edit · ${playlist.files.length} ${playlist.files.length === 1 ? 'track' : 'tracks'}`}
+                onSelect={() => editPlaylist(playlist)}
+              />
+            ))}
+            <ActionRow label="New playlist" detail="Name it, then pick its tracks" onSelect={() => editPlaylist(null)} />
+          </div>
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Ambience</h3>
           <p className="settings-help">Sounds of a place, under the music.</p>
           <div className="setting-list" data-focus-memory="settings-ambience">
@@ -1190,6 +1235,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           {panes[category]}
         </SettingsPane>
       </section>
+      {editing && settings && (
+        <OverStage>
+          <PlaylistDialog
+            playlist={editing.playlist}
+            tracks={settings.musicTracks.music}
+            onSave={(playlist) => {
+              const i = settings.playlists.findIndex((p) => p.id === playlist.id)
+              savePlaylists(i < 0 ? [...settings.playlists, playlist] : settings.playlists.map((p) => (p.id === playlist.id ? playlist : p)))
+            }}
+            onDelete={(id) => {
+              savePlaylists(settings.playlists.filter((p) => p.id !== id))
+              closePlaylist()
+            }}
+            onClose={closePlaylist}
+          />
+        </OverStage>
+      )}
     </div>
   )
 }

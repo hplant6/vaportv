@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, relative, sep } from 'node:path'
-import type { MusicKind, MusicLayer, MusicTrack, MusicVolume } from '../shared/types'
+import type { MusicKind, MusicLayer, MusicTrack, MusicVolume, Playlist } from '../shared/types'
 import { AUDIO, copyInto } from './browse'
 import type { Config } from './config'
 import { artUrl } from './library/art'
@@ -11,6 +11,9 @@ export const MUSIC_VOLUME: Record<MusicVolume, number> = { low: 0.12, medium: 0.
 
 /** A saved choice that plays every track of its kind in random order. */
 export const SHUFFLE = 'shuffle'
+
+/** A saved music choice that plays a playlist: `playlist:<id>`. */
+export const PLAYLIST = 'playlist:'
 
 /** Where each kind lives inside the music folder; files anywhere else count as music. */
 const KIND_FOLDER: Record<MusicKind, string> = { music: 'Music', ambience: 'Ambience' }
@@ -36,6 +39,16 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
   { file: 'builtin:zabriskie-what-if-she-doesnt-need-a-scarf', name: 'What If She Doesn’t Need a Scarf?', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-what-if-she-doesnt-need-a-scarf.ogg', kind: 'music' },
   { file: 'builtin:zabriskie-your-journey-is-resuming-now', name: 'Your Journey Is Resuming Now', credit: 'Chris Zabriskie · Abandon Babylon · CC BY 4.0', url: 'music/zabriskie-your-journey-is-resuming-now.ogg', kind: 'music' }
 ]
+
+/** The playlist there is until any are made or changed: the built-in Chris Zabriskie tracks, in order. */
+const DEFAULT_PLAYLISTS: Playlist[] = [
+  { id: 'zabriskie', name: 'Chris Zabriskie', files: BUILT_IN.filter((t) => t.file.startsWith('builtin:zabriskie-')).map((t) => t.file), shuffle: false }
+]
+
+/** Music's playlists: the saved ones, or the built-in one until any are saved. */
+export function playlists(config: Config): Playlist[] {
+  return config.playlists ?? DEFAULT_PLAYLISTS
+}
 
 export function musicFolder(config: Config): string {
   return config.musicFolder ?? join(homedir(), 'Music')
@@ -84,7 +97,7 @@ export function musicChoices(config: Config): Record<MusicKind, string | null> {
   return { music: config.music ?? null, ambience: config.ambience || null }
 }
 
-/** What the page should play on each layer: the chosen track (or every one, shuffled) and a volume. */
+/** What the page should play on each layer: the chosen track, a playlist's tracks, or every one shuffled, and a volume. */
 export async function currentMusic(config: Config): Promise<Record<MusicKind, MusicLayer>> {
   const tracks = await musicTracks(config)
   const choices = musicChoices(config)
@@ -93,8 +106,10 @@ export async function currentMusic(config: Config): Promise<Record<MusicKind, Mu
   const layer = (kind: MusicKind, volume: MusicVolume | undefined): MusicLayer => {
     const choice = choices[kind]
     const files = tracks[kind].map((t) => t.file)
-    const chosen = choice === SHUFFLE ? files : files.filter((f) => f === choice)
-    return { urls: chosen.map(url), shuffle: choice === SHUFFLE, volume: MUSIC_VOLUME[volume ?? 'medium'] }
+    // A playlist's tracks in its order, less any no longer there.
+    const list = kind === 'music' && choice?.startsWith(PLAYLIST) ? playlists(config).find((p) => PLAYLIST + p.id === choice) : undefined
+    const chosen = list ? list.files.filter((f) => files.includes(f)) : choice === SHUFFLE ? files : files.filter((f) => f === choice)
+    return { urls: chosen.map(url), shuffle: choice === SHUFFLE || !!list?.shuffle, volume: MUSIC_VOLUME[volume ?? 'medium'] }
   }
   return { music: layer('music', config.musicVolume), ambience: layer('ambience', config.ambienceVolume) }
 }

@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -54,7 +54,7 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, SHUFFLE } from './music'
+import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE } from './music'
 import { browseFiles } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
@@ -556,6 +556,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     favoritesLayout: config.favoritesLayout ?? 'rows',
     recentsLayouts: Object.fromEntries(RECENTS_TABS.map((tab) => [tab, recentsLayout(config, tab)])) as Record<RecentsTab, SteamLayout>,
     musicTracks: await musicTracks(config),
+    playlists: playlists(config),
     ...musicChoices(config),
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
@@ -601,6 +602,12 @@ ipcMain.handle('settings:music', async (_event, kind: MusicKind, choice: string 
   // Saving either layer settles both, so an old rain-as-music choice doesn't come back.
   const choices = { ...musicChoices(await loadConfig()), [kind]: choice }
   return saveConfig({ music: choices.music ?? undefined, ambience: choices.ambience ?? '' })
+})
+ipcMain.handle('settings:playlists', async (_event, lists: Playlist[]) => {
+  const config = await loadConfig()
+  // Deleting the playlist that's playing stops the music rather than leaving a choice that plays nothing.
+  const playing = config.music?.startsWith(PLAYLIST) && !lists.some((p) => PLAYLIST + p.id === config.music)
+  await saveConfig({ playlists: lists, ...(playing ? { music: undefined } : {}) })
 })
 ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
   saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
