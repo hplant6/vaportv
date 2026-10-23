@@ -1001,17 +1001,31 @@ describe('Xbox', () => {
   })
 })
 
-describe('tab limit', () => {
-  it('shows Home and tabs with content, not switched off, up to ten', async () => {
-    const { shownTabs, MAX_TABS } = await import('../../shared/tabs')
-    const all = ['steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'dreamcast', 'arcade'] as const
-    expect(MAX_TABS).toBe(10)
-    // Eleven candidates: the last in bar order (Arcade) doesn't fit.
-    expect(shownTabs(all, [])).toEqual(['home', 'steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'dreamcast'])
-    // Switching one off makes room for it.
-    expect(shownTabs(all, ['steam'])).toContain('arcade')
-    // Tabs without content never show, whatever the switches say.
-    expect(shownTabs(['apps'], [])).toEqual(['home', 'apps'])
+describe('tab arrangement', () => {
+  const all = ['steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'wii', 'dreamcast', 'arcade'] as const
+
+  it('fills the bar in bar order, then More', async () => {
+    const { arrangeTabs } = await import('../../shared/tabs')
+    // Nine after Home fill the bar's ten; the rest go under More.
+    expect(arrangeTabs(all, [])).toEqual({ bar: all.slice(0, 9), more: ['dreamcast', 'arcade'] })
+    // Room for everything: no More.
+    expect(arrangeTabs(['apps', 'switch'], [])).toEqual({ bar: ['apps', 'switch'], more: [] })
+    // Switched off, or without content: left out.
+    expect(arrangeTabs(['apps', 'switch'], ['switch'])).toEqual({ bar: ['apps'], more: [] })
+  })
+
+  it('follows a saved arrangement, placing new tabs and keeping the bar within its ten', async () => {
+    const { arrangeTabs } = await import('../../shared/tabs')
+    const saved = { bar: ['switch', 'apps'] as const, more: ['steam'] as const }
+    // Saved order kept; PS3 isn't in it yet, so it joins the bar (there's room).
+    expect(arrangeTabs(['steam', 'apps', 'switch', 'ps3'], [], { bar: [...saved.bar], more: [...saved.more] })).toEqual({
+      bar: ['switch', 'apps', 'ps3'],
+      more: ['steam']
+    })
+    // A bar saved too full: what doesn't fit goes to the front of More.
+    const crowded = arrangeTabs(all, [], { bar: [...all], more: [] })
+    expect(crowded.bar).toHaveLength(9)
+    expect(crowded.more).toEqual(['dreamcast', 'arcade'])
   })
 })
 

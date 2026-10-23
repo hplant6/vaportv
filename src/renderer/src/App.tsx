@@ -9,7 +9,7 @@ import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackgroun
 import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
 import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
-import { tabShown } from './availableTabs'
+import { tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
@@ -20,7 +20,7 @@ import { Welcome } from './components/Welcome'
 import { CoreDialog } from './components/CoreDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
-import { TAB_ORDER, type Screen } from './components/NavBar'
+import { type Screen } from './components/NavBar'
 import { toast, Toast } from './components/Toast'
 import { VolumeOsd } from './components/VolumeOsd'
 import { Apps } from './screens/Apps'
@@ -147,8 +147,8 @@ export function App() {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail
       const current = screenRef.current
-      // Only the tabs on show, so L1/R1 skips empty ones.
-      const order = TAB_ORDER.filter((s) => tabShown(s) || s === current)
+      // Only the tabs on show, in the bar's order then More's, so L1/R1 skips empty ones.
+      const order = tabOrder() as Screen[]
       const power = document.getElementById('power-button')
       const onPower = !!power && document.activeElement === power
       const i = onPower ? (step > 0 ? -1 : order.length) : order.indexOf(current)

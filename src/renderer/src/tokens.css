@@ -21,8 +21,8 @@
   --color-text: #ffffff;
   --color-accent: #ee960d;
   --color-accent-line: #fca10f;
-  /* The tab the cursor is on, when it isn't the one you're on. */
-  --color-nav-hover: #f5da40;
+  /* The tab the cursor is on, when it isn't the one you're on (no glow, so still told apart). */
+  --color-nav-hover: #ee960d;
   --color-card-footer: #060408;
   /* Settings' panels: a faint warm tint, a warm hairline, and the amber tint under the cursor. */
   --color-panel: rgba(190, 147, 111, 0.08);
@@ -64,4 +64,7 @@
 
   --ease-focus: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-focus: 280ms;
+  /* More's row: the bar's lower line dropping, then its band fading in. */
+  --dur-more: 320ms;
+  --dur-more-fade: 220ms;
 }

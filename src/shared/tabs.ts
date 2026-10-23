@@ -1,8 +1,9 @@
-import type { HideableTab } from './types'
+import type { HideableTab, TabArrangement } from './types'
 
-// The top bar's tabs, in order, and how many it shows. The bar's middle fits ten names;
-// past that, the first ones in this order show, and Settings won't switch on another until
-// one is switched off. Home always shows.
+// The top bar's tabs, their labels and default order, and how many the bar holds. Past ten
+// names, More joins them and the rest go in a second row under it. Settings → Tabs can
+// move any tab (but Home, always first) between the bar and More, reorder them, or
+// switch them off.
 
 export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -19,16 +20,31 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'arcade', label: 'Arcade' }
 ]
 
-export const MAX_TABS = 10
+/** Names the bar holds, Home included; More is added after them when there are more. */
+export const BAR_TABS = 10
+/** Names the More row holds. */
+export const MORE_TABS = 11
+export const MAX_TABS = BAR_TABS + MORE_TABS
 
-/** The tabs the bar shows (Home included): those with something in them and not switched off, up to MAX_TABS. */
-export function shownTabs(available: Iterable<HideableTab>, hidden: Iterable<HideableTab>): ('home' | HideableTab)[] {
+/**
+ * Where the tabs that show go: those with something in them and not switched off. With a
+ * saved arrangement, in its order (a tab it doesn't mention yet joins the bar if there's
+ * room, else More); without one, in bar order, filling the bar before More. The bar never
+ * takes more than it holds; what doesn't fit moves to the front of More.
+ */
+export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<HideableTab>, saved?: TabArrangement): TabArrangement {
   const has = new Set(available)
   const off = new Set(hidden)
-  const shown: ('home' | HideableTab)[] = []
-  for (const tab of TAB_LIST) {
-    if (shown.length >= MAX_TABS) break
-    if (tab.id === 'home' || (has.has(tab.id) && !off.has(tab.id))) shown.push(tab.id)
+  const shows = (tab: HideableTab): boolean => has.has(tab) && !off.has(tab)
+  const bar = (saved?.bar ?? []).filter(shows)
+  const more = (saved?.more ?? []).filter(shows)
+  const room = BAR_TABS - 1
+  for (const { id } of TAB_LIST) {
+    if (id === 'home' || !shows(id) || bar.includes(id) || more.includes(id)) continue
+    // Without a saved arrangement, More only starts once the bar is full.
+    if (bar.length < room && (saved || more.length === 0)) bar.push(id)
+    else more.push(id)
   }
-  return shown
+  more.unshift(...bar.splice(room))
+  return { bar, more: more.slice(0, MORE_TABS) }
 }

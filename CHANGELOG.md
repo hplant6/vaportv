@@ -9,10 +9,10 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- Settings → General → Tabs: switch off any tab you don't use (Home always stays).
+- Settings → Tabs: put each tab in the top bar or under More, in any order, or switch it off (Home always comes first).
 - An Xbox tab: original Xbox games (from EmuDeck's roms/xbox) open in xemu.
 - A Wii tab: Wii games (from EmuDeck's roms/wii) open in Dolphin.
-- The top bar shows up to ten tabs; past that, Settings asks you to switch one off before another goes on.
+- The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
 - The settings and power icons are the height of the tab names, and sit a little further out.

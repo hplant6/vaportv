@@ -84,6 +84,13 @@ export function move(direction: Direction, source: InputSource): void {
   lastMove = { direction, source, at: now }
   window.steamtv.logInput(`move ${direction} from ${source}`)
 
+  // A row picked up to be moved (Settings → Tabs) takes the directions instead of the cursor.
+  if (grabbed()) {
+    window.dispatchEvent(new CustomEvent(GRAB_MOVE_EVENT, { detail: direction }))
+    play('move')
+    return
+  }
+
   const from = current()
   if (!from) return focusDefault()
 
@@ -132,18 +139,27 @@ function trap(): HTMLElement | null {
   return document.querySelector<HTMLElement>('[data-focus-trap]')
 }
 
+/** While an element marked data-grabbed is picked up, directions arrive as this (detail: the Direction). */
+export const GRAB_MOVE_EVENT = 'steamtv:grab-move'
+/** B while something is picked up: put it back where it was. */
+export const GRAB_CANCEL_EVENT = 'steamtv:grab-cancel'
+
+function grabbed(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[data-grabbed]')
+}
+
 export function back(): void {
   window.steamtv.logInput('back')
   play('move')
-  window.dispatchEvent(new Event(trap() ? TRAP_CLOSE_EVENT : BACK_EVENT))
+  window.dispatchEvent(new Event(grabbed() ? GRAB_CANCEL_EVENT : trap() ? TRAP_CLOSE_EVENT : BACK_EVENT))
 }
 
 /** L1/R1 on a controller, PageUp/PageDown on a keyboard: the previous or next tab (detail: -1 or 1). */
 export const TAB_EVENT = 'steamtv:tab'
 
 export function switchTab(step: -1 | 1): void {
-  // Menus that hold the cursor (the power menu) stay put until closed.
-  if (trap()) return
+  // Menus that hold the cursor (the power menu), and a row being moved, stay put until done.
+  if (trap() || grabbed()) return
   window.steamtv.logInput(`tab ${step > 0 ? 'next' : 'previous'}`)
   play('move')
   window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: step }))
@@ -153,7 +169,7 @@ export function switchTab(step: -1 | 1): void {
 export const SETTINGS_EVENT = 'steamtv:settings'
 
 export function openSettings(): void {
-  if (trap()) return
+  if (trap() || grabbed()) return
   window.steamtv.logInput('settings')
   play('move')
   window.dispatchEvent(new Event(SETTINGS_EVENT))

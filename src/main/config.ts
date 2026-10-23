@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -152,8 +152,10 @@ export interface Config {
   welcomeSeen?: boolean
   /** The intro as vaporTV opens: 'default' (vaporTV's own, the default), 'off', or a file in ~/Videos/vaporTV Intros. */
   introVideo?: string
-  /** Tabs switched off in Settings → General → Tabs. */
+  /** Tabs switched off in Settings → Tabs. */
   tabsHidden?: HideableTab[]
+  /** Where tabs go and in what order, once arranged in Settings → Tabs (before that, bar order fills the bar, then More). */
+  tabLayout?: TabArrangement
   /** An update's version whose window was put off with Later: it doesn't open by itself again. */
   updateDismissed?: string
   /** Testing the updater: a releases JSON (URL or file, shaped as GitHub's API) in place of GitHub's. */

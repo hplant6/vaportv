@@ -209,10 +209,90 @@ button {
   pointer-events: none;
 }
 
-/* Both lines in one drawing; its upper line sits where the old one did (the shadow needs the room above). */
+/* The upper line (Henry's drawing), centred where the old one was. */
 .nav .nav-line {
-  left: 0;
-  top: -2.8px;
+  left: 5.5px;
+  top: 0;
+}
+
+/* The lower line, inline so its dip can deepen for More's row; the band fades in after. */
+.nav .nav-line-lower {
+  position: absolute;
+  left: 5.5px;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.nav-line-lower path {
+  d: path('M0 9.48108H239.76C252.43 9.48108 264.681 14.0203 274.293 22.276L298.344 42.9346C307.956 51.1904 320.207 55.7296 332.878 55.7296H1508.67C1521.45 55.7296 1533.81 51.1099 1543.45 42.7219L1566.72 22.4888C1576.36 14.1007 1588.71 9.48108 1601.5 9.48108H1846.43');
+  /* Closing: the band fades first, then the line rises. */
+  transition: d var(--dur-more) var(--ease-focus) var(--dur-more-fade);
+}
+
+.nav.more-open .nav-line-lower path {
+  d: path('M0 9.48108H232.738C249.555 9.48108 265.375 17.46 275.372 30.9838L297.444 60.8447C307.44 74.3685 323.26 82.3474 340.078 82.3474H1502.03C1518.96 82.3474 1534.87 74.2638 1544.85 60.5917L1566.28 31.2368C1576.26 17.5647 1592.17 9.48108 1609.1 9.48108H1847');
+  transition-delay: 0ms;
+}
+
+/* Closed, the row is see-through and untouchable, but still takes focus: Down on More
+   moves into it, and that opens it. */
+.nav-more-band,
+.nav-more-list {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-more-fade) ease;
+}
+
+/* Opening: the line drops first, then the band and its tabs fade in. */
+.nav.more-open .nav-more-band,
+.nav.more-open .nav-more-list {
+  opacity: 1;
+  transition: opacity var(--dur-more-fade) ease calc(var(--dur-more) * 0.7);
+}
+
+.nav.more-open .nav-more-list {
+  pointer-events: auto;
+}
+
+/* Inside the lower line's dip: its flat run centred on the line's (both ~1160px), and
+   midway between the lines like the row's text. */
+.nav .nav-more-band {
+  position: absolute;
+  left: 263.55px;
+  top: 10.74px;
+}
+
+/* More's row: under the bar's tabs, centred on them. */
+.nav-more-list {
+  position: absolute;
+  left: 340.82px;
+  top: 49.8px;
+  width: 1177px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 37px;
+}
+
+.nav-tab.nav-more-tab {
+  height: auto;
+  font-size: 20px;
+}
+
+/* The tab you're on, under More: gold, no glow (More itself glows). */
+.nav-tab.nav-more-tab.active {
+  color: var(--color-accent-line);
+  text-shadow: none;
+}
+
+/* More, open or holding the tab you're on: gold, glowing and underlined. */
+.nav-tab.open:not(.nav-icon-tab) {
+  height: 40px;
+  color: var(--color-accent);
+  border-bottom: 3px solid var(--color-accent-line);
+  text-shadow: 0 -1px 20px rgba(238, 215, 13, 0.66);
 }
 
 .nav-tabs {
@@ -268,7 +348,7 @@ button {
   text-shadow: 0 0 18px var(--color-accent-line);
 }
 
-/* The tab the cursor is on: yellow, no glow (the one you're on stays gold). */
+/* The tab the cursor is on: gold, no glow (the one you're on glows). */
 .nav-tab:focus:not(.active) {
   color: var(--color-nav-hover);
 }
@@ -1254,11 +1334,10 @@ button {
   background: rgba(0, 0, 0, 0.8);
 }
 
-/* The panels: a faint warm tint, lifted by a shadow. */
+/* The panels: a faint warm tint, no shadow. */
 .settings-sidebar,
 .settings-pane .settings-group {
   background: var(--color-panel);
-  box-shadow: 0 4px 9.1px 0 rgba(0, 0, 0, 0.9);
   border-radius: 18px;
 }
 
@@ -1317,14 +1396,18 @@ button {
   background: var(--color-focus-tint);
 }
 
-/* Clips the pane's own scrolling. Runs to the right edge, like the sidebar runs off the left. */
+/* Clips the pane's own scrolling. Runs to the right edge, like the sidebar runs off the left,
+   and up under the bar: panels scrolling up fade out as they near its line, as pages do
+   (a little higher than theirs, so the first panel, at 101px, shows in full). */
 .settings-pane {
   position: absolute;
   left: 627px;
-  top: 101px;
+  top: 0;
   right: 0;
-  height: calc(var(--stage-h) - 101px);
+  height: var(--stage-h);
+  padding-top: 101px;
   overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 73px, #000 101px);
 }
 
 .settings-pane-content {
@@ -1338,6 +1421,8 @@ button {
 .settings-pane .settings-group {
   margin: 0;
   width: auto;
+  /* Square on the right: the panels run on off the screen. */
+  border-radius: 18px 0 0 18px;
   padding: 9px 43px 43px;
 }
 
@@ -1346,6 +1431,8 @@ button {
 }
 
 .settings-pane .settings-heading {
+  /* A gap under the divider, as under the categories' title, so a highlighted row doesn't touch it. */
+  margin-bottom: 9px;
   font-size: 36px;
   line-height: 2.3;
   letter-spacing: 0.04em;
@@ -1402,6 +1489,36 @@ button {
   border-color: var(--color-accent);
   box-shadow: none;
   background: radial-gradient(circle, var(--color-accent) 7.5px, transparent 8.3px);
+}
+
+/* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
+.tab-grip {
+  flex: none;
+  width: 22px;
+  height: 14px;
+  margin: 0 4px;
+  background: linear-gradient(currentColor 0 0) top / 100% 2px no-repeat, linear-gradient(currentColor 0 0) center / 100% 2px no-repeat,
+    linear-gradient(currentColor 0 0) bottom / 100% 2px no-repeat;
+  opacity: 0.6;
+}
+
+.settings-pane .tab-row.grabbed {
+  background: var(--color-focus-tint);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.tab-row.grabbed .tab-grip {
+  color: var(--color-accent);
+  opacity: 1;
+}
+
+/* Home: always first, so it can't be picked up. */
+.tab-row.fixed {
+  opacity: 0.55;
+}
+
+.settings-pane .tab-empty {
+  margin: 0 32px 20px;
 }
 
 /* Favorite Apps as a carousel: the grid's first row, carried on to the right. */

@@ -5,6 +5,7 @@ import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GeneralSettings } from '../components/GeneralSettings'
+import { TabsSettings } from '../components/TabsSettings'
 import { BluetoothSettings } from '../components/Bluetooth'
 import { WifiSettings } from '../components/Wifi'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
@@ -193,10 +194,11 @@ const FAVORITES_LAYOUTS: { id: SteamLayout; name: string; detail: string }[] = [
   { id: 'grid', name: 'Grid', detail: 'Two rows · scroll down' }
 ]
 
-type Category = 'general' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork'
+type Category = 'general' | 'tabs' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork'
 
 const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'general', name: 'General' },
+  { id: 'tabs', name: 'Tabs' },
   { id: 'home', name: 'Home' },
   { id: 'steam', name: 'Steam' },
   { id: 'consoles', name: 'Consoles' },
@@ -209,8 +211,8 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'artwork', name: 'Artwork' }
 ]
 
-/** Space between the top of the settings pane and the bottom of the screen. */
-const PANE_HEIGHT = stageHeight() - 101
+/** The settings pane runs the full height of the screen (its panels start under the bar). */
+const PANE_HEIGHT = stageHeight()
 
 /**
  * One category's settings. It scrolls on its own, so the categories stay put; B in
@@ -472,6 +474,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   const panes: Record<Category, ReactNode> = {
     general: <GeneralSettings />,
+    tabs: <TabsSettings />,
     home: (
       <>
         <div className="settings-group">

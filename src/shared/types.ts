@@ -118,6 +118,8 @@ export type SteamLayout = 'rows' | 'grid'
 export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
+/** Where the tabs go, in order: the top bar (after Home) and More's row. */
+export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
 export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
@@ -443,8 +445,8 @@ export interface SteamTvApi {
     gamingMode(): Promise<void>
     onProgress(callback: (line: string) => void): () => void
   }
-  /** Which optional tabs have something to show (no Steam, or no games for a console, hides it). */
-  getAvailableTabs(): Promise<Record<LayoutTab, boolean>>
+  /** The tabs that show, in the bar (after Home) and under More: those with something to show and not switched off. */
+  getAvailableTabs(): Promise<TabArrangement>
   /** The Steam tab: the collections chosen in Settings, and how to lay them out. */
   getSteamTab(): Promise<LibraryTab>
   /** The Switch tab: Ryujinx games found on the ROM drive. */
@@ -514,11 +516,11 @@ export interface SteamTvApi {
   }
   /** The system's battery, or null for a box without one (controllers' batteries don't count). */
   getBattery(): Promise<BatteryState | null>
-  /** Settings → General → Tabs: the tabs that have something to show, and those switched off. */
+  /** Settings → Tabs: the tabs with something to show, where each sits (bar, More or off), in order. */
   tabs: {
-    /** `shown`: what the bar shows now (within `max`, Home not counted in the list but in `max`). */
-    get(): Promise<{ available: HideableTab[]; hidden: HideableTab[]; shown: HideableTab[]; max: number }>
-    setHidden(hidden: HideableTab[]): Promise<void>
+    get(): Promise<TabArrangement & { off: HideableTab[] }>
+    /** Saves where the tabs go and which are off. */
+    set(arrangement: TabArrangement, off: HideableTab[]): Promise<void>
   }
   /** The intro video as vaporTV opens. */
   intro: {

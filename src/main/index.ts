@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -61,7 +61,7 @@ import { power, sleepBlocker } from './power'
 import { captureAndQuit, screenshotMode } from './screenshot'
 import { stepVolume } from './volume'
 import { getWeather } from './weather'
-import { MAX_TABS, shownTabs, TAB_LIST } from '../shared/tabs'
+import { arrangeTabs, TAB_LIST } from '../shared/tabs'
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 /**
@@ -159,6 +159,8 @@ const TABS_TTL = 60 * 1000
 let tabsCache: { at: number; tabs: Record<LayoutTab, boolean> } | null = null
 
 async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>> {
+  // Dev aid: STEAMTV_ALL_TABS=1 shows every tab, e.g. to see More's row on a PC without the games.
+  if (process.env.STEAMTV_ALL_TABS) return Object.fromEntries(TAB_LIST.filter((t) => t.id !== 'home' && t.id !== 'apps').map((t) => [t.id, true])) as Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
@@ -425,19 +427,29 @@ async function tabsWithContent(config: Config): Promise<HideableTab[]> {
   return ['apps', ...(Object.keys(tabs) as LayoutTab[]).filter((tab) => tabs[tab])]
 }
 
-// What the bar shows: tabs with something in them, less those switched off, up to MAX_TABS.
-ipcMain.handle('tabs:available', async () => {
+// What the bar and More show: tabs with something in them, less those switched off, where Settings put them.
+ipcMain.handle('tabs:available', async (): Promise<TabArrangement> => {
   const config = await loadConfig()
-  const shown = new Set(shownTabs(await tabsWithContent(config), config.tabsHidden ?? []))
-  return Object.fromEntries(TAB_LIST.filter((t) => t.id !== 'home').map((t) => [t.id, shown.has(t.id)]))
+  return arrangeTabs(await tabsWithContent(config), config.tabsHidden ?? [], config.tabLayout)
 })
+// Settings → Tabs lists the tabs with something in them: where each sits, and those off (in bar order).
 ipcMain.handle('tabs:settings', async () => {
   const config = await loadConfig()
   const available = await tabsWithContent(config)
   const hidden = config.tabsHidden ?? []
-  return { available, hidden, shown: shownTabs(available, hidden).filter((t): t is HideableTab => t !== 'home'), max: MAX_TABS }
+  const off = TAB_LIST.map((t) => t.id).filter((t): t is HideableTab => t !== 'home' && available.includes(t) && hidden.includes(t))
+  return { ...arrangeTabs(available, hidden, config.tabLayout), off }
 })
-ipcMain.handle('tabs:setHidden', (_event, hidden: HideableTab[]) => saveConfig({ tabsHidden: hidden }))
+ipcMain.handle('tabs:set', async (_event, arrangement: TabArrangement, off: HideableTab[]) => {
+  // Tabs with nothing in them aren't listed, so keep where they were for when they have games.
+  const config = await loadConfig()
+  const listed = new Set([...arrangement.bar, ...arrangement.more, ...off])
+  const kept = (tabs: HideableTab[] | undefined): HideableTab[] => (tabs ?? []).filter((t) => !listed.has(t))
+  await saveConfig({
+    tabLayout: { bar: [...arrangement.bar, ...kept(config.tabLayout?.bar)], more: [...arrangement.more, ...kept(config.tabLayout?.more)] },
+    tabsHidden: [...off, ...kept(config.tabsHidden)]
+  })
+})
 ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   const location = await getLocation()
   return location ? sunTimes(new Date(), location.latitude, location.longitude) : null

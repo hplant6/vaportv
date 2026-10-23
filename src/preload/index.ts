@@ -45,7 +45,7 @@ const api: SteamTvApi = {
   getBattery: () => ipcRenderer.invoke('battery:get'),
   tabs: {
     get: () => ipcRenderer.invoke('tabs:settings'),
-    setHidden: (hidden) => ipcRenderer.invoke('tabs:setHidden', hidden)
+    set: (arrangement, off) => ipcRenderer.invoke('tabs:set', arrangement, off)
   },
   intro: {
     get: () => ipcRenderer.invoke('intro:get'),

@@ -1,23 +1,29 @@
 import { useEffect, useState } from 'react'
-import type { HideableTab } from '../../shared/types'
+import type { HideableTab, TabArrangement } from '../../shared/types'
+import { arrangeTabs, TAB_LIST } from '../../shared/tabs'
 
-// Which optional tabs show: those with something in them, less any switched off in
-// Settings. Shared by the nav bar (to hide the rest) and L1/R1 (to skip them); refreshed
-// now and then as games are added or removed, and at once when Settings changes them.
+// Which tabs show, and where: the bar (after Home) or More's row. Those with something in
+// them, less any switched off, arranged as in Settings → Tabs. Shared by the nav bar and
+// L1/R1 (which steps through them in that order); refreshed now and then as games are added
+// or removed, and at once when Settings changes them.
 
 const REFRESH_MS = 5 * 60 * 1000
 
-let tabs: Partial<Record<HideableTab, boolean>> = {}
+// Until the first answer, every tab, in bar order.
+let arrangement: TabArrangement = arrangeTabs(
+  TAB_LIST.map((t) => t.id).filter((t): t is HideableTab => t !== 'home'),
+  []
+)
 const listeners = new Set<() => void>()
 
 function load(): void {
   window.steamtv.getAvailableTabs().then((next) => {
-    tabs = next
+    arrangement = next
     for (const listener of listeners) listener()
   })
 }
 
-/** Settings changed which tabs show: look again now. */
+/** Settings changed which tabs show or where: look again now. */
 export function refreshTabs(): void {
   load()
 }
@@ -30,13 +36,13 @@ function start(): void {
   setInterval(load, REFRESH_MS)
 }
 
-/** Whether a screen is shown: anything not known to be empty is. */
-export function tabShown(screen: string): boolean {
-  return tabs[screen as HideableTab] !== false
+/** The screens in the order L1/R1 step through them: Settings, Home, the bar's tabs, then More's. */
+export function tabOrder(): string[] {
+  return ['settings', 'home', ...arrangement.bar, ...arrangement.more]
 }
 
-/** Re-renders when the available tabs change; returns the current check. */
-export function useAvailableTabs(): (screen: string) => boolean {
+/** Re-renders when the tabs change; returns where they go now. */
+export function useTabArrangement(): TabArrangement {
   const [, setVersion] = useState(0)
   useEffect(() => {
     start()
@@ -44,5 +50,5 @@ export function useAvailableTabs(): (screen: string) => boolean {
     listeners.add(listener)
     return () => void listeners.delete(listener)
   }, [])
-  return tabShown
+  return arrangement
 }
