@@ -43,9 +43,9 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks } from './music'
+import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, SHUFFLE } from './music'
 import { browseFiles } from './browse'
-import { addBackdrop, BACKDROP_FOLDER, customBackdrops } from './backdrops'
+import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
 import { bluetoothStatus, connectBluetooth, disconnectBluetooth, findBluetoothDevices, forgetBluetooth, pairBluetooth, setBluetoothPowered } from './bluetooth'
@@ -136,11 +136,27 @@ registerArtScheme()
 
 // Recents come from the Steam install; without one (a dev PC with no snapshot)
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
-/** The chosen backdrop, or the sea if it's one that's since been removed (Particles, or your own file gone). */
-async function backdropChoice(config: Config): Promise<{ style: BackdropStyle; custom: CustomBackdrop | null }> {
+/** Your own backdrops as chosen: the one that loops (the first, if its file has gone), or all of them shuffled. */
+async function customChoice(config: Config): Promise<{ items: CustomBackdrop[]; start: string; shuffle: boolean } | null> {
+  const items = await customBackdrops()
+  if (items.length === 0) return null
+  const shuffle = config.backdropFile === SHUFFLE
+  const start = shuffle ? items[Math.floor(Math.random() * items.length)].file : (items.find((b) => b.file === config.backdropFile) ?? items[0]).file
+  return { items, start, shuffle }
+}
+
+/** Your own backdrops' choice as Settings shows it: 'shuffle', or the file that loops (the first, if its file has gone). */
+function customBackdropFile(config: Config, items: CustomBackdrop[]): string | null {
+  if (items.length === 0) return null
+  if (config.backdropFile === SHUFFLE) return SHUFFLE
+  return (items.find((b) => b.file === config.backdropFile) ?? items[0]).file
+}
+
+/** The chosen backdrop, or the sea if it's one that's since been removed (Particles, or all of your own). */
+async function backdropChoice(config: Config): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
   const offered: BackdropStyle[] = ['sea', 'rain', 'drift', 'waves', 'tunnel']
   if (config.backdrop === 'custom') {
-    const custom = (await customBackdrops()).find((b) => b.file === config.backdropFile)
+    const custom = await customChoice(config)
     return custom ? { style: 'custom', custom } : { style: 'sea', custom: null }
   }
   return { style: config.backdrop && offered.includes(config.backdrop) ? config.backdrop : 'sea', custom: null }
@@ -496,7 +512,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
     backdrop: (await backdropChoice(config)).style,
-    backdropFile: config.backdrop === 'custom' ? (config.backdropFile ?? null) : null,
+    backdropFile: customBackdropFile(config, await customBackdrops()),
     customBackdrops: await customBackdrops(),
     backdropTime: config.backdropTime ?? 'auto',
     driftPreset: config.driftPreset ?? DEFAULT_DRIFT_PRESET,
@@ -543,9 +559,10 @@ ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVo
 // Adding your own: the browser leaves out vaporTV's own folders (files there are already in).
 ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKind) => browseFiles(dir, kind, [musicFolder(await loadConfig()), BACKDROP_FOLDER]))
 ipcMain.handle('backdrops:add', (_event, path: string) => addBackdrop(path))
+ipcMain.handle('backdrops:remove', (_event, file: string) => removeBackdrop(file))
 ipcMain.handle('music:add', async (_event, path: string, kind: MusicKind) => importMusic(await loadConfig(), path, kind))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
-ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle, file?: string) => saveConfig({ backdrop: style, backdropFile: style === 'custom' ? file : undefined }))
+ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle, file?: string) => saveConfig(file ? { backdrop: style, backdropFile: file } : { backdrop: style }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
 ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))

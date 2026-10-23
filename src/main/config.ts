@@ -116,7 +116,7 @@ export interface Config {
   ambience?: string
   ambienceVolume?: MusicVolume
   backdrop?: BackdropStyle
-  /** With backdrop 'custom': the file in ~/Pictures/vaporTV Backdrops. */
+  /** Your own backdrops (~/Pictures/vaporTV Backdrops): the file that loops, or 'shuffle'. Kept when another backdrop is chosen. */
   backdropFile?: string
   backdropTime?: BackdropTime
   /** Gradient Drift's colours (a preset name, or 'random'); default molten. */

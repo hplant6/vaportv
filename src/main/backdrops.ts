@@ -1,6 +1,6 @@
-import { readdir } from 'node:fs/promises'
+import { readdir, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { extname, join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 import type { CustomBackdrop } from '../shared/types'
 import { copyInto, IMAGE, VIDEO } from './browse'
 import { artUrl } from './library/art'
@@ -29,4 +29,11 @@ export async function addBackdrop(source: string): Promise<string> {
   if (!IMAGE.test(source) && !VIDEO.test(source)) throw new Error("That isn't a picture or video vaporTV can use")
   const target = await copyInto(source, BACKDROP_FOLDER)
   return target.slice(BACKDROP_FOLDER.length + 1)
+}
+
+/** Deletes one of your backdrops from the folder (by its file name there). */
+export async function removeBackdrop(file: string): Promise<void> {
+  // Only a name in the folder, never a path elsewhere.
+  if (basename(file) !== file || !(await customBackdrops()).some((b) => b.file === file)) throw new Error('No such backdrop')
+  await unlink(join(BACKDROP_FOLDER, file))
 }

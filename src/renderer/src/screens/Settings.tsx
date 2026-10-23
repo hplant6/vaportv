@@ -3,6 +3,7 @@ import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClo
 import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
 import { AddMusicRow } from '../components/AddMusic'
 import { AddBackdropRow } from '../components/AddBackdrop'
+import { RemoveBackdropRow } from '../components/RemoveBackdrop'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
@@ -448,11 +449,11 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   const chooseBackdrop = (style: BackdropStyle): void => {
     if (!settings || settings.backdrop === style) return
-    setSettings({ ...settings, backdrop: style, backdropFile: null })
+    setSettings({ ...settings, backdrop: style })
     window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
-  /** One of your own pictures or videos (by file name). */
+  /** Your own: one to loop (by file name), or 'shuffle' for all of them. */
   const chooseCustomBackdrop = (file: string): void => {
     if (settings?.backdrop === 'custom' && settings.backdropFile === file) return
     setSettings((current) => current && { ...current, backdrop: 'custom', backdropFile: file })
@@ -668,17 +669,69 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   onSelect={() => chooseBackdrop(b.id)}
                 />
               ))}
-            {settings?.customBackdrops.map((b) => (
+            {settings && settings.customBackdrops.length > 0 && (
               <ChoiceRow
-                key={`custom:${b.file}`}
-                label={b.name}
-                detail={b.kind === 'video' ? 'Your video' : 'Your picture'}
-                selected={settings.backdrop === 'custom' && settings.backdropFile === b.file}
-                onSelect={() => chooseCustomBackdrop(b.file)}
+                label="Your videos"
+                detail={`${settings.customBackdrops.length} added · loop one or shuffle them`}
+                selected={settings.backdrop === 'custom'}
+                onSelect={() => chooseBackdrop('custom')}
               />
-            ))}
+            )}
           </div>
         </div>
+
+        {settings?.backdrop === 'custom' && (
+          <>
+            <div className="settings-group">
+              <h3 className="settings-heading display">Your videos</h3>
+              <p className="settings-help">Loop one, fading back into its start, or shuffle them all, fading from one to the next.</p>
+              <div className="setting-list" data-focus-memory="settings-custom-backdrop">
+                {settings.customBackdrops.length > 1 && (
+                  <ChoiceRow
+                    label="Shuffle"
+                    detail={`All ${settings.customBackdrops.length}, in random order`}
+                    selected={settings.backdropFile === 'shuffle'}
+                    onSelect={() => chooseCustomBackdrop('shuffle')}
+                  />
+                )}
+                {settings.customBackdrops.map((b) => (
+                  <ChoiceRow
+                    key={b.file}
+                    label={b.name}
+                    detail={b.kind === 'video' ? 'Loop this one' : 'Show this picture'}
+                    selected={settings.backdropFile === b.file}
+                    onSelect={() => chooseCustomBackdrop(b.file)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <h3 className="settings-heading display">Remove a video</h3>
+              <div className="setting-list" data-focus-memory="settings-custom-remove">
+                {settings.customBackdrops.map((b) => (
+                  <RemoveBackdropRow
+                    key={b.file}
+                    backdrop={b}
+                    onRemoved={() =>
+                      window.steamtv.getSettings().then((next) => {
+                        setSettings(next)
+                        window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT))
+                        // The cursor goes back to the list (the row it was on has gone).
+                        requestAnimationFrame(() => {
+                          const target =
+                            document.querySelector<HTMLElement>('[data-focus-memory="settings-custom-remove"] [data-focusable]') ??
+                            document.querySelector<HTMLElement>('#settings-add-backdrop')
+                          if (target) focus(target)
+                        })
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="settings-group">
           <h3 className="settings-heading display">Add your own</h3>

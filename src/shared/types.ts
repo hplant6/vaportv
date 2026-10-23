@@ -204,7 +204,7 @@ export interface Settings {
   musicVolume: MusicVolume
   ambienceVolume: MusicVolume
   backdrop: BackdropStyle
-  /** With backdrop 'custom': which of your own it is (its file). */
+  /** Your own backdrops: the one that loops (its file), or 'shuffle' for all of them. */
   backdropFile: string | null
   customBackdrops: CustomBackdrop[]
   backdropTime: BackdropTime
@@ -529,11 +529,13 @@ export interface SteamTvApi {
     drift: string
     driftDirection: 'vertical' | 'horizontal'
     tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
-    /** With style 'custom': the picture or video to show. */
-    custom: CustomBackdrop | null
+    /** With style 'custom': your pictures and videos, the one to start on, and whether to shuffle them (else it loops). */
+    custom: { items: CustomBackdrop[]; start: string; shuffle: boolean } | null
   }>
-  /** For 'custom', `file` says which of your own. */
+  /** For 'custom', `file` says which of your own loops, or 'shuffle' for all of them. */
   setBackdrop(style: BackdropStyle, file?: string): Promise<void>
+  /** Deletes one of your own backdrops. */
+  removeBackdrop(file: string): Promise<void>
   setDriftPreset(name: string): Promise<void>
   setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>

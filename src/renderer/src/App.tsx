@@ -67,7 +67,7 @@ export function App() {
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
-  const [custom, setCustom] = useState<CustomBackdrop | null>(null)
+  const [custom, setCustom] = useState<{ items: CustomBackdrop[]; start: string; shuffle: boolean } | null>(null)
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
 
@@ -196,7 +196,7 @@ export function App() {
     <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
       {backdrop === 'custom' && custom ? (
         // Your own picture or video needs no WebGL.
-        <CustomBackground backdrop={custom} />
+        <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
       ) : !webgl ? (
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
