@@ -115,14 +115,14 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
 /** Where the tabs go, in order: the top bar (after Home) and More's row. */
 export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -192,6 +192,11 @@ export interface Settings {
   dreamcastLayout: SteamLayout
   n64Layout: SteamLayout
   saturnLayout: SteamLayout
+  nesLayout: SteamLayout
+  snesLayout: SteamLayout
+  genesisLayout: SteamLayout
+  sega32xLayout: SteamLayout
+  amigaLayout: SteamLayout
   psxLayout: SteamLayout
   pspLayout: SteamLayout
   wiiuLayout: SteamLayout
@@ -510,6 +515,16 @@ export interface SteamTvApi {
   getN64Tab(): Promise<LibraryTab>
   /** The Saturn tab: disc images for Kronos. */
   getSaturnTab(): Promise<LibraryTab>
+  /** The NES tab: games for Mesen. */
+  getNesTab(): Promise<LibraryTab>
+  /** The SNES tab: games for Snes9x. */
+  getSnesTab(): Promise<LibraryTab>
+  /** The Genesis tab: games for Genesis Plus GX. */
+  getGenesisTab(): Promise<LibraryTab>
+  /** The 32X tab: games for PicoDrive. */
+  getSega32xTab(): Promise<LibraryTab>
+  /** The Amiga tab: games for PUAE. */
+  getAmigaTab(): Promise<LibraryTab>
   /** The Wii U tab: title folders for Cemu. */
   getWiiUTab(): Promise<LibraryTab>
   /** The PSX tab: PlayStation discs for DuckStation. */

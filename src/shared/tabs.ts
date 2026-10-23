@@ -22,6 +22,11 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'dreamcast', label: 'Dreamcast' },
   { id: 'saturn', label: 'Saturn' },
   { id: 'n64', label: 'N64' },
+  { id: 'nes', label: 'NES' },
+  { id: 'snes', label: 'SNES' },
+  { id: 'genesis', label: 'Genesis' },
+  { id: 'sega32x', label: '32X' },
+  { id: 'amiga', label: 'Amiga' },
   { id: 'arcade', label: 'Arcade' }
 ]
 

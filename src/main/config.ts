@@ -97,6 +97,16 @@ export interface Config {
   n64Layout?: SteamLayout
   /** How the Saturn tab lays out its games (default rows). Set from Settings. */
   saturnLayout?: SteamLayout
+  /** How the NES tab lays out its games (default rows). Set from Settings. */
+  nesLayout?: SteamLayout
+  /** How the SNES tab lays out its games (default rows). Set from Settings. */
+  snesLayout?: SteamLayout
+  /** How the Genesis tab lays out its games (default rows). Set from Settings. */
+  genesisLayout?: SteamLayout
+  /** How the 32X tab lays out its games (default rows). Set from Settings. */
+  sega32xLayout?: SteamLayout
+  /** How the Amiga tab lays out its games (default rows). Set from Settings. */
+  amigaLayout?: SteamLayout
   /** How the Wii U tab lays out its games (default rows). Set from Settings. */
   wiiuLayout?: SteamLayout
   /** How the PSX and PSP tabs lay out their games (default rows). Set from Settings. */
@@ -122,6 +132,16 @@ export interface Config {
   n64Titles?: Record<string, string>
   /** Name overrides for Saturn games, by file name (relative to roms/saturn). */
   saturnTitles?: Record<string, string>
+  /** Name overrides for NES games, by file name (relative to roms/nes). */
+  nesTitles?: Record<string, string>
+  /** Name overrides for SNES games, by file name (relative to roms/snes). */
+  snesTitles?: Record<string, string>
+  /** Name overrides for Genesis games, by file name (relative to roms/genesis). */
+  genesisTitles?: Record<string, string>
+  /** Name overrides for 32X games, by file name (relative to roms/sega32x). */
+  sega32xTitles?: Record<string, string>
+  /** Name overrides for Amiga games, by file name (relative to roms/amiga). */
+  amigaTitles?: Record<string, string>
   /** Name overrides for Wii U games, by title folder name (in roms/wiiu). */
   wiiuTitles?: Record<string, string>
   /** Name overrides for PSX and PSP games, by file name (relative to roms/psx, roms/psp). */
@@ -135,6 +155,16 @@ export interface Config {
   mupen64Core?: string
   /** RetroArch's Kronos core for the Saturn tab (default: the Flatpak's cores folder). */
   kronosCore?: string
+  /** RetroArch's Mesen core for the NES tab (default: the Flatpak's cores folder). */
+  mesenCore?: string
+  /** RetroArch's Snes9x core for the SNES tab (default: the Flatpak's cores folder). */
+  snes9xCore?: string
+  /** RetroArch's Genesis Plus GX core for the Genesis tab (default: the Flatpak's cores folder). */
+  genesisPlusGxCore?: string
+  /** RetroArch's PicoDrive core for the 32X tab (default: the Flatpak's cores folder). */
+  picodriveCore?: string
+  /** RetroArch's PUAE core for the Amiga tab (default: the Flatpak's cores folder). */
+  puaeCore?: string
   /** Ryujinx launcher (default ~/Applications/publish/Ryujinx.sh). */
   ryujinx?: string
   /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */

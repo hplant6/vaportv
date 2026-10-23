@@ -352,6 +352,56 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'nes' && home && (
+        <Library
+          screen="nes"
+          load={window.steamtv.getNesTab}
+          empty="No NES games found. vaporTV looks in your EmuDeck roms/nes folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'snes' && home && (
+        <Library
+          screen="snes"
+          load={window.steamtv.getSnesTab}
+          empty="No SNES games found. vaporTV looks in your EmuDeck roms/snes folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'genesis' && home && (
+        <Library
+          screen="genesis"
+          load={window.steamtv.getGenesisTab}
+          empty="No Genesis games found. vaporTV looks in your EmuDeck roms/genesis folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'sega32x' && home && (
+        <Library
+          screen="sega32x"
+          load={window.steamtv.getSega32xTab}
+          empty="No 32X games found. vaporTV looks in your EmuDeck roms/sega32x folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'amiga' && home && (
+        <Library
+          screen="amiga"
+          load={window.steamtv.getAmigaTab}
+          empty="No Amiga games found. vaporTV looks in your EmuDeck roms/amiga folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'arcade' && home && (
         <Library
           screen="arcade"

@@ -9,7 +9,7 @@ import { PowerMenu } from './PowerMenu'
 import { TAB_LIST } from '../../../shared/tabs'
 import { focus } from '../input/focus'
 
-export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'arcade' | 'settings'
+export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade' | 'settings'
 
 /** The bar's tabs, in order (Settings and power sit either side of them). */
 export const TABS = TAB_LIST as { id: Screen; label: string }[]

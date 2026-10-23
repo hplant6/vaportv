@@ -681,6 +681,51 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">NES tab layout</h3>
+          <p className="settings-help">How the NES tab shows your games.</p>
+          {settings && <LayoutChoice tab="nes" value={settings.nesLayout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="nes" value={settings.recentsLayouts.nes} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">SNES tab layout</h3>
+          <p className="settings-help">How the SNES tab shows your games.</p>
+          {settings && <LayoutChoice tab="snes" value={settings.snesLayout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="snes" value={settings.recentsLayouts.snes} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Genesis tab layout</h3>
+          <p className="settings-help">How the Genesis tab shows your games.</p>
+          {settings && <LayoutChoice tab="genesis" value={settings.genesisLayout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="genesis" value={settings.recentsLayouts.genesis} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">32X tab layout</h3>
+          <p className="settings-help">How the 32X tab shows your games.</p>
+          {settings && <LayoutChoice tab="sega32x" value={settings.sega32xLayout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="sega32x" value={settings.recentsLayouts.sega32x} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Amiga tab layout</h3>
+          <p className="settings-help">How the Amiga tab shows your games.</p>
+          {settings && <LayoutChoice tab="amiga" value={settings.amigaLayout} onChoose={chooseLayout} />}
+          {settings && (
+            <RecentsChoice tab="amiga" value={settings.recentsLayouts.amiga} onChoose={chooseRecentsLayout} />
+          )}
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Arcade tab layout</h3>
           <p className="settings-help">How the Arcade tab shows each board's games.</p>
           {settings && <LayoutChoice tab="arcade" value={settings.arcadeLayout} onChoose={chooseLayout} />}
