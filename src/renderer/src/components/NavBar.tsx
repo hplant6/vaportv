@@ -6,21 +6,12 @@ import { Clock } from './Clock'
 import { BatteryIndicator } from './BatteryIndicator'
 import { DateWeather } from './DateWeather'
 import { PowerMenu } from './PowerMenu'
+import { TAB_LIST } from '../../../shared/tabs'
 
-export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade' | 'settings'
+export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade' | 'settings'
 
-const TABS: { id: Screen; label: string }[] = [
-  { id: 'home', label: 'Home' },
-  { id: 'steam', label: 'Steam' },
-  { id: 'apps', label: 'Apps' },
-  { id: 'switch', label: 'Switch' },
-  { id: 'ps3', label: 'PS3' },
-  { id: 'xbox360', label: 'Xbox 360' },
-  { id: 'ps2', label: 'PS2' },
-  { id: 'gamecube', label: 'GameCube' },
-  { id: 'dreamcast', label: 'Dreamcast' },
-  { id: 'arcade', label: 'Arcade' }
-]
+/** The bar's tabs, in order (Settings and power sit either side of them). */
+export const TABS = TAB_LIST as { id: Screen; label: string }[]
 
 /** Screens in the order L1/R1 step through them, as the bar reads left to right: Settings, then the tabs. */
 export const TAB_ORDER: Screen[] = ['settings', ...TABS.map((t) => t.id)]

@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, UpdateInfo, UpdateState } from '../shared/types'
+import type { AppItem, ArcadeCores, PlaceMatch, TemperatureUnit, BackdropStyle, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -28,6 +28,8 @@ import { emulatorInstalled } from './library/emulators'
 import type { EmulatedGame } from './library/emulated'
 import { fillGameCubeArt, gamecubeGames, loadGameCubeTab } from './library/gamecubeTab'
 import { fillPs2Art, loadPs2Tab, ps2Games } from './library/ps2Tab'
+import { fillXboxArt, loadXboxTab, xboxGames } from './library/xboxTab'
+import { fillWiiArt, loadWiiTab, wiiGames } from './library/wiiTab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
@@ -59,6 +61,7 @@ import { power, sleepBlocker } from './power'
 import { captureAndQuit, screenshotMode } from './screenshot'
 import { stepVolume } from './volume'
 import { getWeather } from './weather'
+import { MAX_TABS, shownTabs, TAB_LIST } from '../shared/tabs'
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 /**
@@ -159,15 +162,17 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>
     load(config).then((games) => games.length > 0, () => false)
-  const [sw, ps2, ps3, x360, gc, dc, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames].map(has))
+  const [sw, ps2, ps3, xb, x360, gc, wii, dc, arc] = await Promise.all([switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, arcadeGames].map(has))
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
     switch: sw && emulatorInstalled(config, 'switch'),
     ps2: ps2 && emulatorInstalled(config, 'ps2'),
     ps3: ps3 && emulatorInstalled(config, 'ps3'),
+    xbox: xb && emulatorInstalled(config, 'xbox'),
     xbox360: x360 && emulatorInstalled(config, 'xbox360'),
     gamecube: gc && emulatorInstalled(config, 'gamecube'),
+    wii: wii && emulatorInstalled(config, 'wii'),
     dreamcast: dc && emulatorInstalled(config, 'dreamcast'),
     arcade: arc && emulatorInstalled(config, 'arcade')
   }
@@ -194,7 +199,7 @@ async function setupRun(
 
 /** The console game behind a card id (Recents or a console tab), for the Artwork window. */
 async function emulatedGame(config: Config, id: string): Promise<EmulatedGame | undefined> {
-  const loaders = [switchGames, ps2Games, ps3Games, xbox360Games, gamecubeGames, dreamcastGames, arcadeGames]
+  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, dreamcastGames, arcadeGames]
   for (const load of loaders) {
     const game = (await load(config).catch(() => [])).find((g) => g.id === id)
     if (game) return game
@@ -221,8 +226,10 @@ const WEB_QUERY: Record<string, string> = {
   switch: 'Nintendo Switch box art',
   ps2: 'PS2 box art',
   ps3: 'PS3 box art',
+  xbox: 'Original Xbox box art',
   xbox360: 'Xbox 360 box art',
   gamecube: 'GameCube box art',
+  wii: 'Wii box art',
   dreamcast: 'Dreamcast box art',
   atomiswave: 'arcade flyer',
   naomi: 'arcade flyer',
@@ -239,7 +246,7 @@ function favoriteAppIds(config: Config): string[] {
   return config.favoriteApps ?? home.apps.map((app) => app.id)
 }
 
-const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox360', 'gamecube', 'dreamcast', 'arcade']
+const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'dreamcast', 'arcade']
 
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
@@ -412,7 +419,25 @@ ipcMain.handle('setup:status', () => installStatus())
 ipcMain.handle('setup:install', (event, options: InstallOptions) => setupRun(event.sender, (report) => install(options, report)))
 ipcMain.handle('setup:uninstall', (event) => setupRun(event.sender, uninstall))
 ipcMain.handle('setup:gamingMode', () => returnToGamingMode())
-ipcMain.handle('tabs:available', async () => availableTabs(await loadConfig()))
+/** Tabs with something in them (Apps always has its list). */
+async function tabsWithContent(config: Config): Promise<HideableTab[]> {
+  const tabs = await availableTabs(config)
+  return ['apps', ...(Object.keys(tabs) as LayoutTab[]).filter((tab) => tabs[tab])]
+}
+
+// What the bar shows: tabs with something in them, less those switched off, up to MAX_TABS.
+ipcMain.handle('tabs:available', async () => {
+  const config = await loadConfig()
+  const shown = new Set(shownTabs(await tabsWithContent(config), config.tabsHidden ?? []))
+  return Object.fromEntries(TAB_LIST.filter((t) => t.id !== 'home').map((t) => [t.id, shown.has(t.id)]))
+})
+ipcMain.handle('tabs:settings', async () => {
+  const config = await loadConfig()
+  const available = await tabsWithContent(config)
+  const hidden = config.tabsHidden ?? []
+  return { available, hidden, shown: shownTabs(available, hidden).filter((t): t is HideableTab => t !== 'home'), max: MAX_TABS }
+})
+ipcMain.handle('tabs:setHidden', (_event, hidden: HideableTab[]) => saveConfig({ tabsHidden: hidden }))
 ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   const location = await getLocation()
   return location ? sunTimes(new Date(), location.latitude, location.longitude) : null
@@ -438,9 +463,11 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     steamLayout: config.steamLayout ?? 'rows',
     switchLayout: config.switchLayout ?? 'rows',
     ps2Layout: config.ps2Layout ?? 'rows',
+    xboxLayout: config.xboxLayout ?? 'rows',
     ps3Layout: config.ps3Layout ?? 'rows',
     xbox360Layout: config.xbox360Layout ?? 'rows',
     gamecubeLayout: config.gamecubeLayout ?? 'rows',
+    wiiLayout: config.wiiLayout ?? 'rows',
     dreamcastLayout: config.dreamcastLayout ?? 'rows',
     arcadeLayout: config.arcadeLayout ?? 'rows',
     arcadeRowsHidden: config.arcadeRowsHidden ?? [],
@@ -547,7 +574,7 @@ function fillArt(): void {
       const updated = (): void => {
         if (win && !win.isDestroyed()) win.webContents.send('art:updated')
       }
-      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXbox360Art, fillGameCubeArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
+      ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
     }
   )
@@ -593,10 +620,20 @@ ipcMain.handle('dreamcast-tab:get', async () => {
   fillArt()
   return loadDreamcastTab(config)
 })
+ipcMain.handle('xbox-tab:get', async () => {
+  const config = await loadConfig()
+  fillArt()
+  return loadXboxTab(config)
+})
 ipcMain.handle('ps2-tab:get', async () => {
   const config = await loadConfig()
   fillArt()
   return loadPs2Tab(config)
+})
+ipcMain.handle('wii-tab:get', async () => {
+  const config = await loadConfig()
+  fillArt()
+  return loadWiiTab(config)
 })
 ipcMain.handle('gamecube-tab:get', async () => {
   const config = await loadConfig()

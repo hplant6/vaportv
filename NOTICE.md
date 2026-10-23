@@ -24,6 +24,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Ryujinx icon (Switch card footers; Ryubing's design) | `src/renderer/public/fixtures/logos/ryujinx.png` | EmuDeck's icon pack ([dragoonDorise/EmuDeck](https://github.com/dragoonDorise/EmuDeck)); the Ryujinx/Ryubing project's mark (its code is MIT) | GPL-3.0 (EmuDeck) |
 | RPCS3 icon (PS3 card footers) | `src/renderer/public/fixtures/logos/rpcs3.png` | RPCS3's own icon (`rpcs3.svg` from its AppImage), RPCS3 team | GPL-2.0-only (shipped as a separate image) |
 | PCSX2 icon (PS2 card footers) | `src/renderer/public/fixtures/logos/pcsx2.png` | EmuDeck's icon pack; the PCSX2 project's mark (its code is GPL-3.0) | GPL-3.0 (EmuDeck) |
+| xemu icon (Xbox card footers) | `src/renderer/public/fixtures/logos/xemu.png` | xemu's own icon (from its Flatpak), the xemu project | GPL-2.0 |
 | Xenia icon (Xbox 360 card footers) | `src/renderer/public/fixtures/logos/xenia.png` | EmuDeck's icon pack; the Xenia project's mark (its code is BSD-3-Clause) | GPL-3.0 (EmuDeck) |
 | Dolphin icon (GameCube card footers) | `src/renderer/public/fixtures/logos/dolphin.png` | Dolphin's own icon (from its Flatpak), Dolphin Emulator Project; its designer has also released the logo as CC0 | GPL-2.0-or-later |
 | Flycast icon, and a white copy (Dreamcast card footers) | `src/renderer/public/fixtures/logos/flycast.png`, `flycast-white.png` | EmuDeck's icon pack; the Flycast project's mark (its code is GPL-2.0) | GPL-3.0 (EmuDeck) |

@@ -6,6 +6,20 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## Unreleased
+
+### Added
+- Settings → General → Tabs: switch off any tab you don't use (Home always stays).
+- An Xbox tab: original Xbox games (from EmuDeck's roms/xbox) open in xemu.
+- A Wii tab: Wii games (from EmuDeck's roms/wii) open in Dolphin.
+- The top bar shows up to ten tabs; past that, Settings asks you to switch one off before another goes on.
+
+### Changed
+- The settings and power icons are the height of the tab names, and sit a little further out.
+
+### Fixed
+- When a game is there both released and as a beta or demo, its tab opens the released one.
+
 ## 0.9.0
 
 The first public release (a beta): an Android TV-style home screen for SteamOS's Gaming Mode, for your Steam library, emulated consoles and streaming apps, all from the couch.

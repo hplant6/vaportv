@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { IntroSettings, LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
+import type { HideableTab, IntroSettings, LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
 import { OverStage } from './GooglePhotos'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { OPEN_UPDATE_EVENT } from './UpdateDialog'
 import { PLAY_INTRO_EVENT } from './Intro'
+import { TABS } from './NavBar'
+import { ToggleRow } from './ToggleRow'
+import { refreshTabs } from '../availableTabs'
 import { OPEN_WELCOME_EVENT } from './Welcome'
+import { toast } from './Toast'
 
 const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'auto', name: 'Automatic', detail: 'By country' },
@@ -12,7 +16,7 @@ const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' }
 ]
 
-/** Settings → General: where the weather is for, its units, the intro video, updates, and the welcome tour. */
+/** Settings → General: which tabs show, where the weather is for, its units, the intro video, updates, and the welcome tour. */
 export function GeneralSettings() {
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
@@ -30,6 +34,27 @@ export function GeneralSettings() {
     if (!location || location.unit === unit) return
     setLocation({ ...location, unit })
     window.steamtv.location.setUnit(unit).then(() => window.dispatchEvent(new Event(WEATHER_CHANGED_EVENT)))
+  }
+
+  // Tabs with something to show, and those switched off; Home always shows.
+  // The bar fits `max` tabs (Home included): another can only come on once one goes off.
+  const [tabs, setTabs] = useState<{ available: HideableTab[]; hidden: HideableTab[]; shown: HideableTab[]; max: number } | null>(null)
+  const loadTabs = useCallback(() => {
+    window.steamtv.tabs.get().then(setTabs)
+  }, [])
+  useEffect(loadTabs, [loadTabs])
+  const toggleTab = (id: HideableTab): void => {
+    if (!tabs) return
+    const on = tabs.shown.includes(id)
+    if (!on && tabs.shown.length + 1 >= tabs.max) {
+      toast(`The bar fits ${tabs.max} tabs: switch one off first`)
+      return
+    }
+    const hidden = on ? [...tabs.hidden.filter((t) => t !== id), id] : tabs.hidden.filter((t) => t !== id)
+    window.steamtv.tabs.setHidden(hidden).then(() => {
+      refreshTabs()
+      loadTabs()
+    })
   }
 
   const [intro, setIntro] = useState<IntroSettings | null>(null)
@@ -83,6 +108,24 @@ export function GeneralSettings() {
 
   return (
     <>
+      <div className="settings-group">
+        <h3 className="settings-heading display">Tabs</h3>
+        <p className="settings-help">
+          Which tabs the top bar shows, up to {tabs?.max ?? 10} with Home (always there). Consoles appear once they have games.
+        </p>
+        <div className="setting-list" data-focus-memory="settings-tabs">
+          {tabs &&
+            TABS.filter((t) => tabs.available.includes(t.id as HideableTab)).map((t) => (
+              <ToggleRow
+                key={t.id}
+                label={t.label}
+                on={tabs.shown.includes(t.id as HideableTab)}
+                onToggle={() => toggleTab(t.id as HideableTab)}
+              />
+            ))}
+        </div>
+      </div>
+
       <div className="settings-group">
         <h3 className="settings-heading display">Weather</h3>
         <div className="setting-list" data-focus-memory="settings-weather">

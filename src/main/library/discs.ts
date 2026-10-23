@@ -71,10 +71,17 @@ function formatRank(file: string): number {
   return rank < 0 ? FORMAT_PREFERENCE.length : rank
 }
 
-/** One file per disc number: copies of the same disc in other formats are dropped. */
+// Unfinished versions: a game's release wins over them when both are there.
+const PRERELEASE = /\((beta|proto|prototype|demo|sample|preview)\b[^)]*\)/i
+
+/**
+ * One file per disc number: copies of the same disc in other formats, and betas or demos
+ * of a game that's also there as released, are dropped.
+ */
 function distinctDiscs(files: string[]): string[] {
   const byDisc = new Map<number, string>()
-  for (const file of [...files].sort((a, b) => formatRank(a) - formatRank(b))) {
+  const rank = (file: string): number => (PRERELEASE.test(file) ? 100 : 0) + formatRank(file)
+  for (const file of [...files].sort((a, b) => rank(a) - rank(b))) {
     const disc = Number(DISC.exec(file)?.[1] ?? 1)
     if (!byDisc.has(disc)) byDisc.set(disc, file)
   }

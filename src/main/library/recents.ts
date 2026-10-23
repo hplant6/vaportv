@@ -10,6 +10,8 @@ import { dreamcastGames } from './dreamcastTab'
 import { playedEmulated, type EmulatedGame } from './emulated'
 import { gamecubeGames } from './gamecubeTab'
 import { ps2Games } from './ps2Tab'
+import { xboxGames } from './xboxTab'
+import { wiiGames } from './wiiTab'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
 import { cachedArt, GAME_ART } from './steamgriddb'
 import { ps3Games } from './ps3Tab'
@@ -128,7 +130,9 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await ps3Games(config)),
       ...(await xbox360Games(config)),
       ...(await ps2Games(config)),
+      ...(await xboxGames(config)),
       ...(await gamecubeGames(config)),
+      ...(await wiiGames(config)),
       ...(await dreamcastGames(config)),
       ...(await arcadeGames(config))
     ])

@@ -15,6 +15,7 @@ import { focus, focusContentDefault } from '../input/focus'
 import { EXTRAS } from '../../../shared/build'
 import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
+import { ToggleRow } from '../components/ToggleRow'
 
 function CollectionRow({
   collection,
@@ -245,27 +246,6 @@ const SCREENSAVER_SOURCES: { id: keyof ScreensaverSources; name: string; detail:
 ]
 
 /** An on/off row, like the Steam collection toggles. */
-function ToggleRow({ label, detail, on, onToggle }: { label: string; detail?: string; on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      className={`setting-row${on ? ' on' : ''}`}
-      tabIndex={-1}
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      data-focusable=""
-      data-select-sound="move"
-      onClick={onToggle}
-    >
-      <span className="toggle" aria-hidden="true">
-        <span className="toggle-knob" />
-      </span>
-      <span className="setting-name display">{label}</span>
-      {detail && <span className="setting-detail">{detail}</span>}
-    </button>
-  )
-}
-
 const SCREENSAVER_DELAYS: { minutes: number; name: string }[] = [
   { minutes: 0, name: 'Off' },
   { minutes: 5, name: 'After 5 minutes' },
@@ -569,6 +549,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
+          <h3 className="settings-heading display">Xbox tab layout</h3>
+          <p className="settings-help">How the Xbox tab shows your games.</p>
+          {settings && <LayoutChoice tab="xbox" value={settings.xboxLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="xbox" value={settings.recentsLayouts.xbox} onChoose={chooseRecentsLayout} />}
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Xbox 360 tab layout</h3>
           <p className="settings-help">How the Xbox 360 tab shows your games.</p>
           {settings && <LayoutChoice tab="xbox360" value={settings.xbox360Layout} onChoose={chooseLayout} />}
@@ -591,6 +578,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           {settings && (
             <RecentsChoice tab="gamecube" value={settings.recentsLayouts.gamecube} onChoose={chooseRecentsLayout} />
           )}
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Wii tab layout</h3>
+          <p className="settings-help">How the Wii tab shows your games.</p>
+          {settings && <LayoutChoice tab="wii" value={settings.wiiLayout} onChoose={chooseLayout} />}
+          {settings && <RecentsChoice tab="wii" value={settings.recentsLayouts.wii} onChoose={chooseRecentsLayout} />}
         </div>
 
         <div className="settings-group">

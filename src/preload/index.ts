@@ -43,6 +43,10 @@ const api: SteamTvApi = {
     setUnit: (unit) => ipcRenderer.invoke('location:unit', unit)
   },
   getBattery: () => ipcRenderer.invoke('battery:get'),
+  tabs: {
+    get: () => ipcRenderer.invoke('tabs:settings'),
+    setHidden: (hidden) => ipcRenderer.invoke('tabs:setHidden', hidden)
+  },
   intro: {
     get: () => ipcRenderer.invoke('intro:get'),
     opening: () => ipcRenderer.invoke('intro:opening'),
@@ -144,7 +148,9 @@ const api: SteamTvApi = {
   getPs3Tab: () => ipcRenderer.invoke('ps3-tab:get'),
   getXbox360Tab: () => ipcRenderer.invoke('xbox360-tab:get'),
   getPs2Tab: () => ipcRenderer.invoke('ps2-tab:get'),
+  getXboxTab: () => ipcRenderer.invoke('xbox-tab:get'),
   getGameCubeTab: () => ipcRenderer.invoke('gamecube-tab:get'),
+  getWiiTab: () => ipcRenderer.invoke('wii-tab:get'),
   getDreamcastTab: () => ipcRenderer.invoke('dreamcast-tab:get'),
   getArcadeTab: () => ipcRenderer.invoke('arcade-tab:get'),
   toggleFavorite: (id) => ipcRenderer.invoke('favorite:toggle', id),

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import type { LayoutTab } from '../../shared/types'
+import type { HideableTab } from '../../shared/types'
 
-// Which optional tabs have something to show. Shared by the nav bar (to hide the rest)
-// and L1/R1 (to skip them); refreshed now and then as games are added or removed.
+// Which optional tabs show: those with something in them, less any switched off in
+// Settings. Shared by the nav bar (to hide the rest) and L1/R1 (to skip them); refreshed
+// now and then as games are added or removed, and at once when Settings changes them.
 
 const REFRESH_MS = 5 * 60 * 1000
 
-let tabs: Partial<Record<LayoutTab, boolean>> = {}
+let tabs: Partial<Record<HideableTab, boolean>> = {}
 const listeners = new Set<() => void>()
 
 function load(): void {
@@ -14,6 +15,11 @@ function load(): void {
     tabs = next
     for (const listener of listeners) listener()
   })
+}
+
+/** Settings changed which tabs show: look again now. */
+export function refreshTabs(): void {
+  load()
 }
 
 let started = false
@@ -26,7 +32,7 @@ function start(): void {
 
 /** Whether a screen is shown: anything not known to be empty is. */
 export function tabShown(screen: string): boolean {
-  return tabs[screen as LayoutTab] !== false
+  return tabs[screen as HideableTab] !== false
 }
 
 /** Re-renders when the available tabs change; returns the current check. */

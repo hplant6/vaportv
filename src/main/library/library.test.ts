@@ -977,3 +977,53 @@ describe('PS2', () => {
     expect(byTitle['Metal Gear Solid 3 - Subsistence']).toMatch(/\(Disc 1\)/)
   })
 })
+
+describe('Xbox', () => {
+  it('takes titles from folder names and opens each folder\'s iso', async () => {
+    const { scanXbox } = await import('./xbox')
+    const root = await mkdtemp(join(tmpdir(), 'xbox-'))
+    const files = [
+      'Aliens Vs Predator - Extinction (USA)/Aliens Vs Predator - Extinct (USA).1.iso',
+      'Aliens Vs Predator - Extinction (USA)/default.xbe',
+      'Aliens Vs Predator - Extinction (USA)/default.tbn',
+      '007 - Nightfire (USA)/007 - Nightfire (USA).1.iso',
+      'Halo (USA).iso',
+      'PAL/Alien Hominid (PAL)/Alien Hominid (PAL).iso',
+      'systeminfo.txt'
+    ]
+    for (const file of files) {
+      await mkdir(join(root, file, '..'), { recursive: true })
+      await writeFile(join(root, file), '')
+    }
+    const games = await scanXbox(root)
+    expect(games.map((g) => g.title)).toEqual(['007 - Nightfire', 'Alien Hominid', 'Aliens Vs Predator - Extinction', 'Halo'])
+    expect(games.find((g) => g.title.startsWith('Aliens'))!.path).toMatch(/Extinct \(USA\)\.1\.iso$/)
+  })
+})
+
+describe('tab limit', () => {
+  it('shows Home and tabs with content, not switched off, up to ten', async () => {
+    const { shownTabs, MAX_TABS } = await import('../../shared/tabs')
+    const all = ['steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'dreamcast', 'arcade'] as const
+    expect(MAX_TABS).toBe(10)
+    // Eleven candidates: the last in bar order (Arcade) doesn't fit.
+    expect(shownTabs(all, [])).toEqual(['home', 'steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'dreamcast'])
+    // Switching one off makes room for it.
+    expect(shownTabs(all, ['steam'])).toContain('arcade')
+    // Tabs without content never show, whatever the switches say.
+    expect(shownTabs(['apps'], [])).toEqual(['home', 'apps'])
+  })
+})
+
+describe('Wii', () => {
+  it('finds rvz and wbfs images with clean titles', async () => {
+    const { scanWii } = await import('./wii')
+    const root = await mkdtemp(join(tmpdir(), 'wii-'))
+    const files = ['A Boy and His Blob [SBLE5G].wbfs', 'Baroque (USA).rvz', 'Fishing Master World Tour (USA) (Beta) (2008-11-14).rvz', 'Fishing Master World Tour (USA) (En,Fr,Es).rvz', 'systeminfo.txt']
+    for (const file of files) await writeFile(join(root, file), '')
+    const games = await scanWii(root)
+    expect(games.map((g) => g.title).sort()).toEqual(['A Boy and His Blob', 'Baroque', 'Fishing Master World Tour'])
+    // The release, not the beta.
+    expect(games.find((g) => g.title === 'Fishing Master World Tour')!.path).toMatch(/\(En,Fr,Es\)\.rvz$/)
+  })
+})

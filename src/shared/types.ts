@@ -115,10 +115,12 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
+/** Tabs that can be switched off in Settings (Home always shows). */
+export type HideableTab = LayoutTab | 'apps'
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox360' | 'gamecube' | 'dreamcast' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'dreamcast' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 export interface LibraryTab {
@@ -153,7 +155,9 @@ export interface Settings {
   ps3Layout: SteamLayout
   xbox360Layout: SteamLayout
   ps2Layout: SteamLayout
+  xboxLayout: SteamLayout
   gamecubeLayout: SteamLayout
+  wiiLayout: SteamLayout
   dreamcastLayout: SteamLayout
   arcadeLayout: SteamLayout
   /** Arcade tab carousels turned off. */
@@ -449,8 +453,12 @@ export interface SteamTvApi {
   getPs3Tab(): Promise<LibraryTab>
   /** The Xbox 360 tab: Xenia disc images. */
   getXbox360Tab(): Promise<LibraryTab>
+  /** The Xbox tab: xemu disc images. */
+  getXboxTab(): Promise<LibraryTab>
   /** The PS2 tab: PCSX2 disc images. */
   getPs2Tab(): Promise<LibraryTab>
+  /** The Wii tab: Dolphin disc images. */
+  getWiiTab(): Promise<LibraryTab>
   /** The GameCube tab: Dolphin disc images. */
   getGameCubeTab(): Promise<LibraryTab>
   /** The Dreamcast tab: Flycast disc images. */
@@ -506,6 +514,12 @@ export interface SteamTvApi {
   }
   /** The system's battery, or null for a box without one (controllers' batteries don't count). */
   getBattery(): Promise<BatteryState | null>
+  /** Settings → General → Tabs: the tabs that have something to show, and those switched off. */
+  tabs: {
+    /** `shown`: what the bar shows now (within `max`, Home not counted in the list but in `max`). */
+    get(): Promise<{ available: HideableTab[]; hidden: HideableTab[]; shown: HideableTab[]; max: number }>
+    setHidden(hidden: HideableTab[]): Promise<void>
+  }
   /** The intro video as vaporTV opens. */
   intro: {
     get(): Promise<IntroSettings>

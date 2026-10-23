@@ -246,6 +246,16 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
+      {screen === 'xbox' && home && (
+        <Library
+          screen="xbox"
+          load={window.steamtv.getXboxTab}
+          empty="No Xbox games found. vaporTV looks in your EmuDeck roms/xbox folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
       {screen === 'ps2' && home && (
         <Library
           screen="ps2"
@@ -261,6 +271,16 @@ export function App() {
           screen="gamecube"
           load={window.steamtv.getGameCubeTab}
           empty="No GameCube games found. vaporTV looks in your EmuDeck roms/gc folder."
+          onFavorite={window.steamtv.toggleFavorite}
+          logos={home.platformLogos}
+          onNavigate={setScreen}
+        />
+      )}
+      {screen === 'wii' && home && (
+        <Library
+          screen="wii"
+          load={window.steamtv.getWiiTab}
+          empty="No Wii games found. vaporTV looks in your EmuDeck roms/wii folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}

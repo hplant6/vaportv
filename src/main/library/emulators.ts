@@ -24,6 +24,7 @@ export const protonPath = (config: Config): string =>
   config.proton ?? join(steamDir(config), 'steamapps', 'common', 'Proton - Experimental', 'proton')
 
 export const DOLPHIN = ['flatpak', 'run', 'org.DolphinEmu.dolphin-emu']
+export const XEMU = ['flatpak', 'run', 'app.xemu.xemu']
 export const RETROARCH = ['flatpak', 'run', 'org.libretro.RetroArch']
 const CORES = join(homedir(), '.var', 'app', 'org.libretro.RetroArch', 'config', 'retroarch', 'cores')
 export const FLYCAST_CORE = join(CORES, 'flycast_libretro.so')
@@ -61,9 +62,12 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return existsSync(rpcs3Path(config))
     case 'ps2':
       return existsSync(pcsx2Path(config))
+    case 'xbox':
+      return canRun(config.xemu ?? XEMU)
     case 'xbox360':
       return existsSync(xeniaPath(config)) && existsSync(protonPath(config))
     case 'gamecube':
+    case 'wii':
       return canRun(config.dolphin ?? DOLPHIN)
     case 'dreamcast':
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.flycastCore ?? FLYCAST_CORE)

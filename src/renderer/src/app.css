@@ -241,6 +241,15 @@ button {
   display: flex;
 }
 
+/* Settings and power sit a little further out than the bar's ends. */
+.nav-tabs > .nav-icon-tab {
+  margin-left: -20px;
+}
+
+.nav-power {
+  margin-right: -20px;
+}
+
 .nav-tab {
   display: flex;
   align-items: flex-start;
@@ -277,10 +286,11 @@ button {
   border-bottom: none;
 }
 
+/* As tall as the tabs' capitals (17px drawn), with a heavier line so they match the text's weight. */
 .nav-icon {
-  width: 28px;
-  height: 28px;
-  stroke-width: 1.6;
+  width: 19.5px;
+  height: 19.5px;
+  stroke-width: 2.2;
   transition: filter var(--dur-focus) var(--ease-focus);
 }
 

@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, MusicVolume, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -63,12 +63,22 @@ export interface Config {
   xeniaPrefix?: string
   /** Proton used to run Xenia (default Steam's "Proton - Experimental"). */
   proton?: string
+  /** How the Xbox tab lays out its games (default rows). Set from Settings. */
+  xboxLayout?: SteamLayout
+  /** Name overrides for Xbox games, by folder name (relative to roms/xbox). */
+  xboxTitles?: Record<string, string>
+  /** Command that runs xemu (default ["flatpak", "run", "app.xemu.xemu"]). */
+  xemu?: string[]
   /** How the PS2 tab lays out its games (default rows). Set from Settings. */
   ps2Layout?: SteamLayout
   /** Name overrides for PS2 games, by file name (relative to roms/ps2). */
   ps2Titles?: Record<string, string>
   /** PCSX2's AppImage (default EmuDeck's, ~/Applications/pcsx2-Qt.AppImage). */
   pcsx2?: string
+  /** How the Wii tab lays out its games (default rows). Set from Settings. */
+  wiiLayout?: SteamLayout
+  /** Name overrides for Wii games, by file name (relative to roms/wii). */
+  wiiTitles?: Record<string, string>
   /** How the GameCube tab lays out its games (default rows). Set from Settings. */
   gamecubeLayout?: SteamLayout
   /** Name overrides for GameCube games, by file name (relative to roms/gc). */
@@ -142,6 +152,8 @@ export interface Config {
   welcomeSeen?: boolean
   /** The intro as vaporTV opens: 'default' (vaporTV's own, the default), 'off', or a file in ~/Videos/vaporTV Intros. */
   introVideo?: string
+  /** Tabs switched off in Settings → General → Tabs. */
+  tabsHidden?: HideableTab[]
   /** An update's version whose window was put off with Later: it doesn't open by itself again. */
   updateDismissed?: string
   /** Testing the updater: a releases JSON (URL or file, shaped as GitHub's API) in place of GitHub's. */
