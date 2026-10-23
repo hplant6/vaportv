@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { Tree } from '@dgreenheck/ez-tree'
 import { DEFAULT_SUN_TIMES, type SunTimes } from '../../../../shared/sun'
 import type { BackdropTime } from '../../../../shared/types'
@@ -50,7 +51,14 @@ const GRASS_COUNT = 26000
 const GRASS_MAX_R = 280
 const TUFT_BLADES = { min: 3, max: 8 }
 const TUFT_RADIUS = 1.5
-const FLOWERS_PER_COLOR = 45
+/** Flowers grow in little clusters, mostly in the grass either side of the trail. */
+const FLOWER_CLUSTERS_PER_COLOR = 170
+const FLOWERS_PER_CLUSTER = { min: 2, max: 5 }
+/** Pebbles: on the trail and the dirt mostly, a few in the grass. */
+const PEBBLES = 2400
+const PEBBLE_SHAPES = 5
+/** How far either side of the trail flowers and pebbles are strewn (beyond, they'd be too small to see). */
+const STREWN = 45
 /** Dirt patches: the noise's scale (world units), and the level above which it's bare (lower is more dirt). */
 const PATCH_SCALE = 90
 const PATCHINESS = 0.6
@@ -280,15 +288,31 @@ async function buildGrass(scene: THREE.Scene, wind: { uTime: { value: number } }
   // Flowers: each is a few meshes (petals, stem); every part becomes one instanced mesh.
   for (const flower of flowers) {
     const spots: THREE.Matrix4[] = []
-    for (let i = 0; i < FLOWERS_PER_COLOR; i++) {
-      const r = 12 + Math.sqrt(rand()) * 160
+    for (let c = 0, tries = 0; c < FLOWER_CLUSTERS_PER_COLOR && tries < FLOWER_CLUSTERS_PER_COLOR * 20; tries++) {
+      // Nearer the trail is likelier, so most are close enough to see.
+      // Not right at the trail's edge, where one would fill the lens.
+      const off = TRAIL_EDGE + 2 + Math.pow(rand(), 1.8) * STREWN
+      const r = WALK_R + (rand() < 0.5 ? -off : off)
       const theta = rand() * Math.PI * 2
-      dummy.position.set(r * Math.cos(theta), 0, r * Math.sin(theta))
-      dummy.rotation.set(0, rand() * Math.PI * 2, 0)
-      dummy.scale.setScalar(0.02 + 0.03 * rand())
-      dummy.updateMatrix()
-      spots.push(dummy.matrix.clone())
+      const cx = r * Math.cos(theta)
+      const cz = r * Math.sin(theta)
+      if (patchNoise(cx, cz) > PATCHINESS) continue
+      c++
+      const count = FLOWERS_PER_CLUSTER.min + Math.floor(rand() * (FLOWERS_PER_CLUSTER.max - FLOWERS_PER_CLUSTER.min + 1))
+      for (let f = 0; f < count; f++) {
+        const a = rand() * Math.PI * 2
+        const d = rand() * 1.8
+        dummy.position.set(cx + d * Math.cos(a), 0, cz + d * Math.sin(a))
+        dummy.rotation.set(0, rand() * Math.PI * 2, 0)
+        dummy.scale.setScalar(0.024 + 0.016 * rand())
+        dummy.updateMatrix()
+        spots.push(dummy.matrix.clone())
+      }
     }
+    // The model's own transform is replaced by each instance's (as the demo's clones did), not added to.
+    flower.position.set(0, 0, 0)
+    flower.rotation.set(0, 0, 0)
+    flower.scale.set(1, 1, 1)
     flower.updateMatrixWorld(true)
     flower.traverse((part) => {
       if (!(part as THREE.Mesh).isMesh) return
@@ -303,6 +327,61 @@ async function buildGrass(scene: THREE.Scene, wind: { uTime: { value: number } }
       inst.computeBoundingSphere()
       scene.add(inst)
     })
+  }
+}
+
+/** A lumpy, squashed rock: an icosphere pushed in and out by noise. */
+function pebbleShape(seed: number): THREE.BufferGeometry {
+  const g = new THREE.IcosahedronGeometry(1, 2)
+  const pos = g.attributes.position
+  const v = new THREE.Vector3()
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i)
+    const bump = 0.22 * simplex2d(v.x * 1.3 + seed * 7.1, v.y * 1.3 + v.z * 1.1) + 0.1 * simplex2d(v.z * 3.1 + seed, v.x * 3.1 - v.y)
+    v.multiplyScalar(1 + bump)
+    pos.setXYZ(i, v.x, v.y * 0.55, v.z * 0.8)
+  }
+  // Welded first, or every face would shade flat as its own facet.
+  const welded = mergeVertices(g.deleteAttribute('normal').deleteAttribute('uv'))
+  welded.computeVertexNormals()
+  return welded
+}
+
+function buildPebbles(scene: THREE.Scene): void {
+  const rand = random(99)
+  const dummy = new THREE.Object3D()
+  const color = new THREE.Color()
+  const material = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 })
+  const perShape = Math.ceil(PEBBLES / PEBBLE_SHAPES)
+  for (let k = 0; k < PEBBLE_SHAPES; k++) {
+    const mesh = new THREE.InstancedMesh(pebbleShape(k + 1), material, perShape)
+    let n = 0
+    for (let tries = 0; n < perShape && tries < perShape * 20; tries++) {
+      const off = Math.pow(rand(), 1.5) * STREWN
+      const r = WALK_R + (rand() < 0.5 ? -off : off)
+      const theta = rand() * Math.PI * 2
+      const x = r * Math.cos(theta)
+      const z = r * Math.sin(theta)
+      // Bare ground keeps nearly all of them; grass hides most.
+      const bare = fromTrail(x, z) < TRAIL_EDGE || patchNoise(x, z) > PATCHINESS
+      if (!bare && rand() > 0.15) continue
+      // Mostly small stones, the odd bigger one.
+      const size = 0.15 + Math.pow(rand(), 3) * 0.9
+      dummy.position.set(x, size * 0.12, z)
+      dummy.rotation.set((rand() - 0.5) * 0.4, rand() * Math.PI * 2, (rand() - 0.5) * 0.4)
+      dummy.scale.set(size * (0.8 + rand() * 0.5), size * (0.7 + rand() * 0.5), size * (0.8 + rand() * 0.5))
+      dummy.updateMatrix()
+      mesh.setMatrixAt(n, dummy.matrix)
+      // Greys, some warmer, some mossier (linear values: sRGB about 0.3 to 0.5).
+      const tone = 0.07 + rand() * 0.12
+      const tint = rand()
+      mesh.setColorAt(n, tint < 0.6 ? color.setRGB(tone, tone * 0.97, tone * 0.92) : tint < 0.85 ? color.setRGB(tone * 1.05, tone * 0.9, tone * 0.75) : color.setRGB(tone * 0.85, tone, tone * 0.7))
+      n++
+    }
+    mesh.count = n
+    mesh.receiveShadow = true
+    mesh.computeBoundingSphere()
+    scene.add(mesh)
   }
 }
 
@@ -381,6 +460,7 @@ export function startForest(canvas: HTMLCanvasElement, onReady: () => void, onEr
   // The demo's grass and ground glow a little so they're never black; by night that glow would be all you'd see.
   const glow: THREE.MeshPhongMaterial[] = []
   let stopped = false
+  buildPebbles(scene)
   Promise.all([buildGround(scene, glow), buildGrass(scene, wind, glow), buildTrees(scene, wind, () => stopped)])
     .then(() => {
       if (stopped) return
