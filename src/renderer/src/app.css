@@ -303,7 +303,8 @@ button {
 
 .nav-tab.nav-more-tab {
   height: auto;
-  font-size: 20px;
+  /* The same size as the bar's tabs. */
+  font-size: var(--text-label);
 }
 
 /* The tab you're on, under More: gold, no glow (More itself glows). */
