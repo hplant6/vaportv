@@ -16,12 +16,19 @@ export const introDone = new Promise<void>((resolve) => (finish = resolve))
 
 export function Intro() {
   const [url, setUrl] = useState<string | null>(null)
+  // Black from the first frame until main says whether there's an intro, so Home never
+  // shows for a moment before the video starts.
+  const [deciding, setDeciding] = useState(true)
 
   useEffect(() => {
-    window.steamtv.intro.opening().then((opening) => {
-      if (opening) setUrl(opening)
-      else finish()
-    })
+    window.steamtv.intro
+      .opening()
+      .then((opening) => {
+        if (opening) setUrl(opening)
+        else finish()
+      })
+      .catch(() => finish())
+      .finally(() => setDeciding(false))
     const playNow = (): void => {
       window.steamtv.intro.get().then((intro) => intro.url && setUrl(intro.url))
     }
@@ -34,7 +41,8 @@ export function Intro() {
     finish()
   }, [])
 
-  return url ? <Player url={url} onDone={done} /> : null
+  if (url) return <Player url={url} onDone={done} />
+  return deciding ? <div className="intro" aria-hidden="true" /> : null
 }
 
 function Player({ url, onDone }: { url: string; onDone: () => void }) {
