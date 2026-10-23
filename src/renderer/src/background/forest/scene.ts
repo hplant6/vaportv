@@ -11,7 +11,7 @@ import { pacer } from '../pace'
 import { simplex2d } from './noise'
 import { GROUND_FRAGMENT, SKY_FRAGMENT, SKY_VERTEX, WIND_NOISE } from './shaders'
 
-// Forest: a slow walk round a grassy clearing ringed by pines, lit by the time of day.
+// Forest: a slow walk along a trail through a thick pine forest, lit by the time of day.
 // The trees are Daniel Greenheck's EZ-Tree (MIT); the grass, flowers and ground are
 // from its demo (src/app), with the wind shaders reworked for instancing. A handful
 // of trees are generated once, then each is drawn hundreds of times as instances.
@@ -22,22 +22,26 @@ const ASSETS = 'backdrops/forest/'
 
 /** Tree kinds and how many of each; every kind is one generated tree, instanced. Several seeds per size, so no two look alike side by side. */
 const KINDS: { preset: string; count: number; seed: number }[] = [
-  { preset: 'Pine Large', count: 34, seed: 2268 },
-  { preset: 'Pine Large', count: 34, seed: 5193 },
-  { preset: 'Pine Large', count: 30, seed: 8821 },
-  { preset: 'Pine Medium', count: 40, seed: 6650 },
-  { preset: 'Pine Medium', count: 40, seed: 1407 },
-  { preset: 'Pine Medium', count: 36, seed: 9334 },
-  { preset: 'Pine Small', count: 30, seed: 3071 },
-  { preset: 'Pine Small', count: 30, seed: 7458 }
+  { preset: 'Pine Large', count: 60, seed: 2268 },
+  { preset: 'Pine Large', count: 60, seed: 5193 },
+  { preset: 'Pine Large', count: 55, seed: 8821 },
+  { preset: 'Pine Medium', count: 70, seed: 6650 },
+  { preset: 'Pine Medium', count: 70, seed: 1407 },
+  { preset: 'Pine Medium', count: 65, seed: 9334 },
+  { preset: 'Pine Small', count: 60, seed: 3071 },
+  { preset: 'Pine Small', count: 60, seed: 7458 }
 ]
-/** Trees stand between these radii; the camera walks a ring well inside them. */
-const TREE_MIN_R = 85
-const TREE_MAX_R = 520
-/** Saplings come a little closer, to frame the clearing. */
-const SAPLING_MIN_R = 82
-const WALK_R = 40
-const EYE_HEIGHT = 20
+/** Trees fill everything out to here (the fog has swallowed them well before), but for the trail. */
+const TREE_MAX_R = 340
+/** The camera walks a trail round this ring, low down, as if on foot. */
+const WALK_R = 70
+const EYE_HEIGHT = 7
+/** Trees keep at least this far from the middle of the trail (saplings may come a little closer). */
+const TRAIL_CLEAR = 17
+const SAPLING_CLEAR = 11
+/** The trail's bare dirt: no grass within this of its middle, thinning out to TRAIL_EDGE. */
+const TRAIL_HALF = 4.5
+const TRAIL_EDGE = 8
 /** Radians per second round the ring: once round in about 17 minutes. */
 const WALK_SPEED = 0.006
 
@@ -163,14 +167,18 @@ function random(seed: number): () => number {
 /** 0..1, above PATCHINESS where the ground is bare dirt (the ground shader's own test). */
 const patchNoise = (x: number, z: number): number => 0.5 + 0.5 * simplex2d(x / PATCH_SCALE, z / PATCH_SCALE)
 
-/** `count` random spots on the ground between two radii, at least `gap` apart from each other. */
-function scatter(rand: () => number, count: number, minR: number, maxR: number, taken: THREE.Vector2[], gap: number): THREE.Vector2[] {
+/** How far (x, z) is from the middle of the trail. */
+const fromTrail = (x: number, z: number): number => Math.abs(Math.hypot(x, z) - WALK_R)
+
+/** `count` random spots out to `maxR`, at least `clear` off the trail and `gap` apart from each other. */
+function scatter(rand: () => number, count: number, maxR: number, clear: number, taken: THREE.Vector2[], gap: number): THREE.Vector2[] {
   const spots: THREE.Vector2[] = []
   for (let tries = 0; spots.length < count && tries < count * 40; tries++) {
-    // sqrt keeps the density even across the ring rather than bunched at its inner edge.
-    const r = Math.sqrt(minR * minR + rand() * (maxR * maxR - minR * minR))
+    // sqrt keeps the density even across the disc rather than bunched in the middle.
+    const r = Math.sqrt(rand()) * maxR
     const theta = rand() * Math.PI * 2
     const p = new THREE.Vector2(r * Math.cos(theta), r * Math.sin(theta))
+    if (fromTrail(p.x, p.y) < clear) continue
     if (taken.some((q) => q.distanceToSquared(p) < gap * gap)) continue
     taken.push(p)
     spots.push(p)
@@ -196,7 +204,7 @@ async function buildTrees(scene: THREE.Scene, wind: { uTime: { value: number } }
     tree.generate()
 
     const sapling = kind.preset.endsWith('Small')
-    const spots = scatter(rand, kind.count, sapling ? SAPLING_MIN_R : TREE_MIN_R, TREE_MAX_R, taken, sapling ? 9 : 15)
+    const spots = scatter(rand, kind.count, TREE_MAX_R, sapling ? SAPLING_CLEAR : TRAIL_CLEAR, taken, sapling ? 6 : 10)
     const leaves = tree.leavesMesh.material as THREE.MeshPhongMaterial
     addWind(leaves, wind, { heightFrom: 'uv.y', strength: 0.5, frequency: 0.6, scale: 70 })
     const placements = spots.map((p) => {
@@ -246,6 +254,9 @@ async function buildGrass(scene: THREE.Scene, wind: { uTime: { value: number } }
     const cz = r * Math.sin(theta)
     // Bare dirt where the ground shader paints it, but for the odd lone tuft.
     if (patchNoise(cx, cz) > PATCHINESS && rand() > DIRT_TUFTS) continue
+    // The trail is trodden bare in the middle, with grass coming back towards its edges.
+    const trail = fromTrail(cx, cz)
+    if (trail < TRAIL_HALF || (trail < TRAIL_EDGE && rand() > (trail - TRAIL_HALF) / (TRAIL_EDGE - TRAIL_HALF))) continue
     const blades = TUFT_BLADES.min + Math.floor(rand() * (TUFT_BLADES.max - TUFT_BLADES.min + 1))
     // A tuft shares a shade, each blade a little off it.
     const g = 0.3 + rand() * 0.3
@@ -311,7 +322,7 @@ async function buildGround(scene: THREE.Scene, glow: THREE.MeshPhongMaterial[]):
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;')
     shader.fragmentShader = shader.fragmentShader
       .replace('void main() {', `varying vec3 vWorld;\nuniform sampler2D uGrass;\nuniform sampler2D uDirt;\n${WIND_NOISE}\nvoid main() {`)
-      .replace('#include <map_fragment>', GROUND_FRAGMENT(PATCH_SCALE, PATCHINESS))
+      .replace('#include <map_fragment>', GROUND_FRAGMENT(PATCH_SCALE, PATCHINESS, WALK_R, TRAIL_HALF + 1))
       .replace(
         '#include <normal_fragment_maps>',
         'vec3 mapN = texture2D(normalMap, vWorld.xz / 30.0).xyz * 2.0 - 1.0;\nmapN.xy *= normalScale;\nnormal = normalize(tbn * mapN);'
@@ -444,9 +455,10 @@ export function startForest(canvas: HTMLCanvasElement, onReady: () => void, onEr
     // Walk the ring, looking ahead and out between the trees.
     const angle = time * WALK_SPEED
     camera.position.set(WALK_R * Math.cos(angle), EYE_HEIGHT + Math.sin(time * 0.15) * 0.4, WALK_R * Math.sin(angle))
-    const outward = 0.55
+    // Along the trail (a touch outward, as it curves away), tipped up a little towards the canopy.
+    const outward = 0.12
     ahead.set(-Math.sin(angle) + outward * Math.cos(angle), 0, Math.cos(angle) + outward * Math.sin(angle)).normalize()
-    camera.lookAt(camera.position.x + ahead.x * 100, EYE_HEIGHT + 9, camera.position.z + ahead.z * 100)
+    camera.lookAt(camera.position.x + ahead.x * 100, EYE_HEIGHT + 14, camera.position.z + ahead.z * 100)
     sky.position.copy(camera.position)
 
     wind.uTime.value = time

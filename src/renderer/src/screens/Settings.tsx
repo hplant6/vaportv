@@ -268,7 +268,7 @@ const SCREENSAVER_DELAYS: { minutes: number; name: string }[] = [
 const BACKDROPS: { id: BackdropStyle; name: string; detail: string }[] = [
   { id: 'sea', name: 'Sea', detail: 'Follows the time of day' },
   { id: 'rain', name: 'Rain', detail: 'A puddle in the rain, close up' },
-  { id: 'forest', name: 'Forest', detail: 'A walk round a grassy clearing; follows the time of day' },
+  { id: 'forest', name: 'Forest', detail: 'A walk through a pine forest; follows the time of day' },
   { id: 'drift', name: 'Gradient Drift', detail: 'Colours drifting behind ribbed glass' },
   { id: 'waves', name: 'Chromatic Waves', detail: 'Colour-split lines rolling on navy' },
   { id: 'tunnel', name: 'Star Tunnel', detail: 'Drifting down a tube of stars' }

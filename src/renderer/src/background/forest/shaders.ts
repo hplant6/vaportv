@@ -29,13 +29,16 @@ float simplex2d(vec2 v) {
 }
 `
 
-/** The ground's colour: grass, with bare dirt where the noise is high (as the grass is thinned there). */
-export const GROUND_FRAGMENT = (scale: number, patchiness: number): string => /*glsl*/ `
+/** The ground's colour: grass, with bare dirt where the noise is high and along the trail (as the grass is thinned there). */
+export const GROUND_FRAGMENT = (scale: number, patchiness: number, trailRadius: number, trailHalf: number): string => /*glsl*/ `
   vec2 groundUv = vWorld.xz;
   vec3 grassColor = texture2D(uGrass, groundUv / 30.0).rgb;
   vec3 dirtColor = texture2D(uDirt, groundUv / 30.0).rgb;
   float patchN = 0.5 + 0.5 * simplex2d(groundUv / ${scale.toFixed(1)});
   float bare = smoothstep(${(patchiness - 0.1).toFixed(2)}, ${(patchiness + 0.1).toFixed(2)}, patchN);
+  // The trail round the ring the camera walks, its edge wavering a little.
+  float trail = abs(length(groundUv) - ${trailRadius.toFixed(1)}) + 1.2 * simplex2d(groundUv / 9.0);
+  bare = max(bare, 1.0 - smoothstep(${(trailHalf - 1).toFixed(1)}, ${(trailHalf + 1).toFixed(1)}, trail));
   diffuseColor *= vec4(mix(grassColor, dirtColor, bare), 1.0);
 `
 
