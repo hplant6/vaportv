@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { MusicKind } from '../../../shared/types'
 import { introDone } from './Intro'
+import { MUSIC_HOLD_EVENT } from './MusicPreview'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -46,10 +47,11 @@ function Layer({ kind }: { kind: MusicKind }) {
       }, 50)
     }
 
-    // Not over the intro video: it has its own sound.
+    // Not over the intro video: it has its own sound. Nor over a song being previewed in Settings.
     let introOver = false
+    let held = false
     const start = (): void => {
-      if (!introOver || !el.src || !document.hasFocus()) return
+      if (!introOver || held || !el.src || !document.hasFocus()) return
       el.play().then(() => fadeTo(target.current)).catch(() => {})
     }
     introDone.then(() => {
@@ -97,12 +99,19 @@ function Layer({ kind }: { kind: MusicKind }) {
     }
 
     const onBlur = (): void => fadeTo(0, () => el.pause())
+    const onHold = (event: Event): void => {
+      held = (event as CustomEvent<boolean>).detail
+      if (held) fadeTo(0, () => el.pause())
+      else start()
+    }
     load()
     el.addEventListener('ended', onEnded)
     window.addEventListener(MUSIC_CHANGED_EVENT, load)
     window.addEventListener('focus', start)
     window.addEventListener('blur', onBlur)
+    window.addEventListener(MUSIC_HOLD_EVENT, onHold)
     return () => {
+      window.removeEventListener(MUSIC_HOLD_EVENT, onHold)
       clearInterval(fade)
       el.removeEventListener('ended', onEnded)
       window.removeEventListener(MUSIC_CHANGED_EVENT, load)

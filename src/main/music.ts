@@ -97,12 +97,16 @@ export function musicChoices(config: Config): Record<MusicKind, string | null> {
   return { music: config.music ?? null, ambience: config.ambience || null }
 }
 
+/** Where the page plays a track from (Settings' preview button). */
+export function trackUrl(config: Config, file: string): string {
+  return BUILT_IN.find((t) => t.file === file)?.url ?? artUrl(join(musicFolder(config), file))
+}
+
 /** What the page should play on each layer: the chosen track, a playlist's tracks, or every one shuffled, and a volume. */
 export async function currentMusic(config: Config): Promise<Record<MusicKind, MusicLayer>> {
   const tracks = await musicTracks(config)
   const choices = musicChoices(config)
-  const root = musicFolder(config)
-  const url = (file: string): string => BUILT_IN.find((t) => t.file === file)?.url ?? artUrl(join(root, file))
+  const url = (file: string): string => trackUrl(config, file)
   const layer = (kind: MusicKind, volume: MusicVolume | undefined): MusicLayer => {
     const choice = choices[kind]
     const files = tracks[kind].map((t) => t.file)

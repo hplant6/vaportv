@@ -1562,6 +1562,44 @@ button {
   color: var(--color-accent);
 }
 
+/* A song and its preview button: the button sits at the row's right, round, gold with the cursor on it. */
+.song-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.song-row > .setting-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.song-preview {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+.song-preview:focus {
+  color: var(--color-accent);
+  background: var(--color-focus-tint);
+}
+
+.song-preview.playing {
+  color: var(--color-accent);
+}
+
+.song-preview-icon {
+  width: 24px;
+  height: 24px;
+}
+
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
 .tab-grip {
   flex: none;

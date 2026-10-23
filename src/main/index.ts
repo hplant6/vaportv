@@ -54,7 +54,7 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE } from './music'
+import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
@@ -629,6 +629,7 @@ ipcMain.handle('backdrop:get', async () => {
   return { style, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula' }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
+ipcMain.handle('music:trackUrl', async (_event, file: string) => trackUrl(await loadConfig(), file))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
 ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTaken(await loadConfig(), url))
 ipcMain.handle('settings:sleepOnControllerOff', (_event, on: boolean) => saveConfig({ sleepOnControllerOff: on }))

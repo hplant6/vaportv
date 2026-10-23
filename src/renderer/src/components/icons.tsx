@@ -42,3 +42,21 @@ export function ChevronIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** Play a preview (Settings → Music → Songs). */
+export function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <path d="M5.5 3.6v10.8a.6.6 0 0 0 .9.5l8.4-5.4a.6.6 0 0 0 0-1L6.4 3.1a.6.6 0 0 0-.9.5Z" />
+    </svg>
+  )
+}
+
+/** Stop the preview playing. */
+export function StopIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <rect x="4.5" y="4.5" width="9" height="9" rx="1.5" />
+    </svg>
+  )
+}

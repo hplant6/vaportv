@@ -23,7 +23,8 @@ import { ToggleRow } from '../components/ToggleRow'
 import { toast } from '../components/Toast'
 import logo from '../assets/screensaver-logo.png'
 import { PlaylistDialog } from '../components/PlaylistDialog'
-import { ChevronIcon } from '../components/icons'
+import { ChevronIcon, PlayIcon, StopIcon } from '../components/icons'
+import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 
 function CollectionRow({
@@ -331,6 +332,21 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [category, setCategory] = useState<Category>('general')
   /** Music's single songs, folded away under the playlists until opened. */
   const [songsOpen, setSongsOpen] = useState(false)
+  /** The song being previewed, if any. */
+  const [preview, setPreview] = useState<string | null>(previewing())
+
+  // A preview ends with the Songs list closing or Settings closing.
+  useEffect(() => {
+    const onPreview = (event: Event): void => setPreview((event as CustomEvent<string | null>).detail)
+    window.addEventListener(PREVIEW_EVENT, onPreview)
+    return () => {
+      window.removeEventListener(PREVIEW_EVENT, onPreview)
+      stopPreview()
+    }
+  }, [])
+  useEffect(() => {
+    if (!songsOpen) stopPreview()
+  }, [songsOpen])
   /** The playlist being edited (null: a new one), and the row to go back to. */
   const [editing, setEditing] = useState<{ playlist: Playlist | null; from: HTMLElement | null } | null>(null)
 
@@ -441,15 +457,35 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             </span>
           </button>
         )}
-        {(kind !== 'music' || songsOpen) && settings.musicTracks[kind].map((track) => (
-          <ChoiceRow
-            key={track.file}
-            label={track.name}
-            detail={track.credit}
-            selected={settings[kind] === track.file}
-            onSelect={() => chooseMusic(kind, track.file)}
-          />
-        ))}
+        {kind === 'music' &&
+          songsOpen &&
+          settings.musicTracks.music.map((track, i) => (
+            // A song with a button beside it to hear it first; Left from the button comes back to the song.
+            <div key={track.file} id={`song-${i}`} className="song-row">
+              <ChoiceRow label={track.name} detail={track.credit} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
+              <button
+                className={`song-preview${preview === track.file ? ' playing' : ''}`}
+                tabIndex={-1}
+                aria-label={preview === track.file ? `Stop ${track.name}` : `Preview ${track.name}`}
+                data-focusable=""
+                data-select-sound="move"
+                data-nav-left={`#song-${i} .setting-row`}
+                onClick={() => togglePreview(track.file)}
+              >
+                {preview === track.file ? <StopIcon className="song-preview-icon" /> : <PlayIcon className="song-preview-icon" />}
+              </button>
+            </div>
+          ))}
+        {kind === 'ambience' &&
+          settings.musicTracks.ambience.map((track) => (
+            <ChoiceRow
+              key={track.file}
+              label={track.name}
+              detail={track.credit}
+              selected={settings.ambience === track.file}
+              onSelect={() => chooseMusic('ambience', track.file)}
+            />
+          ))}
       </>
     )
 

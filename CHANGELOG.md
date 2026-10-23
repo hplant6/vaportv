@@ -9,6 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- Preview a song before choosing it: Settings → Music → Songs has a play button on each (Right from the song). It plays up to 30 seconds while the background music and ambience pause.
 - Music playlists: Settings → Music → Playlists makes and edits them (name, shuffle or in order, which tracks); choose one like a track. A Chris Zabriskie playlist comes built in.
 - Seven built-in music tracks by Chris Zabriskie (CC BY 4.0), credited beside each one in Settings → Music.
 - Game options: press Select on a console game to rename it, pick which emulator opens it (any installed RetroArch core for that console), replace its art, or delete it from the drive (press A twice; can't be undone). G on a keyboard.

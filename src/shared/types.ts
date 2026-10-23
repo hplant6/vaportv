@@ -621,6 +621,8 @@ export interface SteamTvApi {
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<Record<MusicKind, MusicLayer>>
+  /** Where a music track plays from, for Settings' preview. */
+  musicTrackUrl(file: string): Promise<string>
   getScreensaver(): Promise<ScreensaverData>
   setScreensaverDelay(minutes: number): Promise<void>
   setScreensaverStyle(style: ScreensaverStyle): Promise<void>

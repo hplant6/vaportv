@@ -36,6 +36,7 @@ const api: SteamTvApi = {
   setDriftPreset: (name) => ipcRenderer.invoke('settings:driftPreset', name),
   setBackdropTime: (time) => ipcRenderer.invoke('settings:backdropTime', time),
   getMusic: () => ipcRenderer.invoke('music:get'),
+  musicTrackUrl: (file) => ipcRenderer.invoke('music:trackUrl', file),
   getScreensaver: () => ipcRenderer.invoke('screensaver:get'),
   setScreensaverDelay: (minutes) => ipcRenderer.invoke('settings:screensaverDelay', minutes),
   setScreensaverStyle: (style) => ipcRenderer.invoke('settings:screensaverStyle', style),
