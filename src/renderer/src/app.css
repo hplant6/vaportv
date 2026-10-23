@@ -1544,6 +1544,23 @@ button {
   background: radial-gradient(circle, var(--color-accent) 7.5px, transparent 8.3px);
 }
 
+/* Settings → Music: the row that opens and closes the single songs under the playlists. */
+.songs-chevron {
+  flex: none;
+  /* As wide as the radios above, so the names line up. */
+  width: 30px;
+  height: 22px;
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.songs-toggle.open .songs-chevron {
+  transform: rotate(180deg);
+}
+
+.songs-toggle:focus .songs-chevron {
+  color: var(--color-accent);
+}
+
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
 .tab-grip {
   flex: none;

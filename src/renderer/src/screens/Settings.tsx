@@ -23,6 +23,7 @@ import { ToggleRow } from '../components/ToggleRow'
 import { toast } from '../components/Toast'
 import logo from '../assets/screensaver-logo.png'
 import { PlaylistDialog } from '../components/PlaylistDialog'
+import { ChevronIcon } from '../components/icons'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 
 function CollectionRow({
@@ -327,6 +328,8 @@ function ChoiceRow({ label, detail, selected, onSelect }: { label: string; detai
 export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [category, setCategory] = useState<Category>('general')
+  /** Music's single songs, folded away under the playlists until opened. */
+  const [songsOpen, setSongsOpen] = useState(false)
   /** The playlist being edited (null: a new one), and the row to go back to. */
   const [editing, setEditing] = useState<{ playlist: Playlist | null; from: HTMLElement | null } | null>(null)
 
@@ -395,7 +398,10 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setMusicVolume(kind, volume).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
   }
 
-  /** One layer's choices: none, shuffle (with two or more tracks), and each track. */
+  /** The single song music is set to, if it is (shown on the folded Songs row). */
+  const playingSong = settings?.musicTracks.music.find((t) => t.file === settings.music)
+
+  /** One layer's choices: none, shuffle (with two or more tracks), music's playlists, and each track (music's folded under Songs). */
   const musicChoices = (kind: MusicKind) =>
     settings && (
       <>
@@ -418,7 +424,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               onSelect={() => chooseMusic('music', `playlist:${playlist.id}`)}
             />
           ))}
-        {settings.musicTracks[kind].map((track) => (
+        {kind === 'music' && settings.musicTracks.music.length > 0 && (
+          <button
+            className={`setting-row songs-toggle${songsOpen ? ' open' : ''}`}
+            tabIndex={-1}
+            aria-expanded={songsOpen}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={() => setSongsOpen(!songsOpen)}
+          >
+            <ChevronIcon className="songs-chevron" />
+            <span className="setting-name display">Songs</span>
+            <span className="setting-detail">
+              {playingSong ? `Playing ${playingSong.name}` : `${settings.musicTracks.music.length} songs`}
+            </span>
+          </button>
+        )}
+        {(kind !== 'music' || songsOpen) && settings.musicTracks[kind].map((track) => (
           <ChoiceRow
             key={track.file}
             label={track.name}

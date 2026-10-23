@@ -33,3 +33,12 @@ export function MoveIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** A chevron for a row that opens and closes (it turns when open). */
+export function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="4.5 6.75 9 11.25 13.5 6.75" />
+    </svg>
+  )
+}
