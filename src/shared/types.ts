@@ -182,14 +182,18 @@ export interface Playlist {
   shuffle: boolean
 }
 
-/** What a file browser shows besides folders: audio (music), or pictures and videos (backdrops). */
-export type BrowseKind = 'audio' | 'backdrop'
+/** What a file browser shows besides folders: audio (music), pictures and videos (backdrops), or everything (the Files app). */
+export type BrowseKind = 'audio' | 'backdrop' | 'all'
 
 /** A place in the file browser (adding your own music or backdrops): a home folder, a drive, a subfolder, or a file. */
 export interface BrowseEntry {
   name: string
   path: string
   kind: 'folder' | 'drive' | 'file'
+  /** Files, browsing 'all': bytes, when it last changed (ms), and what the Files app can show of it. */
+  size?: number
+  modified?: number
+  media?: 'image' | 'video' | 'audio'
 }
 
 /** The backdrop's time of day: following the clock, or held at one moment. */
@@ -598,6 +602,8 @@ export interface SteamTvApi {
   }
   /** Browse home folders and drives (null for the places to start), showing folders and files of a kind. */
   browseFiles(dir: string | null, kind: BrowseKind): Promise<BrowseEntry[]>
+  /** The Files app: an address the page can show or play a file from. */
+  openFile(path: string): Promise<string>
   /** Copies a picture or video in as one of your own backdrops; returns its file name. */
   addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{

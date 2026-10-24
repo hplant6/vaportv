@@ -17,11 +17,11 @@ export function registerArtScheme(): void {
   protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, stream: true } }])
 }
 
-/** Call after app ready. `roots` returns the directories art may come from. */
-export function handleArtScheme(roots: () => string[]): void {
+/** Call after app ready. `roots` returns the directories art may come from; `alsoAllowed`, single files besides. */
+export function handleArtScheme(roots: () => string[], alsoAllowed: (path: string) => boolean = () => false): void {
   protocol.handle(SCHEME, (request) => {
     const path = resolve(decodeURIComponent(new URL(request.url).pathname.slice(1)))
-    const allowed = roots().some((root) => path.startsWith(resolve(root) + sep))
+    const allowed = roots().some((root) => path.startsWith(resolve(root) + sep)) || alsoAllowed(path)
     if (!allowed) return new Response('not found', { status: 404 })
     // Audio and video with byte ranges, so they can seek and loop; pictures as they are.
     const type = mediaType(path)

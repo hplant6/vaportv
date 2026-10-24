@@ -55,7 +55,7 @@ import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
 import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
-import { browseFiles } from './browse'
+import { browseFiles, openFile, wasOpened } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -613,7 +613,10 @@ ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVo
   saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
 )
 // Adding your own: the browser leaves out vaporTV's own folders (files there are already in).
-ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKind) => browseFiles(dir, kind, [musicFolder(await loadConfig()), BACKDROP_FOLDER]))
+ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKind) =>
+  browseFiles(dir, kind, kind === 'all' ? [] : [musicFolder(await loadConfig()), BACKDROP_FOLDER])
+)
+ipcMain.handle('files:open', (_event, path: string) => openFile(path))
 ipcMain.handle('backdrops:add', (_event, path: string) => addBackdrop(path))
 ipcMain.handle('backdrops:remove', (_event, file: string) => removeBackdrop(file))
 ipcMain.handle('backdrops:shuffleOff', (_event, files: string[]) => saveConfig({ backdropShuffleOff: files }))
@@ -816,7 +819,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, ...screensaverFolders(config)])
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, ...screensaverFolders(config)], wasOpened)
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()
   createWindow()

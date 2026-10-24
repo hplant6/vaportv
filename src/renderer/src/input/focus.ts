@@ -90,6 +90,11 @@ export function move(direction: Direction, source: InputSource): void {
     play('move')
     return
   }
+  // So does a viewer that uses them itself (the Files app's: next picture, skip in a video).
+  if (document.querySelector('[data-own-directions]')) {
+    window.dispatchEvent(new CustomEvent(OWN_DIRECTION_EVENT, { detail: direction }))
+    return
+  }
 
   const from = current()
   if (!from) return focusDefault()
@@ -144,6 +149,9 @@ export const GRAB_MOVE_EVENT = 'steamtv:grab-move'
 /** B while something is picked up: put it back where it was. */
 export const GRAB_CANCEL_EVENT = 'steamtv:grab-cancel'
 
+/** While an element marked data-own-directions is open, directions arrive as this instead (detail: the Direction). */
+export const OWN_DIRECTION_EVENT = 'steamtv:own-direction'
+
 function grabbed(): HTMLElement | null {
   return document.querySelector<HTMLElement>('[data-grabbed]')
 }
@@ -156,10 +164,16 @@ export function back(): void {
 
 /** L1/R1 on a controller, PageUp/PageDown on a keyboard: the previous or next tab (detail: -1 or 1). */
 export const TAB_EVENT = 'steamtv:tab'
+/** L1/R1 while a focus trap is open, for one that uses them (the Files app: a page at a time, the next file). */
+export const TRAP_TAB_EVENT = 'steamtv:trap-tab'
 
 export function switchTab(step: -1 | 1): void {
   // Menus that hold the cursor (the power menu), and a row being moved, stay put until done.
-  if (trap() || grabbed()) return
+  if (grabbed()) return
+  if (trap()) {
+    window.dispatchEvent(new CustomEvent(TRAP_TAB_EVENT, { detail: step }))
+    return
+  }
   window.steamtv.logInput(`tab ${step > 0 ? 'next' : 'previous'}`)
   play('move')
   window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: step }))

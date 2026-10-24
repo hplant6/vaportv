@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { browseFiles } from './browse'
+import { browseFiles, openFile, wasOpened } from './browse'
 import { currentMusic, importMusic, musicChoices, musicTracks } from './music'
 
 // The browser and importer only touch home and drive mounts, so the fixture lives in home.
@@ -80,6 +80,28 @@ describe('background music', () => {
       ['Fire.mp4', 'file']
     ])
     await expect(browseFiles('/etc', 'audio')).rejects.toThrow()
+  })
+
+  it('shows the Files app everything, with sizes and what it can open', async () => {
+    const all = await browseFiles(source, 'all')
+    expect(all.map((e) => [e.name, e.kind, e.media])).toEqual([
+      ['Sub', 'folder', undefined],
+      ['Beach.jpg', 'file', 'image'],
+      ['Fire.mp4', 'file', 'video'],
+      ['New tune.mp3', 'file', 'audio'],
+      ['notes.txt', 'file', undefined]
+    ])
+    expect(all.find((e) => e.name === 'New tune.mp3')).toMatchObject({ size: 4, modified: expect.any(Number) })
+  })
+
+  it('lets the page load only files the Files app opened, from home and the drives', async () => {
+    const file = join(source, 'Beach.jpg')
+    expect(wasOpened(file)).toBe(false)
+    expect(await openFile(file)).toContain(encodeURIComponent(file))
+    expect(wasOpened(file)).toBe(true)
+    expect(wasOpened(join(source, 'Fire.mp4'))).toBe(false)
+    await expect(openFile('/etc/hostname')).rejects.toThrow()
+    await expect(openFile(join(source, 'Sub'))).rejects.toThrow()
   })
 
   it('copies a file in as its kind, without overwriting one of the same name', async () => {

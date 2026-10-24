@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
-import { idleMs, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
+import { idleMs, keptAwake, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
 import logo from '../assets/screensaver-logo.png'
 
@@ -100,7 +100,7 @@ export function Screensaver() {
     const timer = setInterval(() => {
       // Only over vaporTV itself: never on top of a game or app.
       const inFront = document.visibilityState === 'visible' && document.hasFocus()
-      if (delay.current > 0 && inFront && !screensaverUp() && idleMs() > delay.current * 60_000) start()
+      if (delay.current > 0 && inFront && !screensaverUp() && !keptAwake() && idleMs() > delay.current * 60_000) start()
     }, CHECK_MS)
     window.addEventListener(SCREENSAVER_EVENT, onEvent)
     return () => {

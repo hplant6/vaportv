@@ -22,6 +22,7 @@ import { Intro } from './components/Intro'
 import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
 import { CoreDialog } from './components/CoreDialog'
+import { FilesApp } from './components/FilesApp'
 import { GameDialog } from './components/GameDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
@@ -423,6 +424,7 @@ export function App() {
         />
       )}
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
+      <FilesApp />
       <LaunchOverlay />
       <SleepPrompt />
       <ArtworkDialog />

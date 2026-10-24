@@ -40,6 +40,8 @@ type Recipe =
   | { kind: 'flatpak'; flatpak: string; program: string; args?: string[]; controller?: boolean }
   /** Comes with EmuDeck. */
   | { kind: 'emudeck' }
+  /** Part of vaporTV itself (the Files app). */
+  | { kind: 'builtin' }
 
 const RECIPES: Record<string, Recipe> = {
   netflix: { kind: 'web', shortcut: 'Netflix', url: 'https://www.netflix.com/browse' },
@@ -60,7 +62,8 @@ const RECIPES: Record<string, Recipe> = {
   // Kodi, for an Emby library through its Emby add-on (Emby Theater can't show its
   // playback controls in Gaming Mode). Its sandbox already sees controllers.
   kodi: { kind: 'flatpak', flatpak: 'tv.kodi.Kodi', program: 'Kodi' },
-  esde: { kind: 'emudeck' }
+  esde: { kind: 'emudeck' },
+  files: { kind: 'builtin' }
 }
 
 /**
@@ -68,8 +71,8 @@ const RECIPES: Record<string, Recipe> = {
  * shortcut for it was found (see launchUrl).
  */
 export function appState(id: string, hasShortcut: boolean): AppState {
-  if (hasShortcut) return { ready: true }
   const recipe = RECIPES[id]
+  if (hasShortcut || recipe?.kind === 'builtin') return { ready: true }
   if (recipe?.kind === 'flatpak') return flatpakInstalled(recipe.flatpak) ? { ready: true } : { ready: false, setup: 'install', program: recipe.program }
   if (recipe?.kind === 'web') return { ready: false, setup: 'web' }
   if (recipe?.kind === 'emudeck') return { ready: false, setup: 'emudeck' }

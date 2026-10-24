@@ -11,6 +11,19 @@ export function idleMs(): number {
   return performance.now() - lastInput
 }
 
+// Things on screen that someone is watching without touching anything (a video in the Files app).
+const keepingAwake = new Set<object>()
+
+/** While `holder` is kept, the screensaver doesn't start. */
+export function keepAwake(holder: object, on: boolean): void {
+  if (on) keepingAwake.add(holder)
+  else keepingAwake.delete(holder)
+}
+
+export function keptAwake(): boolean {
+  return keepingAwake.size > 0
+}
+
 export function screensaverUp(): boolean {
   return saverUp
 }

@@ -76,6 +76,11 @@
       "id": "esde",
       "name": "ES-DE",
       "tile": "fixtures/tiles/esde.webp"
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "tile": ""
     }
   ],
   "platformLogos": {

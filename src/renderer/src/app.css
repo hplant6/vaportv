@@ -2086,3 +2086,297 @@ button {
   gap: 8px;
   width: 200px;
 }
+
+/* ── Files app (FilesApp.tsx): Settings' layout, full screen over everything but dialogs ── */
+
+.files-app {
+  position: absolute;
+  inset: 0;
+  height: var(--stage-h);
+  z-index: 800;
+}
+
+/* The screen under it hides (the backdrop stays): only the scrim's tint would be between them. */
+.stage:has(.files-app) .page {
+  visibility: hidden;
+}
+
+/* No nav bar over it: the sidebar and pane run up to the top margin. */
+.files-sidebar {
+  top: 36px;
+  height: calc(var(--stage-h) - 50px);
+}
+
+.files-places {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.files-place-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.files-pane {
+  position: absolute;
+  left: 627px;
+  top: 36px;
+  right: 0;
+  height: calc(var(--stage-h) - 50px);
+}
+
+.files-group {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+  width: auto;
+  border-radius: 18px 0 0 18px;
+  padding: 9px 43px 24px;
+  background: var(--color-panel);
+}
+
+.files-group .settings-heading {
+  margin-bottom: 0;
+  font-size: 36px;
+  line-height: 2.3;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-panel-line);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.files-path {
+  margin: 14px 32px;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.files-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 32px;
+}
+
+.files-list {
+  flex: none;
+  width: 760px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 14px 0;
+}
+
+.files-row {
+  flex: none;
+  height: 76px;
+  gap: 20px;
+  padding: 0 28px;
+  border-radius: 19px;
+  background: transparent;
+  outline: none;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.files-row:focus {
+  background: var(--color-focus-tint);
+  transform: none;
+}
+
+.files-row .setting-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  letter-spacing: 0.04em;
+}
+
+.files-row .setting-detail {
+  flex: none;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  opacity: 1;
+}
+
+.files-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.files-row:focus .files-icon {
+  stroke: var(--color-accent);
+  opacity: 1;
+}
+
+.files-icon.big {
+  width: 160px;
+  height: 160px;
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+/* The look at the file the cursor is on. */
+.files-preview {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-right: 20px;
+}
+
+.files-preview-frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.files-preview-frame img,
+.files-preview-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.files-preview-name {
+  margin: 20px 0 0;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.files-preview .settings-help {
+  margin: 8px 0 0;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+/* A file full screen, on black. The bar along the bottom fades while something plays. */
+.files-viewer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+  outline: none;
+  cursor: none;
+}
+
+.files-viewer-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.files-viewer-song {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.files-viewer-title {
+  margin: 32px 0 0;
+  font-size: 48px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.files-viewer-song .settings-help {
+  margin: 12px 0 0;
+}
+
+.files-viewer-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 80px 72px 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.files-viewer.bar-shown .files-viewer-bar {
+  opacity: 1;
+}
+
+.files-viewer-line {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.files-viewer-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-meta);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.files-viewer-count,
+.files-viewer-time {
+  flex: none;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.files-progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.files-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.files-viewer-hints {
+  display: flex;
+  gap: 40px;
+}
+
+.files-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 20px;
+}
+
+.files-hint .control-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.files-hint .control-icon.wide {
+  width: 60px;
+}

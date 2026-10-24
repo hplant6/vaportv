@@ -9,6 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- Files: a new app in the Apps tab (Y puts it on Home) for browsing your home folders and any USB drive or SD card from the controller, full screen. A opens a picture (left and right for the folder's others), a video or a song (A pauses, left and right skip 10 seconds, L1 and R1 the previous or next file); the background music waits while one plays.
 - Preview a song before choosing it: Settings → Music → Songs has a play button on each (Right from the song). It plays up to 30 seconds while the background music and ambience pause.
 - Music playlists: Settings → Music → Playlists makes and edits them (name, shuffle or in order, which tracks); choose one like a track. A Chris Zabriskie playlist comes built in.
 - Seven built-in music tracks by Chris Zabriskie (CC BY 4.0), credited beside each one in Settings → Music.

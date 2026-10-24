@@ -26,6 +26,7 @@ const api: SteamTvApi = {
     add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)
   },
   browseFiles: (dir, kind) => ipcRenderer.invoke('files:browse', dir, kind),
+  openFile: (path) => ipcRenderer.invoke('files:open', path),
   addBackdrop: (path) => ipcRenderer.invoke('backdrops:add', path),
   removeBackdrop: (file) => ipcRenderer.invoke('backdrops:remove', file),
   setBackdropShuffleOff: (files) => ipcRenderer.invoke('backdrops:shuffleOff', files),
