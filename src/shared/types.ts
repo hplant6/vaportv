@@ -196,7 +196,7 @@ export interface BrowseEntry {
 export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 
 /** Which animated backdrop is drawn behind every screen. */
-export type BackdropStyle = 'sea' | 'rain' | 'forest' | 'aurora' | 'dunes' | 'drift' | 'waves' | 'tunnel' | 'custom'
+export type BackdropStyle = 'sea' | 'rain' | 'cityrain' | 'forest' | 'aurora' | 'dunes' | 'drift' | 'waves' | 'tunnel' | 'custom'
 
 /** One of your own backdrops: a picture or video in ~/Pictures/vaporTV Backdrops. */
 export interface CustomBackdrop {

@@ -169,7 +169,7 @@ function customBackdropFile(config: Config, items: CustomBackdrop[]): string | n
 
 /** The chosen backdrop, or the sea if it's one that's since been removed (Particles, or all of your own). */
 async function backdropChoice(config: Config): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
-  const offered: BackdropStyle[] = ['sea', 'rain', 'forest', 'aurora', 'dunes', 'drift', 'waves', 'tunnel']
+  const offered: BackdropStyle[] = ['sea', 'rain', 'cityrain', 'forest', 'aurora', 'dunes', 'drift', 'waves', 'tunnel']
   if (config.backdrop === 'custom') {
     const custom = await customChoice(config)
     return custom ? { style: 'custom', custom } : { style: 'sea', custom: null }
