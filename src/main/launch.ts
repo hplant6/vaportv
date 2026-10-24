@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { LaunchKind } from '../shared/types'
 import type { Config } from './config'
-import { recordPlay } from './history'
+import { addPlaytime, recordPlay } from './history'
 import { steamRoot } from './library/recents'
 import { activeUserDir, isServiceName } from './library/steam'
 import { arcadeCommand, arcadeGames } from './library/arcade'
@@ -133,9 +133,20 @@ function appIdOf(url: string): number | null {
   return Number(big >> 32n ? big >> 32n : big)
 }
 
-function run(command: string, args: string[], env: Record<string, string> = {}): void {
+/**
+ * Runs a program on its own. `played`: the game (or app) it is, whose play time grows by how
+ * long it runs. Timed on the monotonic clock, which stops while the box sleeps, so a game
+ * left open overnight in sleep doesn't count the night.
+ */
+function run(command: string, args: string[], { env = {}, played }: { env?: Record<string, string>; played?: string } = {}): void {
   const child = spawn(command, args, { detached: true, stdio: 'ignore', env: { ...process.env, ...env } })
   child.on('error', (err) => console.error(`steamtv: could not run ${command}:`, err))
+  if (played) {
+    const started = performance.now()
+    child.on('exit', () => {
+      addPlaytime(played, (performance.now() - started) / 1000).catch((err) => console.error('steamtv: play time:', err))
+    })
+  }
   child.unref()
 }
 
@@ -149,7 +160,7 @@ async function launchSwitch(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const ryujinx = ryujinxPath(config)
   console.log(`steamtv: launching ${game.path} in ${ryujinx}`)
-  run(ryujinx, ['--fullscreen', game.path])
+  run(ryujinx, ['--fullscreen', game.path], { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -162,7 +173,7 @@ async function launchPs3(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const rpcs3 = rpcs3Path(config)
   console.log(`steamtv: launching ${game.titleId} in ${rpcs3}`)
-  run(rpcs3, rpcs3Args(game))
+  run(rpcs3, rpcs3Args(game), { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -176,7 +187,7 @@ async function launchXbox360(config: Config, id: string): Promise<boolean> {
   const { command, args, env } = xeniaCommand(config, game)
   await mkdir(env.STEAM_COMPAT_DATA_PATH, { recursive: true })
   console.log(`steamtv: launching ${game.path} in Xenia`)
-  run(command, args, env)
+  run(command, args, { env, played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -189,7 +200,7 @@ async function launchXbox(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = xemuCommand(config, game)
   console.log(`steamtv: launching ${game.path} in xemu`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -202,7 +213,7 @@ async function launchPs2(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = pcsx2Command(config, game)
   console.log(`steamtv: launching ${game.path} in PCSX2`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -215,7 +226,7 @@ async function launchWii(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = dolphinCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Dolphin`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -228,7 +239,7 @@ async function launchGameCube(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = dolphinCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Dolphin`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -241,7 +252,7 @@ async function launchDreamcast(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = flycastCommand(config, await dreamcastContent(game))
   console.log(`steamtv: launching ${game.path} in Flycast`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -254,7 +265,7 @@ async function launchNes(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = mesenCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Mesen`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -267,7 +278,7 @@ async function launchSnes(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = snes9xCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Snes9x`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -280,7 +291,7 @@ async function launchGenesis(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = genesisPlusGxCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Genesis Plus GX`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -293,7 +304,7 @@ async function launchSega32x(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = picodriveCommand(config, game)
   console.log(`steamtv: launching ${game.path} in PicoDrive`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -306,7 +317,7 @@ async function launchAmiga(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = puaeCommand(config, game)
   console.log(`steamtv: launching ${game.path} in PUAE`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -319,7 +330,7 @@ async function launchSaturn(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = kronosCommand(config, await saturnContent(game))
   console.log(`steamtv: launching ${game.path} in Kronos`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -333,7 +344,7 @@ async function launchPsx(config: Config, id: string): Promise<boolean> {
   // A multi-disc game opens as a disc list, so DuckStation can change discs.
   const { command, args } = duckstationCommand(config, await discContent(game))
   console.log(`steamtv: launching ${game.path} in DuckStation`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -346,7 +357,7 @@ async function launchPsp(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = ppssppCommand(config, game)
   console.log(`steamtv: launching ${game.path} in PPSSPP`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -359,7 +370,7 @@ async function launchWiiU(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = cemuCommand(config, game)
   console.log(`steamtv: launching ${game.path} in Cemu`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -372,7 +383,7 @@ async function launchN64(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = mupen64Command(config, game)
   console.log(`steamtv: launching ${game.path} in Mupen64Plus-Next`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -385,7 +396,7 @@ async function launchArcade(config: Config, id: string): Promise<boolean> {
   if (!game) return false
   const { command, args } = arcadeCommand(config, game)
   console.log(`steamtv: launching ${game.path} in RetroArch (${game.core})`)
-  run(command, args)
+  run(command, args, { played: id })
   emulatorGame = game.title
   directIsApp = false
   await recordPlay(id)
@@ -399,7 +410,7 @@ async function launchInCore(config: Config, id: string, core: string): Promise<b
   if (!target) return false
   const [command, ...args] = config.retroarch ?? RETROARCH
   console.log(`steamtv: launching ${target.content} in RetroArch's ${core} core`)
-  run(command, [...args, '-L', target.core, '-f', target.content])
+  run(command, [...args, '-L', target.core, '-f', target.content], { played: id })
   emulatorGame = config.gameTitles?.[id] ?? target.title
   directIsApp = false
   await recordPlay(id)
@@ -439,7 +450,7 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
       return false
     }
     console.log(`steamtv: launching ${direct.args.join(' ')} directly`)
-    run(direct.command, direct.args)
+    run(direct.command, direct.args, { played: `app:${id}` })
     emulatorGame = name
     directIsApp = true
     directAppOpenedAt = Date.now()

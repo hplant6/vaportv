@@ -8,6 +8,8 @@ export interface RecentItem {
   platform: string
   /** ISO date (YYYY-MM-DD); missing if never played. */
   lastPlayed?: string
+  /** Total time played, in minutes, where it's known (Steam's count, or vaporTV's for what it launches). */
+  playtime?: number
   /** Portrait art. */
   cover?: string
   /** 16:9 art; an item with this and no `cover` (a YouTube video) gets a wide card. */

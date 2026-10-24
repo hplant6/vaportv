@@ -589,9 +589,25 @@ button {
 }
 
 .recent-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-top: -1px;
   font-size: 13px;
   font-weight: 400;
+  white-space: nowrap;
+}
+
+/* The clock between the date and the time played, in the text's colour. */
+.recent-playtime-icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-left: 3px;
+  background: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
 }
 
 .favorites {

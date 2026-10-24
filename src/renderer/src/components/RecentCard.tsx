@@ -1,5 +1,6 @@
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
+import clock from '../assets/clock.svg'
 
 interface Props {
   item: RecentItem
@@ -11,6 +12,13 @@ interface Props {
 function formatDate(iso: string): string {
   const [year, month, day] = iso.split('-')
   return `${month}/${day}/${year.slice(2)}`
+}
+
+/** 45m, 3h 20m, then whole hours (126h) once the minutes stop mattering. */
+function formatPlaytime(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  return hours < 10 && minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours.toLocaleString()}h`
 }
 
 export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
@@ -44,7 +52,16 @@ export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
         <div className="recent-logo">{logo && <img src={logo} alt="" />}</div>
         <div className="recent-text">
           <div className="recent-title">{item.title}</div>
-          <div className="recent-date">{item.lastPlayed ? formatDate(item.lastPlayed) : 'Not played yet'}</div>
+          <div className="recent-date">
+            {item.lastPlayed ? formatDate(item.lastPlayed) : 'Not played yet'}
+            {item.playtime ? (
+              <>
+                {/* Total time played, after the date. */}
+                <span className="recent-playtime-icon" style={{ maskImage: `url("${clock}")` }} aria-label="Played for" />
+                {formatPlaytime(item.playtime)}
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </button>

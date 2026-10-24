@@ -11,6 +11,8 @@ export interface Played {
   platform: string
   /** Unix seconds. */
   lastPlayed: number
+  /** Total minutes played, where known. */
+  playtime?: number
   /** Absolute paths to local art, when Steam has any. */
   art: { portrait?: string; wide?: string }
 }
@@ -90,17 +92,30 @@ export interface SteamGame {
   title: string
   /** Unix seconds, or 0 if never played. */
   lastPlayed: number
+  /** Total minutes played (Steam's count). */
+  playtime: number
 }
 
-/** Installed Steam games (tools excluded), with when each was last played. */
-export async function steamGames(steamRoot: string, userDir: string): Promise<SteamGame[]> {
+/** Steam's per-app records for this user (last played, minutes played), by app id. */
+async function localApps(userDir: string): Promise<VdfObject> {
   const config = parseTextVdf(await readFile(join(userDir, 'config', 'localconfig.vdf'), 'utf8').catch(() => ''))
-  const apps = childObject(config, 'UserLocalConfigStore', 'Software', 'Valve', 'Steam', 'apps') ?? {}
+  return childObject(config, 'UserLocalConfigStore', 'Software', 'Valve', 'Steam', 'apps') ?? {}
+}
+
+/** Minutes Steam has counted for an app id (a shortcut's is filed under its id as a signed 32-bit number). */
+function minutesPlayed(apps: VdfObject, id: string): number {
+  const entry = apps[id]
+  return Number(typeof entry === 'object' ? childString(entry, 'Playtime') : undefined) || 0
+}
+
+/** Installed Steam games (tools excluded), with when each was last played and for how long. */
+export async function steamGames(steamRoot: string, userDir: string): Promise<SteamGame[]> {
+  const apps = await localApps(userDir)
   const games: SteamGame[] = []
   for (const [appid, title] of await installedGames(steamRoot)) {
     const entry = apps[appid]
     const lastPlayed = Number(typeof entry === 'object' ? childString(entry, 'LastPlayed') : undefined) || 0
-    games.push({ appid, title, lastPlayed })
+    games.push({ appid, title, lastPlayed, playtime: minutesPlayed(apps, appid) })
   }
   return games
 }
@@ -124,6 +139,7 @@ export async function playedSteamGames(steamRoot: string, userDir: string): Prom
       title: game.title,
       platform: 'steam',
       lastPlayed: game.lastPlayed,
+      playtime: game.playtime,
       art: await steamGameArt(steamRoot, userDir, game.appid)
     }))
   )
@@ -164,6 +180,7 @@ export async function playedShortcuts(userDir: string): Promise<Played[]> {
     return []
   }
   const gridDir = join(userDir, 'config', 'grid')
+  const apps = await localApps(userDir)
 
   const played: Played[] = []
   for (const entry of Object.values(childObject(vdf, 'shortcuts') ?? {})) {
@@ -178,6 +195,7 @@ export async function playedShortcuts(userDir: string): Promise<Played[]> {
       title,
       platform: SERVICES.find(([pattern]) => pattern.test(title) || pattern.test(`${title} ${exe}`))?.[1] ?? 'steam',
       lastPlayed,
+      playtime: minutesPlayed(apps, String(appid | 0)),
       art: gridArt(gridDir, String(appid))
     })
   }

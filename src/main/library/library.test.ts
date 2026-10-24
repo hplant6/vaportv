@@ -81,10 +81,11 @@ async function fakeSteam(): Promise<{ root: string; user: string }> {
 			{
 				"apps"
 				{
-					"10"	{ "LastPlayed"	"${now - DAY}" }
+					"10"	{ "LastPlayed"	"${now - DAY}"	"Playtime"	"754" }
 					"20"	{ "LastPlayed"	"${now - DAY}" }
 					"30"	{ "LastPlayed"	"${now - 90 * DAY}" }
 					"40"	{ "LastPlayed"	"${now - DAY}" }
+					"-294967296"	{ "Playtime"	"95" }
 				}
 			}
 		}
@@ -105,7 +106,9 @@ async function fakeSteam(): Promise<{ root: string; user: string }> {
         '1': { appid: 222, AppName: 'steamtv', Exe: '"/home/deck/Applications/steamtv.AppImage"', LastPlayTime: now },
         '2': { appid: 333, appname: 'EmulationStationDE', exe: '"/x/es-de.sh"', LastPlayTime: now },
         '3': { appid: 444, AppName: 'The Witcher 3', Exe: '"/games/witcher3"', LastPlayTime: now - 3 * DAY },
-        '4': { appid: 555, AppName: 'Never Played', Exe: '"/x"', LastPlayTime: 0 }
+        '4': { appid: 555, AppName: 'Never Played', Exe: '"/x"', LastPlayTime: 0 },
+        // Steam files a shortcut's play time under its id as a signed 32-bit number.
+        '5': { appid: 4000000000, AppName: 'Hades', Exe: '"/games/hades"', LastPlayTime: now - 4 * DAY }
       }
     })
   )
@@ -132,6 +135,8 @@ describe('steam library', () => {
     const games = await playedSteamGames(root, user)
     expect(games.map((g) => g.title).sort()).toEqual(['Dead Island 2', 'Old Game'])
     expect(games.find((g) => g.title === 'Dead Island 2')?.art.portrait).toMatch(/abc123\/library_600x900\.jpg$/)
+    expect(games.map((g) => [g.title, g.playtime])).toContainEqual(['Dead Island 2', 754])
+    expect(games.find((g) => g.title === 'Old Game')?.playtime).toBe(0)
   })
 
   it('reads shortcuts, skipping launchers and never-played entries', async () => {
@@ -139,9 +144,11 @@ describe('steam library', () => {
     const shortcuts = await playedShortcuts(user)
     expect(shortcuts.map((s) => [s.title, s.platform])).toEqual([
       ['Emby Theater', 'emby'],
-      ['The Witcher 3', 'steam']
+      ['The Witcher 3', 'steam'],
+      ['Hades', 'steam']
     ])
     expect(shortcuts[1].art.portrait).toMatch(/444p\.png$/)
+    expect(shortcuts.map((s) => s.playtime)).toEqual([0, 0, 95])
   })
 
   it('recognises streaming shortcuts by name without catching games', async () => {
@@ -187,7 +194,9 @@ describe('steam library', () => {
   it('merges games and shortcuts newest first', async () => {
     const { root } = await fakeSteam()
     const recents = await loadRecents({ steamRoot: root }, NOW)
-    expect(recents.map((r) => r.title)).toEqual(['Dead Island 2', 'Emby Theater', 'The Witcher 3'])
+    expect(recents.map((r) => r.title)).toEqual(['Dead Island 2', 'Emby Theater', 'The Witcher 3', 'Hades'])
+    // Play time shows where Steam has counted some.
+    expect(recents.map((r) => r.playtime)).toEqual([754, undefined, undefined, 95])
   })
 })
 
@@ -267,8 +276,8 @@ describe('collections', () => {
       ])
     )
     const games = [
-      { appid: '1', title: 'Played game', lastPlayed: 100 },
-      { appid: '2', title: 'New game', lastPlayed: 0 }
+      { appid: '1', title: 'Played game', lastPlayed: 100, playtime: 5 },
+      { appid: '2', title: 'New game', lastPlayed: 0, playtime: 0 }
     ]
     const byId = Object.fromEntries((await readCollections(user)).map((c) => [c.id, c]))
     const titles = (id: string): string[] => collectionGames(byId[id], games).map((g) => g.title)

@@ -17,6 +17,7 @@ async function steamItem(root: string, userDir: string, game: SteamGame): Promis
     title: game.title,
     platform: 'steam',
     lastPlayed: game.lastPlayed ? isoDate(game.lastPlayed) : undefined,
+    playtime: game.playtime || undefined,
     cover: art.portrait && artUrl(art.portrait),
     wide: art.wide && artUrl(art.wide)
   }

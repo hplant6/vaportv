@@ -28,7 +28,7 @@ import { ps3Games } from './ps3Tab'
 import { switchGames } from './switchTab'
 import home from '../../../fixtures/home.json'
 import { customAppFor, customApps } from '../customApps'
-import { readHistory } from '../history'
+import { minutes, readHistory, readPlaytime } from '../history'
 import { xbox360Games } from './xbox360Tab'
 
 const DEFAULT_RECENT_DAYS = 30
@@ -94,13 +94,14 @@ export function toRecentItem(played: Played, tiles: Record<string, string> = {})
   const tile = tiles[played.platform]
   // Streaming apps without a poster (from Steam or SteamGridDB) fall back to their tile.
   if (tile && !played.art.portrait) {
-    return { id: played.id, title: played.title, platform: played.platform, lastPlayed: isoDate(played.lastPlayed), wide: tile }
+    return { id: played.id, title: played.title, platform: played.platform, lastPlayed: isoDate(played.lastPlayed), playtime: played.playtime || undefined, wide: tile }
   }
   return {
     id: played.id,
     title: played.title,
     platform: played.platform,
     lastPlayed: isoDate(played.lastPlayed),
+    playtime: played.playtime || undefined,
     cover: played.art.portrait && artUrl(played.art.portrait)
   }
 }
@@ -117,10 +118,11 @@ export function pickRecent(played: Played[], now: number, days: number, limit: n
 /** Apps vaporTV opened directly (no Steam shortcut, so Steam has no play time for them). */
 async function playedApps(config: Config): Promise<Played[]> {
   const names = new Map<string, string>([...home.apps, ...home.moreApps, ...customApps(config)].map((app) => [app.id, app.name]))
+  const playtime = await readPlaytime()
   return Object.entries(await readHistory()).flatMap(([id, at]) => {
     const app = id.startsWith('app:') ? id.slice(4) : null
     const name = app && names.get(app)
-    return name ? [{ id, title: name, platform: app, lastPlayed: at, art: {} }] : []
+    return name ? [{ id, title: name, platform: app, lastPlayed: at, playtime: minutes(playtime[id]), art: {} }] : []
   })
 }
 

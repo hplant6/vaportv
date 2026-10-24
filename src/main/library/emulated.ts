@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import type { LibraryTab, RecentItem, SteamLayout } from '../../shared/types'
 import type { Config } from '../config'
-import { readFavorites, readHistory } from '../history'
+import { minutes, readFavorites, readHistory, readPlaytime } from '../history'
 import { artUrl } from './art'
 import { isoDate } from './dates'
 import type { Played } from './steam'
@@ -42,7 +42,8 @@ async function art(game: EmulatedGame): Promise<Played['art']> {
   return { portrait: cached.portrait, wide: cached.wide ?? local }
 }
 
-export async function emulatedItem(game: EmulatedGame, lastPlayed?: number, favorite = false): Promise<RecentItem> {
+/** `played`: seconds vaporTV has timed it running. */
+export async function emulatedItem(game: EmulatedGame, lastPlayed?: number, favorite = false, played?: number): Promise<RecentItem> {
   const { portrait, wide } = await art(game)
   return {
     id: game.id,
@@ -50,6 +51,7 @@ export async function emulatedItem(game: EmulatedGame, lastPlayed?: number, favo
     platform: game.platform,
     favorite,
     lastPlayed: lastPlayed ? isoDate(lastPlayed) : undefined,
+    playtime: minutes(played),
     cover: portrait && artUrl(portrait),
     wide: wide && artUrl(wide)
   }
@@ -61,7 +63,8 @@ export async function emulatedTab(games: EmulatedGame[], layout: SteamLayout, re
   if (!games.length) return { layout, recentsLayout, rows: [] }
   const history = await readHistory()
   const favorites = await readFavorites()
-  const items = await Promise.all(games.map((game) => emulatedItem(game, history[game.id], favorites.includes(game.id))))
+  const playtime = await readPlaytime()
+  const items = await Promise.all(games.map((game) => emulatedItem(game, history[game.id], favorites.includes(game.id), playtime[game.id])))
   const byId = new Map(items.map((item) => [item.id, item]))
   const favorite = favorites.map((id) => byId.get(id)).filter((item) => item !== undefined)
   const recent = items.filter((item) => history[item.id]).sort((a, b) => history[b.id] - history[a.id])
@@ -75,6 +78,7 @@ export async function emulatedTab(games: EmulatedGame[], layout: SteamLayout, re
 /** Games steamtv has launched, for Recents. */
 export async function playedEmulated(games: EmulatedGame[]): Promise<Played[]> {
   const history = await readHistory()
+  const playtime = await readPlaytime()
   return Promise.all(
     games
       .filter((game) => history[game.id])
@@ -83,6 +87,7 @@ export async function playedEmulated(games: EmulatedGame[]): Promise<Played[]> {
         title: game.title,
         platform: game.platform,
         lastPlayed: history[game.id],
+        playtime: minutes(playtime[game.id]),
         art: await art(game)
       }))
   )
