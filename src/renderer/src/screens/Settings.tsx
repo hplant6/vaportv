@@ -21,7 +21,7 @@ import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
 import { toast } from '../components/Toast'
-import logo from '../assets/screensaver-logo.png'
+import { GlitchLogo } from '../components/GlitchLogo'
 import { PlaylistDialog } from '../components/PlaylistDialog'
 import { ChevronIcon, PlayIcon, StopIcon } from '../components/icons'
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
@@ -1265,7 +1265,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
       <section className="settings">
         <div className="settings-sidebar">
-          <img className="settings-logo" src={logo} alt="vaporTV" />
+          <GlitchLogo className="settings-logo" />
           <h2 className="settings-title display">Settings</h2>
           <div className="settings-categories" data-focus-memory="settings-categories" data-nav-scope="">
             {CATEGORIES.map((c, i) => (

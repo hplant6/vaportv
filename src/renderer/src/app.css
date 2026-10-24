@@ -1391,11 +1391,117 @@ button {
 }
 
 /* The logo in the empty left of the sidebar, level with the last category. */
-.settings-logo {
+.settings-sidebar .settings-logo {
   position: absolute;
   left: 135px;
   bottom: 102px;
   width: 220px;
+}
+
+/* ── Glitch logo (GlitchLogo.tsx), after cbanlawi's Glitch Text pen ──
+   Sized in em so the pen's offsets (0.05em…) carry over: 1em is about the logo's height. */
+.glitch-logo {
+  position: relative;
+  aspect-ratio: 841 / 227;
+  font-size: 60px;
+}
+
+.glitch-layer,
+.glitch-ghost,
+.glitch-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The pen's text-shadows: the logo's shape, filled with each colour, behind the white logo. */
+.glitch-ghost {
+  -webkit-mask: var(--glitch-logo) center / contain no-repeat;
+  mask: var(--glitch-logo) center / contain no-repeat;
+}
+
+.glitch-cyan {
+  background: #00fffc;
+}
+
+.glitch-magenta {
+  background: #fc00ff;
+}
+
+.glitch-yellow {
+  background: #fffc00;
+}
+
+.glitch-main .glitch-cyan {
+  animation: glitch-cyan 725ms infinite;
+}
+
+.glitch-main .glitch-magenta {
+  animation: glitch-magenta 725ms infinite;
+}
+
+.glitch-main .glitch-yellow {
+  animation: glitch-yellow 725ms infinite;
+}
+
+/* The pen's two spans: the top and bottom thirds, nudged apart, on faster beats. */
+.glitch-top {
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  transform: translate(-0.04em, -0.03em);
+  opacity: 0.75;
+}
+
+.glitch-top .glitch-cyan {
+  animation: glitch-cyan 500ms infinite;
+}
+
+.glitch-top .glitch-magenta {
+  animation: glitch-magenta 500ms infinite;
+}
+
+.glitch-top .glitch-yellow {
+  animation: glitch-yellow 500ms infinite;
+}
+
+.glitch-bottom {
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  transform: translate(0.04em, 0.03em);
+  opacity: 0.75;
+}
+
+.glitch-bottom .glitch-cyan {
+  animation: glitch-cyan 375ms infinite;
+}
+
+.glitch-bottom .glitch-magenta {
+  animation: glitch-magenta 375ms infinite;
+}
+
+.glitch-bottom .glitch-yellow {
+  animation: glitch-yellow 375ms infinite;
+}
+
+/* Each colour's offsets from the pen's keyframes (hold, jump at 16%, 50% and 100%). */
+@keyframes glitch-cyan {
+  0%, 15% { transform: translate(0.05em, 0); }
+  16%, 49% { transform: translate(-0.05em, -0.025em); }
+  50%, 99% { transform: translate(0.05em, 0.035em); }
+  100% { transform: translate(-0.05em, 0); }
+}
+
+@keyframes glitch-magenta {
+  0%, 15% { transform: translate(-0.03em, -0.04em); }
+  16%, 49% { transform: translate(0.025em, 0.035em); }
+  50%, 99% { transform: translate(0.03em, 0); }
+  100% { transform: translate(-0.025em, -0.04em); }
+}
+
+@keyframes glitch-yellow {
+  0%, 15% { transform: translate(0.025em, 0.04em); }
+  16%, 49% { transform: translate(-0.05em, -0.05em); }
+  50%, 99% { transform: translate(0, -0.04em); }
+  100% { transform: translate(-0.04em, -0.025em); }
 }
 
 .settings-title {
