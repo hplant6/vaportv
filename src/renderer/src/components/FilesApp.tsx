@@ -78,6 +78,14 @@ function FileIcon({ entry, big = false }: { entry: BrowseEntry; big?: boolean })
   )
 }
 
+/**
+ * Scrolls the list (only) so `row` sits in its middle. Not scrollIntoView: that scrolls every
+ * ancestor that can, the stage included, which then stays shifted up with a gap below.
+ */
+function centre(box: HTMLElement | null, row: HTMLElement): void {
+  if (box) box.scrollTop = row.offsetTop - (box.clientHeight - row.offsetHeight) / 2
+}
+
 /** Mounted once in App; shows the browser while it's open. */
 export function FilesApp() {
   const [from, setFrom] = useState<HTMLElement | null>(null)
@@ -240,7 +248,7 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
                   data-select-sound="move"
                   data-path={e.path}
                   onFocus={(event) => {
-                    event.currentTarget.scrollIntoView({ block: 'center' })
+                    centre(list.current, event.currentTarget)
                     setFocused(e)
                   }}
                   onClick={() => open(e)}
