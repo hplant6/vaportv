@@ -80,7 +80,7 @@
     {
       "id": "files",
       "name": "Files",
-      "tile": ""
+      "tile": "fixtures/tiles/files.png"
     }
   ],
   "platformLogos": {
