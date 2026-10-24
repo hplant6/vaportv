@@ -53,7 +53,7 @@ export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
         <div className="recent-text">
           <div className="recent-title">{item.title}</div>
           <div className="recent-date">
-            {item.lastPlayed ? formatDate(item.lastPlayed) : 'Not played yet'}
+            {item.lastPlayed ? formatDate(item.lastPlayed) : 'Unplayed'}
             {item.playtime ? (
               <>
                 {/* Total time played, after the date. */}
