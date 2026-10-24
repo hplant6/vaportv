@@ -2251,7 +2251,8 @@ button {
   flex: none;
   display: flex;
   gap: 16px;
-  padding: 8px 0 14px 80px;
+  /* Level with the left edge of the file's highlight. */
+  padding: 8px 0 14px;
 }
 
 .files-action {
@@ -2272,15 +2273,16 @@ button {
   background: var(--color-focus-tint);
 }
 
-/* Paste: the first row while something's cut or copied, with Cancel beside it. */
+/* Paste: the first row while something's cut or copied, with Cancel beside it, ruled off from
+   the folder's files. A dashed gold box, so it reads as an action, not one more file. */
 .files-paste {
   flex: none;
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--color-panel-line);
-  padding-bottom: 8px;
+  margin-bottom: 18px;
+  padding: 4px 0 18px;
+  border-bottom: 2px solid var(--color-panel-line);
 }
 
 .files-paste-row {
@@ -2288,10 +2290,55 @@ button {
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  border: 2px dashed rgba(238, 150, 13, 0.55);
+  background: rgba(238, 150, 13, 0.05);
+}
+
+.files-paste-row:focus {
+  border-style: solid;
+  border-color: var(--color-accent);
 }
 
 .files-paste-row .files-icon {
   stroke: var(--color-accent);
+  opacity: 1;
+}
+
+.files-paste-label {
+  flex: none;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+
+/* The file waiting, in plain type inside a tag. */
+.files-paste-file {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  font-family: var(--font-body);
+  font-size: 18px;
+}
+
+.files-paste-kind {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #000;
+  background: var(--color-accent);
+}
+
+.files-paste-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.85;
 }
 
 .files-paste-progress {

@@ -66,11 +66,13 @@ const ICONS: Record<string, string> = {
   image: 'M4.5 4h15A1.5 1.5 0 0 1 21 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-13A1.5 1.5 0 0 1 4.5 4zM3 16l5-5 4 4 3-3 6 6M15.5 8.5h.01',
   video: 'M4.5 5h11A1.5 1.5 0 0 1 17 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 17.5v-11A1.5 1.5 0 0 1 4.5 5zM17 10l4-2.5v9L17 14',
   audio: 'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
-  other: 'M6.5 3H14l5 5v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3zM14 3v5h5'
+  other: 'M6.5 3H14l5 5v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-15A1.5 1.5 0 0 1 6.5 3zM14 3v5h5',
+  paste: 'M9 3.5h6v3H9zM9 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H15M12 10v7M9 14l3 3 3-3'
 }
 
-function FileIcon({ entry, big = false }: { entry: BrowseEntry; big?: boolean }) {
-  const shape = entry.kind === 'file' ? (entry.media ?? 'other') : entry.kind
+/** An entry's icon, or `shape` for one that isn't (the paste row's clipboard). */
+function FileIcon({ entry, shape: given, big = false }: { entry?: BrowseEntry; shape?: string; big?: boolean }) {
+  const shape = given ?? (entry!.kind === 'file' ? (entry!.media ?? 'other') : entry!.kind)
   return (
     <svg className={`files-icon${big ? ' big' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
       <path d={ICONS[shape]} />
@@ -323,11 +325,14 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
                   onFocus={(event) => onRowFocus(event.currentTarget, null)}
                   onClick={paste}
                 >
-                  <FileIcon entry={clip.entry} />
-                  <span className="setting-name display">
-                    {pasting !== null ? `${clip.move ? 'Moving' : 'Copying'} ${clip.entry.name}…` : `Paste ${clip.entry.name} here`}
+                  <FileIcon shape="paste" />
+                  <span className="files-paste-label display">{pasting !== null ? (clip.move ? 'Moving…' : 'Copying…') : 'Paste here'}</span>
+                  {/* What's waiting: told apart from the files below by its own font, in a tag. */}
+                  <span className="files-paste-file">
+                    <span className="files-paste-kind">{clip.move ? 'Cut' : 'Copied'}</span>
+                    <span className="files-paste-name">{clip.entry.name}</span>
                   </span>
-                  <span className="setting-detail">{pasting !== null ? `${pasting}%` : clip.move ? 'Moves it here' : 'Copies it here'}</span>
+                  {pasting !== null && <span className="setting-detail">{pasting}%</span>}
                   {pasting !== null && <span className="files-paste-progress" style={{ width: `${pasting}%` }} />}
                 </button>
                 {pasting === null && (
