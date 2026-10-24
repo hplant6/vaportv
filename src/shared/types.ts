@@ -604,6 +604,10 @@ export interface SteamTvApi {
   browseFiles(dir: string | null, kind: BrowseKind): Promise<BrowseEntry[]>
   /** The Files app: an address the page can show or play a file from. */
   openFile(path: string): Promise<string>
+  /** The Files app: copies a file into a folder, or moves it there (`move`); resolves with where it went. */
+  pasteFile(source: string, folder: string, move: boolean): Promise<string>
+  /** A paste's progress, in whole percents. */
+  onPasteProgress(callback: (percent: number) => void): () => void
   /** Copies a picture or video in as one of your own backdrops; returns its file name. */
   addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{

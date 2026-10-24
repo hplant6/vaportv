@@ -27,6 +27,12 @@ const api: SteamTvApi = {
   },
   browseFiles: (dir, kind) => ipcRenderer.invoke('files:browse', dir, kind),
   openFile: (path) => ipcRenderer.invoke('files:open', path),
+  pasteFile: (source, folder, move) => ipcRenderer.invoke('files:paste', source, folder, move),
+  onPasteProgress: (callback) => {
+    const listener = (_event: unknown, percent: number): void => callback(percent)
+    ipcRenderer.on('files:pasteProgress', listener)
+    return () => ipcRenderer.removeListener('files:pasteProgress', listener)
+  },
   addBackdrop: (path) => ipcRenderer.invoke('backdrops:add', path),
   removeBackdrop: (file) => ipcRenderer.invoke('backdrops:remove', file),
   setBackdropShuffleOff: (files) => ipcRenderer.invoke('backdrops:shuffleOff', files),

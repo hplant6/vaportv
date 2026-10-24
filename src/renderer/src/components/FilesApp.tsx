@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type { BrowseEntry } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, OWN_DIRECTION_EVENT, TRAP_CLOSE_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
@@ -7,10 +7,12 @@ import { play } from '../input/sounds'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { toast } from './Toast'
 
 // The Files app (its tile is in Apps): everything in the home folders and on any USB drive or
 // SD card, full screen. Places on the left as Settings' categories are; the folder on the
-// right, with a look at the file the cursor is on; A on a picture, video or song opens it.
+// right. A on a file shows Open · Cut · Copy under it; something cut or copied can be pasted
+// from a row at the top of any folder. Open shows a picture, video or song full screen.
 
 /** AppTile fires this for the Files tile (detail: the tile, to come back to). */
 export const FILES_EVENT = 'steamtv:files'
@@ -21,8 +23,6 @@ const PAGE_ROWS = 8
 const SEEK_S = 10
 /** The viewer's bar fades this long after the last press, while something plays. */
 const BAR_MS = 3500
-/** The preview waits for the cursor to settle, so scrolling a long folder doesn't load every file. */
-const PREVIEW_DELAY_MS = 150
 
 const MEDIA_NAME = { image: 'Picture', video: 'Video', audio: 'Song' } as const
 
@@ -47,7 +47,7 @@ function typeName(entry: BrowseEntry): string {
 function detail(entry: BrowseEntry): string {
   if (entry.kind === 'folder') return 'Folder'
   if (entry.kind === 'drive') return 'Drive'
-  return [typeName(entry), entry.size !== undefined && size(entry.size)].filter(Boolean).join(' · ')
+  return [typeName(entry), entry.size !== undefined && size(entry.size), entry.modified && date(entry.modified)].filter(Boolean).join(' · ')
 }
 
 function clock(s: number): string {
@@ -103,6 +103,15 @@ export function FilesApp() {
   return from ? <FilesBrowser onClose={close} /> : null
 }
 
+/** What's been cut or copied, waiting to be pasted. Kept while Files is closed and opened again. */
+interface Clip {
+  entry: BrowseEntry
+  move: boolean
+}
+let clipboard: Clip | null = null
+
+const folderOf = (path: string): string => path.slice(0, path.lastIndexOf('/')) || '/'
+
 function FilesBrowser({ onClose }: { onClose: () => void }) {
   const root = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLDivElement>(null)
@@ -111,13 +120,24 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
   const [trail, setTrail] = useState<BrowseEntry[]>([])
   const [entries, setEntries] = useState<BrowseEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [focused, setFocused] = useState<BrowseEntry | null>(null)
+  // Bumped to read the folder again (after a paste).
+  const [reload, setReload] = useState(0)
+  // The file whose Open · Cut · Copy show under it.
+  const [actionsFor, setActionsFor] = useState<string | null>(null)
+  const [clip, setClipState] = useState<Clip | null>(clipboard)
+  // A paste under way: how far, in percent.
+  const [pasting, setPasting] = useState<number | null>(null)
   // The file open in the viewer, as an index into this folder's files.
   const [viewing, setViewing] = useState<number | null>(null)
   // Coming back out of a folder (or the viewer), the cursor goes to what it was on.
   const returnTo = useRef<string | null>(null)
   const here = trail[trail.length - 1] ?? null
   const files = entries?.filter((e) => e.kind === 'file') ?? []
+
+  const setClip = (next: Clip | null): void => {
+    clipboard = next
+    setClipState(next)
+  }
 
   useEffect(() => {
     window.steamtv
@@ -139,11 +159,12 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
     if (!here) return
     setEntries(null)
     setError(null)
+    setActionsFor(null)
     window.steamtv
       .browseFiles(here.path, 'all')
       .then(setEntries)
       .catch((err: unknown) => setError(errorText(err)))
-  }, [here])
+  }, [here, reload])
 
   // Back in a folder: the cursor on the folder (or file) just left. Into a new one, its first row.
   useEffect(() => {
@@ -160,7 +181,23 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
     }
   }, [entries, viewing])
 
+  // A on a file: the cursor onto Open, under it.
+  useEffect(() => {
+    if (actionsFor) {
+      const first = list.current?.querySelector<HTMLElement>('.files-actions .files-action')
+      if (first) focus(first)
+    }
+  }, [actionsFor])
+
   const placeButton = (): HTMLElement | null => root.current?.querySelector<HTMLElement>('.files-place.active') ?? null
+  const rowFor = (path: string): HTMLElement | null => list.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(path)}"]`) ?? null
+
+  /** Closes Open · Cut · Copy, the cursor back on their file. */
+  const closeActions = (): void => {
+    const row = actionsFor && rowFor(actionsFor)
+    setActionsFor(null)
+    if (row) focus(row)
+  }
 
   useEffect(() => {
     const onBack = (): void => {
@@ -168,6 +205,7 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
         returnTo.current = files[viewing]?.path ?? null
         return setViewing(null)
       }
+      if (actionsFor) return closeActions()
       const inList = list.current?.contains(document.activeElement)
       if (inList && trail.length > 1) {
         returnTo.current = here!.path
@@ -180,7 +218,7 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
     // L1/R1: a page up or down the list.
     const onPage = (event: Event): void => {
       if (viewing !== null) return
-      const rows = [...(list.current?.querySelectorAll<HTMLElement>('[data-focusable]') ?? [])]
+      const rows = [...(list.current?.querySelectorAll<HTMLElement>('.files-row') ?? [])]
       const at = rows.indexOf(document.activeElement as HTMLElement)
       if (at < 0) return
       const next = rows[Math.max(0, Math.min(rows.length - 1, at + (event as CustomEvent<number>).detail * PAGE_ROWS))]
@@ -195,11 +233,48 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
       window.removeEventListener(TRAP_CLOSE_EVENT, onBack)
       window.removeEventListener(TRAP_TAB_EVENT, onPage)
     }
-  }, [viewing, files, trail, here, onClose])
+  })
 
-  const open = (entry: BrowseEntry): void => {
+  const choose = (entry: BrowseEntry): void => {
     if (entry.kind !== 'file') return setTrail((t) => [...t, entry])
-    setViewing(files.indexOf(entry))
+    setActionsFor(entry.path)
+  }
+
+  const take = (entry: BrowseEntry, move: boolean): void => {
+    setClip({ entry, move })
+    toast(`${move ? 'Cut' : 'Copied'} ${entry.name}. Paste it at the top of any folder.`)
+    closeActions()
+  }
+
+  const paste = (): void => {
+    if (!clip || !here || pasting !== null) return
+    if (clip.move && folderOf(clip.entry.path) === here.path) {
+      toast(`${clip.entry.name} is already here`)
+      return setClip(null)
+    }
+    const { entry, move } = clip
+    setPasting(0)
+    const off = window.steamtv.onPasteProgress(setPasting)
+    window.steamtv
+      .pasteFile(entry.path, here.path, move)
+      .then((target) => {
+        toast(`${move ? 'Moved' : 'Copied'} ${entry.name}`)
+        // A copy can be pasted again; something moved is gone from where it was.
+        if (move) setClip(null)
+        returnTo.current = target
+        setReload((n) => n + 1)
+      })
+      .catch((err: unknown) => toast(errorText(err)))
+      .finally(() => {
+        off()
+        setPasting(null)
+      })
+  }
+
+  // The cursor leaving a file and its actions closes them.
+  const onRowFocus = (row: HTMLElement, path: string | null): void => {
+    centre(list.current, row)
+    if (actionsFor && path !== actionsFor) setActionsFor(null)
   }
 
   return (
@@ -236,31 +311,96 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
         <div className="settings-group files-group">
           <h3 className="settings-heading display">{here?.name ?? 'Files'}</h3>
           <p className="settings-help files-path">{here ? `${here.path}${entries ? ` · ${entries.length} ${entries.length === 1 ? 'item' : 'items'}` : ''}` : ''}</p>
-          <div className="files-body">
-            <div className="files-list browse-list" ref={list} data-nav-scope="" data-nav-left=".files-place.active">
-              {error && <p className="settings-help">{error}</p>}
-              {entries && entries.length === 0 && !error && <p className="settings-help">Nothing here.</p>}
-              {entries?.map((e) => (
+          <div className="files-list browse-list" ref={list} data-nav-scope="" data-nav-left=".files-place.active">
+            {clip && here && (
+              <div className="files-paste">
                 <button
-                  key={e.path}
-                  className="setting-row files-row"
+                  id="files-paste"
+                  className="setting-row files-row files-paste-row"
+                  tabIndex={-1}
+                  data-focusable=""
+                  data-select-sound="move"
+                  onFocus={(event) => onRowFocus(event.currentTarget, null)}
+                  onClick={paste}
+                >
+                  <FileIcon entry={clip.entry} />
+                  <span className="setting-name display">
+                    {pasting !== null ? `${clip.move ? 'Moving' : 'Copying'} ${clip.entry.name}…` : `Paste ${clip.entry.name} here`}
+                  </span>
+                  <span className="setting-detail">{pasting !== null ? `${pasting}%` : clip.move ? 'Moves it here' : 'Copies it here'}</span>
+                  {pasting !== null && <span className="files-paste-progress" style={{ width: `${pasting}%` }} />}
+                </button>
+                {pasting === null && (
+                  <button
+                    className="files-action display"
+                    tabIndex={-1}
+                    data-focusable=""
+                    data-select-sound="move"
+                    data-nav-left="#files-paste"
+                    onFocus={(event) => onRowFocus(event.currentTarget, null)}
+                    onClick={() => {
+                      setClip(null)
+                      toast('Nothing to paste now')
+                      const first = list.current?.querySelector<HTMLElement>('.files-row')
+                      if (first) focus(first)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            )}
+            {error && <p className="settings-help">{error}</p>}
+            {entries && entries.length === 0 && !error && <p className="settings-help">Nothing here.</p>}
+            {entries?.map((e) => (
+              <Fragment key={e.path}>
+                <button
+                  className={`setting-row files-row${clip?.move && clip.entry.path === e.path ? ' cut' : ''}${actionsFor === e.path ? ' chosen' : ''}`}
                   tabIndex={-1}
                   data-focusable=""
                   data-select-sound="move"
                   data-path={e.path}
-                  onFocus={(event) => {
-                    centre(list.current, event.currentTarget)
-                    setFocused(e)
-                  }}
-                  onClick={() => open(e)}
+                  onFocus={(event) => onRowFocus(event.currentTarget, e.path)}
+                  onClick={() => (actionsFor === e.path ? closeActions() : choose(e))}
                 >
                   <FileIcon entry={e} />
                   <span className="setting-name display">{e.name}</span>
                   <span className="setting-detail">{detail(e)}</span>
                 </button>
-              ))}
-            </div>
-            <Preview entry={focused && entries?.includes(focused) ? focused : null} />
+                {actionsFor === e.path && (
+                  <div className="files-actions">
+                    {(
+                      [
+                        [
+                          'Open',
+                          () => {
+                            setActionsFor(null)
+                            setViewing(files.indexOf(e))
+                          }
+                        ],
+                        ['Cut', () => take(e, true)],
+                        ['Copy', () => take(e, false)]
+                      ] as const
+                    ).map(([name, run], i, all) => (
+                      <button
+                        key={name}
+                        className="files-action display"
+                        tabIndex={-1}
+                        data-focusable=""
+                        data-select-sound="move"
+                        // Left goes along the actions; from the first, to the places.
+                        {...(i > 0 ? { 'data-nav-left': `.files-action[data-action="${all[i - 1][0]}"]` } : {})}
+                        data-action={name}
+                        onFocus={(event) => onRowFocus(event.currentTarget, e.path)}
+                        onClick={run}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Fragment>
+            ))}
           </div>
         </div>
       </div>
@@ -270,47 +410,21 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** A file's own address, once the cursor has settled on it (null while it loads, or for a folder). */
-function useFileUrl(entry: BrowseEntry | null, delay = 0): string | null {
+/** A file's own address (null while it loads, or for one vaporTV can't show). */
+function useFileUrl(entry: BrowseEntry): string | null {
   const [url, setUrl] = useState<{ path: string; url: string } | null>(null)
   useEffect(() => {
-    if (!entry?.media) return
+    if (!entry.media) return
     let live = true
-    const timer = setTimeout(() => {
-      window.steamtv
-        .openFile(entry.path)
-        .then((u) => live && setUrl({ path: entry.path, url: u }))
-        .catch(() => undefined)
-    }, delay)
+    window.steamtv
+      .openFile(entry.path)
+      .then((u) => live && setUrl({ path: entry.path, url: u }))
+      .catch(() => undefined)
     return () => {
       live = false
-      clearTimeout(timer)
     }
-  }, [entry, delay])
-  return entry && url?.path === entry.path ? url.url : null
-}
-
-/** Beside the list: the picture, a silent look at the video, or what the file is. */
-function Preview({ entry }: { entry: BrowseEntry | null }) {
-  const url = useFileUrl(entry, PREVIEW_DELAY_MS)
-  if (!entry) return <div className="files-preview" />
-  return (
-    <div className="files-preview">
-      <div className="files-preview-frame">
-        {entry.media === 'image' && url && <img key={url} src={url} alt="" />}
-        {entry.media === 'video' && url && <video key={url} src={url} muted autoPlay loop playsInline />}
-        {(entry.kind !== 'file' || entry.media === 'audio' || !entry.media) && (
-          <FileIcon entry={entry} big />
-        )}
-      </div>
-      <p className="files-preview-name display">{entry.name}</p>
-      <p className="settings-help">
-        {entry.kind === 'file'
-          ? [typeName(entry), entry.size !== undefined && size(entry.size), entry.modified && date(entry.modified)].filter(Boolean).join(' · ')
-          : detail(entry)}
-      </p>
-    </div>
-  )
+  }, [entry])
+  return url?.path === entry.path ? url.url : null
 }
 
 /**

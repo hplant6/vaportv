@@ -1,5 +1,7 @@
-import { copyFile, mkdir, readdir, stat } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { copyFile, mkdir, readdir, rename, stat, unlink, utimes } from 'node:fs/promises'
+import { createReadStream, createWriteStream, existsSync } from 'node:fs'
+import { Transform } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { homedir, userInfo } from 'node:os'
 import { basename, dirname, extname, join, resolve, sep } from 'node:path'
 import type { BrowseEntry, BrowseKind } from '../shared/types'
@@ -112,10 +114,62 @@ export async function copyInto(source: string, folder: string): Promise<string> 
   // Already there (picked from vaporTV's own folder): nothing to copy.
   if (resolve(dirname(source)) === resolve(folder)) return source
   await mkdir(folder, { recursive: true })
+  const target = freeName(source, folder)
+  await copyFile(source, target)
+  return target
+}
+
+/** Where `source` goes in `folder` without overwriting one of the same name ("Name (2)"). */
+function freeName(source: string, folder: string): string {
   const ext = extname(source)
   const stem = basename(source, ext)
   let target = join(folder, basename(source))
   for (let n = 2; existsSync(target); n++) target = join(folder, `${stem} (${n})${ext}`)
-  await copyFile(source, target)
+  return target
+}
+
+/**
+ * The Files app's paste: copies a file into `folder`, or moves it (`move`), never overwriting
+ * ("Name (2)"). A move on the same drive is a rename; between drives it's a copy, then the
+ * original goes. Copies are written under a hidden name and renamed when whole, so a failed
+ * one leaves nothing behind. `progress` gets whole percents. Returns where it went.
+ */
+export async function pasteFile(source: string, folder: string, move: boolean, progress: (percent: number) => void = () => {}): Promise<string> {
+  const from = resolve(source)
+  const into = resolve(folder)
+  if (!allowed(from) || !(await stat(from)).isFile()) throw new Error("vaporTV can't paste that file")
+  if (!allowed(into) || !(await stat(into)).isDirectory()) throw new Error("vaporTV can't paste into that folder")
+  // Cut and pasted where it already is: nothing to do.
+  if (move && dirname(from) === into) return from
+  const target = freeName(from, into)
+  if (move) {
+    try {
+      await rename(from, target)
+      return target
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err
+    }
+  }
+  const info = await stat(from)
+  const part = join(into, `.${basename(target)}.part`)
+  let done = 0
+  let shown = -1
+  const count = new Transform({
+    transform(chunk: Buffer, _encoding, next) {
+      done += chunk.length
+      const percent = info.size ? Math.floor((done / info.size) * 100) : 100
+      if (percent !== shown) progress((shown = percent))
+      next(null, chunk)
+    }
+  })
+  try {
+    await pipeline(createReadStream(from), count, createWriteStream(part, { flags: 'wx' }))
+    await utimes(part, info.atime, info.mtime)
+    await rename(part, target)
+  } catch (err) {
+    await unlink(part).catch(() => undefined)
+    throw err
+  }
+  if (move) await unlink(from)
   return target
 }

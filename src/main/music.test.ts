@@ -1,8 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { browseFiles, openFile, wasOpened } from './browse'
+import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { currentMusic, importMusic, musicChoices, musicTracks } from './music'
 
 // The browser and importer only touch home and drive mounts, so the fixture lives in home.
@@ -92,6 +93,25 @@ describe('background music', () => {
       ['notes.txt', 'file', undefined]
     ])
     expect(all.find((e) => e.name === 'New tune.mp3')).toMatchObject({ size: 4, modified: expect.any(Number) })
+  })
+
+  it('pastes a copy beside a same-named file, and moves one, leaving no part file', async () => {
+    const into = join(root, 'Pasted')
+    await mkdir(into)
+    const seen: number[] = []
+    expect(await pasteFile(join(source, 'notes.txt'), into, false, (p) => seen.push(p))).toBe(join(into, 'notes.txt'))
+    expect(seen.at(-1)).toBe(100)
+    expect(await pasteFile(join(source, 'notes.txt'), into, false)).toBe(join(into, 'notes (2).txt'))
+    expect(existsSync(join(source, 'notes.txt'))).toBe(true)
+    await writeFile(join(source, 'move me.txt'), 'm')
+    expect(await pasteFile(join(source, 'move me.txt'), into, true)).toBe(join(into, 'move me.txt'))
+    expect(existsSync(join(source, 'move me.txt'))).toBe(false)
+    expect(await readFile(join(into, 'move me.txt'), 'utf8')).toBe('m')
+    // Cut and pasted where it is: left alone.
+    expect(await pasteFile(join(into, 'move me.txt'), into, true)).toBe(join(into, 'move me.txt'))
+    expect((await readdir(into)).sort()).toEqual(['move me.txt', 'notes (2).txt', 'notes.txt'])
+    await expect(pasteFile(join(source, 'notes.txt'), '/etc', false)).rejects.toThrow()
+    await expect(pasteFile('/etc/hostname', into, false)).rejects.toThrow()
   })
 
   it('lets the page load only files the Files app opened, from home and the drives', async () => {

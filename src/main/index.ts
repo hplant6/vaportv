@@ -55,7 +55,7 @@ import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
 import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
-import { browseFiles, openFile, wasOpened } from './browse'
+import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -617,6 +617,11 @@ ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKi
   browseFiles(dir, kind, kind === 'all' ? [] : [musicFolder(await loadConfig()), BACKDROP_FOLDER])
 )
 ipcMain.handle('files:open', (_event, path: string) => openFile(path))
+ipcMain.handle('files:paste', (event, source: string, folder: string, move: boolean) =>
+  pasteFile(source, folder, move, (percent) => {
+    if (!event.sender.isDestroyed()) event.sender.send('files:pasteProgress', percent)
+  })
+)
 ipcMain.handle('backdrops:add', (_event, path: string) => addBackdrop(path))
 ipcMain.handle('backdrops:remove', (_event, file: string) => removeBackdrop(file))
 ipcMain.handle('backdrops:shuffleOff', (_event, files: string[]) => saveConfig({ backdropShuffleOff: files }))
