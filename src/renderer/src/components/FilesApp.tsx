@@ -225,6 +225,7 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
                 if (first) focus(first)
               }}
             >
+              {p.kind === 'drive' && <FileIcon entry={p} />}
               <span className="files-place-name">{p.name}</span>
             </button>
           ))}

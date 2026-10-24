@@ -2112,6 +2112,22 @@ button {
   scrollbar-width: none;
 }
 
+/* A drive's icon before its name. */
+.files-place {
+  gap: 14px;
+}
+
+.files-place .files-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.files-place:focus .files-icon,
+.files-place.active .files-icon {
+  stroke: var(--color-accent);
+  opacity: 1;
+}
+
 .files-place-name {
   overflow: hidden;
   white-space: nowrap;
