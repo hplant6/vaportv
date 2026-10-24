@@ -1398,110 +1398,108 @@ button {
   width: 220px;
 }
 
-/* ── Glitch logo (GlitchLogo.tsx), after cbanlawi's Glitch Text pen ──
-   Sized in em so the pen's offsets (0.05em…) carry over: 1em is about the logo's height. */
+/* ── Glitch logo (GlitchLogo.tsx), after leon9208's glitch pen ──
+   The logo stays put; two copies nudged 2px apart, each with a coloured edge, show through
+   bands that slide over it (the pen's clip rects, as fractions of its 150px text). */
 .glitch-logo {
   position: relative;
   aspect-ratio: 841 / 227;
-  font-size: 60px;
 }
 
+.glitch-logo .glitch-face,
 .glitch-layer,
-.glitch-ghost,
-.glitch-face {
+.glitch-ghost {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-/* The pen's text-shadows: the logo's shape, filled with each colour, behind the white logo. */
+/* The pen's text-shadow: the logo's shape in a colour, 2px left of its copy. */
 .glitch-ghost {
   -webkit-mask: var(--glitch-logo) center / contain no-repeat;
   mask: var(--glitch-logo) center / contain no-repeat;
+  transform: translateX(-2px);
 }
 
-.glitch-cyan {
-  background: #00fffc;
+.glitch-before {
+  transform: translateX(2px);
+  clip-path: inset(16% 0 40% 0);
+  animation: glitch-band-2 2.5s infinite linear alternate-reverse;
 }
 
-.glitch-magenta {
-  background: #fc00ff;
+.glitch-before .glitch-ghost {
+  background: #49fc00;
 }
 
-.glitch-yellow {
-  background: #fffc00;
+.glitch-after {
+  transform: translateX(-2px);
+  clip-path: inset(56.7% 0 6.7% 0);
+  animation: glitch-band 2.5s infinite linear alternate-reverse;
 }
 
-.glitch-main .glitch-cyan {
-  animation: glitch-cyan 725ms infinite;
+.glitch-after .glitch-ghost {
+  background: #b300fc;
 }
 
-.glitch-main .glitch-magenta {
-  animation: glitch-magenta 725ms infinite;
+@keyframes glitch-band {
+  0% { clip-path: inset(73.3% 0 50.7% 0); }
+  4.17% { clip-path: inset(90.0% 0 4.7% 0); }
+  8.33% { clip-path: inset(66.7% 0 33.3% 0); }
+  12.5% { clip-path: inset(25.3% 0 84.0% 0); }
+  16.67% { clip-path: inset(83.3% 0 44.7% 0); }
+  20.83% { clip-path: inset(99.3% 0 58.0% 0); }
+  25% { clip-path: inset(8.0% 0 30.7% 0); }
+  29.17% { clip-path: inset(45.3% 0 95.3% 0); }
+  33.33% { clip-path: inset(51.3% 0 86.7% 0); }
+  37.5% { clip-path: inset(66.0% 0 96.0% 0); }
+  41.67% { clip-path: inset(18.0% 0 34.0% 0); }
+  45.83% { clip-path: inset(38.7% 0 28.7% 0); }
+  50% { clip-path: inset(72.0% 0 48.7% 0); }
+  54.17% { clip-path: inset(38.7% 0 42.0% 0); }
+  58.33% { clip-path: inset(94.7% 0 25.3% 0); }
+  62.5% { clip-path: inset(82.7% 0 16.7% 0); }
+  66.67% { clip-path: inset(40.7% 0 64.7% 0); }
+  70.83% { clip-path: inset(78.0% 0 50.7% 0); }
+  75% { clip-path: inset(14.0% 0 50.7% 0); }
+  79.17% { clip-path: inset(78.0% 0 53.3% 0); }
+  83.33% { clip-path: inset(58.0% 0 18.7% 0); }
+  87.5% { clip-path: inset(63.3% 0 94.0% 0); }
+  91.67% { clip-path: inset(80.7% 0 50.0% 0); }
+  95.83% { clip-path: inset(80.7% 0 23.3% 0); }
+  100% { clip-path: inset(67.3% 0 52.0% 0); }
 }
 
-.glitch-main .glitch-yellow {
-  animation: glitch-yellow 725ms infinite;
-}
-
-/* The pen's two spans: the top and bottom thirds, nudged apart, on faster beats. */
-.glitch-top {
-  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
-  transform: translate(-0.04em, -0.03em);
-  opacity: 0.75;
-}
-
-.glitch-top .glitch-cyan {
-  animation: glitch-cyan 500ms infinite;
-}
-
-.glitch-top .glitch-magenta {
-  animation: glitch-magenta 500ms infinite;
-}
-
-.glitch-top .glitch-yellow {
-  animation: glitch-yellow 500ms infinite;
-}
-
-.glitch-bottom {
-  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
-  transform: translate(0.04em, 0.03em);
-  opacity: 0.75;
-}
-
-.glitch-bottom .glitch-cyan {
-  animation: glitch-cyan 375ms infinite;
-}
-
-.glitch-bottom .glitch-magenta {
-  animation: glitch-magenta 375ms infinite;
-}
-
-.glitch-bottom .glitch-yellow {
-  animation: glitch-yellow 375ms infinite;
-}
-
-/* Each colour's offsets from the pen's keyframes (hold, jump at 16%, 50% and 100%). */
-@keyframes glitch-cyan {
-  0%, 15% { transform: translate(0.05em, 0); }
-  16%, 49% { transform: translate(-0.05em, -0.025em); }
-  50%, 99% { transform: translate(0.05em, 0.035em); }
-  100% { transform: translate(-0.05em, 0); }
-}
-
-@keyframes glitch-magenta {
-  0%, 15% { transform: translate(-0.03em, -0.04em); }
-  16%, 49% { transform: translate(0.025em, 0.035em); }
-  50%, 99% { transform: translate(0.03em, 0); }
-  100% { transform: translate(-0.025em, -0.04em); }
-}
-
-@keyframes glitch-yellow {
-  0%, 15% { transform: translate(0.025em, 0.04em); }
-  16%, 49% { transform: translate(-0.05em, -0.05em); }
-  50%, 99% { transform: translate(0, -0.04em); }
-  100% { transform: translate(-0.04em, -0.025em); }
+@keyframes glitch-band-2 {
+  6.67% { clip-path: inset(50.7% 0 12.0% 0); }
+  10% { clip-path: inset(8.7% 0 45.3% 0); }
+  13.33% { clip-path: inset(64.7% 0 98.7% 0); }
+  16.67% { clip-path: inset(0.7% 0 2.0% 0); }
+  20% { clip-path: inset(75.3% 0 17.3% 0); }
+  23.33% { clip-path: inset(88.0% 0 13.3% 0); }
+  26.67% { clip-path: inset(80.0% 0 78.7% 0); }
+  30% { clip-path: inset(1.3% 0 93.3% 0); }
+  33.33% { clip-path: inset(50.7% 0 69.3% 0); }
+  36.67% { clip-path: inset(93.3% 0 47.3% 0); }
+  40% { clip-path: inset(24.7% 0 55.3% 0); }
+  43.33% { clip-path: inset(88.7% 0 36.7% 0); }
+  46.67% { clip-path: inset(4.0% 0 89.3% 0); }
+  50% { clip-path: inset(65.3% 0 18.0% 0); }
+  53.33% { clip-path: inset(28.0% 0 41.3% 0); }
+  56.67% { clip-path: inset(51.3% 0 26.7% 0); }
+  60% { clip-path: inset(14.7% 0 3.3% 0); }
+  63.33% { clip-path: inset(31.3% 0 50.0% 0); }
+  66.67% { clip-path: inset(72.7% 0 10.0% 0); }
+  70% { clip-path: inset(78.7% 0 73.3% 0); }
+  73.33% { clip-path: inset(49.3% 0 6.0% 0); }
+  76.67% { clip-path: inset(39.3% 0 33.3% 0); }
+  80% { clip-path: inset(9.3% 0 78.7% 0); }
+  83.33% { clip-path: inset(14.7% 0 81.3% 0); }
+  86.67% { clip-path: inset(70.7% 0 50.7% 0); }
+  90% { clip-path: inset(22.0% 0 35.3% 0); }
+  93.33% { clip-path: inset(62.7% 0 80.7% 0); }
+  96.67% { clip-path: inset(72.0% 0 42.0% 0); }
+  100% { clip-path: inset(3.3% 0 90.7% 0); }
 }
 
 .settings-title {
