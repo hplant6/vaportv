@@ -74,7 +74,8 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
   return (
     <>
       <ClockCorner side="left" />
-      <nav className={`nav${open ? ' more-open' : ''}`} onBlur={onBlur}>
+      {/* Up from More's row goes to the tab above, and down from a tab to the one below it. */}
+      <nav className={`nav${open ? ' more-open' : ''}`} onBlur={onBlur} data-focus-direct="">
         <img className="nav-line" src={navLine} alt="" />
         {/* The lower line, drawn here so it can drop down to make room for More's row. */}
         <svg className="nav-line-lower" width="1848" height="96" viewBox="0 0 1848 96" fill="none" aria-hidden="true">
@@ -149,8 +150,6 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
             className="nav-more-list"
             data-focus-memory="nav-more"
             data-back-focus="#nav-more"
-            // Up from anywhere in the row goes back to More, not whatever tab is above.
-            data-nav-up="#nav-more"
             aria-hidden={!open}
             onFocus={() => setMoreOpen(true)}
           >

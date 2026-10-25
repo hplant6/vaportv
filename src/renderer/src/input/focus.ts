@@ -124,9 +124,12 @@ export function move(direction: Direction, source: InputSource): void {
   if (!target) return
 
   // Re-entering a row returns to where you were in it; a container's own target
-  // (a pane's category) is exact, so it isn't swapped for that.
+  // (a pane's category) is exact, so it isn't swapped for that. Nor is a move between
+  // rows inside a data-focus-direct container (the bar and More's row): it goes to what
+  // lies that way.
   const group = memoryGroup(target)
-  if (group && group !== memoryGroup(from) && !(named && fromContainer)) {
+  const direct = from.closest('[data-focus-direct]')
+  if (group && group !== memoryGroup(from) && !(named && fromContainer) && !(direct && direct.contains(target))) {
     const last = remembered.get(group)
     if (last?.isConnected) target = last
   }
