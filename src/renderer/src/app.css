@@ -1118,7 +1118,7 @@ button {
   top: 56px;
   right: 64px;
   z-index: 1;
-  /* Henry's colour logo, 10% smaller than the outline one it replaced (240px). */
+  /* The same chromatic-aberration logo as Settings, in the same place for every style. */
   width: 216px;
   opacity: 0.85;
   transition: transform 2s ease;
@@ -1406,11 +1406,11 @@ button {
   padding: 10px 43px 16px;
 }
 
-/* The logo in the empty left of the sidebar, level with the last category. */
+/* The logo in the empty left of the sidebar, level with the Settings title. */
 .settings-sidebar .settings-logo {
   position: absolute;
   left: 135px;
-  bottom: 102px;
+  top: 22px;
   width: 220px;
 }
 

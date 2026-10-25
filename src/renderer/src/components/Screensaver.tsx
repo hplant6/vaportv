@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '../../../shared/types'
 import { idleMs, keptAwake, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
-import logo from '../assets/screensaver-logo.png'
+import { AberrationLogo } from './AberrationLogo'
 
 /** Settings fires this after changing the delay, or to preview the screensaver (detail: 'preview'). */
 export const SCREENSAVER_EVENT = 'steamtv:screensaver'
@@ -207,7 +207,7 @@ const randomSpot = (): React.CSSProperties => {
 /** How far the logo may wander from its corner, in px: too little to see, enough not to burn in. */
 const LOGO_SHIFT = 8
 
-/** vaporTV's logo in the top-right corner, nudged every minute so it never sits still on the panel. */
+/** vaporTV's logo (the chromatic-aberration one) in the top-right corner, nudged every minute so it never sits still on the panel. */
 function ScreensaverLogo() {
   const now = useNow()
   const shift = useRef({ x: 0, y: 0 })
@@ -217,7 +217,11 @@ function ScreensaverLogo() {
     const step = (): number => Math.round((Math.random() * 2 - 1) * LOGO_SHIFT)
     shift.current = { x: step(), y: step() }
   }
-  return <img className="screensaver-logo" src={logo} alt="vaporTV" style={{ transform: `translate(${shift.current.x}px, ${shift.current.y}px)` }} />
+  return (
+    <div className="screensaver-logo" style={{ transform: `translate(${shift.current.x}px, ${shift.current.y}px)` }}>
+      <AberrationLogo />
+    </div>
+  )
 }
 
 /** The game a picture comes from: its logo where there is one, else its name. */
