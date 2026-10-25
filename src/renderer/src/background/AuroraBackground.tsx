@@ -3,10 +3,8 @@ import { NOISE, startShaderBackdrop, type Looks } from './shaderBackdrop'
 import layer0 from '../assets/aurora/layer0.svg'
 import layer1 from '../assets/aurora/layer1.svg'
 import layer2 from '../assets/aurora/layer2.svg'
-import layer3 from '../assets/aurora/layer3.svg'
-import layer4 from '../assets/aurora/layer4.svg'
 
-// Northern Lights: aurora curtains over mountains and pine forest, mirrored in a still lake.
+// Northern Lights: aurora curtains over pine forest, mirrored in a still lake.
 // The aurora comes out after dark; by day it's the same shore under a winter sky. The sky,
 // aurora and water are one shader; the land is Henry's SVG layers, drawn at the screen's
 // own resolution and handed to the shader as textures.
@@ -14,14 +12,16 @@ import layer4 from '../assets/aurora/layer4.svg'
 /** The layers' artboard, in artboard pixels. */
 const ART_W = 1920
 const ART_H = 1080
-/** Where the far shore meets the water: the bottom of layers 1 to 4. */
-const WATERLINE = 693.8
-/** The bottom of the near shore (layer 0), which stands in the water in front. */
-const NEAR_SHORE = 743.4
+/** Where the far shore meets the water: a little above the bottom of layers 1 and 2
+ * (693.8), so the sky doesn't show through two notches in layer 2's bottom edge. */
+const WATERLINE = 691
+/** Where the near shore (layer 0), which stands in the water in front, is mirrored: a
+ * little above its bottom edge (743.4), which is ragged, so no water shows through. */
+const NEAR_SHORE = 741.4
 /** The waterline in screen units from the middle (height = 1), where it is on the artboard. */
 const HORIZON = 0.5 - WATERLINE / ART_H
 
-/** A layer and where it sits on the artboard (layer 2 was exported cropped to its own height). */
+/** A layer and where it sits on the artboard. */
 interface Layer {
   src: string
   top: number
@@ -29,9 +29,7 @@ interface Layer {
 }
 
 const FAR: Layer[] = [
-  { src: layer4, top: 0, height: ART_H },
-  { src: layer3, top: 0, height: ART_H },
-  { src: layer2, top: WATERLINE - 360.18, height: 360.18 },
+  { src: layer2, top: 0, height: ART_H },
   { src: layer1, top: 0, height: ART_H }
 ]
 const NEAR: Layer[] = [{ src: layer0, top: 0, height: ART_H }]
@@ -129,7 +127,7 @@ vec4 land(sampler2D layer, vec2 uv) {
   return texture2D(layer, (uv * uR.y + 0.5 * uR) / uR);
 }
 
-// The scene above the water line at uv: sky, then the far mountains and forest.
+// The scene above the water line at uv: sky, then the far forest.
 vec3 scene(vec2 uv) {
   vec4 far = land(uFar, uv);
   if (far.a >= 1.0) return far.rgb * uLand;
@@ -146,7 +144,7 @@ void main() {
     float depth = HORIZON - uv.y;
     col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth)) * 0.55;
     // The near shore's own reflection, mirrored at its foot.
-    float shore = HORIZON - (${NEAR_SHORE} - ${WATERLINE}) * uR.x / ${ART_W.toFixed(1)} / uR.y;
+    float shore = HORIZON - (${NEAR_SHORE.toFixed(1)} - ${WATERLINE.toFixed(1)}) * uR.x / ${ART_W.toFixed(1)} / uR.y;
     if (uv.y < shore) {
       float d = shore - uv.y;
       vec4 mirrored = land(uNear0, vec2(uv.x + ripple * smoothstep(0.0, 0.1, d), shore + d));
@@ -162,7 +160,7 @@ void main() {
 }
 `
 
-/** Northern lights over a lake among mountains, following the time of day. Calls onUnavailable if WebGL can't run it. */
+/** Northern lights over a forest lake, following the time of day. Calls onUnavailable if WebGL can't run it. */
 export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
