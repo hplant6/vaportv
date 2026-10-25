@@ -1001,20 +1001,41 @@ button {
 
 /* Scrolling leans the cards with its speed (scrollTilt.ts): a page's grids about their
    level axis, a row's cards about their upright one. Selecting one tips it the way the
-   cursor moved, in the same sense, springing back (focus.ts marks data-arrive). Each
-   turns about the card's centre, wherever the origin its focus zoom grows from (--pivot
-   is the way there). Only while something moves or on the selected card, so cards at
-   rest aren't each a 3D layer. */
+   cursor moved, in the same sense, springing back (focus.ts marks data-arrive), and then
+   it sways gently while it stays selected. All of it adds up to one turn (--turn-x/y)
+   that the sheen and shadow follow, so they move with the card. Each turns about the
+   card's centre, wherever the origin its focus zoom grows from (--pivot is the way
+   there). Only while something moves or on the selected card, so cards at rest aren't
+   each a 3D layer. */
 @property --tip-x {
   syntax: '<angle>';
-  inherits: false;
+  inherits: true;
   initial-value: 0deg;
 }
 
 @property --tip-y {
   syntax: '<angle>';
-  inherits: false;
+  inherits: true;
   initial-value: 0deg;
+}
+
+@property --sway-x {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+@property --sway-y {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.recent-card,
+.wide-card,
+.app-tile {
+  --turn-x: calc(var(--lean-x, 0rad) + var(--tip-x) + var(--sway-x));
+  --turn-y: calc(var(--lean-y, 0rad) + var(--tip-y) + var(--sway-y));
 }
 
 .wide-card,
@@ -1034,48 +1055,60 @@ button {
 .recent-card:focus,
 .wide-card:focus,
 .app-tile:focus {
-  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px)
-    rotateX(calc(var(--lean-x, 0rad) + var(--tip-x))) rotateY(calc(var(--lean-y, 0rad) + var(--tip-y)))
+  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateX(var(--turn-x)) rotateY(var(--turn-y))
     translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
 }
 
-/* Each tips the edge it's heading for back, as the row or page leans while moving that
-   way, then swings a little past flat and settles. */
-:is(.recent-card, .wide-card, .app-tile):focus[data-arrive] {
-  animation: 720ms ease-in-out;
+/* The selected card's shadow falls away from the edge that comes forward, as if lit from
+   in front. */
+.recent-card:focus,
+.wide-card:focus,
+.app-tile:focus {
+  box-shadow: calc(var(--turn-y) / 1deg * -3px) calc(144px + var(--turn-x) / 1deg * 4px) 38.4px 0 rgba(0, 0, 0, 0.49);
+  animation: sway-y 6.4s 720ms infinite, sway-x 9.2s 720ms infinite;
 }
 
-:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='right'] { animation-name: tip-right; }
-:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='left'] { animation-name: tip-left; }
-:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='down'] { animation-name: tip-down; }
-:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='up'] { animation-name: tip-up; }
+/* Each tips the edge it's heading for back, as the row or page leans while moving that
+   way, then swings a little past flat and settles before the sway takes over. */
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='right'] { animation: tip-right 720ms ease-in-out, sway-y 6.4s 720ms infinite, sway-x 9.2s 720ms infinite; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='left'] { animation: tip-left 720ms ease-in-out, sway-y 6.4s 720ms infinite, sway-x 9.2s 720ms infinite; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='down'] { animation: tip-down 720ms ease-in-out, sway-y 6.4s 720ms infinite, sway-x 9.2s 720ms infinite; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='up'] { animation: tip-up 720ms ease-in-out, sway-y 6.4s 720ms infinite, sway-x 9.2s 720ms infinite; }
 
 @keyframes tip-right { 0% { --tip-y: 0deg; } 16% { --tip-y: 9deg; } 50% { --tip-y: -2deg; } 76% { --tip-y: 0.6deg; } 100% { --tip-y: 0deg; } }
 @keyframes tip-left { 0% { --tip-y: 0deg; } 16% { --tip-y: -9deg; } 50% { --tip-y: 2deg; } 76% { --tip-y: -0.6deg; } 100% { --tip-y: 0deg; } }
 @keyframes tip-down { 0% { --tip-x: 0deg; } 16% { --tip-x: -7deg; } 50% { --tip-x: 1.6deg; } 76% { --tip-x: -0.5deg; } 100% { --tip-x: 0deg; } }
 @keyframes tip-up { 0% { --tip-x: 0deg; } 16% { --tip-x: 7deg; } 50% { --tip-x: -1.6deg; } 76% { --tip-x: 0.5deg; } 100% { --tip-x: 0deg; } }
 
-/* A light sheen sweeps across the selected card once, as off glossy plastic. */
-.recent-card::after,
-.wide-card::after,
-.app-tile::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.24) 48%, rgba(255, 255, 255, 0.06) 56%, transparent 70%);
-  translate: -100% 0;
+/* A slow sine-like rock, the two axes at unrelated periods so it never repeats exactly. */
+@keyframes sway-y {
+  0% { --sway-y: 0deg; animation-timing-function: ease-out; }
+  25% { --sway-y: 1.6deg; animation-timing-function: ease-in; }
+  50% { --sway-y: 0deg; animation-timing-function: ease-out; }
+  75% { --sway-y: -1.6deg; animation-timing-function: ease-in; }
+  100% { --sway-y: 0deg; }
 }
 
+@keyframes sway-x {
+  0% { --sway-x: 0deg; animation-timing-function: ease-out; }
+  25% { --sway-x: -1.1deg; animation-timing-function: ease-in; }
+  50% { --sway-x: 0deg; animation-timing-function: ease-out; }
+  75% { --sway-x: 1.1deg; animation-timing-function: ease-in; }
+  100% { --sway-x: 0deg; }
+}
+
+/* A light sheen on the selected card, placed by its turn: it slides across as the card
+   tips and drifts with the sway, brighter the further it's turned. */
 .recent-card:focus::after,
 .wide-card:focus::after,
 .app-tile:focus::after {
-  animation: card-sheen 900ms cubic-bezier(0.3, 0.1, 0.2, 1) 60ms both;
-}
-
-@keyframes card-sheen {
-  from { translate: -100% 0; }
-  to { translate: 100% 0; }
+  content: '';
+  position: absolute;
+  inset: 0 -60%;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.15) 48%, rgba(255, 255, 255, 0.04) 54%, transparent 62%);
+  translate: calc(var(--turn-y) / 1deg * 4%) calc(var(--turn-x) / 1deg * -3%);
+  opacity: min(1, calc((abs(var(--turn-x)) + abs(var(--turn-y))) / 1deg * 0.16));
 }
 
 .wide-card img {
