@@ -6,8 +6,9 @@
 //   2. close Steam, add or update the "vaporTV" non-Steam shortcut (launch options and
 //      library art included), and note its ids for the autostart script
 //   3. install the Gaming Mode autostart service (optional)
-//   4. with the admin password (one prompt): the controller wake rule (optional), and
-//      the Chrome policy that installs vaporTV for Netflix (when Netflix is set up)
+//   4. with the admin password (one prompt): the controller wake rule (optional), the
+//      Chrome policy that installs vaporTV for Netflix (when Netflix is set up), and the
+//      keep list that carries both through SteamOS updates
 
 import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -42,6 +43,12 @@ const ICON = join(homedir(), '.local', 'share', 'steamtv', 'vaportv.png')
 const WAKE_RULE = '/etc/udev/rules.d/90-vaportv-controller-wake.rules'
 /** Earlier hand-installed rule (the developer's box); left alone if present. */
 const OLD_WAKE_RULE = '/etc/udev/rules.d/90-steamtv-controller-wake.rules'
+/**
+ * SteamOS updates throw away every change in /etc that isn't on their keep list
+ * (/usr/lib/rauc/atomic-update-keep.conf), moving it to /etc/previous: the 3.9.5 update
+ * took the wake rule and the Netflix policy. Drop-ins here add to that list.
+ */
+const KEEP_LIST = '/etc/atomic-update.conf.d/vaportv.conf'
 /** A shortcut that's vaporTV: by name, or by the AppImage it runs. */
 const OURS = /(steamtv|vaportv)[^/]*\.AppImage/i
 
@@ -261,10 +268,16 @@ const WAKE_RULE_TEXT = [
   ''
 ].join('\n')
 
+const KEEP_LIST_TEXT = ['## vaporTV: keep its wake rule and Netflix policy through SteamOS updates', WAKE_RULE, NETFLIX_POLICY, ''].join('\n')
+
+async function keepListCurrent(): Promise<boolean> {
+  return (await readFile(KEEP_LIST, 'utf8').catch(() => '')) === KEEP_LIST_TEXT
+}
+
 /**
  * What needs root, under one password prompt: the wake rule (with wake enabled on the USB
- * root hubs, switching a controller on, its receiver reconnecting, wakes the box) and the
- * Chrome policy that installs vaporTV for Netflix.
+ * root hubs, switching a controller on, its receiver reconnecting, wakes the box), the
+ * Chrome policy that installs vaporTV for Netflix, and the keep list for both.
  */
 async function adminStep(wake: boolean, netflix: boolean, report: Report): Promise<void> {
   if (wake && (existsSync(OLD_WAKE_RULE) || (await readFile(WAKE_RULE, 'utf8').catch(() => '')) === WAKE_RULE_TEXT)) {
@@ -273,8 +286,11 @@ async function adminStep(wake: boolean, netflix: boolean, report: Report): Promi
   }
   const policy = netflix && !(await netflixPolicyCurrent()) ? await netflixPolicy() : null
   if (netflix && !policy) report('Netflix remote control is already set up')
-  if (!wake && !policy) return
-  const what = [wake && 'controller wake', policy && 'Netflix remote control'].filter(Boolean).join(' and ')
+  // Also for a box set up before there was a keep list, once either file is in place.
+  const keep = (wake || !!policy || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
+  if (!wake && !policy && !keep) return
+  const what =
+    [wake && 'controller wake', policy && 'Netflix remote control'].filter(Boolean).join(' and ') || 'keeping your setup through SteamOS updates'
   // SteamOS comes without a password for its user, and the admin prompt needs one.
   const status = await run('passwd', ['-S']).then(
     ({ stdout }) => stdout,
@@ -297,6 +313,10 @@ async function adminStep(wake: boolean, netflix: boolean, report: Report): Promi
   if (policy) {
     await writeFile(join(temp, 'policy.json'), policy)
     steps.push(`install -D -m 644 ${join(temp, 'policy.json')} ${NETFLIX_POLICY}`)
+  }
+  if (keep) {
+    await writeFile(join(temp, 'keep.conf'), KEEP_LIST_TEXT)
+    steps.push(`install -D -m 644 ${join(temp, 'keep.conf')} ${KEEP_LIST}`)
   }
   report(`Asking for your password to set up ${what}…`)
   const done = await run('pkexec', ['sh', '-c', steps.join(' && ')]).then(
@@ -367,7 +387,8 @@ export async function uninstall(report: Report): Promise<void> {
   if (rootFiles.length) {
     const what = rootFiles.map(([, name]) => name).join(' and ')
     report(`Asking for your password to remove ${what}…`)
-    await run('pkexec', ['rm', '-f', ...rootFiles.map(([file]) => file)]).then(
+    const files = [...rootFiles.map(([file]) => file), ...(existsSync(KEEP_LIST) ? [KEEP_LIST] : [])]
+    await run('pkexec', ['rm', '-f', ...files]).then(
       () => report(`Removed ${what}`),
       () => report(`Couldn't remove ${what} (no password given)`)
     )

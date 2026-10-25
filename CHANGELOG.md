@@ -39,6 +39,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Games without art show their name on a black band across the card.
 
 ### Fixed
+- Controller and remote wake, and Netflix remote control, now survive SteamOS updates, which had been quietly removing them (3.9.5 did). If yours stopped working after an update, run setup again from Desktop Mode.
 - Your videos no longer freeze on their last frame: videos (and music) are served so they can seek, which MP4s with their index at the end need to loop.
 - Titles with the article moved to the end before a subtitle read properly: "The Legend of Zelda - The Wind Waker", not "Legend of Zelda, The - …".
 - When a game is there both released and as a beta or demo, its tab opens the released one.
