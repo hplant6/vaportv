@@ -18,6 +18,11 @@ const NAMES: Record<ClockWidget, string> = {
   gpuTemp: 'GPU temperature'
 }
 
+const UNITS: { id: ClockCorners['sensorUnit']; name: string; detail: string }[] = [
+  { id: 'celsius', name: 'Celsius', detail: '°C' },
+  { id: 'fahrenheit', name: 'Fahrenheit', detail: '°F' }
+]
+
 /**
  * Settings → Home: what each corner of the top bar shows, one choice per corner, each row
  * showing the layout itself (live, as that corner draws it) in place of a description.
@@ -33,6 +38,13 @@ export function ClockSettings() {
   const choose = (side: Side, id: ClockWidget | null): void => {
     if (!corners || (corners[side][0] ?? null) === id) return
     const next = { ...corners, [side]: id ? [id] : [] }
+    setCorners(next)
+    window.steamtv.clock.set(next).then(() => window.dispatchEvent(new Event(CLOCK_CHANGED_EVENT)))
+  }
+
+  const chooseUnit = (unit: ClockCorners['sensorUnit']): void => {
+    if (!corners || corners.sensorUnit === unit) return
+    const next = { ...corners, sensorUnit: unit }
     setCorners(next)
     window.steamtv.clock.set(next).then(() => window.dispatchEvent(new Event(CLOCK_CHANGED_EVENT)))
   }
@@ -82,6 +94,29 @@ export function ClockSettings() {
     <>
       {group('left', 'Top left corner')}
       {group('right', 'Top right corner')}
+      <div className="settings-group">
+        <h3 className="settings-heading display">CPU & GPU temperature</h3>
+        <p className="settings-help">Apart from the weather's, which is in General.</p>
+        <div className="setting-list" data-focus-memory="settings-clock-unit">
+          {UNITS.map((u) => (
+            <button
+              key={u.id}
+              className={`setting-row${corners.sensorUnit === u.id ? ' on' : ''}`}
+              tabIndex={-1}
+              role="radio"
+              aria-checked={corners.sensorUnit === u.id}
+              aria-label={u.name}
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => chooseUnit(u.id)}
+            >
+              <span className="radio" aria-hidden="true" />
+              <span className="setting-name display">{u.name}</span>
+              <span className="setting-detail">{u.detail}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </>
   )
 }

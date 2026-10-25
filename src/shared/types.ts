@@ -98,6 +98,8 @@ export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' 
 export interface ClockCorners {
   left: ClockWidget[]
   right: ClockWidget[]
+  /** The CPU and GPU temperatures' unit, apart from the weather's. */
+  sensorUnit: 'celsius' | 'fahrenheit'
 }
 
 /** The box's load and temperatures (°C); null where it can't be read (e.g. not on Linux). */

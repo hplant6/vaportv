@@ -7,11 +7,11 @@ describe('cleanClockCorners', () => {
   })
 
   it('drops unknown layouts', () => {
-    expect(cleanClockCorners({ left: ['nope' as never, 'time'], right: ['date'] })).toEqual({ left: ['time'], right: ['date'] })
+    expect(cleanClockCorners({ left: ['nope' as never, 'time'], right: ['date'] })).toMatchObject({ left: ['time'], right: ['date'] })
   })
 
   it('lets both corners show the same layout', () => {
-    expect(cleanClockCorners({ left: ['time'], right: ['time'] })).toEqual({ left: ['time'], right: ['time'] })
+    expect(cleanClockCorners({ left: ['time'], right: ['time'] })).toMatchObject({ left: ['time'], right: ['time'] })
   })
 
   it('holds no more than a corner has room for', () => {
@@ -19,6 +19,11 @@ describe('cleanClockCorners', () => {
   })
 
   it('treats a missing corner as empty', () => {
-    expect(cleanClockCorners({ left: ['date'] })).toEqual({ left: ['date'], right: [] })
+    expect(cleanClockCorners({ left: ['date'] })).toMatchObject({ left: ['date'], right: [] })
+  })
+
+  it('reads the CPU and GPU in Celsius unless set to Fahrenheit', () => {
+    expect(cleanClockCorners({ left: [] }).sensorUnit).toBe('celsius')
+    expect(cleanClockCorners({ left: [], sensorUnit: 'fahrenheit' }).sensorUnit).toBe('fahrenheit')
   })
 })

@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import type { ClockCorners, ClockWidget, SystemStats, Weather } from '../../../shared/types'
 import { DEFAULT_CLOCK_CORNERS } from '../../../shared/clock'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
@@ -74,10 +74,13 @@ const useStats = (): SystemStats => useSyncExternalStore(statsStore.subscribe, s
 
 const percent = (value: number | null): string => (value === null ? '--' : `${value}%`)
 
-/** A sensor's °C, in the weather's unit so every temperature on the bar agrees. */
-function useDegrees(): (celsius: number | null) => string {
-  const unit = useWeather()?.unit
-  return (celsius) => (celsius === null ? '--' : `${unit === 'fahrenheit' ? Math.round((celsius * 9) / 5 + 32) : celsius}°`)
+/** A temperature with its unit, e.g. "79°F". */
+const degrees = (value: number | null | undefined, unit: 'celsius' | 'fahrenheit'): string =>
+  value === null || value === undefined ? '--' : `${value}°${unit === 'fahrenheit' ? 'F' : 'C'}`
+
+/** A sensor's °C in the unit chosen for the CPU and GPU (Settings → Home), apart from the weather's. */
+function sensorDegrees(celsius: number | null, unit: 'celsius' | 'fahrenheit'): string {
+  return degrees(celsius === null || unit === 'celsius' ? celsius : Math.round((celsius * 9) / 5 + 32), unit)
 }
 
 function timeParts(now: Date): { time: string; meridiem: string } {
@@ -132,10 +135,10 @@ function Battery({ side }: { side: 'left' | 'right' }) {
 export function ClockLayout({ id, side }: { id: ClockWidget; side: 'left' | 'right' }) {
   const now = useNow()
   const weather = useWeather()
-  const degrees = useDegrees()
+  const sensorUnit = useCorners().sensorUnit
   const needsStats = id === 'cpuUsage' || id === 'cpuTemp' || id === 'gpuUsage' || id === 'gpuTemp'
-  const stats = needsStats ? <Stats id={id} side={side} degrees={degrees} /> : null
-  const temp = weather ? `${weather.temperature}°` : '--'
+  const stats = needsStats ? <Stats id={id} side={side} unit={sensorUnit} /> : null
+  const temp = weather ? degrees(weather.temperature, weather.unit) : '--'
 
   switch (id) {
     case 'dateTemp':
@@ -163,8 +166,9 @@ export function ClockLayout({ id, side }: { id: ClockWidget; side: 'left' | 'rig
 }
 
 /** The CPU and GPU layouts, which alone need the stats poll. */
-function Stats({ id, side, degrees }: { id: 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp'; side: 'left' | 'right'; degrees: (c: number | null) => string }) {
+function Stats({ id, side, unit }: { id: 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp'; side: 'left' | 'right'; unit: 'celsius' | 'fahrenheit' }) {
   const stats = useStats()
+  const degrees = (celsius: number | null): string => sensorDegrees(celsius, unit)
   switch (id) {
     case 'cpuUsage':
       return <Layout side={side} big={percent(stats.cpuUsage)} stack={['CPU', degrees(stats.cpuTemp)]} />
@@ -177,22 +181,14 @@ function Stats({ id, side, degrees }: { id: 'cpuUsage' | 'cpuTemp' | 'gpuUsage' 
   }
 }
 
-let corners: ClockCorners = DEFAULT_CLOCK_CORNERS
+const cornersStore = store<ClockCorners>(DEFAULT_CLOCK_CORNERS, (set) => {
+  const load = (): void => void window.steamtv.clock.get().then(set)
+  load()
+  window.addEventListener(CLOCK_CHANGED_EVENT, load)
+  return () => window.removeEventListener(CLOCK_CHANGED_EVENT, load)
+})
 
-function useCorners(): ClockCorners {
-  const [value, setValue] = useState(corners)
-  useEffect(() => {
-    const load = (): void =>
-      void window.steamtv.clock.get().then((next) => {
-        corners = next
-        setValue(next)
-      })
-    load()
-    window.addEventListener(CLOCK_CHANGED_EVENT, load)
-    return () => window.removeEventListener(CLOCK_CHANGED_EVENT, load)
-  }, [])
-  return value
-}
+const useCorners = (): ClockCorners => useSyncExternalStore(cornersStore.subscribe, cornersStore.get)
 
 /** One corner of the top bar. */
 export function ClockCorner({ side }: { side: 'left' | 'right' }) {
