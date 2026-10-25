@@ -111,9 +111,13 @@ function between(looks: Looks, sun: number): [Look, Look, number] {
 
 /**
  * Starts `fragment` (declare the look's uniforms yourself; HEADER's are declared for you) on
- * `canvas`, drawn at `scale` of the stage's size and stretched to fill it. Returns a stop function.
+ * `canvas`, drawn at `scale` of the stage's size and stretched to fill it, or with `native` at
+ * the screen's own pixels (sharp on a 4K TV, where the stage is scaled up). Returns a stop function.
  */
-export function startShaderBackdrop(canvas: HTMLCanvasElement, { fragment, looks, scale = 1 }: { fragment: string; looks: Looks; scale?: number }): () => void {
+export function startShaderBackdrop(
+  canvas: HTMLCanvasElement,
+  { fragment, looks, scale = 1, native = false }: { fragment: string; looks: Looks; scale?: number; native?: boolean }
+): () => void {
   const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' })
   if (!gl) throw new Error('WebGL not supported')
 
@@ -130,8 +134,9 @@ export function startShaderBackdrop(canvas: HTMLCanvasElement, { fragment, looks
   gl.enableVertexAttribArray(position)
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
 
-  canvas.width = Math.round(WIDTH * scale)
-  canvas.height = Math.round(HEIGHT * scale)
+  const pixels = native ? (window.innerWidth * window.devicePixelRatio) / WIDTH : scale
+  canvas.width = Math.round(WIDTH * pixels)
+  canvas.height = Math.round(HEIGHT * pixels)
   gl.viewport(0, 0, canvas.width, canvas.height)
   gl.uniform2f(gl.getUniformLocation(program, 'uR'), canvas.width, canvas.height)
   const uTime = gl.getUniformLocation(program, 'uT')

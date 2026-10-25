@@ -1,44 +1,48 @@
 import { useEffect, useRef } from 'react'
 import { NOISE, startShaderBackdrop, type Looks } from './shaderBackdrop'
 
-// Northern Lights: aurora curtains over snowy mountains and a pine treeline, mirrored in
-// a still lake. All one shader. The aurora comes out after dark; by day it's the same
-// valley under a winter sky.
+// Northern Lights: aurora curtains over a pine treeline, mirrored in a still lake. All one shader. The aurora comes out after dark; by day it's the same
+// shore under a winter sky.
 
 /** Looks by time of day (see shaderBackdrop). */
 const LOOKS: Looks = [
-  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uFar: '#6a6680', uSnow: '#f2c8bc', uNear: '#151b24', uLight: 0.8, uAurora: 0.1 }],
-  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uFar: '#5d6b82', uSnow: '#eef3f8', uNear: '#1a2622', uLight: 1.0, uAurora: 0 }],
-  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uFar: '#5f6680', uSnow: '#f2e4dc', uNear: '#18221f', uLight: 0.95, uAurora: 0 }],
-  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uFar: '#4a4462', uSnow: '#f2b6a2', uNear: '#12161e', uLight: 0.75, uAurora: 0 }],
-  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uFar: '#22243a', uSnow: '#6a6a88', uNear: '#080b12', uLight: 0.45, uAurora: 0.3 }],
-  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uFar: '#0e1626', uSnow: '#3c4c68', uNear: '#03060a', uLight: 0.35, uAurora: 1 }],
-  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uFar: '#0e1626', uSnow: '#3c4c68', uNear: '#03060a', uLight: 0.35, uAurora: 1 }],
-  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uFar: '#24263c', uSnow: '#707090', uNear: '#090c13', uLight: 0.45, uAurora: 0.35 }]
+  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uAurora: 0.1 }],
+  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uAurora: 0 }],
+  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uNear: '#18221f', uAurora: 0 }],
+  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uNear: '#12161e', uAurora: 0 }],
+  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uNear: '#080b12', uAurora: 0.3 }],
+  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uAurora: 1 }],
+  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uAurora: 1 }],
+  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uNear: '#090c13', uAurora: 0.35 }]
 ]
 
 const FRAGMENT = /*glsl*/ `
-uniform vec3 uSkyHigh, uSkyLow, uFar, uSnow, uNear;
-uniform float uLight, uAurora;
+uniform vec3 uSkyHigh, uSkyLow, uNear;
+uniform float uAurora;
 ${NOISE}
 
-// Where the far mountains meet the lake, in screen units from the middle (height = 1).
+// Where the far shore meets the lake, in screen units from the middle (height = 1).
 const float HORIZON = -0.2;
 
-// Aurora: a stack of thin layers above the valley; on each, bright folds where a ridged
+// Aurora: a stack of thin layers above the shore; on each, bright folds where a ridged
 // noise peaks. Low layers are green, the upper ones fade through teal to violet.
+const int LAYERS = 32;
+
 vec3 aurora(vec3 rd) {
   if (rd.y < 0.01) return vec3(0.0);
   vec3 col = vec3(0.0);
-  for (int i = 0; i < 26; i++) {
-    float fi = float(i) / 26.0;
+  // Each pixel starts the stack a random fraction of a layer up, so the layers blend into
+  // one another instead of showing as thin horizontal stripes.
+  float offset = hash2(gl_FragCoord.xy);
+  for (int i = 0; i < LAYERS; i++) {
+    float fi = (float(i) + offset) / float(LAYERS);
     float h = 1.0 + fi * 0.9;
     vec2 p = rd.xz / rd.y * h;
     p.y += uT * 0.012;
     float warp = fbm2(p * vec2(0.3, 0.7) + vec2(uT * 0.02, 0.0));
     float fold = 1.0 - abs(sin(p.x * 0.55 + warp * 4.0 + uT * 0.015));
-    // Fine vertical rays along the curtain, and patches where it's brighter.
-    float rays = 0.6 + 0.4 * vnoise1(p.x * 14.0 + warp * 6.0 + uT * 0.3);
+    // Fine vertical rays along the curtain, and patches where it's brighter. They fade out towards the horizon, where perspective packs them finer than a pixel.
+    float rays = 0.6 + 0.4 * vnoise1(p.x * 14.0 + warp * 6.0 + uT * 0.3) * smoothstep(0.02, 0.12, rd.y);
     float curtain = pow(fold, 6.0) * rays * smoothstep(0.3, 0.7, fbm2(p * 0.18 - vec2(0.0, uT * 0.008)));
     vec3 tint = mix(vec3(0.15, 1.0, 0.5), vec3(0.1, 0.75, 0.8), smoothstep(0.0, 0.5, fi));
     tint = mix(tint, vec3(0.55, 0.25, 0.95), smoothstep(0.45, 1.0, fi));
@@ -46,7 +50,7 @@ vec3 aurora(vec3 rd) {
     col += tint * curtain * (1.0 - fi * 0.8) * (1.0 + 1.5 * (1.0 - smoothstep(0.0, 0.15, fi)));
   }
   // Fades in from the horizon, as the far curtains thin into haze.
-  return col * 0.22 * smoothstep(0.01, 0.2, rd.y);
+  return col * 0.22 * 26.0 / float(LAYERS) * smoothstep(0.01, 0.2, rd.y);
 }
 
 vec3 sky(vec2 uv) {
@@ -65,34 +69,31 @@ vec3 sky(vec2 uv) {
   return col;
 }
 
-// The scene above the water line at uv: sky, far snowy peaks, then the near treeline.
+// The scene above the water line at uv: sky, then the treeline along the far shore.
 vec3 scene(vec2 uv) {
   vec3 col = sky(uv);
-  // Far mountains under snow.
-  float ridge = HORIZON + 0.06 + 0.2 * fbm1(uv.x * 1.6 + 4.0) - 0.05 * abs(uv.x);
-  if (uv.y < ridge) {
-    // Snow all over, brightest up top, with darker gullies running down from the ridge.
-    float height = smoothstep(HORIZON, ridge, uv.y);
-    float gully = smoothstep(0.55, 0.8, fbm1(uv.x * 55.0 + 3.0)) * (1.0 - height * 0.7);
-    vec3 rock = mix(uFar, uSnow, clamp(0.45 + 0.55 * height - 0.35 * gully, 0.0, 1.0)) * uLight;
-    // Haze towards the base, where they meet the far shore.
-    col = mix(rock, uSkyLow, 0.35 * (1.0 - smoothstep(HORIZON, max(ridge - 0.02, HORIZON + 0.001), uv.y)) + 0.15);
-  }
   // Treeline: a low hill crowned with two rows of pines, each tree its own height and
-  // width, with the odd gap.
-  float hill = HORIZON + 0.015 + 0.03 * fbm1(uv.x * 2.5 + 11.0);
-  float trees = 0.0;
+  // width, with the odd gap. Its edge is anti-aliased: the height above the outline,
+  // divided by the outline's slope, is roughly the distance to it in screen units.
+  float top = HORIZON + 0.015 + 0.03 * fbm1(uv.x * 2.5 + 11.0);
+  float slope = 0.0;
+  float hill = top;
   for (int row = 0; row < 2; row++) {
     float r = float(row);
-    float x = uv.x * (26.0 + r * 15.0) + r * 0.37;
+    float freq = 26.0 + r * 15.0;
+    float x = uv.x * freq + r * 0.37;
     float cell = floor(x);
     float spread = 0.55 + 0.4 * hash1(cell * 3.1 + r);
     float c = abs(fract(x) - 0.5) / spread;
     float tall = (0.35 + 0.65 * hash1(cell + r * 17.0)) * step(0.12, hash1(cell * 7.7 + r)) * (1.0 - r * 0.35);
-    trees = max(trees, max(0.0, 1.0 - c * 2.0) * tall);
+    float tree = hill + max(0.0, 1.0 - c * 2.0) * tall * 0.06;
+    if (tree > top) {
+      top = tree;
+      slope = 0.12 * tall * freq / spread;
+    }
   }
-  if (uv.y < hill + trees * 0.06) col = uNear;
-  return col;
+  float dist = (uv.y - top) / sqrt(1.0 + slope * slope);
+  return mix(col, uNear, clamp(0.5 - dist * uR.y, 0.0, 1.0));
 }
 
 void main() {
@@ -106,18 +107,21 @@ void main() {
     col = scene(m) * 0.55;
     col = mix(col, uNear, smoothstep(0.1, 0.3, depth) * 0.6);
   }
+  // A touch of noise, a fraction of one 8-bit step, so the long dark gradients don't band.
+  col += (hash2(gl_FragCoord.xy) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
 }
 `
 
-/** Northern lights over a snowy valley, following the time of day. Calls onUnavailable if WebGL can't run it. */
+/** Northern lights over a lake shore, following the time of day. Calls onUnavailable if WebGL can't run it. */
 export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     try {
-      // The aurora is soft, so it's drawn at 60% size and stretched (its 26 layers are the costly part).
-      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, scale: 0.6 })
+      // Drawn at the screen's own resolution: stretched up from the stage's, the treeline's
+      // edges and the fine rays went soft and stair-stepped.
+      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true })
     } catch (err) {
       console.error('steamtv: northern lights backdrop unavailable:', err)
       onUnavailable()
