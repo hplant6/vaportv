@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, ClockCorners, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -24,6 +24,8 @@ export interface Config {
    * looked up by folderName (default "vaporTV Screensaver").
    */
   googleDrive?: { folderId?: string; folderName?: string }
+  /** What each corner of the top bar shows (default: temperature and date; time and battery). */
+  clockCorners?: ClockCorners
   /** Minutes of no input before the screensaver; 0 turns it off. */
   screensaverDelay?: number
   screensaverStyle?: ScreensaverStyle

@@ -23,7 +23,9 @@ export async function getWeather(): Promise<Weather | null> {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const body = await res.json()
-    const value = { temperature: Math.round(body.current.temperature_2m) }
+    // The town alone: "Long Beach, California" → "Long Beach".
+    const city = weather.place?.split(',')[0].trim() || undefined
+    const value: Weather = { temperature: Math.round(body.current.temperature_2m), unit: weather.unit, city }
     cached = { at: Date.now(), value }
     return value
   } catch (err) {

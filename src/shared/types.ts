@@ -84,6 +84,28 @@ export interface PlaceMatch {
 
 export interface Weather {
   temperature: number
+  unit: 'fahrenheit' | 'celsius'
+  /** The town it's for, e.g. "Long Beach"; absent if not known. */
+  city?: string
+}
+
+/**
+ * What a corner of the top bar can show (Settings → Home), after Henry's Figma set. Each
+ * corner holds a row of them, in order.
+ */
+export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp' | 'battery'
+
+export interface ClockCorners {
+  left: ClockWidget[]
+  right: ClockWidget[]
+}
+
+/** The box's load and temperatures (°C); null where it can't be read (e.g. not on Linux). */
+export interface SystemStats {
+  cpuUsage: number | null
+  cpuTemp: number | null
+  gpuUsage: number | null
+  gpuTemp: number | null
 }
 
 export type LaunchKind = 'recent' | 'app'
@@ -659,6 +681,12 @@ export interface SteamTvApi {
   }
   /** The system's battery, or null for a box without one (controllers' batteries don't count). */
   getBattery(): Promise<BatteryState | null>
+  getSystemStats(): Promise<SystemStats>
+  /** Settings → Home: what each corner of the top bar shows. */
+  clock: {
+    get(): Promise<ClockCorners>
+    set(corners: ClockCorners): Promise<void>
+  }
   /** Settings → Tabs: the tabs with something to show, where each sits (bar, More or off), in order. */
   tabs: {
     get(): Promise<TabArrangement & { off: HideableTab[] }>

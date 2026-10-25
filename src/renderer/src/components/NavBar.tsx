@@ -2,9 +2,7 @@ import { useEffect, useState, type FocusEvent } from 'react'
 import { useTabArrangement } from '../availableTabs'
 import navLine from '../assets/nav-line.svg'
 import { GearIcon, PowerIcon } from './icons'
-import { Clock } from './Clock'
-import { BatteryIndicator } from './BatteryIndicator'
-import { DateWeather } from './DateWeather'
+import { ClockCorner } from './ClockCorner'
 import { PowerMenu } from './PowerMenu'
 import { TAB_LIST } from '../../../shared/tabs'
 import { focus } from '../input/focus'
@@ -75,7 +73,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
   // Settings and power are pinned to either end of the bar; the tabs are centred between them.
   return (
     <>
-      <DateWeather />
+      <ClockCorner side="left" />
       <nav className={`nav${open ? ' more-open' : ''}`} onBlur={onBlur}>
         <img className="nav-line" src={navLine} alt="" />
         {/* The lower line, drawn here so it can drop down to make room for More's row. */}
@@ -173,7 +171,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
           </div>
         )}
       </nav>
-      <Clock battery={<BatteryIndicator />} />
+      <ClockCorner side="right" />
     </>
   )
 }

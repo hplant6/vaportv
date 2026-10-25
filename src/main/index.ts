@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -22,6 +22,8 @@ import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './
 import { INTRO_FOLDER, introSettings } from './intro'
 import { bootVideoSelected, steamJustStarted } from './bootVideo'
 import { systemBattery } from './battery'
+import { systemStats } from './systemStats'
+import { cleanClockCorners } from '../shared/clock'
 import { handleArtScheme, registerArtScheme } from './library/art'
 import { collectionGames, isSupported, readCollections } from './library/collections'
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
@@ -412,6 +414,9 @@ ipcMain.handle('update:install', async (event): Promise<string | null> => {
 })
 
 ipcMain.handle('battery:get', () => systemBattery())
+ipcMain.handle('system-stats:get', () => systemStats())
+ipcMain.handle('clock:get', async () => cleanClockCorners((await loadConfig()).clockCorners))
+ipcMain.handle('clock:set', (_event, corners: ClockCorners) => saveConfig({ clockCorners: cleanClockCorners(corners) }))
 
 // No intro in screenshot runs (they want the page as it settles).
 ipcMain.handle('intro:get', async () => {

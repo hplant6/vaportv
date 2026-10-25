@@ -9,6 +9,7 @@ import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GeneralSettings } from '../components/GeneralSettings'
 import { TabsSettings } from '../components/TabsSettings'
+import { ClockSettings } from '../components/ClockSettings'
 import { BluetoothSettings } from '../components/Bluetooth'
 import { WifiSettings } from '../components/Wifi'
 import { GooglePhotosSettings } from '../components/GooglePhotos'
@@ -618,6 +619,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     tabs: <TabsSettings />,
     home: (
       <>
+        <ClockSettings />
+
         <div className="settings-group">
           <h3 className="settings-heading display">Home recents layout</h3>
           {settings && <RecentsChoice tab="home" value={settings.recentsLayouts.home} onChoose={chooseRecentsLayout} />}

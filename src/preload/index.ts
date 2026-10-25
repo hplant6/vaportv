@@ -59,6 +59,11 @@ const api: SteamTvApi = {
     setUnit: (unit) => ipcRenderer.invoke('location:unit', unit)
   },
   getBattery: () => ipcRenderer.invoke('battery:get'),
+  getSystemStats: () => ipcRenderer.invoke('system-stats:get'),
+  clock: {
+    get: () => ipcRenderer.invoke('clock:get'),
+    set: (corners) => ipcRenderer.invoke('clock:set', corners)
+  },
   tabs: {
     get: () => ipcRenderer.invoke('tabs:settings'),
     set: (arrangement, off) => ipcRenderer.invoke('tabs:set', arrangement, off)

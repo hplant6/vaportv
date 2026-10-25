@@ -134,43 +134,31 @@ button {
 
 /* ── Header ─────────────────────────────────────────── */
 
-/* Its text lines up with the section titles below (37px in); the clock mirrors it on the right. */
-.date-weather {
+/* ── The top bar's corners (ClockCorner.tsx): a row of layouts from Settings → Home ──
+   The left one's text lines up with the section titles below (37px in); the right mirrors it.
+   Sizes from Henry's Figma set: a 56px value, a 32px label or stack top, a 20px stack bottom. */
+.clock-corner {
   position: absolute;
+  top: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.clock-corner.left {
   left: 35.86px;
-  top: 24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 13.45px;
+  transform-origin: left top;
 }
 
-.date-weather .temp {
-  margin-top: 6px;
-  /* Closer to the date than the bar's other gaps: the same space as between the time and am/pm. */
-  margin-right: -5.5px;
-  font-size: var(--text-meta);
-}
-
-.date-weather .date {
-  font-size: var(--text-date);
-}
-
-.clock {
-  position: absolute;
+.clock-corner.right {
   right: 34.99px;
-  top: 24px;
-  display: flex;
-  align-items: flex-start;
-  gap: 7.97px;
-}
-
-.clock .time {
-  font-size: var(--text-clock);
+  transform-origin: right top;
 }
 
 /* Bolder than the font's heaviest weight: its sturdier text cut, with a thicker outline. */
-.clock,
-.date-weather {
+.clock-corner {
   font-family: var(--font-clock);
   font-weight: var(--clock-weight);
   font-variation-settings: 'opsz' 10;
@@ -178,47 +166,72 @@ button {
 }
 
 /* Marvin Visions is bold enough as drawn: no outline thickening it, no Big Shoulders axes. */
-.licensed-display .clock,
-.licensed-display .date-weather {
+.licensed-display .clock-corner {
   font-variation-settings: normal;
   -webkit-text-stroke: 0;
 }
 
-/* am/pm, with the battery under it: its icon, then the percentage. */
-.clock-side {
+.clock-widget {
+  display: flex;
+  align-items: flex-start;
+  gap: 7.97px;
+}
+
+.clock-big {
+  font-size: var(--text-clock);
+}
+
+/* A single label beside the value (am/pm, CPU, GPU), level with its cap tops. */
+.clock-label {
+  margin-top: 6px;
+  font-size: var(--text-meta);
+}
+
+/* Two lines beside the value; in the right corner they hug the value from its left. */
+.clock-stack {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  margin-top: 6px;
 }
 
-.battery {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1;
-  -webkit-text-stroke: 0;
+.clock-widget.right .clock-stack {
+  align-items: flex-end;
 }
 
-.battery-icon {
-  width: 25px;
-  height: 14px;
+.clock-stack-top {
+  font-size: var(--text-meta);
+}
+
+/* Tucked up under the top line, as in the Figma (its 24px line starts 31px down). */
+.clock-stack-bottom {
+  margin-top: -7px;
+  font-size: 20px;
+}
+
+/* The bar as it always was: a small temperature, then the date. */
+.clock-widget.date-temp {
+  gap: 13.45px;
+}
+
+.clock-widget.date-temp .temp {
+  margin-top: 6px;
+  /* Closer to the date than the bar's other gaps: the same space as between the time and am/pm. */
+  margin-right: -5.5px;
+  font-size: var(--text-meta);
+}
+
+.clock-battery-icon {
+  width: 69px;
+  height: 38px;
+  margin-top: 8px;
   background: currentColor;
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
 }
 
-.battery.low {
+.clock-battery.low {
   color: #ff5a4f;
-}
-
-.clock .meridiem {
-  margin-top: 6px;
-  font-size: var(--text-meta);
 }
 
 .nav {

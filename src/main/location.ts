@@ -5,6 +5,8 @@ export interface Location {
   latitude: number
   longitude: number
   unit: 'fahrenheit' | 'celsius'
+  /** e.g. "Long Beach, California", where known. */
+  place?: string
 }
 
 // Countries that report temperature in Fahrenheit.
@@ -36,12 +38,12 @@ export async function getLocation(): Promise<Location | null> {
   const { weather } = await loadConfig()
   if (weather?.latitude !== undefined && weather.longitude !== undefined) {
     const unit = weather.unit ?? (weather.country && !FAHRENHEIT.has(weather.country) ? 'celsius' : 'fahrenheit')
-    return { latitude: weather.latitude, longitude: weather.longitude, unit }
+    return { latitude: weather.latitude, longitude: weather.longitude, unit, place: weather.place }
   }
   try {
     const found = await detect()!
     const unit = weather?.unit ?? (FAHRENHEIT.has(found.country) ? 'fahrenheit' : 'celsius')
-    return { latitude: found.latitude, longitude: found.longitude, unit }
+    return { latitude: found.latitude, longitude: found.longitude, unit, place: found.place || undefined }
   } catch (err) {
     console.error('steamtv: location lookup failed:', err)
     return null
