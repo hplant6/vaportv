@@ -29,21 +29,22 @@ async function paintArt(width: number, height: number): Promise<HTMLCanvasElemen
   return canvas
 }
 
-/** Looks by time of day (see shaderBackdrop). uLand tints the art: their own colours by day, dimmed and cooled at night. */
+/** Looks by time of day (see shaderBackdrop). uLand tints the art: their own colours by day, dimmed and cooled at night. uFog is the
+ * mist on the water: pale by day, the sky's colour at either end of it, a dim blue at night. */
 const LOOKS: Looks = [
-  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uLand: '#c8a8a4', uAurora: 0.1 }],
-  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uLand: '#ffffff', uAurora: 0 }],
-  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uNear: '#18221f', uLand: '#f2e6e2', uAurora: 0 }],
-  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uNear: '#12161e', uLand: '#c09a98', uAurora: 0 }],
-  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uNear: '#080b12', uLand: '#5f6a80', uAurora: 0.3 }],
-  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uAurora: 1 }],
-  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uAurora: 1 }],
-  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uNear: '#090c13', uLand: '#5f6a80', uAurora: 0.35 }]
+  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uLand: '#c8a8a4', uFog: '#e6b4a4', uFogDensity: 0.5, uAurora: 0.1 }],
+  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uLand: '#ffffff', uFog: '#e2eaf2', uFogDensity: 0.4, uAurora: 0 }],
+  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uNear: '#18221f', uLand: '#f2e6e2', uFog: '#eadfda', uFogDensity: 0.4, uAurora: 0 }],
+  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uNear: '#12161e', uLand: '#c09a98', uFog: '#e0a088', uFogDensity: 0.45, uAurora: 0 }],
+  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uNear: '#080b12', uLand: '#5f6a80', uFog: '#3e3c5c', uFogDensity: 0.6, uAurora: 0.3 }],
+  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uFog: '#2c3c52', uFogDensity: 0.7, uAurora: 1 }],
+  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uFog: '#2c3c52', uFogDensity: 0.7, uAurora: 1 }],
+  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uNear: '#090c13', uLand: '#5f6a80', uFog: '#403e5e', uFogDensity: 0.6, uAurora: 0.35 }]
 ]
 
 const FRAGMENT = /*glsl*/ `
-uniform vec3 uSkyHigh, uSkyLow, uNear, uLand;
-uniform float uAurora;
+uniform vec3 uSkyHigh, uSkyLow, uNear, uLand, uFog;
+uniform float uAurora, uFogDensity;
 uniform sampler2D uArt;
 ${NOISE}
 
@@ -116,6 +117,17 @@ void main() {
     col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth)) * 0.55;
     col = mix(col, uNear, smoothstep(0.1, 0.3, depth) * 0.6);
   }
+  // Mist on the water: a soft bank centred just above the shore's foot, trailing a little
+  // way out over the lake, gathered into patches along the shore and drawn out into long
+  // wisps, all drifting slowly sideways (two banks, at different speeds). At night the
+  // aurora lends it a little green.
+  float above = uv.y - HORIZON - 0.015;
+  float band = exp(-above * above / (above > 0.0 ? 0.0018 : 0.0006));
+  float patches = smoothstep(0.3, 0.65, fbm2(vec2(uv.x * 1.1 + uT * 0.006, 4.0)));
+  float wisps = fbm2(vec2(uv.x * 2.2 + uT * 0.012, above * 12.0)) * 0.6
+    + fbm2(vec2(uv.x * 4.0 - uT * 0.02 + 7.0, above * 20.0 + 3.0)) * 0.6;
+  float fog = band * (0.35 + 0.65 * patches) * smoothstep(0.25, 0.8, wisps) * uFogDensity;
+  col = mix(col, uFog + uAurora * vec3(0.0, 0.05, 0.035), clamp(fog, 0.0, 1.0));
   // A touch of noise, a fraction of one 8-bit step, so the long dark gradients don't band.
   col += (hash2(gl_FragCoord.xy) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
