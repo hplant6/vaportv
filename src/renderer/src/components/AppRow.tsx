@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { AppItem } from '../../../shared/types'
 import { AppTile } from './AppTile'
 import { useDrag } from '../input/drag'
+import { useScrollTilt } from '../scrollTilt'
 
 // Mirrors --tile-w / --focus-scale in tokens.css; the gap matches the grid's spacing.
 const TILE_W = 426
@@ -15,6 +16,7 @@ export function AppRow({ apps, hasDefault }: { apps: AppItem[]; hasDefault: bool
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
   const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - VIEWPORT_W))
+  useScrollTilt(track, 'x', offset, '--row-tilt')
 
   // Keep the enlarged tile, not just its layout box, in view (the first one grows rightward only).
   const reveal = (index: number): void => {

@@ -516,15 +516,16 @@ button {
   box-shadow: var(--shadow-card);
   /* Anchored near the top: there is only ~11px above the row but ~55px below it. */
   transform-origin: 50% 50px;
+  --pivot-y: calc(50% - 50px);
   transition:
-    transform var(--dur-focus) var(--ease-focus),
+    scale var(--dur-focus) var(--ease-focus),
     box-shadow var(--dur-focus) var(--ease-focus);
 }
 
 .recent-card:focus {
   position: relative;
   z-index: 1;
-  transform: scale(var(--focus-scale));
+  scale: var(--focus-scale);
   box-shadow: var(--shadow-tile-focus);
 }
 
@@ -684,24 +685,26 @@ button {
   overflow: hidden;
   box-shadow: var(--shadow-card);
   transition:
-    transform var(--dur-focus) var(--ease-focus),
+    scale var(--dur-focus) var(--ease-focus),
     box-shadow var(--dur-focus) var(--ease-focus);
 }
 
 .app-tile:focus {
   position: relative;
   z-index: 1;
-  transform: scale(var(--focus-scale));
+  scale: var(--focus-scale);
   box-shadow: var(--shadow-tile-focus);
 }
 
 /* Outer columns grow inward so the enlarged tile stays inside the screen gutter. */
 .app-tile:nth-child(4n + 1) {
   transform-origin: left center;
+  --pivot-x: 50%;
 }
 
 .app-tile:nth-child(4n) {
   transform-origin: right center;
+  --pivot-x: -50%;
 }
 
 .app-tile img {
@@ -974,24 +977,42 @@ button {
   background: var(--color-card-footer);
   box-shadow: var(--shadow-card);
   transition:
-    transform var(--dur-focus) var(--ease-focus),
+    scale var(--dur-focus) var(--ease-focus),
     box-shadow var(--dur-focus) var(--ease-focus);
 }
 
 .wide-card:focus {
   position: relative;
   z-index: 1;
-  transform: scale(var(--focus-scale));
+  scale: var(--focus-scale);
   box-shadow: var(--shadow-tile-focus);
 }
 
 /* Outer columns grow inward, as on Favorite Apps. */
 .wide-card:nth-child(4n + 1) {
   transform-origin: left center;
+  --pivot-x: 50%;
 }
 
 .wide-card:nth-child(4n) {
   transform-origin: right center;
+  --pivot-x: -50%;
+}
+
+/* Scrolling leans the cards with its speed (scrollTilt.ts): a page's grids about their
+   level axis, a row's cards about their upright one. The lean turns about each card's
+   centre, wherever the origin its focus zoom grows from (--pivot is the way there). Only
+   while it moves, so cards at rest aren't each a 3D layer. */
+[data-tilt='y'] .wide-card,
+[data-tilt='y'] .favorites-grid .app-tile {
+  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateX(calc(var(--page-tilt, 0rad) * -1))
+    translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
+}
+
+[data-tilt='x'] > .recent-card,
+[data-tilt='x'] > .app-tile {
+  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateY(var(--row-tilt, 0rad))
+    translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
 }
 
 .wide-card img {
@@ -1731,10 +1752,12 @@ button {
 .favorites-track .app-tile {
   flex: none;
   transform-origin: center;
+  --pivot-x: 0%;
 }
 
 .favorites-track .app-tile:first-child {
   transform-origin: left center;
+  --pivot-x: 50%;
 }
 
 /* Drive folder chooser: a list that scrolls inside the dialog. */

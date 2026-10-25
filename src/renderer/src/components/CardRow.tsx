@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { RecentItem } from '../../../shared/types'
 import { RecentCard } from './RecentCard'
 import { useDrag } from '../input/drag'
+import { useScrollTilt } from '../scrollTilt'
 
 // Mirrors --card-w / --card-gap / --focus-scale in tokens.css.
 const CARD_W = 253.56
@@ -28,6 +29,7 @@ export function CardRow({ title, items, logos, memoryKey, hasDefault, note, clas
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
   const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - VIEWPORT_W))
+  useScrollTilt(track, 'x', offset, '--row-tilt')
 
   const reveal = (index: number): void => {
     const left = index * (CARD_W + CARD_GAP)
