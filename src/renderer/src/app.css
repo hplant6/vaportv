@@ -1406,11 +1406,12 @@ button {
   padding: 10px 43px 16px;
 }
 
-/* The logo in the empty left of the sidebar, level with the Settings title. */
+/* The logo in the empty left of the sidebar, its top level with the top of the Settings
+   lettering, measured at 40px below the sidebar's top in Marvin Visions at 36px. */
 .settings-sidebar .settings-logo {
   position: absolute;
   left: 135px;
-  top: 22px;
+  top: 40px;
   width: 220px;
 }
 
