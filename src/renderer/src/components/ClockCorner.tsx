@@ -128,7 +128,8 @@ function Battery({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-function Widget({ id, side }: { id: ClockWidget; side: 'left' | 'right' }) {
+/** One layout, as a corner draws it (Settings shows it too, as a preview). */
+export function ClockLayout({ id, side }: { id: ClockWidget; side: 'left' | 'right' }) {
   const now = useNow()
   const weather = useWeather()
   const degrees = useDegrees()
@@ -200,7 +201,7 @@ export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   return (
     <div className={`clock-corner ${side} display`}>
       {widgets.map((id) => (
-        <Widget key={id} id={id} side={side} />
+        <ClockLayout key={id} id={id} side={side} />
       ))}
     </div>
   )

@@ -231,6 +231,25 @@ button {
   color: #ff5a4f;
 }
 
+/* Settings → Home: each choice shows its layout, at three quarters of the bar's size, at the
+   row's end in place of a description. */
+.clock-preview {
+  flex: none;
+  display: flex;
+  zoom: 0.75;
+  line-height: 1.2;
+  white-space: nowrap;
+  font-family: var(--font-clock);
+  font-weight: var(--clock-weight);
+  font-variation-settings: 'opsz' 10;
+  -webkit-text-stroke: 1.5px currentColor;
+}
+
+.licensed-display .clock-preview {
+  font-variation-settings: normal;
+  -webkit-text-stroke: 0;
+}
+
 .nav {
   position: absolute;
   left: 30.18px;
