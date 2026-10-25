@@ -1,28 +1,82 @@
 import { useEffect, useRef } from 'react'
 import { NOISE, startShaderBackdrop, type Looks } from './shaderBackdrop'
+import layer0 from '../assets/aurora/layer0.svg'
+import layer1 from '../assets/aurora/layer1.svg'
+import layer2 from '../assets/aurora/layer2.svg'
+import layer3 from '../assets/aurora/layer3.svg'
+import layer4 from '../assets/aurora/layer4.svg'
 
-// Northern Lights: aurora curtains over a pine treeline, mirrored in a still lake. All one shader. The aurora comes out after dark; by day it's the same
-// shore under a winter sky.
+// Northern Lights: aurora curtains over mountains and pine forest, mirrored in a still lake.
+// The aurora comes out after dark; by day it's the same shore under a winter sky. The sky,
+// aurora and water are one shader; the land is Henry's SVG layers, drawn at the screen's
+// own resolution and handed to the shader as textures.
 
-/** Looks by time of day (see shaderBackdrop). */
+/** The layers' artboard, in artboard pixels. */
+const ART_W = 1920
+const ART_H = 1080
+/** Where the far shore meets the water: the bottom of layers 1 to 4. */
+const WATERLINE = 693.8
+/** The bottom of the near shore (layer 0), which stands in the water in front. */
+const NEAR_SHORE = 743.4
+/** The waterline in screen units from the middle (height = 1), where it is on the artboard. */
+const HORIZON = 0.5 - WATERLINE / ART_H
+
+/** A layer and where it sits on the artboard (layer 2 was exported cropped to its own height). */
+interface Layer {
+  src: string
+  top: number
+  height: number
+}
+
+const FAR: Layer[] = [
+  { src: layer4, top: 0, height: ART_H },
+  { src: layer3, top: 0, height: ART_H },
+  { src: layer2, top: WATERLINE - 360.18, height: 360.18 },
+  { src: layer1, top: 0, height: ART_H }
+]
+const NEAR: Layer[] = [{ src: layer0, top: 0, height: ART_H }]
+
+/** Paints layers, back to front, onto a canvas the size of the backdrop's: the artboard spans its width, with the waterline on HORIZON. */
+function paint(layers: Layer[]) {
+  return async (width: number, height: number): Promise<HTMLCanvasElement> => {
+    const images = await Promise.all(
+      layers.map(async ({ src }) => {
+        const image = new Image()
+        image.src = src
+        await image.decode()
+        return image
+      })
+    )
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')!
+    const k = width / ART_W
+    const waterline = (0.5 - HORIZON) * height
+    layers.forEach(({ top, height: tall }, i) => ctx.drawImage(images[i], 0, waterline + (top - WATERLINE) * k, width, tall * k))
+    return canvas
+  }
+}
+
+/** Looks by time of day (see shaderBackdrop). uLand tints the land layers: their own colours by day, dimmed and cooled at night. */
 const LOOKS: Looks = [
-  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uAurora: 0.1 }],
-  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uAurora: 0 }],
-  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uNear: '#18221f', uAurora: 0 }],
-  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uNear: '#12161e', uAurora: 0 }],
-  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uNear: '#080b12', uAurora: 0.3 }],
-  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uAurora: 1 }],
-  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uAurora: 1 }],
-  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uNear: '#090c13', uAurora: 0.35 }]
+  [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uLand: '#c8a8a4', uAurora: 0.1 }],
+  [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uLand: '#ffffff', uAurora: 0 }],
+  [0.88, { uSkyHigh: '#3a62ac', uSkyLow: '#d9cbc4', uNear: '#18221f', uLand: '#f2e6e2', uAurora: 0 }],
+  [1.0, { uSkyHigh: '#2a3570', uSkyLow: '#f09a72', uNear: '#12161e', uLand: '#c09a98', uAurora: 0 }],
+  [1.06, { uSkyHigh: '#0d1534', uSkyLow: '#3a3452', uNear: '#080b12', uLand: '#5f6a80', uAurora: 0.3 }],
+  [1.15, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uAurora: 1 }],
+  [1.85, { uSkyHigh: '#02040c', uSkyLow: '#0a1626', uNear: '#03060a', uLand: '#4f6a78', uAurora: 1 }],
+  [1.94, { uSkyHigh: '#0e1636', uSkyLow: '#3a3654', uNear: '#090c13', uLand: '#5f6a80', uAurora: 0.35 }]
 ]
 
 const FRAGMENT = /*glsl*/ `
-uniform vec3 uSkyHigh, uSkyLow, uNear;
+uniform vec3 uSkyHigh, uSkyLow, uNear, uLand;
 uniform float uAurora;
+uniform sampler2D uFar, uNear0;
 ${NOISE}
 
-// Where the far shore meets the lake, in screen units from the middle (height = 1).
-const float HORIZON = -0.2;
+const float HORIZON = ${HORIZON.toFixed(5)};
 
 // Aurora: a stack of thin layers above the shore; on each, bright folds where a ridged
 // noise peaks. Low layers are green, the upper ones fade through teal to violet.
@@ -41,7 +95,8 @@ vec3 aurora(vec3 rd) {
     p.y += uT * 0.012;
     float warp = fbm2(p * vec2(0.3, 0.7) + vec2(uT * 0.02, 0.0));
     float fold = 1.0 - abs(sin(p.x * 0.55 + warp * 4.0 + uT * 0.015));
-    // Fine vertical rays along the curtain, and patches where it's brighter. They fade out towards the horizon, where perspective packs them finer than a pixel.
+    // Fine vertical rays along the curtain, and patches where it's brighter. They fade out
+    // towards the horizon, where perspective packs them finer than a pixel.
     float rays = 0.6 + 0.4 * vnoise1(p.x * 14.0 + warp * 6.0 + uT * 0.3) * smoothstep(0.02, 0.12, rd.y);
     float curtain = pow(fold, 6.0) * rays * smoothstep(0.3, 0.7, fbm2(p * 0.18 - vec2(0.0, uT * 0.008)));
     vec3 tint = mix(vec3(0.15, 1.0, 0.5), vec3(0.1, 0.75, 0.8), smoothstep(0.0, 0.5, fi));
@@ -69,59 +124,53 @@ vec3 sky(vec2 uv) {
   return col;
 }
 
-// The scene above the water line at uv: sky, then the treeline along the far shore.
+// A land layer at uv, from the texture painted for the screen.
+vec4 land(sampler2D layer, vec2 uv) {
+  return texture2D(layer, (uv * uR.y + 0.5 * uR) / uR);
+}
+
+// The scene above the water line at uv: sky, then the far mountains and forest.
 vec3 scene(vec2 uv) {
-  vec3 col = sky(uv);
-  // Treeline: a low hill crowned with two rows of pines, each tree its own height and
-  // width, with the odd gap. Its edge is anti-aliased: the height above the outline,
-  // divided by the outline's slope, is roughly the distance to it in screen units.
-  float top = HORIZON + 0.015 + 0.03 * fbm1(uv.x * 2.5 + 11.0);
-  float slope = 0.0;
-  float hill = top;
-  for (int row = 0; row < 2; row++) {
-    float r = float(row);
-    float freq = 26.0 + r * 15.0;
-    float x = uv.x * freq + r * 0.37;
-    float cell = floor(x);
-    float spread = 0.55 + 0.4 * hash1(cell * 3.1 + r);
-    float c = abs(fract(x) - 0.5) / spread;
-    float tall = (0.35 + 0.65 * hash1(cell + r * 17.0)) * step(0.12, hash1(cell * 7.7 + r)) * (1.0 - r * 0.35);
-    float tree = hill + max(0.0, 1.0 - c * 2.0) * tall * 0.06;
-    if (tree > top) {
-      top = tree;
-      slope = 0.12 * tall * freq / spread;
-    }
-  }
-  float dist = (uv.y - top) / sqrt(1.0 + slope * slope);
-  return mix(col, uNear, clamp(0.5 - dist * uR.y, 0.0, 1.0));
+  vec4 far = land(uFar, uv);
+  if (far.a >= 1.0) return far.rgb * uLand;
+  return mix(sky(uv), far.rgb * uLand, far.a);
 }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uR) / uR.y;
+  float ripple = 0.004 * sin(uv.y * 160.0 + uT * 0.8);
   vec3 col;
   if (uv.y >= HORIZON) col = scene(uv);
   else {
     // The lake: the scene mirrored, darkened, with slow ripples breaking up the reflection.
     float depth = HORIZON - uv.y;
-    vec2 m = vec2(uv.x + 0.004 * sin(uv.y * 160.0 + uT * 0.8) * smoothstep(0.0, 0.1, depth), HORIZON + depth);
-    col = scene(m) * 0.55;
+    col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth)) * 0.55;
+    // The near shore's own reflection, mirrored at its foot.
+    float shore = HORIZON - (${NEAR_SHORE} - ${WATERLINE}) * uR.x / ${ART_W.toFixed(1)} / uR.y;
+    if (uv.y < shore) {
+      float d = shore - uv.y;
+      vec4 mirrored = land(uNear0, vec2(uv.x + ripple * smoothstep(0.0, 0.1, d), shore + d));
+      col = mix(col, mirrored.rgb * uLand * 0.55, mirrored.a);
+    }
     col = mix(col, uNear, smoothstep(0.1, 0.3, depth) * 0.6);
   }
+  vec4 near = land(uNear0, uv);
+  col = mix(col, near.rgb * uLand, near.a);
   // A touch of noise, a fraction of one 8-bit step, so the long dark gradients don't band.
   col += (hash2(gl_FragCoord.xy) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
 }
 `
 
-/** Northern lights over a lake shore, following the time of day. Calls onUnavailable if WebGL can't run it. */
+/** Northern lights over a lake among mountains, following the time of day. Calls onUnavailable if WebGL can't run it. */
 export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     try {
-      // Drawn at the screen's own resolution: stretched up from the stage's, the treeline's
-      // edges and the fine rays went soft and stair-stepped.
-      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true })
+      // Drawn at the screen's own resolution: stretched up from the stage's, the land's
+      // edges and the aurora's fine rays go soft and stair-stepped.
+      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true, textures: { uFar: paint(FAR), uNear0: paint(NEAR) } })
     } catch (err) {
       console.error('steamtv: northern lights backdrop unavailable:', err)
       onUnavailable()

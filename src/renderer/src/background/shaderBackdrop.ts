@@ -112,11 +112,19 @@ function between(looks: Looks, sun: number): [Look, Look, number] {
 /**
  * Starts `fragment` (declare the look's uniforms yourself; HEADER's are declared for you) on
  * `canvas`, drawn at `scale` of the stage's size and stretched to fill it, or with `native` at
- * the screen's own pixels (sharp on a 4K TV, where the stage is scaled up). Returns a stop function.
+ * the screen's own pixels (sharp on a 4K TV, where the stage is scaled up). Each of `textures`
+ * is drawn for the canvas's size and handed to the sampler2D uniform of its name (transparent
+ * until it's ready; row 0 at the bottom, like gl_FragCoord). Returns a stop function.
  */
 export function startShaderBackdrop(
   canvas: HTMLCanvasElement,
-  { fragment, looks, scale = 1, native = false }: { fragment: string; looks: Looks; scale?: number; native?: boolean }
+  {
+    fragment,
+    looks,
+    scale = 1,
+    native = false,
+    textures = {}
+  }: { fragment: string; looks: Looks; scale?: number; native?: boolean; textures?: Record<string, (width: number, height: number) => Promise<TexImageSource>> }
 ): () => void {
   const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' })
   if (!gl) throw new Error('WebGL not supported')
@@ -143,6 +151,31 @@ export function startShaderBackdrop(
   const uSun = gl.getUniformLocation(program, 'uSun')
   const uStars = gl.getUniformLocation(program, 'uStars')
   const lookUniforms = Object.keys(looks[0][1]).map((name) => [name, gl.getUniformLocation(program, name)] as const)
+
+  let stopped = false
+  Object.entries(textures).forEach(([name, draw], unit) => {
+    const texture = gl.createTexture()
+    const bind = (): void => {
+      gl.activeTexture(gl.TEXTURE0 + unit)
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+    }
+    bind()
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4))
+    gl.uniform1i(gl.getUniformLocation(program, name), unit)
+    draw(canvas.width, canvas.height).then(
+      (image) => {
+        if (stopped) return
+        bind()
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
+      },
+      (err) => console.error(`steamtv: backdrop texture ${name} unavailable:`, err)
+    )
+  })
 
   let sun: SunTimes = DEFAULT_SUN_TIMES
   const loadSun = (): void => {
@@ -196,6 +229,7 @@ export function startShaderBackdrop(
   raf = requestAnimationFrame(frame)
 
   return () => {
+    stopped = true
     cancelAnimationFrame(raf)
     clearInterval(sunTimer)
     window.removeEventListener(WEATHER_CHANGED_EVENT, loadSun)
