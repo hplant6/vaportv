@@ -1415,24 +1415,47 @@ button {
 }
 
 /* ── Chromatic-aberration logo (AberrationLogo.tsx) ──
-   The SVG filter does the channel split; this just sizes the logo and hides the defs. */
+   Three copies of the logo's shape, one per colour channel, screened together into white. Each
+   drifts by its own pair of slow eased sways, x and y on unrelated periods, so the three never
+   fall into step. Transforms only, so the drift runs on the compositor at sub-pixel precision. */
 .aberration-logo {
   position: relative;
   aspect-ratio: 841 / 227;
+  isolation: isolate;
 }
 
-.aberration-logo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.aberration-defs {
+.aberration-drift,
+.aberration-channel {
   position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
+  inset: 0;
 }
+
+.aberration-drift {
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.aberration-channel {
+  -webkit-mask: var(--aberration-logo) center / contain no-repeat;
+  mask: var(--aberration-logo) center / contain no-repeat;
+  will-change: transform;
+}
+
+.aberration-red { animation: aberration-red-x 7.3s ease-in-out infinite alternate; }
+.aberration-red .aberration-channel { background: #f00; animation: aberration-red-y 5.1s ease-in-out infinite alternate; }
+
+.aberration-green { animation: aberration-green-x 9.7s ease-in-out -3s infinite alternate; }
+.aberration-green .aberration-channel { background: #0f0; animation: aberration-green-y 6.7s ease-in-out -2s infinite alternate; }
+
+.aberration-blue { animation: aberration-blue-x 8.3s ease-in-out -5s infinite alternate; }
+.aberration-blue .aberration-channel { background: #00f; animation: aberration-blue-y 11.9s ease-in-out -4s infinite alternate; }
+
+@keyframes aberration-red-x { from { transform: translateX(-2.5px); } to { transform: translateX(0.5px); } }
+@keyframes aberration-red-y { from { transform: translateY(-1px); } to { transform: translateY(1.2px); } }
+@keyframes aberration-green-x { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
+@keyframes aberration-green-y { from { transform: translateY(0.8px); } to { transform: translateY(-0.8px); } }
+@keyframes aberration-blue-x { from { transform: translateX(2.5px); } to { transform: translateX(-0.5px); } }
+@keyframes aberration-blue-y { from { transform: translateY(1.2px); } to { transform: translateY(-1px); } }
 
 .settings-title {
   flex: none;
