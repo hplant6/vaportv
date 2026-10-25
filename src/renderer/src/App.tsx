@@ -6,7 +6,6 @@ import { DriftBackground } from './background/DriftBackground'
 import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
 import { ForestBackground } from './background/ForestBackground'
 import { AuroraBackground } from './background/AuroraBackground'
-import { DunesBackground } from './background/DunesBackground'
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
@@ -210,8 +209,6 @@ export function App() {
         <ForestBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'aurora' ? (
         <AuroraBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'dunes' ? (
-        <DunesBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'waves' ? (
         <WavesBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'tunnel' ? (

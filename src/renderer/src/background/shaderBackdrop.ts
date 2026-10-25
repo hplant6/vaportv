@@ -6,7 +6,7 @@ import { heldMinutes, minutesOfDay, pinnedMinutes, sceneAt } from './timeOfDay'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
 
-// Runs a backdrop that is one full-screen fragment shader (Northern Lights, Desert Dunes):
+// Runs a backdrop that is one full-screen fragment shader (Northern Lights):
 // one draw call a frame, so it's about as light as the sea. The shader gets the time of
 // day as uniforms, and its colours from a list of looks keyed by sceneAt's `sun`.
 
