@@ -2,11 +2,12 @@ import { useEffect, useRef, type RefObject } from 'react'
 
 // After the carousel in Codrops' "persistent page transitions" demo (bnpne): while a row
 // or page scrolls, its cards lean with the speed, and ease back flat when it stops.
-/** Lean per px the content moves in a frame, up to MAX_RAD. */
-const RAD_PER_PX = 0.005
-const MAX_RAD = 0.05
+/** Lean per px the content moves in a frame, up to MAX_RAD (~11°, as the demo meant; its
+    own 0.05 rad, ~3°, is too faint to see across a room). */
+const RAD_PER_PX = 0.012
+const MAX_RAD = 0.2
 /** How far the lean closes on its target each frame (at 60 fps). */
-const LERP = 0.09
+const LERP = 0.14
 const FRAME_MS = 1000 / 60
 
 /** Where `el` is drawn along `axis` right now, mid-transition included. */
