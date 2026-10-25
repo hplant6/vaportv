@@ -480,6 +480,8 @@ export interface SteamTvApi {
   launch(kind: LaunchKind, id: string, name?: string): Promise<boolean>
   /** Select + Start is closing an app (name if known), then done; returns an unsubscribe. */
   onClosing(callback: (state: { active: boolean; name?: string }) => void): () => void
+  /** True while another app (Steam's menu) has gamescope's input focus, which our window isn't told about. */
+  onSteamFocus(callback: (away: boolean) => void): () => void
   /** Closes steamtv; under Steam this returns to Gaming Mode. */
   quit(): Promise<void>
   /** Power menu: exit to desktop or Steam, sleep, restart, power off. Resolves false if it couldn't. */

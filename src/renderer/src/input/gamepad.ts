@@ -16,6 +16,8 @@ const REPEAT_DELAY = 400
 const REPEAT_INTERVAL = 130
 
 let paused = false
+let blurred = false
+let steamAway = false
 let controls: Controls = DEFAULT_CONTROLS
 /** Waiting for "press a button" in Settings: called with the next button pressed, or null if cancelled. */
 let capture: { onButton: (button: number | null) => void; until: number; released: boolean } | null = null
@@ -129,6 +131,7 @@ function poll(now: number): void {
   const anyInput = !!direction || pads().some((pad) => pad.buttons.some((b) => b.pressed))
   const newPress = anyInput && !anyDown
   anyDown = anyInput
+  if (newPress && !direction) window.steamtv.logInput(`gamepad press: ${describePads()}`)
   if (anyInput && noteInput(newPress, direction)) {
     held = null
     waitForRelease = true
@@ -226,11 +229,19 @@ export function startGamepad(): void {
   // A launched game takes the window focus; the pad is the game's until we get it back.
   window.addEventListener('blur', () => {
     window.steamtv.logInput('window lost focus')
+    blurred = true
     setGamepadPaused(true)
   })
   window.addEventListener('focus', () => {
     window.steamtv.logInput('window focused')
-    setGamepadPaused(false)
+    blurred = false
+    setGamepadPaused(steamAway)
+  })
+  // Steam's menu over us: the window keeps its focus, so this is the only sign. Coming
+  // back, the A that closed the menu is still held and must not act here too.
+  window.steamtv.onSteamFocus((away) => {
+    steamAway = away
+    setGamepadPaused(away || blurred)
   })
   window.addEventListener('gamepadconnected', (event) => {
     window.steamtv.logInput(`connected ${event.gamepad.index} "${event.gamepad.id}" ${event.gamepad.mapping || 'no-mapping'}`)

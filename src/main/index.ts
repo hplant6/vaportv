@@ -11,6 +11,7 @@ import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, Temperatu
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
+import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
@@ -848,6 +849,10 @@ app.whenReady().then(async () => {
     // YouTube's TV app (VacuumTube) goes back on Escape only; remotes' Back sends Backspace.
     // Not while vaporTV is in front, where Escape would go back a second time.
     startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)))
+    watchSteamFocus((away) => {
+      logInput(away ? 'steam focus: away' : 'steam focus: back')
+      send('steam-focus', away)
+    }, logInput)
     // Back in vaporTV some other way (Steam's menu) with an app it opened still running
     // behind: that app is done with, so it's closed rather than left running unseen.
     // Not in an app's first seconds (Kodi's window comes and goes as it starts), and

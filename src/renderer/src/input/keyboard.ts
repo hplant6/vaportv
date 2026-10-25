@@ -58,7 +58,10 @@ export function startKeyboard(): void {
       repeat(event.key, direction, REPEAT_DELAY)
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      if (!event.repeat) activate()
+      if (!event.repeat) {
+        window.steamtv.logInput(`key Enter (code ${event.code})`)
+        activate()
+      }
     } else if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'BrowserBack') {
       event.preventDefault()
       if (!event.repeat) back()
