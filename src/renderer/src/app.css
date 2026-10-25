@@ -999,8 +999,8 @@ button {
   --pivot-x: -50%;
 }
 
-/* Scrolling leans the cards with its speed (scrollTilt.ts): a page's grids about their
-   level axis, a row's cards about their upright one. Selecting one tips it the way the
+/* Scrolling a row leans its cards with its speed (scrollTilt.ts), about their upright
+   axis. Selecting one tips it the way the
    cursor moved, in the same sense, springing back (focus.ts marks data-arrive), and then
    it sways gently while it stays selected. All of it adds up to one turn (--turn-x/y)
    that the sheen and shadow follow, so they move with the card. Each turns about the
@@ -1034,13 +1034,8 @@ button {
 .recent-card,
 .wide-card,
 .app-tile {
-  --turn-x: calc(var(--lean-x, 0rad) + var(--tip-x) + var(--sway-x));
+  --turn-x: calc(var(--tip-x) + var(--sway-x));
   --turn-y: calc(var(--lean-y, 0rad) + var(--tip-y) + var(--sway-y));
-}
-
-.wide-card,
-.favorites-grid .app-tile {
-  --lean-x: calc(var(--page-tilt, 0rad) * -1);
 }
 
 .recent-card,
@@ -1048,8 +1043,6 @@ button {
   --lean-y: var(--row-tilt, 0rad);
 }
 
-[data-tilt='y'] .wide-card,
-[data-tilt='y'] .favorites-grid .app-tile,
 [data-tilt='x'] > .recent-card,
 [data-tilt='x'] > .app-tile,
 .recent-card:focus,
@@ -1106,9 +1099,32 @@ button {
   position: absolute;
   inset: 0 -60%;
   pointer-events: none;
-  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.15) 48%, rgba(255, 255, 255, 0.04) 54%, transparent 62%);
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.09) 48%, rgba(255, 255, 255, 0.025) 54%, transparent 62%);
   translate: calc(var(--turn-y) / 1deg * 4%) calc(var(--turn-x) / 1deg * -3%);
   opacity: min(1, calc((abs(var(--turn-x)) + abs(var(--turn-y))) / 1deg * 0.16));
+}
+
+/* Layers inside the selected card move apart as it turns, so it reads as a box with
+   depth: the art sits deep, as if behind a window, drifting against the turn (zoomed a
+   little so its edges never show); labels and centred posters float forward, drifting
+   with it. */
+.recent-art img,
+.wide-card > img,
+.app-tile > img {
+  transition: scale var(--dur-focus) var(--ease-focus);
+}
+
+.recent-card:focus .recent-art img:not(.recent-art-centred),
+.wide-card:focus > img:not(.wide-card-poster),
+.app-tile:focus > img {
+  scale: 1.08;
+  translate: clamp(-9px, calc(var(--turn-y) / 1deg * -1.3px), 9px) clamp(-9px, calc(var(--turn-x) / 1deg * 1.3px), 9px);
+}
+
+.recent-card:focus :is(.recent-art-centred, .recent-logo, .recent-text, .no-art-band, .favorite-star),
+.wide-card:focus :is(.wide-card-poster, .no-art-band, .favorite-star),
+.app-tile:focus :is(.no-art-band, .favorite-star, .app-setup-badge) {
+  translate: clamp(-6px, calc(var(--turn-y) / 1deg * 0.8px), 6px) clamp(-6px, calc(var(--turn-x) / 1deg * -0.8px), 6px);
 }
 
 .wide-card img {

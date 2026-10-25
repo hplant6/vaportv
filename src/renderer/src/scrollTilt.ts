@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 
 // After the carousel in Codrops' "persistent page transitions" demo (bnpne): while a row
-// or page scrolls, its cards lean with the speed, and ease back flat when it stops.
+// scrolls, its cards lean with the speed, and ease back flat when it stops.
 /** Lean per px the content moves in a frame, up to MAX_RAD (15°; the demo's own 0.05 rad,
     ~3°, is too faint to see across a room). */
 const RAD_PER_PX = 0.016
@@ -17,7 +17,7 @@ function drawnAt(el: HTMLElement, axis: 'x' | 'y'): number {
 }
 
 /**
- * Leans the cards of a scroller moved by `translate(-position)` (a row's track, a page):
+ * Leans the cards of a scroller moved by `translate(-position)` (a row's track):
  * while it moves, marks it data-tilt="<axis>" and writes the lean to `variable` on it
  * each frame, for its cards' CSS.
  */
