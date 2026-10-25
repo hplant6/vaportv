@@ -1000,19 +1000,82 @@ button {
 }
 
 /* Scrolling leans the cards with its speed (scrollTilt.ts): a page's grids about their
-   level axis, a row's cards about their upright one. The lean turns about each card's
-   centre, wherever the origin its focus zoom grows from (--pivot is the way there). Only
-   while it moves, so cards at rest aren't each a 3D layer. */
+   level axis, a row's cards about their upright one. Selecting one tips it the way the
+   cursor moved, in the same sense, springing back (focus.ts marks data-arrive). Each
+   turns about the card's centre, wherever the origin its focus zoom grows from (--pivot
+   is the way there). Only while something moves or on the selected card, so cards at
+   rest aren't each a 3D layer. */
+@property --tip-x {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --tip-y {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.wide-card,
+.favorites-grid .app-tile {
+  --lean-x: calc(var(--page-tilt, 0rad) * -1);
+}
+
+.recent-card,
+.favorites-track .app-tile {
+  --lean-y: var(--row-tilt, 0rad);
+}
+
 [data-tilt='y'] .wide-card,
-[data-tilt='y'] .favorites-grid .app-tile {
-  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateX(calc(var(--page-tilt, 0rad) * -1))
+[data-tilt='y'] .favorites-grid .app-tile,
+[data-tilt='x'] > .recent-card,
+[data-tilt='x'] > .app-tile,
+.recent-card:focus,
+.wide-card:focus,
+.app-tile:focus {
+  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px)
+    rotateX(calc(var(--lean-x, 0rad) + var(--tip-x))) rotateY(calc(var(--lean-y, 0rad) + var(--tip-y)))
     translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
 }
 
-[data-tilt='x'] > .recent-card,
-[data-tilt='x'] > .app-tile {
-  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateY(var(--row-tilt, 0rad))
-    translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
+/* Each tips the edge it's heading for back, as the row or page leans while moving that
+   way, then swings a little past flat and settles. */
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive] {
+  animation: 720ms ease-in-out;
+}
+
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='right'] { animation-name: tip-right; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='left'] { animation-name: tip-left; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='down'] { animation-name: tip-down; }
+:is(.recent-card, .wide-card, .app-tile):focus[data-arrive='up'] { animation-name: tip-up; }
+
+@keyframes tip-right { 0% { --tip-y: 0deg; } 16% { --tip-y: 9deg; } 50% { --tip-y: -2deg; } 76% { --tip-y: 0.6deg; } 100% { --tip-y: 0deg; } }
+@keyframes tip-left { 0% { --tip-y: 0deg; } 16% { --tip-y: -9deg; } 50% { --tip-y: 2deg; } 76% { --tip-y: -0.6deg; } 100% { --tip-y: 0deg; } }
+@keyframes tip-down { 0% { --tip-x: 0deg; } 16% { --tip-x: -7deg; } 50% { --tip-x: 1.6deg; } 76% { --tip-x: -0.5deg; } 100% { --tip-x: 0deg; } }
+@keyframes tip-up { 0% { --tip-x: 0deg; } 16% { --tip-x: 7deg; } 50% { --tip-x: -1.6deg; } 76% { --tip-x: 0.5deg; } 100% { --tip-x: 0deg; } }
+
+/* A light sheen sweeps across the selected card once, as off glossy plastic. */
+.recent-card::after,
+.wide-card::after,
+.app-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.24) 48%, rgba(255, 255, 255, 0.06) 56%, transparent 70%);
+  translate: -100% 0;
+}
+
+.recent-card:focus::after,
+.wide-card:focus::after,
+.app-tile:focus::after {
+  animation: card-sheen 900ms cubic-bezier(0.3, 0.1, 0.2, 1) 60ms both;
+}
+
+@keyframes card-sheen {
+  from { translate: -100% 0; }
+  to { translate: 100% 0; }
 }
 
 .wide-card img {

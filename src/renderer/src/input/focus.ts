@@ -133,6 +133,10 @@ export function move(direction: Direction, source: InputSource): void {
     const last = remembered.get(group)
     if (last?.isConnected) target = last
   }
+  // Which way the cursor came, for a card to tip that way (app.css) while it's selected.
+  const arrived = target
+  arrived.dataset.arrive = direction
+  arrived.addEventListener('blur', () => delete arrived.dataset.arrive, { once: true })
   focus(target)
   play('move')
 }
