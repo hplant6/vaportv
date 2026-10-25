@@ -1104,29 +1104,6 @@ button {
   opacity: min(1, calc((abs(var(--turn-x)) + abs(var(--turn-y))) / 1deg * 0.16));
 }
 
-/* Layers inside the selected card move apart as it turns, so it reads as a box with
-   depth: the art sits deep, as if behind a window, drifting against the turn (zoomed a
-   little so its edges never show); labels and centred posters float forward, drifting
-   with it. */
-.recent-art img,
-.wide-card > img,
-.app-tile > img {
-  transition: scale var(--dur-focus) var(--ease-focus);
-}
-
-.recent-card:focus .recent-art img:not(.recent-art-centred),
-.wide-card:focus > img:not(.wide-card-poster),
-.app-tile:focus > img {
-  scale: 1.08;
-  translate: clamp(-9px, calc(var(--turn-y) / 1deg * -1.3px), 9px) clamp(-9px, calc(var(--turn-x) / 1deg * 1.3px), 9px);
-}
-
-.recent-card:focus :is(.recent-art-centred, .recent-logo, .recent-text, .no-art-band, .favorite-star),
-.wide-card:focus :is(.wide-card-poster, .no-art-band, .favorite-star),
-.app-tile:focus :is(.no-art-band, .favorite-star, .app-setup-badge) {
-  translate: clamp(-6px, calc(var(--turn-y) / 1deg * 0.8px), 6px) clamp(-6px, calc(var(--turn-x) / 1deg * -0.8px), 6px);
-}
-
 .wide-card img {
   width: 100%;
   height: 100%;

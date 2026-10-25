@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Cards lean with the scroll: a row's cards tilt sideways as it slides, easing flat when it stops (after the carousel in Codrops' WebGPU page-transitions demo).
-- The selected card tips the way you moved and settles, then sways gently while you stay on it; a soft sheen and its shadow move with it, and its art and labels sit at different depths.
+- The selected card tips the way you moved and settles, then sways gently while you stay on it; a soft sheen and its shadow move with it.
 - Time played on the game cards, after the date: Steam's own count for Steam games and shortcuts, and vaporTV's for the console games it starts (counted from now on; time asleep isn't counted).
 - Files: a new app in the Apps tab (Y puts it on Home) for browsing your home folders and any USB drive or SD card from the controller, full screen. A on a file shows Open, Cut and Copy under it; something cut or copied pastes from a row at the top of any folder (between drives too, with its progress). Open shows a picture (left and right for the folder's others), a video or a song (A pauses, left and right skip 10 seconds, L1 and R1 the previous or next file); the background music waits while one plays.
 - Preview a song before choosing it: Settings → Music → Songs has a play button on each (Right from the song). It plays up to 30 seconds while the background music and ambience pause.
