@@ -1,62 +1,35 @@
 import { useEffect, useRef } from 'react'
 import { NOISE, startShaderBackdrop, type Looks } from './shaderBackdrop'
-import layer0 from '../assets/aurora/layer0.svg'
-import layer1 from '../assets/aurora/layer1.svg'
-import layer2 from '../assets/aurora/layer2.svg'
+import sceneArt from '../assets/aurora/scene.svg'
 
-// Northern Lights: aurora curtains over pine forest, mirrored in a still lake.
+// Northern Lights: aurora curtains over a forested shore, mirrored in a still lake.
 // The aurora comes out after dark; by day it's the same shore under a winter sky. The sky,
-// aurora and water are one shader; the land is Henry's SVG layers, drawn at the screen's
-// own resolution and handed to the shader as textures.
+// aurora and water are one shader; the shore is Henry's SVG, drawn at the screen's own
+// resolution and handed to the shader as a texture.
 
-/** The layers' artboard, in artboard pixels. */
+/** The art's artboard, in artboard pixels. */
 const ART_W = 1920
 const ART_H = 1080
-/** Where the far shore meets the water: a little above the bottom of layers 1 and 2
- * (693.8), so the sky doesn't show through two notches in layer 2's bottom edge. */
-const WATERLINE = 691
-/** Where the near shore (layer 0), which stands in the water in front, is mirrored: a
- * little above its bottom edge (743.4), which is ragged, so no water shows through. */
-const NEAR_SHORE = 741.4
+/** Where the shore meets the water: a little above the bottom of the art (754.4), which is
+ * ragged, so no sky shows through between the reflection and the shore. */
+const WATERLINE = 752
 /** The waterline in screen units from the middle (height = 1), where it is on the artboard. */
 const HORIZON = 0.5 - WATERLINE / ART_H
 
-/** A layer and where it sits on the artboard. */
-interface Layer {
-  src: string
-  top: number
-  height: number
+/** Paints the art onto a canvas the size of the backdrop's: the artboard spans its width, with the waterline on HORIZON. */
+async function paintArt(width: number, height: number): Promise<HTMLCanvasElement> {
+  const image = new Image()
+  image.src = sceneArt
+  await image.decode()
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const k = width / ART_W
+  canvas.getContext('2d')!.drawImage(image, 0, (0.5 - HORIZON) * height - WATERLINE * k, width, ART_H * k)
+  return canvas
 }
 
-const FAR: Layer[] = [
-  { src: layer2, top: 0, height: ART_H },
-  { src: layer1, top: 0, height: ART_H }
-]
-const NEAR: Layer[] = [{ src: layer0, top: 0, height: ART_H }]
-
-/** Paints layers, back to front, onto a canvas the size of the backdrop's: the artboard spans its width, with the waterline on HORIZON. */
-function paint(layers: Layer[]) {
-  return async (width: number, height: number): Promise<HTMLCanvasElement> => {
-    const images = await Promise.all(
-      layers.map(async ({ src }) => {
-        const image = new Image()
-        image.src = src
-        await image.decode()
-        return image
-      })
-    )
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')!
-    const k = width / ART_W
-    const waterline = (0.5 - HORIZON) * height
-    layers.forEach(({ top, height: tall }, i) => ctx.drawImage(images[i], 0, waterline + (top - WATERLINE) * k, width, tall * k))
-    return canvas
-  }
-}
-
-/** Looks by time of day (see shaderBackdrop). uLand tints the land layers: their own colours by day, dimmed and cooled at night. */
+/** Looks by time of day (see shaderBackdrop). uLand tints the art: their own colours by day, dimmed and cooled at night. */
 const LOOKS: Looks = [
   [0.0, { uSkyHigh: '#34477e', uSkyLow: '#e9a98a', uNear: '#151b24', uLand: '#c8a8a4', uAurora: 0.1 }],
   [0.1, { uSkyHigh: '#3a6cb4', uSkyLow: '#bcd4ea', uNear: '#1a2622', uLand: '#ffffff', uAurora: 0 }],
@@ -71,7 +44,7 @@ const LOOKS: Looks = [
 const FRAGMENT = /*glsl*/ `
 uniform vec3 uSkyHigh, uSkyLow, uNear, uLand;
 uniform float uAurora;
-uniform sampler2D uFar, uNear0;
+uniform sampler2D uArt;
 ${NOISE}
 
 const float HORIZON = ${HORIZON.toFixed(5)};
@@ -110,28 +83,26 @@ vec3 sky(vec2 uv) {
   vec3 rd = normalize(vec3(uv.x, uv.y - HORIZON, 1.1));
   float up = clamp(rd.y, 0.0, 1.0);
   vec3 col = mix(uSkyLow, uSkyHigh, pow(up, 0.5));
-  col += uStars * stars(uv, 260.0, 0.06) * smoothstep(0.0, 0.25, rd.y) * vec3(0.85, 0.9, 1.0);
-  // Sun by day, moon by night, each on an arc from left to right.
+  // Sun by day, moon by night, each on an arc from left to right: crisp discs, their
+  // edges one pixel wide, each with a faint glow around it. Stars stay behind them.
   float day = step(uSun, 1.0);
   float s = day > 0.5 ? uSun : uSun - 1.0;
   vec2 body = vec2(mix(-0.75, 0.75, s), HORIZON + sin(3.14159 * s) * 0.42);
   float d = length(uv - body);
-  col += day * (vec3(1.0, 0.85, 0.65) * (1.0 - smoothstep(0.02, 0.03, d) + 0.25 * exp(-d * 6.0)));
-  col += (1.0 - day) * vec3(0.85, 0.9, 1.0) * ((1.0 - smoothstep(0.016, 0.022, d)) * 0.9 + 0.06 * exp(-d * 10.0));
+  float px = 1.0 / uR.y;
+  float disc = 1.0 - smoothstep(mix(0.019, 0.025, day) - px, mix(0.019, 0.025, day) + px, d);
+  col += uStars * stars(uv, 260.0, 0.06) * smoothstep(0.0, 0.25, rd.y) * (1.0 - disc) * vec3(0.85, 0.9, 1.0);
+  col += day * vec3(1.0, 0.85, 0.65) * (disc + 0.25 * exp(-d * 6.0));
+  col += (1.0 - day) * vec3(0.85, 0.9, 1.0) * (disc * 0.9 + 0.04 * exp(-d * 12.0));
   col += aurora(rd) * uAurora;
   return col;
 }
 
-// A land layer at uv, from the texture painted for the screen.
-vec4 land(sampler2D layer, vec2 uv) {
-  return texture2D(layer, (uv * uR.y + 0.5 * uR) / uR);
-}
-
-// The scene above the water line at uv: sky, then the far forest.
+// The scene above the water line at uv: the shore, and the sky wherever it shows.
 vec3 scene(vec2 uv) {
-  vec4 far = land(uFar, uv);
-  if (far.a >= 1.0) return far.rgb * uLand;
-  return mix(sky(uv), far.rgb * uLand, far.a);
+  vec4 art = texture2D(uArt, (uv * uR.y + 0.5 * uR) / uR);
+  if (art.a >= 1.0) return art.rgb * uLand;
+  return mix(sky(uv), art.rgb * uLand, art.a);
 }
 
 void main() {
@@ -143,24 +114,15 @@ void main() {
     // The lake: the scene mirrored, darkened, with slow ripples breaking up the reflection.
     float depth = HORIZON - uv.y;
     col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth)) * 0.55;
-    // The near shore's own reflection, mirrored at its foot.
-    float shore = HORIZON - (${NEAR_SHORE.toFixed(1)} - ${WATERLINE.toFixed(1)}) * uR.x / ${ART_W.toFixed(1)} / uR.y;
-    if (uv.y < shore) {
-      float d = shore - uv.y;
-      vec4 mirrored = land(uNear0, vec2(uv.x + ripple * smoothstep(0.0, 0.1, d), shore + d));
-      col = mix(col, mirrored.rgb * uLand * 0.55, mirrored.a);
-    }
     col = mix(col, uNear, smoothstep(0.1, 0.3, depth) * 0.6);
   }
-  vec4 near = land(uNear0, uv);
-  col = mix(col, near.rgb * uLand, near.a);
   // A touch of noise, a fraction of one 8-bit step, so the long dark gradients don't band.
   col += (hash2(gl_FragCoord.xy) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
 }
 `
 
-/** Northern lights over a forest lake, following the time of day. Calls onUnavailable if WebGL can't run it. */
+/** Northern lights over a lake shore, following the time of day. Calls onUnavailable if WebGL can't run it. */
 export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
@@ -168,7 +130,7 @@ export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void 
     try {
       // Drawn at the screen's own resolution: stretched up from the stage's, the land's
       // edges and the aurora's fine rays go soft and stair-stepped.
-      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true, textures: { uFar: paint(FAR), uNear0: paint(NEAR) } })
+      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true, textures: { uArt: paintArt } })
     } catch (err) {
       console.error('steamtv: northern lights backdrop unavailable:', err)
       onUnavailable()
