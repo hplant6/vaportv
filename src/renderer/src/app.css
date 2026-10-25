@@ -134,7 +134,7 @@ button {
 
 /* ── Header ─────────────────────────────────────────── */
 
-/* ── The top bar's corners (ClockCorner.tsx): a row of layouts from Settings → Home ──
+/* ── The top bar's corners (ClockCorner.tsx): a layout from Settings → Home in each ──
    The left one's text lines up with the section titles below (37px in); the right mirrors it.
    Sizes from Henry's Figma set: a 56px value, a 32px label or stack top, a 20px stack bottom. */
 .clock-corner {
@@ -142,19 +142,16 @@ button {
   top: 24px;
   display: flex;
   align-items: flex-start;
-  gap: 28px;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .clock-corner.left {
   left: 35.86px;
-  transform-origin: left top;
 }
 
 .clock-corner.right {
   right: 34.99px;
-  transform-origin: right top;
 }
 
 /* Bolder than the font's heaviest weight: its sturdier text cut, with a thicker outline. */

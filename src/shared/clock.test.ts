@@ -7,7 +7,7 @@ describe('cleanClockCorners', () => {
   })
 
   it('drops unknown layouts and any shown twice', () => {
-    expect(cleanClockCorners({ left: ['time', 'nope' as never, 'time'], right: ['time', 'date'] })).toEqual({ left: ['time'], right: ['date'] })
+    expect(cleanClockCorners({ left: ['nope' as never, 'time'], right: ['time', 'date'] })).toEqual({ left: ['time'], right: ['date'] })
   })
 
   it('holds no more than a corner has room for', () => {

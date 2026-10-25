@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { ClockCorners, ClockWidget, SystemStats, Weather } from '../../../shared/types'
 import { DEFAULT_CLOCK_CORNERS } from '../../../shared/clock'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
@@ -10,15 +10,13 @@ import high from '../assets/battery/high.svg'
 import medium from '../assets/battery/med.svg'
 import empty from '../assets/battery/low.svg'
 
-// A corner of the top bar: a row of the layouts chosen in Settings → Home, after Henry's
+// A corner of the top bar: the layout chosen for it in Settings → Home, after Henry's
 // Figma set. Each is a big value with a label, or a two-line stack, beside it; in the right
 // corner the stack comes first, so the big values sit against the screen's edges.
 
 /** Settings fires this after changing what the corners show. */
 export const CLOCK_CHANGED_EVENT = 'steamtv:clock-changed'
 
-/** Room in a corner before the bar's tabs (px); a wider row is scaled down to fit. */
-const ROOM = 320
 const WEATHER_REFRESH = 15 * 60 * 1000
 const STATS_REFRESH = 2000
 /** The battery turns red at or below this. */
@@ -195,25 +193,12 @@ function useCorners(): ClockCorners {
   return value
 }
 
-/** One corner of the top bar, scaled down if its row is wider than the corner. */
+/** One corner of the top bar. */
 export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   const widgets = useCorners()[side]
-  const ref = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const fit = (): void => setScale(Math.min(1, ROOM / el.scrollWidth))
-    fit()
-    const observer = new ResizeObserver(fit)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [widgets])
-
   if (!widgets.length) return null
   return (
-    <div ref={ref} className={`clock-corner ${side} display`} style={scale < 1 ? { transform: `scale(${scale})` } : undefined}>
+    <div className={`clock-corner ${side} display`}>
       {widgets.map((id) => (
         <Widget key={id} id={id} side={side} />
       ))}

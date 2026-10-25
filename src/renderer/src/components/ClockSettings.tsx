@@ -11,7 +11,7 @@ type Places = Record<Place, ClockWidget[]>
 
 const PLACES: Place[] = ['left', 'right', 'off']
 const ROOM: Record<Place, number> = { left: CORNER_ROOM, right: CORNER_ROOM, off: Infinity }
-const FULL = `A corner holds ${CORNER_ROOM}`
+const FULL = 'A corner holds one'
 
 const WIDGETS: Record<ClockWidget, { name: string; detail: string }> = {
   dateTemp: { name: 'Temperature & date', detail: 'The weather small, then the date' },
@@ -56,7 +56,7 @@ function step(places: Places, id: ClockWidget, direction: 'up' | 'down'): Places
 }
 
 /**
- * Settings → Home: what each corner of the top bar shows, in order. A picks a layout up, Up
+ * Settings → Home: what each corner of the top bar shows. A picks a layout up, Up
  * and Down move it (over into the next corner, or Off, at either end), A puts it down and
  * saves, B puts it back.
  */
@@ -144,8 +144,8 @@ export function ClockSettings() {
   if (!places) return null
   return (
     <>
-      {group('left', 'Top left', `Up to ${CORNER_ROOM}, left to right. A picks one up; up and down move it, here, into the other corner or Off.`)}
-      {group('right', 'Top right', `Up to ${CORNER_ROOM}, left to right. Moving one up into a full corner sends its last one down.`)}
+      {group('left', 'Top left', 'One layout. A picks it up; up and down move it into the other corner or Off.')}
+      {group('right', 'Top right', 'One layout. Moving one up into a full corner swaps them.')}
       {group('off', 'Off', "Layouts you don't use.")}
     </>
   )
