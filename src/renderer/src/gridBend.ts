@@ -4,11 +4,19 @@ import { useEffect, useRef, type RefObject } from 'react'
 // middle of the screen sinks away by the scroll's speed (going down; going up it swells
 // toward you) and the cards bow along that curve, easing flat when it stops. The demo bends each plane in its vertex shader by
 // sin(y / height · π) · strength; here each card is moved back by that curve at its middle
-// and tipped to its slope, which reads the same at a card's size.
+// and tipped to its slope, which reads the same at a card's size. Only when scrolling
+// fast (a held direction): one step at a time, bent cards are hard to read.
 /** The grids' cards. */
 const CARDS = '.wide-card'
-/** How far back the middle of the screen goes, per px the page moves in a frame. */
-const PX_PER_SPEED = 2.5
+/** How much of each frame's speed goes into the running average (at 60 fps): about a
+    quarter second's worth, so one step's quick slide doesn't count as fast. */
+const PACE = 0.06
+/** Average px a frame below which it's browsing, not scrolling: a single step averages
+    about 10, tapping three times a second about 16, a held direction (a row every
+    130 ms) about 32. */
+const FAST = 20
+/** How far back the middle of the screen goes, per px a frame past FAST. */
+const PX_PER_SPEED = 7
 /** The most it goes back (or comes forward). */
 const MAX_DEPTH = 90
 /** How far the bend closes on its target each frame (at 60 fps), the demo's lerp. */
@@ -76,6 +84,7 @@ export function useGridBend(ref: RefObject<HTMLElement | null>, scrollY: number)
     if (!page || frame.current) return
     let last = performance.now()
     let prev = drawnY(page)
+    let pace = 0
     let depth = 0
     const step = (now: number): void => {
       const frames = Math.max(now - last, 1) / FRAME_MS
@@ -84,7 +93,9 @@ export function useGridBend(ref: RefObject<HTMLElement | null>, scrollY: number)
       // Px a frame the content moves up (scrolling down), negative going the other way.
       const speed = (prev - at) / frames
       prev = at
-      const target = Math.max(-MAX_DEPTH, Math.min(MAX_DEPTH, speed * PX_PER_SPEED))
+      pace += (speed - pace) * (1 - (1 - PACE) ** frames)
+      const past = Math.max(0, Math.abs(pace) - FAST) * Math.sign(pace)
+      const target = Math.max(-MAX_DEPTH, Math.min(MAX_DEPTH, past * PX_PER_SPEED))
       depth += (target - depth) * (1 - (1 - LERP) ** frames)
       // The transition may not have started on the first frame, so stop only once it's there.
       if (Math.abs(at + goal.current) < 0.5 && Math.abs(depth) < 0.5) {

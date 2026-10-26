@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - City Rain backdrop: a wet street at night, the city's lights reflected in the puddles and rain falling through them. Lighter on the GPU than Rain.
-- Grids bend as they scroll: the faster they move, the more the middle of the screen sinks away (or swells toward you going back up) with the cards curving along it, flattening when they stop (after Codrops' infinite WebGL gallery).
+- Grids bend when you scroll fast: hold a direction and the middle of the screen sinks away (or swells toward you going back up) with the cards curving along it, flattening when you let go (after Codrops' infinite WebGL gallery). Stepping one card at a time leaves them flat and easy to read.
 - Cards lean with the scroll: a row's cards tilt sideways as it slides, easing flat when it stops (after the carousel in Codrops' WebGPU page-transitions demo).
 - The selected card tips the way you moved and settles, then sways gently while you stay on it; its shadow moves with it.
 - Time played on the game cards, after the date: Steam's own count for Steam games and shortcuts, and vaporTV's for the console games it starts (counted from now on; time asleep isn't counted).
