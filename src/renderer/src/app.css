@@ -1003,7 +1003,7 @@ button {
    axis. Selecting one tips it the way the
    cursor moved, in the same sense, springing back (focus.ts marks data-arrive), and then
    it sways gently while it stays selected. All of it adds up to one turn (--turn-x/y)
-   that the sheen and shadow follow, so they move with the card. Each turns about the
+   that the shadow follows, so it moves with the card. Each turns about the
    card's centre, wherever the origin its focus zoom grows from (--pivot is the way
    there). Only while something moves or on the selected card, so cards at rest aren't
    each a 3D layer. */
@@ -1088,20 +1088,6 @@ button {
   50% { --sway-x: 0deg; animation-timing-function: ease-out; }
   75% { --sway-x: 0.4deg; animation-timing-function: ease-in; }
   100% { --sway-x: 0deg; }
-}
-
-/* A light sheen on the selected card, placed by its turn: it slides across as the card
-   tips and drifts with the sway, brighter the further it's turned. */
-.recent-card:focus::after,
-.wide-card:focus::after,
-.app-tile:focus::after {
-  content: '';
-  position: absolute;
-  inset: 0 -60%;
-  pointer-events: none;
-  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.09) 48%, rgba(255, 255, 255, 0.025) 54%, transparent 62%);
-  translate: calc(var(--turn-y) / 1deg * 4%) calc(var(--turn-x) / 1deg * -3%);
-  opacity: min(1, calc((abs(var(--turn-x)) + abs(var(--turn-y))) / 1deg * 0.16));
 }
 
 .wide-card img {
