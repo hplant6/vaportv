@@ -231,6 +231,8 @@ export interface Config {
   tabLayout?: TabArrangement
   /** An update's version whose window was put off with Later: it doesn't open by itself again. */
   updateDismissed?: string
+  /** The setup damage (SetupDamage's missing parts, joined) whose repair window was put off with Later. */
+  repairDismissed?: string
   /** Testing the updater: a releases JSON (URL or file, shaped as GitHub's API) in place of GitHub's. */
   updateFeed?: string
 }

@@ -484,6 +484,18 @@ export interface UpdateState {
   dismissed: string | null
 }
 
+/** Setup's root files gone missing (SteamOS updates discard /etc changes not on their keep list). */
+export interface SetupDamage {
+  /** The controller wake rule (moved to /etc/previous). */
+  wake: boolean
+  /** The Chrome policy that installs vaporTV for Netflix. */
+  netflix: boolean
+  /** The keep list that carries both through updates. */
+  keep: boolean
+  /** The user has an admin password to repair with. */
+  password: boolean
+}
+
 export interface InstallOptions {
   /** Open vaporTV when Gaming Mode starts. */
   autostart: boolean
@@ -565,6 +577,12 @@ export interface SteamTvApi {
     uninstall(): Promise<string | null>
     gamingMode(): Promise<void>
     onProgress(callback: (line: string) => void): () => void
+    /** What a SteamOS update took from setup's root half, for the repair window in Gaming Mode. */
+    damage(): Promise<SetupDamage & { dismissed: string | null }>
+    /** Puts it back with the admin password: null when done, else why not. */
+    repair(password: string): Promise<string | null>
+    /** Later: the window doesn't open by itself again for this same damage. */
+    dismissRepair(key: string): Promise<void>
   }
   /** The tabs that show, in the bar (after Home) and under More: those with something to show and not switched off. */
   getAvailableTabs(): Promise<TabArrangement>

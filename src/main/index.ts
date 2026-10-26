@@ -15,7 +15,7 @@ import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
-import { install, installStatus, returnToGamingMode, uninstall } from './installer'
+import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
 import { directAppAge, launch, launchedIsGame, launchedName, launchUrl } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
@@ -484,6 +484,9 @@ ipcMain.handle('setup:status', () => installStatus())
 ipcMain.handle('setup:install', (event, options: InstallOptions) => setupRun(event.sender, (report) => install(options, report)))
 ipcMain.handle('setup:uninstall', (event) => setupRun(event.sender, uninstall))
 ipcMain.handle('setup:gamingMode', () => returnToGamingMode())
+ipcMain.handle('setup:damage', async () => ({ ...(await setupDamage()), dismissed: (await loadConfig()).repairDismissed ?? null }))
+ipcMain.handle('setup:repair', (_event, password: string) => repairSetup(password))
+ipcMain.handle('setup:dismissRepair', (_event, key: string) => saveConfig({ repairDismissed: key }))
 /** Tabs with something in them (Apps always has its list). */
 async function tabsWithContent(config: Config): Promise<HideableTab[]> {
   const tabs = await availableTabs(config)

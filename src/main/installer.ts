@@ -9,6 +9,9 @@
 //   4. with the admin password (one prompt): the controller wake rule (optional), the
 //      Chrome policy that installs vaporTV for Netflix (when Netflix is set up), and the
 //      keep list that carries both through SteamOS updates
+//
+// Repair (Gaming Mode, RepairDialog): step 4 again when a SteamOS update has taken its
+// files, with the password typed on vaporTV's keyboard.
 
 import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -17,7 +20,7 @@ import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { app } from 'electron'
-import type { InstallOptions, InstallStatus } from '../shared/types'
+import type { InstallOptions, InstallStatus, SetupDamage } from '../shared/types'
 import { addShortcutsNow, appState, installForApp } from './appSetup'
 import { loadConfig } from './config'
 import { appCatalog } from './customApps'
@@ -274,12 +277,22 @@ async function keepListCurrent(): Promise<boolean> {
   return (await readFile(KEEP_LIST, 'utf8').catch(() => '')) === KEEP_LIST_TEXT
 }
 
+/** Whether the user has a password: SteamOS comes without one, and sudo/pkexec need it. */
+async function hasPassword(): Promise<boolean> {
+  const status = await run('passwd', ['-S']).then(
+    ({ stdout }) => stdout,
+    () => ''
+  )
+  return !/^\S+ NP /m.test(status)
+}
+
 /**
- * What needs root, under one password prompt: the wake rule (with wake enabled on the USB
- * root hubs, switching a controller on, its receiver reconnecting, wakes the box), the
- * Chrome policy that installs vaporTV for Netflix, and the keep list for both.
+ * What needs root: the wake rule (with wake enabled on the USB root hubs, switching a
+ * controller on, its receiver reconnecting, wakes the box), the Chrome policy that
+ * installs vaporTV for Netflix, and the keep list for both. The files are written to a
+ * temp folder; the commands put them in place as root. Null when there's nothing to do.
  */
-async function adminStep(wake: boolean, netflix: boolean, report: Report): Promise<void> {
+async function rootSteps(wake: boolean, netflix: boolean, report: Report): Promise<{ what: string; temp: string; steps: string[] } | null> {
   if (wake && (existsSync(OLD_WAKE_RULE) || (await readFile(WAKE_RULE, 'utf8').catch(() => '')) === WAKE_RULE_TEXT)) {
     report('Controller wake is already set up')
     wake = false
@@ -288,18 +301,9 @@ async function adminStep(wake: boolean, netflix: boolean, report: Report): Promi
   if (netflix && !policy) report('Netflix remote control is already set up')
   // Also for a box set up before there was a keep list, once either file is in place.
   const keep = (wake || !!policy || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
-  if (!wake && !policy && !keep) return
+  if (!wake && !policy && !keep) return null
   const what =
     [wake && 'controller wake', policy && 'Netflix remote control'].filter(Boolean).join(' and ') || 'keeping your setup through SteamOS updates'
-  // SteamOS comes without a password for its user, and the admin prompt needs one.
-  const status = await run('passwd', ['-S']).then(
-    ({ stdout }) => stdout,
-    () => ''
-  )
-  if (/^\S+ NP /m.test(status)) {
-    return report(`Skipped ${what}: it needs an admin password. Set one with \`passwd\` in Konsole, then run setup again.`)
-  }
-  // Written here first, then put in place as root.
   const temp = await mkdtemp(join(tmpdir(), 'vaportv-'))
   const steps: string[] = []
   if (wake) {
@@ -318,18 +322,69 @@ async function adminStep(wake: boolean, netflix: boolean, report: Report): Promi
     await writeFile(join(temp, 'keep.conf'), KEEP_LIST_TEXT)
     steps.push(`install -D -m 644 ${join(temp, 'keep.conf')} ${KEEP_LIST}`)
   }
-  report(`Asking for your password to set up ${what}…`)
-  const done = await run('pkexec', ['sh', '-c', steps.join(' && ')]).then(
+  return { what, temp, steps }
+}
+
+/** Setup's root step, under one password prompt (Desktop Mode has a polkit agent to ask). */
+async function adminStep(wake: boolean, netflix: boolean, report: Report): Promise<void> {
+  const plan = await rootSteps(wake, netflix, report)
+  if (!plan) return
+  if (!(await hasPassword())) {
+    await rm(plan.temp, { recursive: true, force: true })
+    return report(`Skipped ${plan.what}: it needs an admin password. Set one with \`passwd\` in Konsole, then run setup again.`)
+  }
+  report(`Asking for your password to set up ${plan.what}…`)
+  const done = await run('pkexec', ['sh', '-c', plan.steps.join(' && ')]).then(
     () => true,
     () => false
   )
-  await rm(temp, { recursive: true, force: true })
+  await rm(plan.temp, { recursive: true, force: true })
   // Not worth failing the whole install over: everything else is already in place.
   report(
     done
-      ? `Set up ${what}`
-      : `Skipped ${what} (the password wasn't given). If you never set one, run \`passwd\` in Konsole, then run setup again.`
+      ? `Set up ${plan.what}`
+      : `Skipped ${plan.what} (the password wasn't given). If you never set one, run \`passwd\` in Konsole, then run setup again.`
   )
+}
+
+/** Where a SteamOS update puts an /etc file it discards. */
+const previous = (file: string): string => file.replace(/^\/etc\//, '/etc/previous/')
+
+/**
+ * What of setup's root half has gone missing, for the repair window in Gaming Mode: the
+ * wake rule when a SteamOS update moved it to /etc/previous, the Netflix policy whenever
+ * the Netflix tile works but the policy isn't this version's, and the keep list.
+ */
+export async function setupDamage(): Promise<SetupDamage> {
+  const config = await loadConfig()
+  const wake = !existsSync(WAKE_RULE) && !existsSync(OLD_WAKE_RULE) && existsSync(previous(WAKE_RULE))
+  const netflix = (await launchUrl(config, 'app', 'netflix')) !== null && (await netflixPolicy()) !== null && !(await netflixPolicyCurrent())
+  const keep = (wake || netflix || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
+  return { wake, netflix, keep, password: await hasPassword() }
+}
+
+/**
+ * Puts back what setupDamage found, as root. Gaming Mode has no polkit agent to ask for the
+ * password, so vaporTV asks with its own keyboard and hands it to sudo. Null when it worked,
+ * else why not.
+ */
+export async function repairSetup(password: string): Promise<string | null> {
+  const damage = await setupDamage()
+  const plan = await rootSteps(damage.wake, damage.netflix, () => {})
+  if (!plan) return null
+  const result = await new Promise<{ code: number | null; stderr: string }>((resolve) => {
+    // -k: always check the password typed, never a cached sudo session; -p '': no prompt in stderr.
+    const child = spawn('sudo', ['-S', '-k', '-p', '', 'sh', '-c', plan.steps.join(' && ')], { stdio: ['pipe', 'ignore', 'pipe'] })
+    let stderr = ''
+    child.stderr.on('data', (chunk) => (stderr += chunk))
+    child.on('error', (err) => resolve({ code: null, stderr: err.message }))
+    child.on('close', (code) => resolve({ code, stderr }))
+    child.stdin.end(password + '\n')
+  })
+  await rm(plan.temp, { recursive: true, force: true })
+  if (result.code === 0) return null
+  if (/try again|incorrect password|no password/i.test(result.stderr)) return "That password didn't work"
+  return result.stderr.trim().split('\n').pop() || 'It stopped with an error'
 }
 
 export async function install(options: InstallOptions, report: Report): Promise<void> {

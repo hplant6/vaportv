@@ -16,6 +16,7 @@ import { tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
+import { RepairDialog } from './components/RepairDialog'
 import { UpdateDialog } from './components/UpdateDialog'
 import { Intro } from './components/Intro'
 import { AppSetupDialog } from './components/AppSetupDialog'
@@ -428,6 +429,7 @@ export function App() {
       <CoreDialog />
       <GameDialog />
       <UpdateDialog />
+      <RepairDialog />
       <AppSetupDialog apps={home?.allApps ?? []} />
       <Welcome />
       <Screensaver />

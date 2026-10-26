@@ -130,6 +130,9 @@ const api: SteamTvApi = {
     install: (options) => ipcRenderer.invoke('setup:install', options),
     uninstall: () => ipcRenderer.invoke('setup:uninstall'),
     gamingMode: () => ipcRenderer.invoke('setup:gamingMode'),
+    damage: () => ipcRenderer.invoke('setup:damage'),
+    repair: (password) => ipcRenderer.invoke('setup:repair', password),
+    dismissRepair: (key) => ipcRenderer.invoke('setup:dismissRepair', key),
     onProgress: (callback) => {
       const listener = (_event: Electron.IpcRendererEvent, line: string): void => callback(line)
       ipcRenderer.on('setup:progress', listener)

@@ -1441,7 +1441,8 @@ button {
   opacity: 0.8;
 }
 
-.update-buttons {
+.update-buttons,
+.repair-buttons {
   display: flex;
   gap: 24px;
 }
