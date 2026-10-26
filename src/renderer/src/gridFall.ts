@@ -1,14 +1,15 @@
 import { useEffect, useRef, type RefObject } from 'react'
 
 // After the intro grid in Codrops' "On-Scroll 3D Stack Motion Effect" demo: as a grid's
-// cards scroll up under the top bar they tip back, drift up and away by their own amount,
+// cards scroll up toward the top bar they tip back, drift up and away by their own amount,
 // and darken, as if falling into the distance; scrolling back brings them up again.
 /** The grids' cards. The selected one is left out: it's kept in view anyway. */
 const CARDS = '.wide-card'
-/** A card's top this far down the screen is flat: just below the bar's line (112px). */
-const FLAT_TOP = 152
-/** How far it travels from there to having fallen all the way: about its own height. */
-const FALL_PX = 300
+/** A card's top this far down the screen is flat: just above the selected row, which
+    grids keep in the middle (its top at about 430px). */
+const FLAT_TOP = 420
+/** How far it travels from there to having fallen all the way: a little past the top. */
+const FALL_PX = 520
 const FRAME_MS = 1000 / 60
 
 /** Where `el` is drawn vertically right now, mid-transition included. */
