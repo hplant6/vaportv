@@ -1054,17 +1054,15 @@ button {
 .recent-card:focus,
 .wide-card:focus,
 .app-tile:focus {
-  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) rotateX(var(--turn-x)) rotateY(var(--turn-y))
-    translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
+  transform: translate(var(--pivot-x, 0%), var(--pivot-y, 0%)) perspective(1000px) translateZ(var(--bend-z, 0px))
+    rotateX(calc(var(--turn-x) + var(--bend-x, 0rad))) rotateY(var(--turn-y)) translate(calc(var(--pivot-x, 0%) * -1), calc(var(--pivot-y, 0%) * -1));
 }
 
-/* Grid cards scrolling up under the bar fall back into the distance (gridFall.ts), after
-   the intro grid in Codrops' 3D stack demo: each tips back, drifts up and away by its own
-   amount (--fall-y/z), and darkens, all by how far it has gone (--fall, 0 to 1). */
-.wide-card[data-fall]:not(:focus) {
-  transform: perspective(1000px) translate3d(0, calc(var(--fall-y) * var(--fall)), calc(var(--fall-z) * var(--fall)))
-    rotateX(calc(var(--fall) * -60deg));
-  filter: brightness(calc(1 - var(--fall) * 0.9));
+/* While a grid scrolls its cards bow with the speed (gridBend.ts), after Codrops' infinite
+   WebGL gallery: back by --bend-z and tipped by --bend-x to lie along the curve. The
+   selected card bends with them (in its own transform, below). */
+.wide-card[data-bend]:not(:focus) {
+  transform: perspective(1000px) translateZ(var(--bend-z)) rotateX(var(--bend-x));
 }
 
 /* The selected card's shadow falls away from the edge that comes forward, as if lit from

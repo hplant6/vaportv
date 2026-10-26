@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type FocusEvent, type RefObject } from 'react'
-import { useGridFall } from '../gridFall'
+import { useGridBend } from '../gridBend'
 import { useDrag } from '../input/drag'
 import { stageHeight } from '../stage'
 
@@ -25,7 +25,7 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
   const ref = useRef<HTMLDivElement>(null)
   const [scrollY, setScrollY] = useState(0)
   const drag = useDrag('y', scrollY, setScrollY, () => Math.max(0, (ref.current?.scrollHeight ?? 0) - viewportHeight))
-  useGridFall(ref, scrollY)
+  useGridBend(ref, scrollY)
 
   // Layout offsets ignore transforms, so this is stable mid-animation.
   const onFocus = (event: FocusEvent<HTMLDivElement>): void => {
