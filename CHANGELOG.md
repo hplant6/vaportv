@@ -33,6 +33,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
+- In grids the selected card's row stays near the middle of the screen as you move up and down, instead of near the bottom (it stops at the top and the end of the page).
 - More's row: up from one of its tabs goes to the tab above it in the top bar, and down from a top-bar tab (while the row is open) to the one below it, instead of always back to More.
 - The settings and power icons are the height of the tab names, and sit a little further out.
 - Settings has a new look: the categories in a panel on the left, each group of settings in its own panel on the right, and the backdrop dimmed behind them.
