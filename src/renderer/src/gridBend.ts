@@ -8,9 +8,9 @@ import { useEffect, useRef, type RefObject } from 'react'
 /** The grids' cards. */
 const CARDS = '.wide-card'
 /** How far back the middle of the screen goes, per px the page moves in a frame. */
-const PX_PER_SPEED = 7
+const PX_PER_SPEED = 2.5
 /** The most it goes back (or comes forward). */
-const MAX_DEPTH = 320
+const MAX_DEPTH = 90
 /** How far the bend closes on its target each frame (at 60 fps), the demo's lerp. */
 const LERP = 0.12
 const FRAME_MS = 1000 / 60
