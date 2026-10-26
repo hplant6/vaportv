@@ -68,6 +68,19 @@ async function appOnScreen(): Promise<number | null> {
   return match ? Number(match[1]) : null
 }
 
+/**
+ * Whether gamescope's focused window is one of vaporTV's own. GAMESCOPE_FOCUSABLE_WINDOWS
+ * lists window, app id, pid for each: an app vaporTV opens runs in its Steam session, so
+ * the app id can't tell them apart, but the pid can.
+ */
+async function ownWindowInFront(): Promise<boolean> {
+  const out = await xprop(['-root', 'GAMESCOPE_FOCUSED_WINDOW', 'GAMESCOPE_FOCUSABLE_WINDOWS'])
+  const focused = Number(/GAMESCOPE_FOCUSED_WINDOW\(CARDINAL\) = (\d+)/.exec(out)?.[1])
+  const windows = (/GAMESCOPE_FOCUSABLE_WINDOWS\(CARDINAL\) = ([\d, ]+)/.exec(out)?.[1] ?? '').split(',').map(Number)
+  for (let i = 0; i + 2 < windows.length; i += 3) if (windows[i] === focused) return windows[i + 2] === process.pid
+  return false
+}
+
 /** pid → parent pid for every process. */
 async function processTree(): Promise<Map<number, number>> {
   const parents = new Map<number, number>()
@@ -256,6 +269,8 @@ export interface Foreground {
   closeAppBehind: () => Promise<void>
   /** Whether what's in front (a Steam app, or one vaporTV opened itself) runs a program matching `pattern`. */
   runs: (pattern: RegExp) => Promise<boolean>
+  /** Whether vaporTV's own window is in front, rather than an app it opened. */
+  ownInFront: () => Promise<boolean>
 }
 
 async function frontRuns(pattern: RegExp): Promise<boolean> {
@@ -283,7 +298,8 @@ export function startHotkey(options: HotkeyOptions): Foreground {
       options.log(`hotkey: ${options.nameFor('emulator') ?? 'an app'} was left running behind vaporTV; closing it (${pids.length} processes)`)
       await terminate(pids, options.log)
     },
-    runs: frontRuns
+    runs: frontRuns,
+    ownInFront: ownWindowInFront
   }
   if (process.platform !== 'linux') return foreground
   logXprop = options.log

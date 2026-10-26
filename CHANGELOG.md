@@ -42,6 +42,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Games without art show their name on a black band across the card.
 
 ### Fixed
+- Kodi (and Plex) close once you're back in vaporTV, however you got there; Kodi could be left running unseen behind it.
 - Controller and remote wake, and Netflix remote control, now survive SteamOS updates, which had been quietly removing them (3.9.5 did). If a SteamOS update does take them, vaporTV notices as it starts and offers to repair them, with your admin password typed on vaporTV's keyboard.
 - Your videos no longer freeze on their last frame: videos (and music) are served so they can seek, which MP4s with their index at the end need to loop.
 - Titles with the article moved to the end before a subtitle read properly: "The Legend of Zelda - The Wind Waker", not "Legend of Zelda, The - …".

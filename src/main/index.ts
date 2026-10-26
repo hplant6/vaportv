@@ -373,6 +373,8 @@ ipcMain.handle('location:unit', (_event, unit: TemperatureUnit) => setTemperatur
 const APP_SETTLE_MS = 20_000
 /** How long vaporTV must stay in front before an app behind it counts as left. */
 const FOCUS_SETTLE_MS = 3000
+/** How often to look, while an app vaporTV opened may be running behind it. */
+const BEHIND_CHECK_MS = 2500
 
 // Updates: checked a minute after start and every few hours; see updater.ts.
 const UPDATE_EVERY_MS = 6 * 60 * 60 * 1000
@@ -864,13 +866,18 @@ app.whenReady().then(async () => {
     // Back in vaporTV some other way (Steam's menu) with an app it opened still running
     // behind: that app is done with, so it's closed rather than left running unseen.
     // Not in an app's first seconds (Kodi's window comes and goes as it starts), and
-    // only if vaporTV stays in front a moment.
-    win?.on('focus', () => {
-      setTimeout(() => {
-        const age = directAppAge()
-        if (win?.isFocused() && age !== null && age > APP_SETTLE_MS) foreground.closeAppBehind().catch((err) => logInput(`hotkey: ${err}`))
-      }, FOCUS_SETTLE_MS)
-    })
+    // only if vaporTV stays in front a moment. Looked for rather than waited for: Kodi
+    // runs in vaporTV's Steam session, and gamescope can switch between the two without
+    // vaporTV's window getting a focus event (Kodi was once left running for 50 minutes).
+    let inFrontSince = 0
+    setInterval(async () => {
+      const age = directAppAge()
+      if (age === null || age <= APP_SETTLE_MS || !(await foreground.ownInFront())) return void (inFrontSince = 0)
+      inFrontSince ||= Date.now()
+      if (Date.now() - inFrontSince < FOCUS_SETTLE_MS) return
+      inFrontSince = 0
+      await foreground.closeAppBehind().catch((err) => logInput(`hotkey: ${err}`))
+    }, BEHIND_CHECK_MS)
     // This version's Netflix extension, for Chrome to pick up (see netflixExtension.ts).
     stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
     setTimeout(checkUpdates, 60_000)
