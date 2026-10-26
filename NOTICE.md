@@ -17,7 +17,7 @@ either version 3 of the License, or (at your option) any later version. See
 | "GLSL Sample027" (Chromatic Waves backdrop), with itshenry.me's tuning | `src/renderer/src/background/WavesBackground.tsx` | Web_yuki1027 (CodePen) | MIT (CodePen public pen) |
 | Glitch (the glitch on the Settings logo), redone with SVG mask layers and clip-path bands instead of text and clip | `src/renderer/src/components/GlitchLogo.tsx`, `app.css` (`.glitch-*`) | leon9208 (CodePen, pen dWOvxw) | MIT (CodePen public pen) |
 | "Star Tunnel" (Star Tunnel backdrop), with itshenry.me's tuning | `src/renderer/src/background/StarTunnelBackground.tsx` | alphardex (CodePen, pen XWZKzjE) | MIT (CodePen public pen) |
-| Asphalt textures (`road/`) and HDR sky (`shanghai_bund_2k.hdr`) | `src/renderer/public/backdrops/rain/` | Poly Haven, via the rain demo | CC0 |
+| Asphalt textures (`road/`) and HDR sky (`shanghai_bund_2k.hdr`), also used by City Rain | `src/renderer/public/backdrops/rain/` | Poly Haven, via the rain demo | CC0 |
 | Litter decal (`debris/`) | `src/renderer/public/backdrops/rain/debris/` | vaporTV, drawn by `scripts/make-debris-decal.mjs` (replaced the demo's Megascans decal) | GPL-3.0, as vaporTV |
 | Rain splash flipbook (`Splash.png`) | `src/renderer/public/backdrops/rain/` | Faraz Shaikh (rain demo) | GPL-3.0 |
 | Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |

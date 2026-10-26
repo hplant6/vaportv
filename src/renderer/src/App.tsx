@@ -5,6 +5,7 @@ import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
 import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
 import { ForestBackground } from './background/ForestBackground'
+import { CityRainBackground } from './background/CityRainBackground'
 import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
@@ -206,6 +207,8 @@ export function App() {
         <div className="stage-bg" style={fallback} />
       ) : backdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
+      ) : backdrop === 'cityrain' ? (
+        <CityRainBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'forest' ? (
         <ForestBackground onUnavailable={backdropUnavailable} />
       ) : backdrop === 'aurora' ? (
