@@ -47,7 +47,8 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
     const scale = Number(getComputedStyle(event.target).getPropertyValue('--focus-scale')) || 1
     const height = event.target.offsetHeight * (1 + (scale - 1) / 2)
     if ((center || event.target.closest(GRIDS)) && ref.current) {
-      const end = start + ref.current.offsetHeight + BOTTOM_MARGIN
+      // scrollHeight: a page fills the screen (inset 0), so its own height isn't its content's.
+      const end = start + ref.current.scrollHeight + BOTTOM_MARGIN
       const middle = top + height / 2 - viewportHeight / 2
       return setScrollY(Math.max(0, Math.min(middle, end - viewportHeight)))
     }
