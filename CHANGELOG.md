@@ -9,6 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- Grids fall away as they scroll: game cards passing up under the top bar tip back, drift off into the distance and darken, and come back up as you scroll back (after the intro grid in Codrops' 3D stack motion demo).
 - Cards lean with the scroll: a row's cards tilt sideways as it slides, easing flat when it stops (after the carousel in Codrops' WebGPU page-transitions demo).
 - The selected card tips the way you moved and settles, then sways gently while you stay on it; its shadow moves with it.
 - Time played on the game cards, after the date: Steam's own count for Steam games and shortcuts, and vaporTV's for the console games it starts (counted from now on; time asleep isn't counted).
