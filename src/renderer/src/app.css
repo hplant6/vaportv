@@ -1034,8 +1034,14 @@ button {
 .recent-card,
 .wide-card,
 .app-tile {
-  --turn-x: calc(var(--tip-x) + var(--sway-x));
-  --turn-y: calc(var(--lean-y, 0rad) + var(--tip-y) + var(--sway-y));
+  --turn-x: calc((var(--tip-x) + var(--sway-x)) * var(--focus-motion, 1));
+  --turn-y: calc(var(--lean-y, 0rad) + (var(--tip-y) + var(--sway-y)) * var(--focus-motion, 1));
+}
+
+/* Grids tip and sway only faintly; the rows keep the full motion. */
+.wide-card,
+.favorites-grid .app-tile {
+  --focus-motion: 0.35;
 }
 
 .recent-card,
