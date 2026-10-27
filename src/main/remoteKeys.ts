@@ -34,10 +34,11 @@ const RESCAN_MS = 5000
 const ASLEEP_GAP_MS = 5000
 /**
  * Awake again this soon after Power slept it, the box didn't sleep: the Sofabaton hub
- * reconnects seconds into sleep and that wakes it. It goes back to sleep once, after
- * RESLEEP_DELAY_MS, when the hub's reconnect is over (a second sleep holds).
+ * reconnects seconds into sleep and that wakes it (5-6 s in). It goes back to sleep once,
+ * after RESLEEP_DELAY_MS, when the hub's reconnect is over (a second sleep holds), unless
+ * Power comes in meanwhile: that's someone switching the box back on.
  */
-const BOUNCE_MS = 20_000
+const BOUNCE_MS = 10_000
 const RESLEEP_DELAY_MS = 8000
 /** Remotes, by the names their receivers give: a Sofabaton hub, a TV remote's USB dongle ("... RC"). */
 const REMOTE_NAME = /sofabaton|\bremote\b|\bRC\b/i
@@ -88,6 +89,7 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   let sleepingUntil = 0
   /** When Power last slept the box, until a bounce back awake has been dealt with. */
   let sleptAt = 0
+  let resleepTimer: ReturnType<typeof setTimeout> | undefined
   /** When Home was first pressed over a game; a second press soon after closes it. */
   let homeArmedAt = 0
   /** Menu is down: when it's held long enough this fires (Settings); let go first, it's a tap. */
@@ -98,13 +100,14 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     const now = Date.now()
     if (now - lastTick > ASLEEP_GAP_MS) {
       awokeAt = now
-      if (now - sleptAt < BOUNCE_MS) setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
+      if (now - sleptAt < BOUNCE_MS) resleepTimer = setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
       sleptAt = 0
     }
     lastTick = now
   }, 1000)
 
   const sleepAgain = async (): Promise<void> => {
+    resleepTimer = undefined
     const why = await sleepBlocker()
     if (why) return log(`remote power: woke straight back up, staying awake (${why})`)
     log('remote power: woke straight back up, sleeping again')
@@ -115,6 +118,11 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
 
   const pressedPower = async (): Promise<void> => {
     const now = Date.now()
+    if (resleepTimer) {
+      clearTimeout(resleepTimer)
+      resleepTimer = undefined
+      return log('remote power: switched back on, staying awake')
+    }
     if (justWoke(now) || now < sleepingUntil) return log('remote power: ignored (just woke)')
     const why = await sleepBlocker()
     if (why) return log(`remote power: staying awake (${why})`)
