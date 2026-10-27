@@ -417,6 +417,11 @@ async function launchInCore(config: Config, id: string, core: string): Promise<b
   return true
 }
 
+/** Start on a Steam game: its page in Steam's library, or Steam checking its files. */
+export function openInSteam(appid: string, what: 'page' | 'verify'): void {
+  run('steam', [what === 'page' ? `steam://nav/games/details/${appid}` : `steam://validate/${appid}`])
+}
+
 export async function launch(config: Config, kind: LaunchKind, id: string, name?: string): Promise<boolean> {
   const core = config.gameEmulators?.[id]
   if (core && (await launchInCore(config, id, core))) return true

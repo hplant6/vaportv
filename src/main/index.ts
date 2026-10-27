@@ -7,9 +7,9 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppItem, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
-import { forgetGame, readPlaytime, toggleFavorite } from './history'
+import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
@@ -18,7 +18,7 @@ import { makeBugReport } from './bugReport'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
-import { directAppAge, launch, launchedIsGame, launchedName, launchUrl } from './launch'
+import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSteam } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
@@ -49,7 +49,9 @@ import { fillWiiArt, loadWiiTab, wiiGames } from './library/wiiTab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { emulatedItem, fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
-import { activeUserDir, steamGames } from './library/steam'
+import { activeUserDir, steamGameFacts, steamGames } from './library/steam'
+import { artUrl } from './library/art'
+import { isoDate } from './library/dates'
 import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
 import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames } from './library/steamgriddb'
 import { searchDuckDuckGo } from './library/duckduckgo'
@@ -737,9 +739,30 @@ ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> 
   // The card shows the given name; the options want the name before it too.
   const game = await emulatedGame({ ...config, gameTitles: {} }, id)
   if (!game) throw new Error('Only console games have options here.')
-  // The card's art and playtime, for the dialog's picture and header.
-  const item = await emulatedItem(game, undefined, false, (await readPlaytime())[id])
-  return { ...(await gameOptions(config, id, game.title)), cover: item.cover ?? item.wide, playtime: item.playtime }
+  // The card's art, playtime and last play, for the dialog's picture and header.
+  const item = await emulatedItem(game, (await readHistory())[id], false, (await readPlaytime())[id])
+  return { ...(await gameOptions(config, id, game.title)), cover: item.cover ?? item.wide, playtime: item.playtime, lastPlayed: item.lastPlayed }
+})
+// Start on a Steam game: what Steam's own files say of it.
+ipcMain.handle('game:steam', async (_event, id: string): Promise<SteamGameDetails | null> => {
+  const appid = /^steam:(\d+)$/.exec(id)?.[1]
+  const config = await loadConfig()
+  const userDir = appid && (await activeUserDir(steamRoot(config)))
+  const facts = userDir ? await steamGameFacts(steamRoot(config), userDir, appid) : null
+  if (!facts) return null
+  const art = facts.art.portrait ?? facts.art.wide
+  return {
+    title: facts.title,
+    cover: art && artUrl(art),
+    playtime: facts.playtime || undefined,
+    lastPlayed: facts.lastPlayed ? isoDate(facts.lastPlayed) : undefined,
+    bytes: facts.bytes,
+    achievements: facts.achievements
+  }
+})
+ipcMain.handle('game:openInSteam', (_event, id: string, what: 'page' | 'verify') => {
+  const appid = /^steam:(\d+)$/.exec(id)?.[1]
+  if (appid) openInSteam(appid, what)
 })
 ipcMain.handle('game:rename', async (_event, id: string, name: string | null) => {
   const config = await loadConfig()

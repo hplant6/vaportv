@@ -190,6 +190,22 @@ export interface GameOptions {
   cover?: string
   /** Minutes vaporTV has timed it running; missing if never played. */
   playtime?: number
+  /** ISO date (YYYY-MM-DD); missing if never played. */
+  lastPlayed?: string
+}
+
+/** Start on a Steam game: what's known of it from Steam's own files. */
+export interface SteamGameDetails {
+  title: string
+  cover?: string
+  /** Minutes Steam has counted; missing if never played. */
+  playtime?: number
+  /** ISO date (YYYY-MM-DD); missing if never played. */
+  lastPlayed?: string
+  /** Bytes the install takes. */
+  bytes?: number
+  /** Unlocked of all there are, where the game has achievements. */
+  achievements?: { achieved: number; total: number }
 }
 
 export interface LibraryTab {
@@ -579,6 +595,10 @@ export interface SteamTvApi {
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
   game: {
     options(id: string): Promise<GameOptions>
+    /** A Steam game's playtime, last play, size and achievements; null when it isn't installed. */
+    steam(id: string): Promise<SteamGameDetails | null>
+    /** Hands the game to Steam: its page in Steam's library, or checking its files. */
+    openInSteam(id: string, what: 'page' | 'verify'): Promise<void>
     /** A new name, or null for the file's own. */
     rename(id: string, name: string | null): Promise<void>
     /** A RetroArch core's name, or '' for the console's default. */

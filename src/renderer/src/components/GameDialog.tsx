@@ -1,17 +1,23 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { GameOptions } from '../../../shared/types'
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import type { GameOptions, SteamGameDetails } from '../../../shared/types'
+import calendar from '../assets/calendar.svg'
 import clock from '../assets/clock.svg'
+import drive from '../assets/drive.svg'
+import trophy from '../assets/trophy.svg'
 import { focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
 import { toast } from './Toast'
 
-// Start on a console game: its cover, name and playtime beside its settings: changing its
-// name, picking the emulator it opens in, replacing its art (the Artwork window X opens), or
-// deleting it from the drive. Deleting asks for a second press. B or Start closes it.
+// Start on a game: its cover and name, what's known of it (playtime, last play, size, and a
+// Steam game's achievements), beside its settings. A console game's: changing its name,
+// picking the emulator it opens in, replacing its art (the Artwork window X opens), or
+// deleting it from the drive (a second press confirms). A Steam game's hand it to Steam: its
+// page there, or checking its files. B or Start closes it.
 
-/** Cards whose games belong to Steam: their name, art and install are Steam's. */
-const STEAM_GAME = /^(steam|shortcut|app):/
+/** Steam's shortcuts and app tiles: nothing to show of them here yet. */
+const NOT_A_GAME = /^(shortcut|app):/
+const STEAM_GAME = /^steam:/
 /** Delete waits this long for its second press. */
 const CONFIRM_MS = 4000
 
@@ -26,6 +32,96 @@ function size(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1e3))} KB`
 }
 
+/** "Today", "Yesterday", "Oct 21", or "Mar 3, 2025" from another year. */
+function day(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const days = Math.round((today.getTime() - date.getTime()) / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(y === today.getFullYear() ? {} : { year: 'numeric' }) })
+}
+
+type Fact = [icon: string, label: string, value: string]
+
+/** The facts every game has: how long and when it was last played. */
+const playFacts = (playtime?: number, lastPlayed?: string): Fact[] => [
+  [clock, 'Playtime', playtime ? formatPlaytime(playtime) : 'Unplayed'],
+  [calendar, 'Last played', lastPlayed ? day(lastPlayed) : 'Never']
+]
+
+/** A setting: its name, and what it's set to or does. */
+const row = (label: string, detail: ReactNode, onClick: () => void, extra = '') => (
+  <button className={`setting-row${extra}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
+    <span className="setting-name display">{label}</span>
+    {detail && <span className="setting-detail">{detail}</span>}
+  </button>
+)
+
+/** The modal around a game: its cover, name and facts, beside its settings box. */
+function GamePanel({
+  panel,
+  title,
+  cover,
+  facts,
+  heading,
+  error,
+  children
+}: {
+  panel: RefObject<HTMLDivElement | null>
+  title?: string
+  cover?: string
+  facts?: Fact[]
+  heading: string
+  error?: string | null
+  children?: ReactNode
+}) {
+  return (
+    <div className="dialog-backdrop">
+      <div className="dialog-panel game-panel" ref={panel} data-focus-trap="">
+        <div className="game-cover">{cover ? <img src={cover} alt="" /> : <span className="display">{title}</span>}</div>
+        <div className="game-side">
+          <h2 className="game-title">{title ?? 'Game'}</h2>
+          {facts && (
+            <ul className="game-facts">
+              {facts.map(([icon, label, value]) => (
+                <li key={label}>
+                  <img src={icon} alt="" />
+                  <span className="display">{label}:</span>
+                  {value}
+                </li>
+              ))}
+            </ul>
+          )}
+          {error && <p className="dialog-message">{error}</p>}
+          {children && (
+            <div className="game-settings">
+              <h3 className="game-settings-title display">{heading}</h3>
+              {children}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** B and Start close it (B on a step goes back to the menu first, through `back`). Off while the keyboard has B. */
+function useCloseKeys(onClose: () => void, back?: () => void, off = false): void {
+  useEffect(() => {
+    if (off) return
+    const close = back ?? onClose
+    window.addEventListener(TRAP_CLOSE_EVENT, close)
+    window.addEventListener(GAME_MENU_CLOSE_EVENT, onClose)
+    return () => {
+      window.removeEventListener(TRAP_CLOSE_EVENT, close)
+      window.removeEventListener(GAME_MENU_CLOSE_EVENT, onClose)
+    }
+  }, [onClose, back, off])
+}
+
 export function GameDialog() {
   const [item, setItem] = useState<{ id: string; card: HTMLElement } | null>(null)
 
@@ -34,7 +130,7 @@ export function GameDialog() {
       const card = (event as CustomEvent<HTMLElement>).detail
       const id = card.dataset.itemId
       if (!id) return
-      if (STEAM_GAME.test(id)) return toast('Steam looks after its own games')
+      if (NOT_A_GAME.test(id)) return toast('Steam looks after its own shortcuts')
       setItem({ id, card })
     }
     window.addEventListener(GAME_MENU_EVENT, open)
@@ -42,15 +138,56 @@ export function GameDialog() {
   }, [])
 
   if (!item) return null
+  const close = (): void => {
+    setItem(null)
+    if (item.card.isConnected) focus(item.card)
+  }
+  return STEAM_GAME.test(item.id) ? <SteamGame id={item.id} onClose={close} /> : <Game id={item.id} card={item.card} onClose={close} />
+}
+
+function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const [details, setDetails] = useState<SteamGameDetails | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.steamtv.game
+      .steam(id)
+      .then((found) => (found ? setDetails(found) : setError('Steam doesn’t have this game installed.')))
+      .catch((err: unknown) => setError(message(err)))
+  }, [id])
+
+  useCloseKeys(onClose)
+
+  useEffect(() => {
+    const el = panel.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (el) focus(el)
+  }, [details])
+
+  const hand = (what: 'page' | 'verify'): void => {
+    if (!details) return
+    window.steamtv.game.openInSteam(id, what).catch((err: unknown) => toast(message(err)))
+    if (what === 'verify') toast(`Steam is checking ${details.title}’s files`)
+    onClose()
+  }
+
+  const facts: Fact[] | undefined = details
+    ? [
+        ...playFacts(details.playtime, details.lastPlayed),
+        ...(details.achievements ? [[trophy, 'Achievements', `${details.achievements.achieved} of ${details.achievements.total}`] as Fact] : []),
+        ...(details.bytes ? [[drive, 'Size', size(details.bytes)] as Fact] : [])
+      ]
+    : undefined
+
   return (
-    <Game
-      id={item.id}
-      card={item.card}
-      onClose={() => {
-        setItem(null)
-        if (item.card.isConnected) focus(item.card)
-      }}
-    />
+    <GamePanel panel={panel} title={details?.title} cover={details?.cover} facts={facts} heading="Game settings" error={error}>
+      {details && (
+        <>
+          {row('Open in Steam', 'Its page in your library', () => hand('page'))}
+          {row('Verify files', 'Steam checks and repairs the install', () => hand('verify'))}
+        </>
+      )}
+    </GamePanel>
   )
 }
 
@@ -69,19 +206,9 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       .catch((err: unknown) => setError(message(err)))
   }, [id])
 
-  // B goes back a step, then closes. The keyboard handles its own B.
-  useEffect(() => {
-    if (step === 'rename') return
-    const close = (): void => (step === 'menu' ? onClose() : setStep('menu'))
-    window.addEventListener(TRAP_CLOSE_EVENT, close)
-    return () => window.removeEventListener(TRAP_CLOSE_EVENT, close)
-  }, [step, onClose])
-
-  // Start again closes it from any step, as it opened it.
-  useEffect(() => {
-    window.addEventListener(GAME_MENU_CLOSE_EVENT, onClose)
-    return () => window.removeEventListener(GAME_MENU_CLOSE_EVENT, onClose)
-  }, [onClose])
+  // B goes back a step, then closes; Start closes from any step. The keyboard handles its own B.
+  const backToMenu = useCallback(() => setStep('menu'), [])
+  useCloseKeys(onClose, step === 'emulator' ? backToMenu : undefined, step === 'rename')
 
   // The cursor starts on the first row, or on the emulator in use.
   useEffect(() => {
@@ -157,76 +284,62 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
     )
 
   const current = options?.emulators.find((e) => e.id === options.emulator)?.name ?? options?.emulators[0]?.name
-  const row = (label: string, detail: ReactNode, onClick: () => void, extra = '') => (
-    <button className={`setting-row${extra}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
-      <span className="setting-name display">{label}</span>
-      {detail && <span className="setting-detail">{detail}</span>}
-    </button>
-  )
 
   return (
-    <div className="dialog-backdrop">
-      <div className="dialog-panel game-panel" ref={panel} data-focus-trap="">
-        <div className="game-cover">{options?.cover ? <img src={options.cover} alt="" /> : <span className="display">{options?.title}</span>}</div>
-        <div className="game-side">
-          <h2 className="game-title">{options?.title ?? 'Game'}</h2>
-          {options && (
-            <p className="game-playtime">
-              <img src={clock} alt="" />
-              <span className="display">Playtime:</span>
-              {options.playtime ? formatPlaytime(options.playtime) : 'Unplayed'}
-            </p>
-          )}
-          {error && <p className="dialog-message">{error}</p>}
-          {options && (
-            <div className="game-settings">
-              <h3 className="game-settings-title display">{step === 'emulator' ? 'Choose emulator' : 'Game settings'}</h3>
-              {step === 'menu' && (
+    <GamePanel
+      panel={panel}
+      title={options?.title}
+      cover={options?.cover}
+      facts={options ? [...playFacts(options.playtime, options.lastPlayed), [drive, 'Size', size(options.files.bytes)]] : undefined}
+      heading={step === 'emulator' ? 'Choose emulator' : 'Game settings'}
+      error={error}
+    >
+      {options && (
+        <>
+        {step === 'menu' && (
+          <>
+            {row('Change name', options.renamed ? `Was ${options.originalTitle}` : options.title, () => setStep('rename'))}
+            {row(
+              'Change emulator',
+              options.emulators.length > 1 ? (
+                current
+              ) : (
                 <>
-                  {row('Change name', options.renamed ? `Was ${options.originalTitle}` : options.title, () => setStep('rename'))}
-                  {row(
-                    'Change emulator',
-                    options.emulators.length > 1 ? (
-                      current
-                    ) : (
-                      <>
-                        {current} <span className="regular">is the only one installed</span>
-                      </>
-                    ),
-                    () => (options.emulators.length > 1 ? setStep('emulator') : toast(`No other emulator for this game is installed`))
-                  )}
-                  {row('Change artwork', options.cover ? 'Replace the cover' : 'No cover yet', replaceArt)}
-                  {row(
-                    confirming ? 'Press A again to delete' : 'Delete files',
-                    busy
-                      ? 'Deleting…'
-                      : confirming && `${options.files.count} ${options.files.count === 1 ? 'file' : 'files'} · ${size(options.files.bytes)} · can’t be undone`,
-                    remove,
-                    confirming ? ' danger' : ''
-                  )}
+                  {current} <span className="regular">is the only one installed</span>
                 </>
-              )}
-              {step === 'emulator' &&
-                options.emulators.map((emulator) => (
-                  <button
-                    key={emulator.id}
-                    className={`setting-row${emulator.id === options.emulator ? ' on' : ''}`}
-                    tabIndex={-1}
-                    role="radio"
-                    aria-checked={emulator.id === options.emulator}
-                    data-focusable=""
-                    data-select-sound="move"
-                    onClick={() => chooseEmulator(emulator.id, emulator.name)}
-                  >
-                    <span className="radio" aria-hidden="true" />
-                    <span className="setting-name display">{emulator.name}</span>
-                    {emulator.id === '' && <span className="setting-detail">Default</span>}
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+              ),
+              () => (options.emulators.length > 1 ? setStep('emulator') : toast(`No other emulator for this game is installed`))
+            )}
+            {row('Change artwork', options.cover ? 'Replace the cover' : 'No cover yet', replaceArt)}
+            {row(
+              confirming ? 'Press A again to delete' : 'Delete files',
+              busy
+                ? 'Deleting…'
+                : confirming && `${options.files.count} ${options.files.count === 1 ? 'file' : 'files'} · ${size(options.files.bytes)} · can’t be undone`,
+              remove,
+              confirming ? ' danger' : ''
+            )}
+          </>
+        )}
+        {step === 'emulator' &&
+          options.emulators.map((emulator) => (
+            <button
+              key={emulator.id}
+              className={`setting-row${emulator.id === options.emulator ? ' on' : ''}`}
+              tabIndex={-1}
+              role="radio"
+              aria-checked={emulator.id === options.emulator}
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => chooseEmulator(emulator.id, emulator.name)}
+            >
+              <span className="radio" aria-hidden="true" />
+              <span className="setting-name display">{emulator.name}</span>
+              {emulator.id === '' && <span className="setting-detail">Default</span>}
+            </button>
+          ))}
+        </>
+      )}
+    </GamePanel>
   )
 }

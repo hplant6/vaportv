@@ -2147,6 +2147,7 @@ button {
 
 /* Game options (Start on a console game): the cover beside the name, playtime and settings. */
 .game-panel {
+  --game-height: 723px;
   flex-direction: row;
   align-items: flex-start;
   gap: 58px;
@@ -2160,9 +2161,8 @@ button {
   flex: none;
   display: grid;
   place-items: center;
-  /* As tall as the name, playtime and settings beside it (685px: the title's line, playtime's
-     and the four settings), in a poster's shape. */
-  height: 685px;
+  /* As tall as the column beside it, in a poster's shape. */
+  height: var(--game-height);
   aspect-ratio: 414 / 654;
   overflow: hidden;
   border-radius: 26px;
@@ -2184,6 +2184,9 @@ button {
   flex: none;
   display: flex;
   width: 891px;
+  /* The poster's height: the name, two lines of facts and a console game's four settings.
+     The settings box takes what's left, so it ends level with the poster however many it holds. */
+  height: var(--game-height);
   flex-direction: column;
   min-width: 0;
 }
@@ -2199,22 +2202,30 @@ button {
   text-overflow: ellipsis;
 }
 
-.game-playtime {
-  display: flex;
-  align-items: center;
-  gap: 13px;
+.game-facts {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 48px;
   margin: 8px 0 34px;
+  padding: 0;
+  list-style: none;
   font-family: var(--font-body);
   font-size: var(--text-label);
   letter-spacing: 0.04em;
 }
 
-.game-playtime img {
+.game-facts li {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.game-facts img {
   width: 24px;
   height: 24px;
 }
 
-.game-playtime .display {
+.game-facts .display {
   margin-right: 8px;
   letter-spacing: 0.08em;
 }
@@ -2222,10 +2233,12 @@ button {
 .game-settings {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 11px;
   min-height: 0;
   padding: 0 29px 29px;
   overflow-y: auto;
+  scrollbar-width: none;
 }
 
 .game-settings-title {

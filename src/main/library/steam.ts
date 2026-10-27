@@ -130,6 +130,54 @@ export async function steamGameArt(steamRoot: string, userDir: string, appid: st
   }
 }
 
+export interface SteamGameFacts {
+  title: string
+  /** Total minutes played (Steam's count). */
+  playtime: number
+  /** Unix seconds, or 0 if never played. */
+  lastPlayed: number
+  /** Bytes the install takes. */
+  bytes?: number
+  /** Achievements unlocked of all there are, where the game has any. */
+  achievements?: { achieved: number; total: number }
+  art: Played['art']
+}
+
+/**
+ * What Start shows for an installed Steam game: its install's size (the app manifest), when and
+ * how long it was played (localconfig.vdf) and its achievements so far (the summary Steam keeps
+ * in the user's librarycache/<appid>.json for its library page).
+ */
+export async function steamGameFacts(steamRoot: string, userDir: string, appid: string): Promise<SteamGameFacts | null> {
+  let manifest: VdfObject | undefined
+  for (const folder of await libraryFolders(steamRoot)) {
+    const text = await readFile(join(folder, `appmanifest_${appid}.acf`), 'utf8').catch(() => null)
+    if (text) manifest = parseTextVdf(text)
+    if (manifest) break
+  }
+  const title = manifest && childString(manifest, 'AppState', 'name')
+  if (!manifest || !title) return null
+  const apps = await localApps(userDir)
+  const entry = apps[appid]
+  const cache = await readFile(join(userDir, 'config', 'librarycache', `${appid}.json`), 'utf8').catch(() => '')
+  let achievements: SteamGameFacts['achievements']
+  try {
+    const sections = JSON.parse(cache) as [string, { data?: { nAchieved?: number; nTotal?: number } }][]
+    const data = sections.find(([name]) => name === 'achievements')?.[1]?.data
+    if (data?.nTotal) achievements = { achieved: data.nAchieved ?? 0, total: data.nTotal }
+  } catch {
+    // Not cached yet (Steam writes it once the game's library page has been seen): left out.
+  }
+  return {
+    title,
+    playtime: minutesPlayed(apps, appid),
+    lastPlayed: Number(typeof entry === 'object' ? childString(entry, 'LastPlayed') : undefined) || 0,
+    bytes: Number(childString(manifest, 'AppState', 'SizeOnDisk')) || undefined,
+    achievements,
+    art: await steamGameArt(steamRoot, userDir, appid)
+  }
+}
+
 export async function playedSteamGames(steamRoot: string, userDir: string): Promise<Played[]> {
   // Uninstalled games can't be launched from here, so they don't belong in Recents.
   const played = (await steamGames(steamRoot, userDir)).filter((game) => game.lastPlayed > 0)
