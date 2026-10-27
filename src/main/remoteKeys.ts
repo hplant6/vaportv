@@ -32,6 +32,13 @@ const HOME_AGAIN_MS = 3000
 const RESCAN_MS = 5000
 /** A gap this long between ticks means the box was asleep. */
 const ASLEEP_GAP_MS = 5000
+/**
+ * Awake again this soon after Power slept it, the box didn't sleep: the Sofabaton hub
+ * reconnects seconds into sleep and that wakes it. It goes back to sleep once, after
+ * RESLEEP_DELAY_MS, when the hub's reconnect is over (a second sleep holds).
+ */
+const BOUNCE_MS = 20_000
+const RESLEEP_DELAY_MS = 8000
 /** Remotes, by the names their receivers give: a Sofabaton hub, a TV remote's USB dongle ("... RC"). */
 const REMOTE_NAME = /sofabaton|\bremote\b|\bRC\b/i
 
@@ -79,6 +86,8 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   let lastTick = Date.now()
   let awokeAt = 0
   let sleepingUntil = 0
+  /** When Power last slept the box, until a bounce back awake has been dealt with. */
+  let sleptAt = 0
   /** When Home was first pressed over a game; a second press soon after closes it. */
   let homeArmedAt = 0
   /** Menu is down: when it's held long enough this fires (Settings); let go first, it's a tap. */
@@ -87,9 +96,20 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   // The process is paused while the box sleeps, so a long gap between ticks is a wake.
   setInterval(() => {
     const now = Date.now()
-    if (now - lastTick > ASLEEP_GAP_MS) awokeAt = now
+    if (now - lastTick > ASLEEP_GAP_MS) {
+      awokeAt = now
+      if (now - sleptAt < BOUNCE_MS) setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
+      sleptAt = 0
+    }
     lastTick = now
   }, 1000)
+
+  const sleepAgain = async (): Promise<void> => {
+    const why = await sleepBlocker()
+    if (why) return log(`remote power: woke straight back up, staying awake (${why})`)
+    log('remote power: woke straight back up, sleeping again')
+    await power('sleep')
+  }
 
   const justWoke = (now: number): boolean => now - awokeAt < AFTER_WAKE_MS
 
@@ -100,6 +120,7 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     if (why) return log(`remote power: staying awake (${why})`)
     log('remote power: sleeping')
     sleepingUntil = now + AFTER_WAKE_MS
+    sleptAt = Date.now()
     await power('sleep')
   }
 
