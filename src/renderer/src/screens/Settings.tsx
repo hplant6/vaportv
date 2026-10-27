@@ -8,6 +8,7 @@ import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
 import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GeneralSettings } from '../components/GeneralSettings'
+import { HelpSettings } from '../components/HelpSettings'
 import { TabsSettings } from '../components/TabsSettings'
 import { ClockSettings } from '../components/ClockSettings'
 import { BluetoothSettings } from '../components/Bluetooth'
@@ -204,7 +205,7 @@ const FAVORITES_LAYOUTS: { id: SteamLayout; name: string; detail: string }[] = [
   { id: 'grid', name: 'Grid', detail: 'Two rows · scroll down' }
 ]
 
-type Category = 'general' | 'tabs' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork'
+type Category = 'general' | 'tabs' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork' | 'help'
 
 const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'general', name: 'General' },
@@ -218,7 +219,8 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'controller', name: 'Controller' },
   { id: 'wifi', name: 'Wi-Fi' },
   { id: 'bluetooth', name: 'Bluetooth' },
-  { id: 'artwork', name: 'Artwork' }
+  { id: 'artwork', name: 'Artwork' },
+  { id: 'help', name: 'Help' }
 ]
 
 /** The settings pane runs the full height of the screen (its panels start under the bar). */
@@ -1263,7 +1265,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         </div>
       </>
-    )
+    ),
+    help: <HelpSettings />
   }
 
   return (
