@@ -112,10 +112,8 @@ export interface SystemStats {
 
 export type LaunchKind = 'recent' | 'app'
 
-/** What a bug report says, from Settings → General → Report a problem. The page adds what only it knows. */
+/** What only the page knows for a bug report (Settings → General → Report a problem). */
 export interface BugReportInput {
-  description: string
-  includeLog: boolean
   /** WebGL's name for the GPU. */
   gpu?: string
   /** The connected controllers' names. */

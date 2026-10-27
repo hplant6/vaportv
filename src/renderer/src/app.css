@@ -1328,7 +1328,7 @@ button {
 
 .dialog-button {
   padding: 14px 48px;
-  border-radius: 999px;
+  border-radius: var(--card-radius);
   font-size: var(--text-label);
   color: #fff;
   background: rgba(255, 255, 255, 0.12);
@@ -2757,7 +2757,7 @@ button {
   flex: none;
   height: 104px;
   padding: 0 44px;
-  border-radius: 52px;
+  border-radius: var(--card-radius);
   background: var(--color-panel);
   color: var(--color-text);
   font-size: var(--text-meta);
@@ -2813,39 +2813,23 @@ button {
   width: 60px;
 }
 
-/* Report a problem (Settings → General): what went wrong, then a QR code to send it from a phone. */
+/* Report a problem (Settings → General): a QR code that opens the issue on a phone. */
 .bug-panel {
-  width: 1080px;
-  align-items: stretch;
+  width: 900px;
 }
 
-.bug-panel .section-label,
-.bug-panel .dialog-message {
-  text-align: center;
-}
-
-.bug-description {
-  min-height: 160px;
-}
-
-.bug-listening {
-  opacity: 0.6;
-}
-
-.bug-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-}
-
-.bug-options {
-  align-self: stretch;
+.bug-account {
+  margin-top: -12px;
+  font-weight: 700;
 }
 
 .bug-qr {
-  align-self: center;
   width: 560px;
   height: 560px;
   border-radius: 12px;
   image-rendering: pixelated;
+}
+
+.bug-qr-waiting {
+  background: rgba(255, 255, 255, 0.06);
 }

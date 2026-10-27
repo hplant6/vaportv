@@ -4,7 +4,7 @@ import { homedir, release } from 'node:os'
 import QRCode from 'qrcode'
 import type { BugReport, BugReportInput } from '../shared/types'
 import { EXTRAS } from '../shared/build'
-import { fitLog, issueTitle, pickLogLines } from '../shared/bugReport'
+import { fitLog, pickLogLines } from '../shared/bugReport'
 
 // Settings → General → Report a problem: a GitHub "new issue" link with the report filled in,
 // shown as a QR code to open on a phone, check, and submit there (vaporTV holds no GitHub
@@ -48,8 +48,8 @@ export async function makeBugReport(input: BugReportInput, logPath: string): Pro
     `Screen: ${input.display}`,
     input.controllers.length ? `Controllers: ${input.controllers.join('; ')}` : 'Controllers: none seen'
   ].filter((line): line is string => !!line)
-  const lines = input.includeLog ? pickLogLines(await tail(logPath, LOG_TAIL_BYTES), LATEST_LINES, homedir()) : []
-  const { url, logLines } = fitLog(issueTitle(input.description), input.description, system, lines)
+  const lines = pickLogLines(await tail(logPath, LOG_TAIL_BYTES), LATEST_LINES, homedir())
+  const { url, logLines } = fitLog(system, lines)
   const qr = await QRCode.toDataURL(url, { margin: 1, width: 560, errorCorrectionLevel: 'L', color: { dark: '#000000', light: '#ffffff' } })
   return { url, qr, logLines }
 }

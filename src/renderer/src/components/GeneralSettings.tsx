@@ -191,7 +191,7 @@ export function GeneralSettings() {
             onClick={(e) => window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail: e.currentTarget }))}
           >
             <span className="setting-name display">Report a problem</span>
-            <span className="setting-detail">Say or type it, then send it from your phone</span>
+            <span className="setting-detail">A QR code to send it from your phone</span>
           </button>
         </div>
       </div>
