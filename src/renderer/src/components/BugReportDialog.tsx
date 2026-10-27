@@ -74,15 +74,17 @@ function Report({ onClose }: { onClose: () => void }) {
   return (
     <div className="dialog-backdrop">
       <div className="dialog-panel bug-panel" ref={panel} data-focus-trap="">
-        <h2 className="section-label display">Report a problem</h2>
+        <div className="bug-text">
+          <h2 className="bug-title display">Report a problem</h2>
+          <p className="dialog-message">
+            {error ?? 'Scan the code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in: describe what went wrong, then press Submit.'}
+          </p>
+          <p className="dialog-message bug-account">You need a GitHub account to send it.</p>
+          <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClose}>
+            Done
+          </button>
+        </div>
         {report ? <img className="bug-qr" src={report.qr} alt="" /> : <div className="bug-qr bug-qr-waiting" />}
-        <p className="dialog-message">
-          {error ?? 'Scan this with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in: describe what went wrong, then press Submit.'}
-        </p>
-        <p className="dialog-message bug-account">You need a GitHub account to send it.</p>
-        <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClose}>
-          Done
-        </button>
       </div>
     </div>
   )
