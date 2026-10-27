@@ -2786,34 +2786,33 @@ button {
   padding: 24px 0 48px;
 }
 
-/* The keyboard's controller shortcuts, under the keys as in Steam's footer; drawn as Files' are. */
-.osk-hints {
+/* A key's controller shortcut (X on delete, Y on space…), beside its label as on Steam's keyboard. */
+.osk-key {
+  gap: 12px;
+}
+
+.osk-shortcut {
   display: flex;
-  justify-content: center;
-  gap: 44px;
-  width: 1480px;
-  margin: 22px auto 0;
-  font-family: var(--font-body);
-  font-size: 20px;
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
-.osk-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.osk-shortcut .control-icon {
+  width: 36px;
+  height: 36px;
 }
 
-.osk-hint .control-icon {
-  width: 40px;
-  height: 40px;
+.osk-shortcut .control-icon.wide {
+  width: 54px;
 }
 
-.osk-hint .control-icon.wide {
-  width: 60px;
+/* On the amber keys (Enter, Shift on), drawn dark. */
+.osk-key.done .osk-shortcut,
+.osk-key.on .osk-shortcut {
+  filter: invert(1);
+  opacity: 0.7;
 }
 
-/* Report a problem (Settings → General): what to do on the left, the QR code that opens the issue on a phone on the right. */
+/* Report a problem (Settings → Help): what to do on the left, the QR code that opens the issue on a phone on the right. */
 .bug-panel {
   flex-direction: row;
   align-items: center;

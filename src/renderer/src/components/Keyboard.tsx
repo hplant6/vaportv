@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { hookButtons } from '../input/gamepad'
 import { play } from '../input/sounds'
@@ -10,7 +9,7 @@ import { OverStage } from './GooglePhotos'
 // a search). Steam's own keyboard can't be opened from outside in Gaming Mode, so this one
 // is laid out like it: a tray across the bottom of the screen that slides up, the keys
 // staggered as on a real keyboard, with Steam's controller shortcuts (X deletes, Y is a
-// space, L2 shift, R2 symbols, Start enters). A real keyboard types into it too; B (Escape,
+// space, L2 shift, R2 symbols, Start enters; each shown on its key). A real keyboard types into it too; B (Escape,
 // a remote's Back) cancels.
 
 /** A key: what it types, and how many key-widths it takes (1 if not given). */
@@ -21,14 +20,14 @@ const LETTERS: (Key | null)[][] = [
   ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'],
   [null, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '@', '_'],
   [null, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-  [null, 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/']
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.']
 ]
 
 const SYMBOLS: (Key | null)[][] = [
   ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_'],
   [null, '`', '~', '-', '=', '+', '[', ']', '{', '}', '\\', '|', ';'],
   [null, ':', "'", '"', '<', '>', '?', '€', '£', '¥'],
-  [null, '°', '§', '¿', '¡', '•', '…', '¢', ',', '.', '/']
+  ['°', '§', '¿', '¡', '•', '…', '/', ',', '.']
 ]
 
 /** The gap before each row, in key-widths. */
@@ -131,19 +130,11 @@ export function OnScreenKeyboard({
   )
 
   const family = useControllerFamily()
-  const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
-  useEffect(() => {
-    window.steamtv.getSettings().then((s) => setControls(s.controls))
-  }, [])
-  const hint = (button: number, label: string) => (
-    <span className="osk-hint" key={label}>
-      <ButtonIcon button={button} family={family} /> {label}
-    </span>
-  )
 
   const upper = shift && !symbols
   const type = (k: string): void => setText((t) => t + (upper ? k.toUpperCase() : k))
-  const key = (label: string, onPress: () => void, units = 1, extra = '', props: Record<string, string> = {}) => (
+  /** A key; `button` is its controller shortcut, shown beside its label as Steam's keyboard does. */
+  const key = (label: string, onPress: () => void, units = 1, extra = '', props: Record<string, string> = {}, button?: number) => (
     <button
       key={label}
       className={`osk-key${extra}`}
@@ -155,6 +146,11 @@ export function OnScreenKeyboard({
       {...props}
     >
       {label}
+      {button !== undefined && (
+        <span className="osk-shortcut">
+          <ButtonIcon button={button} family={family} />
+        </span>
+      )}
     </button>
   )
   const gap = (units: number, id: string) => units > 0 && <span key={id} className="osk-gap" style={{ flexGrow: units }} />
@@ -180,7 +176,7 @@ export function OnScreenKeyboard({
           <div className="osk-rows">
             <div className="osk-row">
               {charKeys(rows[0])}
-              {key('⌫', () => setText((t) => t.slice(0, -1)), 1.5, ' fn')}
+              {key('⌫', () => setText((t) => t.slice(0, -1)), 1.5, ' fn', {}, BUTTON.delete)}
             </div>
             <div className="osk-row">
               {gap(INDENT[1], 'g1')}
@@ -189,25 +185,17 @@ export function OnScreenKeyboard({
             <div className="osk-row">
               {gap(INDENT[2], 'g2')}
               {charKeys(rows[2])}
-              {key('Enter', () => leave.current(() => onDone(text)), 2.75, ' done')}
+              {key('Enter', () => leave.current(() => onDone(text)), 2.75, ' done', {}, BUTTON.enter)}
             </div>
             <div className="osk-row">
-              {key(shift ? '⇧ On' : '⇧', () => setShift((s) => !s), 1.5, shift ? ' fn on' : ' fn')}
+              {key(shift ? '⇧ On' : '⇧', () => setShift((s) => !s), 1.75, shift ? ' fn on' : ' fn', {}, BUTTON.shift)}
               {charKeys(rows[3])}
-              {key(symbols ? 'ABC' : '?123', () => setSymbols((s) => !s), 1, ' fn')}
+              {key(symbols ? 'ABC' : '?123', () => setSymbols((s) => !s), 1.75, ' fn', {}, BUTTON.symbols)}
             </div>
             <div className="osk-row">
-              {key('Space', () => setText((t) => t + ' '), secret ? 10.5 : 12.5, '', { 'data-key': ' ' })}
+              {key('Space', () => setText((t) => t + ' '), secret ? 10.5 : 12.5, '', { 'data-key': ' ' }, BUTTON.space)}
               {secret && key(reveal ? 'Hide' : 'Show', () => setReveal((r) => !r), 2, ' fn')}
             </div>
-          </div>
-          <div className="osk-hints">
-            {hint(BUTTON.delete, 'Delete')}
-            {hint(BUTTON.space, 'Space')}
-            {hint(BUTTON.shift, 'Shift')}
-            {hint(BUTTON.symbols, symbols ? 'Letters' : 'Symbols')}
-            {hint(BUTTON.enter, 'Enter')}
-            {hint(controls.back, 'Close')}
           </div>
         </div>
       </div>
