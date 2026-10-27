@@ -132,6 +132,17 @@ export async function disconnectBluetooth(address: string): Promise<void> {
   await ctl(['disconnect', address])
 }
 
+/**
+ * Drops every Bluetooth connection, for just before the box sleeps. A link still up
+ * when the kernel suspends is torn down halfway into sleep, and the adapter's news of
+ * it wakes the box again seconds later. A remote disconnected first still wakes the
+ * box: it only reconnects when a key is pressed.
+ */
+export async function disconnectAllBluetooth(): Promise<void> {
+  const connected = await ctl(['devices', 'Connected']).then(parseDevices, () => [])
+  await Promise.all(connected.map(({ address }) => ctl(['disconnect', address], 5_000).catch(() => '')))
+}
+
 export async function forgetBluetooth(address: string): Promise<void> {
   await ctl(['remove', address])
 }

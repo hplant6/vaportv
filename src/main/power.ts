@@ -2,6 +2,7 @@ import { execFile, spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { app } from 'electron'
 import type { PowerAction } from '../shared/types'
+import { disconnectAllBluetooth } from './bluetooth'
 
 /** Only act on the box itself; on a dev machine these would sleep or switch off the PC. */
 export function onSteamOS(): boolean {
@@ -36,6 +37,7 @@ export async function power(action: PowerAction): Promise<boolean> {
       // SteamOS's own switch, as Steam's "Switch to Desktop" does.
       return run('steamos-session-select', ['plasma'])
     case 'sleep':
+      await disconnectAllBluetooth()
       return run('systemctl', ['suspend'])
     case 'restart':
       return run('systemctl', ['reboot'])
