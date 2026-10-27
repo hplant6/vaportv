@@ -29,6 +29,8 @@ const END_SILENCE_MS = 1000
 /** Nothing said in this long: give up. */
 const NO_SPEECH_MS = 5000
 const MAX_MS = 10_000
+/** vaporTV's music fades out as search opens; the room is measured once it has. */
+const MUSIC_FADE_MS = 400
 
 const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin'
 const MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-base.en.bin')
@@ -224,12 +226,16 @@ export async function listen(report: Send, log: Log): Promise<void> {
   }
   busy = true
   try {
+    // At once, so the search screen opens (and the music fades) before the room is measured.
+    send({ phase: 'starting' })
     await ensureModel(send, log)
     const mic = await microphone()
     if (!mic) {
       send({ phase: 'error', message: 'No microphone found. Plug one in and try again.' })
       return
     }
+    await new Promise((resolve) => setTimeout(resolve, MUSIC_FADE_MS))
+    if (cancelled) return
     log(`voice: listening on ${mic}`)
     send({ phase: 'listening' })
     const pcm = await record(log)

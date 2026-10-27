@@ -7,6 +7,8 @@ import { MUSIC_HOLD_EVENT } from './MusicPreview'
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
 
 const FADE_MS = 1200
+/** Held (a preview, Files playing, voice search listening): out quickly, so it's quiet at once. */
+const HOLD_FADE_MS = 300
 
 /** Background sound: the music chosen in Settings, with the ambience under it. */
 export function BackgroundMusic() {
@@ -32,9 +34,9 @@ function Layer({ kind }: { kind: MusicKind }) {
     let playlist: string[] = []
     let random = false
 
-    const fadeTo = (volume: number, then?: () => void): void => {
+    const fadeTo = (volume: number, then?: () => void, ms = FADE_MS): void => {
       clearInterval(fade)
-      const step = (volume - el.volume) / (FADE_MS / 50)
+      const step = (volume - el.volume) / (ms / 50)
       fade = setInterval(() => {
         const next = el.volume + step
         if (Math.abs(volume - el.volume) <= Math.abs(step) || step === 0) {
@@ -101,7 +103,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     const onBlur = (): void => fadeTo(0, () => el.pause())
     const onHold = (event: Event): void => {
       held = (event as CustomEvent<boolean>).detail
-      if (held) fadeTo(0, () => el.pause())
+      if (held) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
       else start()
     }
     load()

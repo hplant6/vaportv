@@ -114,6 +114,7 @@ export type LaunchKind = 'recent' | 'app'
 
 /** Voice search, as it goes: the model downloading (first use), listening, working out the words, then the words or why not. */
 export type VoiceState =
+  | { phase: 'starting' }
   | { phase: 'preparing' }
   | { phase: 'listening' }
   | { phase: 'thinking' }

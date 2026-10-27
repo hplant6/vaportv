@@ -6,6 +6,7 @@ import { focus, openSettings, TRAP_CLOSE_EVENT } from '../input/focus'
 import { play } from '../input/sounds'
 import { startLaunch } from '../launch'
 import { AppTile } from './AppTile'
+import { MUSIC_HOLD_EVENT } from './MusicPreview'
 import { CollectionGrid } from './CollectionGrid'
 import { OnScreenKeyboard } from './Keyboard'
 
@@ -65,6 +66,7 @@ async function loadGames(tabs: string[]): Promise<RecentItem[]> {
 }
 
 const STATUS: Record<VoiceState['phase'], string> = {
+  starting: 'One moment…',
   preparing: 'Getting voice search ready…',
   listening: 'Listening…',
   thinking: 'One moment…',
@@ -134,6 +136,12 @@ function Search({ apps, voice, onClose }: { apps: AppItem[]; voice: VoiceState |
     setQuery(asked.query)
   }, [voice])
 
+  // The music and ambience pause while search is open: the mic would hear them over you.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: true }))
+    return () => void window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: false }))
+  }, [])
+
   // B closes search, but not while the keyboard is up (B there closes just the keyboard).
   useEffect(() => {
     if (typing) return
@@ -168,7 +176,7 @@ function Search({ apps, voice, onClose }: { apps: AppItem[]; voice: VoiceState |
     if (first) focus(first)
   }, [resultKey, typing])
 
-  const listening = voice && (voice.phase === 'preparing' || voice.phase === 'listening' || voice.phase === 'thinking')
+  const listening = voice && (voice.phase === 'starting' || voice.phase === 'preparing' || voice.phase === 'listening' || voice.phase === 'thinking')
   const status = voice?.phase === 'error' ? voice.message : voice ? STATUS[voice.phase] : ''
   const empty = query && games && !appResults.length && !gameResults.length
 

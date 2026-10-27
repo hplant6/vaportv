@@ -9,7 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- Voice search: tap a remote's Menu button and say a game or app ("Metroid Prime", or "play Halo 2" to start it straight away). It searches every tab and app, and understands speech on this machine, with nothing sent anywhere (the speech model downloads the first time). Hold Menu for Settings. The search screen also has a mic button and Type.
+- Voice search: tap a remote's Menu button and say a game or app ("Metroid Prime", or "play Halo 2" to start it straight away). It searches every tab and app, and understands speech on this machine, with nothing sent anywhere (the speech model downloads the first time). Hold Menu for Settings. The background music and ambience pause while search is open, so it can hear you. The search screen also has a mic button and Type.
 - City Rain backdrop: a wet street at night, the city's lights reflected in the puddles and rain falling through them. Lighter on the GPU than Rain.
 - Grids bend when you scroll fast: hold a direction and the middle of the screen sinks away (or swells toward you going back up) with the cards curving along it, flattening when you let go (after Codrops' infinite WebGL gallery). Stepping one card at a time leaves them flat and easy to read.
 - Cards lean with the scroll: a row's cards tilt sideways as it slides, easing flat when it stops (after the carousel in Codrops' WebGPU page-transitions demo).
