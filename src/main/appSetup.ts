@@ -89,11 +89,11 @@ export function appProgram(id: string): { program: string; flatpak?: string } | 
   return null
 }
 
-/** An installed Flatpak's version and size, as `flatpak info` gives them ("1.4.2", "312.4 MB"). */
+/** An installed Flatpak's version and size, as `flatpak info` gives them ("2.0.0", from "Installed Size: 312.5 MB"). */
 export async function flatpakFacts(flatpak: string): Promise<{ version?: string; size?: string }> {
   const { stdout } = await exec('flatpak', ['info', flatpak]).catch(() => ({ stdout: '' }))
   const field = (name: string): string | undefined => new RegExp(`^\\s*${name}:\\s*(.+)$`, 'm').exec(stdout)?.[1].trim()
-  return { version: field('Version'), size: field('Installed')?.replace(/\u00a0/g, ' ') }
+  return { version: field('Version'), size: field('Installed Size')?.replace(/\u00a0/g, ' ') }
 }
 
 /** Updates a Flatpak from Flathub; whether there was anything new. */
