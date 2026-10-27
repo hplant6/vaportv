@@ -4,7 +4,7 @@ import { focus, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../inpu
 import { OnScreenKeyboard } from './Keyboard'
 import { toast } from './Toast'
 
-// Select on a console game: change its name, pick the emulator it opens in, replace its art
+// Start on a console game: change its name, pick the emulator it opens in, replace its art
 // (the Artwork window X opens), or delete it from the drive. Deleting asks for a second press.
 
 /** Cards whose games belong to Steam: their name, art and install are Steam's. */

@@ -206,7 +206,7 @@ export function options(): void {
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: el }))
 }
 
-/** Start (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
+/** Select (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
 export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 
 export function controlsGuide(): void {
@@ -214,7 +214,7 @@ export function controlsGuide(): void {
   window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))
 }
 
-/** Select on a controller, G on a keyboard: the focused game's options (name, emulator, art, delete). */
+/** Start on a controller, G on a keyboard: the focused game's options (name, emulator, art, delete). */
 export const GAME_MENU_EVENT = 'steamtv:game-menu'
 
 export function gameMenu(): void {

@@ -3,7 +3,7 @@ import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { CONTROLS_GUIDE_EVENT } from '../input/focus'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 
-// Start (by default): what each button does, in one line along the bottom of the screen as
+// Select (by default): what each button does, in one line along the bottom of the screen as
 // ES-DE's help bar does, with the buttons as they're set in Settings → Controller. Press it
 // again to put it away; it goes by itself after a while, and when a game or app opens.
 

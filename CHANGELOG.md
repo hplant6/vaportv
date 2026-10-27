@@ -20,7 +20,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Preview a song before choosing it: Settings → Music → Songs has a play button on each (Right from the song). It plays up to 30 seconds while the background music and ambience pause.
 - Music playlists: Settings → Music → Playlists makes and edits them (name, shuffle or in order, which tracks); choose one like a track. A Chris Zabriskie playlist comes built in.
 - Seven built-in music tracks by Chris Zabriskie (CC BY 4.0), credited beside each one in Settings → Music.
-- Game options: press Select on a console game to rename it, pick which emulator opens it (any installed RetroArch core for that console), replace its art, or delete it from the drive (press A twice; can't be undone). G on a keyboard.
+- Game options: press Start on a console game to rename it, pick which emulator opens it (any installed RetroArch core for that console), replace its art, or delete it from the drive (press A twice; can't be undone). G on a keyboard.
 - NES, SNES, Genesis, 32X and Amiga tabs: games from EmuDeck's roms/nes, snes, genesis, sega32x and amiga open in RetroArch (Mesen, Snes9x, Genesis Plus GX, PicoDrive and PUAE).
 - A Saturn tab: Sega Saturn games (from EmuDeck's roms/saturn, zipped or not) open in RetroArch's Kronos core, multi-disc games as a disc list.
 - An N64 tab: Nintendo 64 games (from EmuDeck's roms/n64) open in RetroArch's Mupen64Plus-Next core.
@@ -36,7 +36,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
-- Start now shows what each button does, in a line along the bottom of the screen (H on a keyboard; press again to hide). An arcade game's core is picked in Game options (Select) instead, so the separate core picker is gone.
+- Select now shows what each button does, in a line along the bottom of the screen (H on a keyboard; press again to hide), and Game options moves to Start. An arcade game's core is picked in Game options instead, so the separate core picker is gone.
 - Thicker controller button icons.
 - The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's, with its controller shortcuts: X deletes, Y types a space, L2 is Shift, R2 switches to symbols and Start is Enter (each shown on its key). Searching shows what you type, and its results, as you type.
 - In grids the selected card's row stays near the middle of the screen as you move up and down, instead of near the bottom (it stops at the top and the end of the page).
