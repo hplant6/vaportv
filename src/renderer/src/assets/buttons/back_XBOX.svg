@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 240 240">
-  <!-- Generator: Adobe Illustrator 29.8.2, SVG Export Plug-In . SVG Version: 2.1.1 Build 3)  -->
+  <!-- Generator: Adobe Illustrator 30.8.2, SVG Export Plug-In . SVG Version: 2.1.4 Build 7)  -->
   <defs>
     <style>
       .st0 {
-        fill: none;
-        stroke: #fff;
-        stroke-miterlimit: 10;
-        stroke-width: 6px;
+        fill: #fff;
       }
     </style>
   </defs>
-  <circle class="st0" cx="120" cy="120" r="84.2"/>
+  <path class="st0" d="M120,209.7c-49.5,0-89.7-40.2-89.7-89.7S70.5,30.3,120,30.3s89.7,40.2,89.7,89.7-40.2,89.7-89.7,89.7ZM120,41.3c-43.4,0-78.7,35.3-78.7,78.7s35.3,78.7,78.7,78.7,78.7-35.3,78.7-78.7-35.3-78.7-78.7-78.7Z"/>
   <g>
-    <path class="st0" d="M142,99.1v-7.1c0-3.7-3-6.6-6.6-6.6h-56.5c-3.7,0-6.6,3-6.6,6.6v32.9c0,3.7,3,6.6,6.6,6.6h9.7"/>
-    <rect class="st0" x="98" y="108.5" width="69.7" height="46.2" rx="7.5" ry="7.5"/>
+    <path class="st0" d="M88.6,137h-9.7c-6.7,0-12.1-5.4-12.1-12.1v-32.9c0-6.7,5.4-12.1,12.1-12.1h56.5c6.7,0,12.1,5.4,12.1,12.1v7.1h-11v-7.1c0-.7-.6-1.1-1.1-1.1h-56.5c-.7,0-1.1.6-1.1,1.1v32.9c0,.7.6,1.1,1.1,1.1h9.7v11Z"/>
+    <path class="st0" d="M160.2,160.2h-54.7c-7.2,0-13-5.8-13-13v-31.2c0-7.2,5.8-13,13-13h54.7c7.2,0,13,5.8,13,13v31.2c0,7.2-5.8,13-13,13ZM105.5,114c-1.1,0-2,.9-2,2v31.2c0,1.1.9,2,2,2h54.7c1.1,0,2-.9,2-2v-31.2c0-1.1-.9-2-2-2h-54.7Z"/>
   </g>
 </svg>

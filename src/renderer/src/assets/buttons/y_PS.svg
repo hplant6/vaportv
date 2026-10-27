@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 240 240">
-  <!-- Generator: Adobe Illustrator 29.8.2, SVG Export Plug-In . SVG Version: 2.1.1 Build 3)  -->
+  <!-- Generator: Adobe Illustrator 30.8.2, SVG Export Plug-In . SVG Version: 2.1.4 Build 7)  -->
   <defs>
     <style>
       .st0 {
-        fill: none;
-        stroke: #fff;
-        stroke-miterlimit: 10;
-        stroke-width: 6px;
+        fill: #fff;
       }
     </style>
   </defs>
-  <circle class="st0" cx="120" cy="120" r="84.2"/>
-  <polygon class="st0" points="120 71.8 74.9 150 165.1 150 120 71.8"/>
+  <path class="st0" d="M120,209.7c-49.5,0-89.7-40.2-89.7-89.7S70.5,30.3,120,30.3s89.7,40.2,89.7,89.7-40.2,89.7-89.7,89.7ZM120,41.3c-43.4,0-78.7,35.3-78.7,78.7s35.3,78.7,78.7,78.7,78.7-35.3,78.7-78.7-35.3-78.7-78.7-78.7Z"/>
+  <path class="st0" d="M174.6,155.5h-109.2l54.6-94.7,54.6,94.7ZM84.4,144.5h71.2l-35.6-61.7-35.6,61.7Z"/>
 </svg>

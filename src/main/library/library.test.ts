@@ -597,6 +597,10 @@ describe('controls', () => {
     expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, gameMenu: 1 })
     expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
   })
+  it('gives buttons saved before voice search its R3', () => {
+    const { voiceSearch: _, ...before } = DEFAULT_CONTROLS
+    expect(resolveControls(before as never).voiceSearch).toBe(11)
+  })
 })
 
 describe('arcade', () => {

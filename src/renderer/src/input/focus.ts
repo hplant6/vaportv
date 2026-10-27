@@ -224,6 +224,17 @@ export function gameMenu(): void {
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(GAME_MENU_EVENT, { detail: el }))
 }
 
+/**
+ * R3 (by default): voice search, as a remote's Menu tapped. Not over menus that hold the
+ * cursor, except search itself, where it listens again.
+ */
+export function voiceSearch(): void {
+  const open = trap()
+  if (grabbed() || (open && !open.classList.contains('search-app'))) return
+  window.steamtv.logInput('voice search (controller)')
+  window.steamtv.startVoice()
+}
+
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'
 

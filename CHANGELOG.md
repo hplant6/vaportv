@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Settings → Help, with the welcome tour (moved from General) and Report a problem: a QR code that opens a bug report on your phone, on GitHub, with vaporTV's version, the system, your controllers and recent log lines filled in. Describe what went wrong and submit it there (it needs a GitHub account).
-- Voice search: tap a remote's Menu button and say a game or app ("Metroid Prime", or "play Halo 2" to start it straight away). It searches every tab and app, and understands speech on this machine, with nothing sent anywhere (the speech model downloads the first time). Hold Menu for Settings. The background music and ambience pause while search is open, so it can hear you. The search screen also has a mic button and Type.
+- Voice search: tap a remote's Menu button and say a game or app ("Metroid Prime", or "play Halo 2" to start it straight away). It searches every tab and app, and understands speech on this machine, with nothing sent anywhere (the speech model downloads the first time). Hold Menu for Settings. On a controller, press the right stick (R3; change it in Settings → Controller). The background music and ambience pause while search is open, so it can hear you. The search screen also has a mic button and Type.
 - City Rain backdrop: a wet street at night, the city's lights reflected in the puddles and rain falling through them. Lighter on the GPU than Rain.
 - Grids bend when you scroll fast: hold a direction and the middle of the screen sinks away (or swells toward you going back up) with the cards curving along it, flattening when you let go (after Codrops' infinite WebGL gallery). Stepping one card at a time leaves them flat and easy to read.
 - Cards lean with the scroll: a row's cards tilt sideways as it slides, easing flat when it stops (after the carousel in Codrops' WebGPU page-transitions demo).
@@ -36,6 +36,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
+- Thicker controller button icons.
 - The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's, with its controller shortcuts: X deletes, Y types a space, L2 is Shift, R2 switches to symbols and Start is Enter (each shown on its key). Searching shows what you type, and its results, as you type.
 - In grids the selected card's row stays near the middle of the screen as you move up and down, instead of near the bottom (it stops at the top and the end of the page).
 - More's row: up from one of its tabs goes to the tab above it in the top bar, and down from a top-bar tab (while the row is open) to the one below it, instead of always back to More.

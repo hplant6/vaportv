@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 240 240">
-  <!-- Generator: Adobe Illustrator 29.8.2, SVG Export Plug-In . SVG Version: 2.1.1 Build 3)  -->
+  <!-- Generator: Adobe Illustrator 30.8.2, SVG Export Plug-In . SVG Version: 2.1.4 Build 7)  -->
   <defs>
     <style>
       .st0 {
         fill: #fff;
       }
-
-      .st1 {
-        fill: none;
-        stroke: #fff;
-        stroke-miterlimit: 10;
-        stroke-width: 6px;
-      }
     </style>
   </defs>
-  <rect class="st1" x="61.5" y="13.7" width="116.9" height="212.7" rx="58.5" ry="58.5" transform="translate(240 240) rotate(180)"/>
+  <path class="st0" d="M120,231.8c-35.3,0-63.9-28.7-63.9-64v-95.7c0-35.3,28.7-64,63.9-64s64,28.7,64,64v95.7c0,35.3-28.7,64-64,64ZM120,19.1c-29.2,0-52.9,23.8-52.9,53v95.7c0,29.2,23.8,53,52.9,53s53-23.8,53-53v-95.7c0-29.2-23.8-53-53-53Z"/>
   <g>
-    <rect class="st0" x="82.9" y="82.2" width="74.3" height="15.4" rx="7.7" ry="7.7"/>
-    <rect class="st0" x="82.9" y="112.3" width="74.3" height="15.4" rx="7.7" ry="7.7"/>
-    <path class="st0" d="M89.4,142.4h61.3c3.6,0,6.5,3.4,6.5,7.7h0c0,4.3-2.9,7.7-6.5,7.7h-61.3c-3.6,0-6.5-3.4-6.5-7.7h0c0-4.3,2.9-7.7,6.5-7.7Z"/>
+    <rect class="st0" x="82.8" y="82.2" width="74.3" height="15.4" rx="7.7" ry="7.7"/>
+    <rect class="st0" x="82.8" y="112.3" width="74.3" height="15.4" rx="7.7" ry="7.7"/>
+    <path class="st0" d="M89.3,142.4h61.3c3.6,0,6.5,3.4,6.5,7.7h0c0,4.3-2.9,7.7-6.5,7.7h-61.3c-3.6,0-6.5-3.4-6.5-7.7h0c0-4.3,2.9-7.7,6.5-7.7Z"/>
   </g>
 </svg>
