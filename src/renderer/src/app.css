@@ -799,9 +799,13 @@ button {
   align-items: center;
   gap: 36px;
   padding: 18px 36px;
-  border-radius: var(--card-radius);
-  background: var(--color-card-footer);
-  box-shadow: var(--shadow-card);
+  /* The modals' glass and soft lift. */
+  border-radius: 52px;
+  background: rgba(53, 41, 31, 0.5);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 30px 90px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(30px);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
