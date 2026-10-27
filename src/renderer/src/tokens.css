@@ -42,8 +42,13 @@
   /* Descriptions, help and other small text: IBM Plex Sans. */
   --font-body: 'IBM Plex Sans', sans-serif;
 
+  /* The type scale: every size of text outside the clock and screensaver is one of these. */
+  --text-display: 48px;
+  --text-title: 36px;
+  --text-large: 32px;
   --text-label: 24px;
-  --text-meta: 32px;
+  --text-body: 20px;
+  --text-small: 16px;
   /* The date (top left) and the time (top right) match: one size, one height. */
   --text-date: 56px;
   --text-clock: 56px;

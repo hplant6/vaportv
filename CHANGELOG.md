@@ -9,7 +9,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- Game options (Start on a console or arcade game) is redesigned: the game's cover beside its name, playtime and settings, on frosted glass over the dimmed screen.
+- Game options (Start on a console or arcade game) is redesigned: the game's cover beside its name, playtime and settings. B or Start closes it.
+- Every window that opens over the screen (Game options, Artwork, the welcome tour, Report a problem, Wi-Fi and Bluetooth, updates, playlists and the rest) now shares one look: warm frosted glass lifted over the dimmed screen, rising in as it opens and sinking away as it closes, with its choices in a lighter box and taller rows.
+- Text comes in six sizes throughout, and nothing is smaller than 16px: the dates and names under game cards are easier to read from the couch.
 - Settings → Help, with the welcome tour (moved from General) and Report a problem: a QR code that opens a bug report on your phone, on GitHub, with vaporTV's version, the system, your controllers and recent log lines filled in. Describe what went wrong and submit it there (it needs a GitHub account).
 - Voice search: tap a remote's Menu button and say a game or app ("Metroid Prime", or "play Halo 2" to start it straight away). It searches every tab and app, and understands speech on this machine, with nothing sent anywhere (the speech model downloads the first time). Hold Menu for Settings. On a controller, press the right stick (R3; change it in Settings → Controller). The background music and ambience pause while search is open, so it can hear you. The search screen also has a mic button and Type.
 - City Rain backdrop: a wet street at night, the city's lights reflected in the puddles and rain falling through them. Lighter on the GPU than Rain.

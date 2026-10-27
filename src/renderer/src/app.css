@@ -181,7 +181,7 @@ button {
 /* A single label beside the value (am/pm, CPU, GPU), level with its cap tops. */
 .clock-label {
   margin-top: 6px;
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
 }
 
 /* Two lines beside the value; in the right corner they hug the value from its left. */
@@ -196,13 +196,13 @@ button {
 }
 
 .clock-stack-top {
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
 }
 
 /* Tucked up under the top line, as in the Figma (its 24px line starts 31px down). */
 .clock-stack-bottom {
   margin-top: -7px;
-  font-size: 20px;
+  font-size: var(--text-body);
 }
 
 /* The bar as it always was: a small temperature, then the date. */
@@ -214,7 +214,7 @@ button {
   margin-top: 6px;
   /* Closer to the date than the bar's other gaps: the same space as between the time and am/pm. */
   margin-right: -5.5px;
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
 }
 
 .clock-battery-icon {
@@ -481,7 +481,7 @@ button {
 /* Power Off waiting for its second press. */
 .power-item.confirm {
   color: #ff6b5a;
-  font-size: 20px;
+  font-size: var(--text-body);
 }
 
 
@@ -610,7 +610,7 @@ button {
 }
 
 .recent-title {
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   text-transform: uppercase;
   white-space: nowrap;
@@ -623,7 +623,7 @@ button {
   align-items: center;
   gap: 5px;
   margin-top: -1px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -729,7 +729,7 @@ button {
   border-radius: 999px;
   background: rgba(6, 4, 8, 0.85);
   color: var(--color-accent);
-  font-size: 20px;
+  font-size: var(--text-body);
   white-space: nowrap;
 }
 
@@ -749,7 +749,7 @@ button {
   background: var(--color-card-footer);
   box-shadow: var(--shadow-card);
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: var(--text-body);
   opacity: 0;
   transform: translate(-50%, 20px);
   transition:
@@ -849,7 +849,7 @@ button {
 }
 
 .launch-label {
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
   color: var(--color-text);
 }
 
@@ -867,13 +867,13 @@ button {
 
 .settings-heading {
   margin: 0;
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
 }
 
 .settings-help {
   margin: 8px 0 24px;
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: var(--text-body);
   opacity: 0.8;
 }
 
@@ -914,7 +914,7 @@ button {
 
 .setting-detail {
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: var(--text-body);
   opacity: 0.8;
 }
 
@@ -982,7 +982,7 @@ button {
 .row-note {
   margin-left: 20px;
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: var(--text-body);
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -992,7 +992,7 @@ button {
 .empty-note {
   margin: 16px 0 0;
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: var(--text-body);
   opacity: 0.85;
 }
 
@@ -1177,7 +1177,7 @@ button {
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 40px;
+  font-size: var(--text-title);
   text-align: center;
   background: center / cover url('./assets/empty/wide.webp');
 }
@@ -1198,7 +1198,7 @@ button {
   border: none;
   color: var(--color-text);
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: var(--text-body);
   outline-color: var(--color-accent-line);
 }
 
@@ -1225,7 +1225,7 @@ button {
   border-radius: 50%;
   background: rgba(6, 4, 8, 0.8);
   color: var(--color-accent-line);
-  font-size: 24px;
+  font-size: var(--text-label);
   line-height: 1;
 }
 
@@ -1336,15 +1336,19 @@ button {
   opacity: 0.85;
 }
 
-/* ── Dialogs (Google Photos, Sleep) ─────────────────── */
+/* ── Modals ─────────────────────────────────────────── */
 
+/* Every modal: warm frosted glass lifted over a dimmed screen. It rises in as the screen dims,
+   and sinks away as it brightens (modalExit.ts plays the leaving half). */
 .dialog-backdrop {
   position: fixed;
   inset: 0;
   z-index: 900;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  /* The dim fades by its colour, not opacity: a see-through parent would stop the glass blurring what's behind. */
+  animation: modal-dim var(--dur-more) ease-out;
 }
 
 .dialog-panel {
@@ -1353,10 +1357,70 @@ button {
   align-items: center;
   gap: 24px;
   width: 720px;
-  padding: 40px;
-  border-radius: var(--card-radius);
-  background: var(--color-card-footer);
-  box-shadow: var(--shadow-tile-focus);
+  padding: 52px;
+  border-radius: 52px;
+  background: rgba(53, 41, 31, 0.5);
+  /* A soft lift: a faint close shadow and a wide, light one below, with no dark halo at the edge. */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 30px 90px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(30px);
+  animation: modal-in var(--dur-more) var(--ease-focus);
+}
+
+.dialog-backdrop.leaving {
+  animation: modal-undim 220ms ease-in forwards;
+}
+
+.dialog-backdrop.leaving .dialog-panel {
+  animation: modal-out 220ms ease-in forwards;
+}
+
+@keyframes modal-dim {
+  from {
+    background: transparent;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+  }
+}
+
+@keyframes modal-undim {
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes modal-out {
+  to {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+  }
+}
+
+/* A modal's heading. */
+.dialog-panel > .section-label {
+  height: auto;
+  font-size: var(--text-title);
+  letter-spacing: 0.04em;
+}
+
+/* A modal's list of choices sits in a lighter box, as Game options' settings do. */
+.dialog-panel > .setting-list,
+.dialog-panel > .artwork-list,
+.game-settings {
+  border-radius: 28px;
+  background: rgba(190, 147, 111, 0.16);
+  box-shadow: 0 4px 84px rgba(49, 26, 5, 0.29);
+}
+
+.dialog-panel > .setting-list,
+.dialog-panel > .artwork-list {
+  padding: 29px;
 }
 
 .gphotos-qr {
@@ -1369,22 +1433,18 @@ button {
 .dialog-message {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 24px;
+  font-size: var(--text-label);
   line-height: 1.4;
   text-align: center;
 }
 
 .dialog-button {
   padding: 14px 48px;
-  border-radius: var(--card-radius);
+  border-radius: 19px;
   font-size: var(--text-label);
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.dialog-button:focus {
-  background: var(--color-focus-tint);
-  color: var(--color-accent);
+  background: rgba(190, 147, 111, 0.16);
+  transition: background-color var(--dur-focus) var(--ease-focus);
 }
 
 /* Intro video: over everything as vaporTV opens, fading out into Home. */
@@ -1444,24 +1504,24 @@ button {
   align-items: baseline;
   gap: 16px;
   margin: 0 0 8px;
-  font-size: 28px;
+  font-size: var(--text-large);
 }
 
 .update-date {
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: var(--text-body);
   opacity: 0.6;
 }
 
 .update-body {
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: var(--text-body);
   line-height: 1.4;
 }
 
 .update-body h4 {
   margin: 12px 0 4px;
-  font-size: 18px;
+  font-size: var(--text-body);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.7;
@@ -1483,7 +1543,7 @@ button {
 }
 
 .update-status {
-  font-size: 20px;
+  font-size: var(--text-body);
   opacity: 0.8;
 }
 
@@ -1575,7 +1635,7 @@ button {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   font-family: var(--font-body);
-  font-size: 32px;
+  font-size: var(--text-large);
   overflow-wrap: anywhere;
 }
 
@@ -1608,7 +1668,7 @@ button {
   padding: 0;
   border-radius: 10px;
   font-family: var(--font-body);
-  font-size: 30px;
+  font-size: var(--text-large);
   color: #fff;
   background: rgba(255, 255, 255, 0.09);
   transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
@@ -1616,7 +1676,7 @@ button {
 
 /* Shift, delete, symbols and show: a shade darker, as Steam's are. */
 .osk-key.fn {
-  font-size: 26px;
+  font-size: var(--text-label);
   background: rgba(255, 255, 255, 0.045);
 }
 
@@ -1728,7 +1788,7 @@ button {
   width: 256px;
   height: 83px;
   margin: 0;
-  font-size: 36px;
+  font-size: var(--text-title);
   line-height: 1.27;
   letter-spacing: 0.04em;
   border-bottom: 1px solid var(--color-panel-line);
@@ -1799,7 +1859,7 @@ button {
 .settings-pane .settings-heading {
   /* A gap under the divider, as under the categories' title, so a highlighted row doesn't touch it. */
   margin-bottom: 9px;
-  font-size: 36px;
+  font-size: var(--text-title);
   line-height: 2.3;
   letter-spacing: 0.04em;
   border-bottom: 1px solid var(--color-panel-line);
@@ -1807,7 +1867,7 @@ button {
 
 .settings-pane .settings-help {
   margin: 20px 32px;
-  font-size: 16px;
+  font-size: var(--text-small);
   letter-spacing: 0.04em;
 }
 
@@ -1844,9 +1904,29 @@ button {
 
 .settings-pane .setting-detail,
 .dialog-panel .setting-detail {
-  font-size: 16px;
+  font-size: var(--text-small);
   letter-spacing: 0.04em;
   opacity: 1;
+}
+
+/* In a modal, rows are taller, their details bolder and the cursor's tint deeper. */
+.dialog-panel .setting-row {
+  flex: none;
+  height: 100px;
+}
+
+.dialog-panel .setting-detail {
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+.dialog-panel .setting-detail .regular {
+  font-weight: 400;
+}
+
+.dialog-panel .setting-row:focus,
+.dialog-button:focus {
+  background: rgba(238, 150, 13, 0.4);
 }
 
 /* Radio: a light ring, gold where the cursor is; chosen adds a gold dot with a clear gap. */
@@ -2065,61 +2145,14 @@ button {
   min-height: 0;
 }
 
-/* Game options (Start on a console game): the cover beside the name, playtime and settings,
-   on warm frosted glass over a dimmed screen. It rises in as the screen dims. */
-.game-backdrop {
-  background: rgba(0, 0, 0, 0.6);
-  /* The dim fades in by its colour, not opacity: a see-through parent would stop the glass blurring what's behind. */
-  animation: game-dim var(--dur-more) ease-out;
-}
-
+/* Game options (Start on a console game): the cover beside the name, playtime and settings. */
 .game-panel {
-  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 58px;
+  width: auto;
   max-height: 1000px;
   padding: 52px 51px;
-  border-radius: 52px;
-  background: rgba(53, 41, 31, 0.5);
-  /* A soft lift: a faint close shadow and a wide, light one below, with no dark halo at the edge. */
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.18),
-    0 30px 90px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(30px);
-  animation: game-in var(--dur-more) var(--ease-focus);
-}
-
-.game-backdrop.leaving {
-  animation: game-undim 220ms ease-in forwards;
-}
-
-.game-backdrop.leaving .game-panel {
-  animation: game-out 220ms ease-in forwards;
-}
-
-@keyframes game-undim {
-  to {
-    background: transparent;
-  }
-}
-
-@keyframes game-out {
-  to {
-    opacity: 0;
-    transform: translateY(32px) scale(0.96);
-  }
-}
-
-@keyframes game-dim {
-  from {
-    background: transparent;
-  }
-}
-
-@keyframes game-in {
-  from {
-    opacity: 0;
-    transform: translateY(32px) scale(0.96);
-  }
 }
 
 .game-cover {
@@ -2159,7 +2192,7 @@ button {
   margin: -6px 0 0;
   overflow: hidden;
   font-family: var(--font-body);
-  font-size: 48px;
+  font-size: var(--text-display);
   font-weight: 700;
   line-height: 1.25;
   white-space: nowrap;
@@ -2172,7 +2205,7 @@ button {
   gap: 13px;
   margin: 8px 0 34px;
   font-family: var(--font-body);
-  font-size: 24px;
+  font-size: var(--text-label);
   letter-spacing: 0.04em;
 }
 
@@ -2193,51 +2226,18 @@ button {
   min-height: 0;
   padding: 0 29px 29px;
   overflow-y: auto;
-  border-radius: 28px;
-  background: rgba(190, 147, 111, 0.16);
-  box-shadow: 0 4px 84px rgba(49, 26, 5, 0.29);
 }
 
 .game-settings-title {
   margin: 0;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 226, 183, 0.18);
-  font-size: 36px;
+  font-size: var(--text-title);
   font-weight: 400;
   line-height: 55px;
   letter-spacing: 0.04em;
 }
 
-.game-settings .setting-row {
-  flex: none;
-  height: 100px;
-  padding: 0 32px;
-  border-radius: 19px;
-  background: transparent;
-  outline: none;
-  transition: background var(--dur-focus) var(--ease-focus);
-}
-
-.game-settings .setting-row:focus {
-  background: rgba(238, 150, 13, 0.4);
-  transform: none;
-}
-
-.game-settings .setting-name {
-  font-size: 24px;
-  letter-spacing: 0.04em;
-}
-
-.game-settings .setting-detail {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  opacity: 1;
-}
-
-.game-settings .setting-detail .regular {
-  font-weight: 400;
-}
 
 .artwork-list {
   display: flex;
@@ -2314,7 +2314,7 @@ button {
   border-radius: 6px;
   background: rgba(6, 4, 8, 0.8);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .artwork-query {
@@ -2393,7 +2393,7 @@ button {
   padding: 6px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.14);
-  font-size: 20px;
+  font-size: var(--text-body);
   text-align: center;
 }
 
@@ -2430,7 +2430,7 @@ button {
   position: absolute;
   right: -6px;
   bottom: -4px;
-  font-size: 18px;
+  font-size: var(--text-small);
 }
 
 .setting-row.waiting .setting-detail {
@@ -2454,7 +2454,7 @@ button {
 .welcome-step {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: var(--text-small);
   opacity: 0.6;
 }
 
@@ -2467,7 +2467,7 @@ button {
   padding: 0;
   list-style: none;
   font-family: var(--font-body);
-  font-size: 22px;
+  font-size: var(--text-body);
 }
 
 .welcome-row {
@@ -2553,7 +2553,7 @@ button {
 
 .files-group .settings-heading {
   margin-bottom: 0;
-  font-size: 36px;
+  font-size: var(--text-title);
   line-height: 2.3;
   letter-spacing: 0.04em;
   border-bottom: 1px solid var(--color-panel-line);
@@ -2564,7 +2564,7 @@ button {
 
 .files-path {
   margin: 14px 32px;
-  font-size: 16px;
+  font-size: var(--text-small);
   letter-spacing: 0.04em;
   overflow: hidden;
   white-space: nowrap;
@@ -2606,7 +2606,7 @@ button {
 
 .files-row .setting-detail {
   flex: none;
-  font-size: 16px;
+  font-size: var(--text-small);
   letter-spacing: 0.04em;
   opacity: 1;
 }
@@ -2718,14 +2718,14 @@ button {
   gap: 10px;
   justify-content: flex-end;
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: var(--text-body);
 }
 
 .files-paste-kind {
   flex: none;
   padding: 2px 10px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: var(--text-small);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #000;
@@ -2777,7 +2777,7 @@ button {
 
 .files-viewer-title {
   margin: 32px 0 0;
-  font-size: 48px;
+  font-size: var(--text-display);
   letter-spacing: 0.04em;
   overflow-wrap: anywhere;
 }
@@ -2814,7 +2814,7 @@ button {
 .files-viewer-name {
   flex: 1;
   min-width: 0;
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
   letter-spacing: 0.04em;
   overflow: hidden;
   white-space: nowrap;
@@ -2825,7 +2825,7 @@ button {
 .files-viewer-time {
   flex: none;
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: var(--text-body);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2853,7 +2853,7 @@ button {
   align-items: center;
   gap: 10px;
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: var(--text-body);
 }
 
 .files-hint .control-icon {
@@ -2968,7 +2968,7 @@ button {
   display: flex;
   align-items: center;
   font-family: var(--font-body);
-  font-size: 44px;
+  font-size: var(--text-display);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2985,7 +2985,7 @@ button {
   border-radius: var(--card-radius);
   background: var(--color-panel);
   color: var(--color-text);
-  font-size: var(--text-meta);
+  font-size: var(--text-large);
 }
 
 .search-type:focus {
@@ -3055,7 +3055,7 @@ button {
 }
 
 .bug-title {
-  font-size: var(--text-date);
+  font-size: var(--text-display);
   line-height: 1;
 }
 

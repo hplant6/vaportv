@@ -6,6 +6,7 @@ import './app.css'
 import { App } from './App'
 import { startGamepad } from './input/gamepad'
 import { startKeyboard } from './input/keyboard'
+import { startModalExits } from './modalExit'
 import { Setup } from './screens/Setup'
 import './fonts'
 
@@ -15,5 +16,6 @@ if (new URLSearchParams(location.search).has('setup')) {
 } else {
   startKeyboard()
   startGamepad()
+  startModalExits()
   createRoot(document.getElementById('root')!).render(<App />)
 }
