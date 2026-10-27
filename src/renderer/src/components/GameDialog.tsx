@@ -14,6 +14,8 @@ import { toast } from './Toast'
 const STEAM_GAME = /^(steam|shortcut|app):/
 /** Delete waits this long for its second press. */
 const CONFIRM_MS = 4000
+/** The panel sinks away this long before it's gone. */
+const LEAVE_MS = 220
 
 type Step = 'menu' | 'emulator' | 'rename'
 
@@ -61,6 +63,18 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
   const [step, setStep] = useState<Step>('menu')
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+
+  // Sinks and fades as the screen brightens, then hands over.
+  const going = useRef(false)
+  const leave = (then: () => void = onClose): void => {
+    if (going.current) return
+    going.current = true
+    setLeaving(true)
+    setTimeout(then, LEAVE_MS)
+  }
+  const leaveRef = useRef(leave)
+  leaveRef.current = leave
 
   useEffect(() => {
     window.steamtv.game
@@ -72,10 +86,10 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
   // B goes back a step, then closes. The keyboard handles its own B.
   useEffect(() => {
     if (step === 'rename') return
-    const close = (): void => (step === 'menu' ? onClose() : setStep('menu'))
+    const close = (): void => (step === 'menu' ? leaveRef.current() : setStep('menu'))
     window.addEventListener(TRAP_CLOSE_EVENT, close)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, close)
-  }, [step, onClose])
+  }, [step])
 
   // The cursor starts on the first row, or on the emulator in use.
   useEffect(() => {
@@ -116,15 +130,16 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       .setEmulator(id, emulator)
       .then(() => {
         toast(`${options.title} will open in ${name}`)
-        onClose()
+        leave()
       })
       .catch(fail)
   }
 
-  const replaceArt = (): void => {
-    onClose()
-    window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: card }))
-  }
+  const replaceArt = (): void =>
+    leave(() => {
+      onClose()
+      window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: card }))
+    })
 
   const remove = (): void => {
     if (!options || busy) return
@@ -134,7 +149,7 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       .delete(id)
       .then(() => {
         toast(`Deleted ${options.title}`)
-        onClose()
+        leave()
       })
       .catch(fail)
   }
@@ -159,7 +174,7 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
   )
 
   return (
-    <div className="dialog-backdrop game-backdrop">
+    <div className={`dialog-backdrop game-backdrop${leaving ? ' leaving' : ''}`}>
       <div className="game-panel" ref={panel} data-focus-trap="">
         <div className="game-cover">{options?.cover ? <img src={options.cover} alt="" /> : <span className="display">{options?.title}</span>}</div>
         <div className="game-side">

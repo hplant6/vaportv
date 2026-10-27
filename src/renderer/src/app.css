@@ -2076,15 +2076,35 @@ button {
 .game-panel {
   display: flex;
   gap: 58px;
-  width: 1473px;
   max-height: 1000px;
   padding: 52px 51px;
   border-radius: 52px;
   background: rgba(53, 41, 31, 0.5);
   /* A hairline of warm light for its edge, as glass catches it, rather than a shadow. */
-  box-shadow: inset 0 0 0 1px rgba(255, 226, 183, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(255, 226, 183, 0.14);
   backdrop-filter: blur(30px);
   animation: game-in var(--dur-more) var(--ease-focus);
+}
+
+.game-backdrop.leaving {
+  animation: game-undim 220ms ease-in forwards;
+}
+
+.game-backdrop.leaving .game-panel {
+  animation: game-out 220ms ease-in forwards;
+}
+
+@keyframes game-undim {
+  to {
+    background: transparent;
+  }
+}
+
+@keyframes game-out {
+  to {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+  }
 }
 
 @keyframes game-dim {
@@ -2101,11 +2121,14 @@ button {
 }
 
 .game-cover {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 414px;
-  height: 654px;
+  /* As tall as the name, playtime and settings beside it (685px: the title's line, playtime's
+     and the four settings), in a poster's shape. */
+  height: 685px;
+  aspect-ratio: 414 / 654;
   overflow: hidden;
   border-radius: 26px;
   background: rgba(0, 0, 0, 0.3);
@@ -2113,15 +2136,19 @@ button {
   text-align: center;
 }
 
+/* Out of the flow, so the picture's own size can't stretch the poster. */
 .game-cover img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 .game-side {
-  flex: 1;
+  flex: none;
   display: flex;
+  width: 891px;
   flex-direction: column;
   min-width: 0;
 }
