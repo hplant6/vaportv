@@ -186,6 +186,10 @@ export interface GameOptions {
   emulator: string
   /** What Delete removes. */
   files: { count: number; bytes: number }
+  /** Its card's art: the cover, else the wide picture. */
+  cover?: string
+  /** Minutes vaporTV has timed it running; missing if never played. */
+  playtime?: number
 }
 
 /** What's known about a console game (the libretro database, with ES-DE's scrape over it). */

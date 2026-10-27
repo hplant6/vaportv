@@ -9,7 +9,7 @@ import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
 import type { AppItem, GameInfo, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
-import { forgetGame, toggleFavorite } from './history'
+import { forgetGame, readPlaytime, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
@@ -48,7 +48,7 @@ import { fillPs2Art, loadPs2Tab, ps2Games } from './library/ps2Tab'
 import { fillXboxArt, loadXboxTab, xboxGames } from './library/xboxTab'
 import { fillWiiArt, loadWiiTab, wiiGames } from './library/wiiTab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
-import { fillEmulatedArt } from './library/emulated'
+import { emulatedItem, fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
 import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
@@ -738,7 +738,9 @@ ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> 
   // The card shows the given name; the options want the name before it too.
   const game = await emulatedGame({ ...config, gameTitles: {} }, id)
   if (!game) throw new Error('Only console games have options here.')
-  return gameOptions(config, id, game.title)
+  // The card's art and playtime, for the dialog's picture and header.
+  const item = await emulatedItem(game, undefined, false, (await readPlaytime())[id])
+  return { ...(await gameOptions(config, id, game.title)), cover: item.cover ?? item.wide, playtime: item.playtime }
 })
 // What's known about it: year, genre, players, makers, a description.
 ipcMain.handle('game:info', async (_event, id: string): Promise<GameInfo | null> => {

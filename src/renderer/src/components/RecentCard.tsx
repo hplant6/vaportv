@@ -15,7 +15,7 @@ function formatDate(iso: string): string {
 }
 
 /** 45m, 3h 20m, then whole hours (126h) once the minutes stop mattering. */
-function formatPlaytime(minutes: number): string {
+export function formatPlaytime(minutes: number): string {
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   return hours < 10 && minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours.toLocaleString()}h`

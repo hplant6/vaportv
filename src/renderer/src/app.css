@@ -2065,29 +2065,133 @@ button {
   min-height: 0;
 }
 
-/* Game options: what's known about the game, above its options. */
-.game-info {
+/* Game options (Start on a console game): the cover beside the name, playtime and settings,
+   on warm frosted glass over a dimmed screen. */
+.game-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.game-panel {
+  display: flex;
+  gap: 58px;
+  width: 1473px;
+  max-height: 1000px;
+  padding: 52px 51px;
+  border-radius: 52px;
+  background: rgba(53, 41, 31, 0.5);
+  box-shadow: 0 4px 43px rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(30px);
+}
+
+.game-cover {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 414px;
+  height: 654px;
+  overflow: hidden;
+  border-radius: 26px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: var(--text-label);
+  text-align: center;
+}
+
+.game-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-side {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  font-family: var(--font-body);
+  min-width: 0;
 }
 
-.game-info-facts {
-  margin: 0;
-  font-size: 22px;
-  opacity: 0.7;
-}
-
-.game-info-description {
-  display: -webkit-box;
-  margin: 0;
+.game-title {
+  margin: -6px 0 0;
   overflow: hidden;
-  font-size: 22px;
-  line-height: 1.45;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
+  font-family: var(--font-body);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.game-playtime {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 8px 0 34px;
+  font-family: var(--font-body);
+  font-size: 24px;
+  letter-spacing: 0.04em;
+}
+
+.game-playtime img {
+  width: 24px;
+  height: 24px;
+}
+
+.game-playtime .display {
+  margin-right: 8px;
+  letter-spacing: 0.08em;
+}
+
+.game-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  min-height: 0;
+  padding: 0 29px;
+  overflow-y: auto;
+  border-radius: 28px;
+  background: rgba(190, 147, 111, 0.16);
+  box-shadow: 0 4px 84px rgba(49, 26, 5, 0.29);
+}
+
+.game-settings-title {
+  margin: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 226, 183, 0.18);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 55px;
+  letter-spacing: 0.04em;
+}
+
+.game-settings .setting-row {
+  flex: none;
+  height: 100px;
+  padding: 0 32px;
+  border-radius: 19px;
+  background: transparent;
+  outline: none;
+  transition: background var(--dur-focus) var(--ease-focus);
+}
+
+.game-settings .setting-row:focus {
+  background: rgba(238, 150, 13, 0.4);
+  transform: none;
+}
+
+.game-settings .setting-name {
+  font-size: 24px;
+  letter-spacing: 0.04em;
+}
+
+.game-settings .setting-detail {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 1;
+}
+
+.game-settings .setting-detail .regular {
+  font-weight: 400;
 }
 
 .artwork-list {
