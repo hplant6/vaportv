@@ -109,7 +109,6 @@ const ARCADE_CORES: { id: string; name: string; boards: ArcadeSystem['id'][] }[]
   { id: 'fbalpha2012', name: 'FB Alpha 2012', boards: ['cps', 'neogeo', 'arcade'] }
 ]
 
-export const arcadeCoreName = (id: string): string => ARCADE_CORES.find((core) => core.id === id)?.name ?? id
 
 /** The cores installed that can run this game's board, its board's own first. */
 export function arcadeCoreChoices(config: Config, game: ArcadeGame): { id: string; name: string }[] {

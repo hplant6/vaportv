@@ -36,6 +36,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
+- Start now shows what each button does, in a line along the bottom of the screen (H on a keyboard; press again to hide). An arcade game's core is picked in Game options (Select) instead, so the separate core picker is gone.
 - Thicker controller button icons.
 - The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's, with its controller shortcuts: X deletes, Y types a space, L2 is Shift, R2 switches to symbols and Start is Enter (each shown on its key). Searching shows what you type, and its results, as you type.
 - In grids the selected card's row stays near the middle of the screen as you move up and down, instead of near the bottom (it stops at the top and the end of the page).

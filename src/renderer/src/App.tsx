@@ -22,10 +22,10 @@ import { UpdateDialog } from './components/UpdateDialog'
 import { Intro } from './components/Intro'
 import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
-import { CoreDialog } from './components/CoreDialog'
 import { FilesApp } from './components/FilesApp'
 import { SearchScreen } from './components/SearchScreen'
 import { BugReportDialog } from './components/BugReportDialog'
+import { ControlsGuide } from './components/ControlsGuide'
 import { GameDialog } from './components/GameDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
@@ -432,7 +432,6 @@ export function App() {
       <LaunchOverlay />
       <SleepPrompt />
       <ArtworkDialog />
-      <CoreDialog />
       <GameDialog />
       <UpdateDialog />
       <RepairDialog />
@@ -444,6 +443,7 @@ export function App() {
       <Intro />
       <VolumeOsd />
       <Toast />
+      <ControlsGuide />
     </div>
   )
 }

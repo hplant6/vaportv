@@ -763,6 +763,54 @@ button {
   transform: translate(-50%, 0);
 }
 
+/* The buttons and what they do (Start), in a line along the bottom as ES-DE's help bar. */
+.controls-guide {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 18px 36px;
+  border-radius: var(--card-radius);
+  background: var(--color-card-footer);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 20px);
+  transition:
+    opacity var(--dur-focus) var(--ease-focus),
+    transform var(--dur-focus) var(--ease-focus);
+}
+
+.controls-guide.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.controls-guide-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls-guide .control-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.controls-guide .control-icon.wide {
+  width: 60px;
+}
+
+.controls-guide-label {
+  margin-left: 4px;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
 /* ── Launch overlay ─────────────────────────────────── */
 
 .launch-overlay {

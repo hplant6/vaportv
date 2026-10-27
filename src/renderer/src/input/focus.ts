@@ -206,13 +206,12 @@ export function options(): void {
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: el }))
 }
 
-/** Start (by default) on an arcade game: choose its RetroArch core. */
-export const CORE_EVENT = 'steamtv:core'
+/** Start (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
+export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 
-export function coreMenu(): void {
-  if (trap()) return
-  const el = current()
-  if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(CORE_EVENT, { detail: el }))
+export function controlsGuide(): void {
+  window.steamtv.logInput('controls guide')
+  window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))
 }
 
 /** Select on a controller, G on a keyboard: the focused game's options (name, emulator, art, delete). */

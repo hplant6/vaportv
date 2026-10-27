@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppItem, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -50,7 +50,7 @@ import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
 import { activeUserDir, steamGames } from './library/steam'
-import { arcadeCoreChoices, arcadeCoreName, arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
+import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
 import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames } from './library/steamgriddb'
 import { searchDuckDuckGo } from './library/duckduckgo'
 import { hasLibretroThumbnails, libretroCovers } from './library/libretroThumbnails'
@@ -770,25 +770,6 @@ ipcMain.handle('game:delete', async (_event, id: string) => {
   // The last game of a console takes its tab with it.
   tabsCache = null
   win?.webContents.send('art:updated')
-})
-ipcMain.handle('arcade:cores', async (_event, id: string): Promise<ArcadeCores> => {
-  const config = await loadConfig()
-  const game = (await arcadeGames(config)).find((g) => g.id === id)
-  if (!game) throw new Error('Only arcade games have a choice of core.')
-  return {
-    title: game.title,
-    current: game.core,
-    defaultCore: game.defaultCore,
-    choices: arcadeCoreChoices(config, game)
-  }
-})
-ipcMain.handle('arcade:setCore', async (_event, id: string, core: string | null) => {
-  const config = await loadConfig()
-  const cores = { ...config.arcadeGameCores }
-  if (core) cores[id] = core
-  else delete cores[id]
-  await saveConfig({ arcadeGameCores: cores })
-  return arcadeCoreName(core ?? (await arcadeGames(config)).find((g) => g.id === id)?.defaultCore ?? '')
 })
 ipcMain.handle('arcade-tab:get', async () => {
   const config = await loadConfig()

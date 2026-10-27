@@ -18,17 +18,6 @@ export interface RecentItem {
   favorite?: boolean
 }
 
-/** The cores an arcade game can open in. */
-export interface ArcadeCores {
-  title: string
-  /** What it opens in now. */
-  current: string
-  /** Its board's usual core. */
-  defaultCore: string
-  /** Installed cores that run its board, the default first. */
-  choices: { id: string; name: string }[]
-}
-
 export interface AppItem {
   id: string
   name: string
@@ -582,12 +571,6 @@ export interface SteamTvApi {
     covers(id: string, gameId: number): Promise<{ url: string; thumb: string }[]>
     choose(id: string, gameId: number, cover: string): Promise<void>
     reset(id: string): Promise<void>
-  }
-  /** Start on an arcade game: which RetroArch core it opens in. */
-  arcadeCores: {
-    get(id: string): Promise<ArcadeCores>
-    /** Saves the game's core (null: its board's default); resolves with the core's name. */
-    set(id: string, core: string | null): Promise<string>
   }
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
   game: {

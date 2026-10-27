@@ -3,7 +3,7 @@
 
 import type { ControllerFamily } from './controllers'
 
-export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'core' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch'
+export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'controlsGuide' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch'
 
 /** Action → standard-mapping button index. */
 export type Controls = Record<ControlAction, number>
@@ -13,13 +13,13 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string 
   { id: 'back', name: 'Back', detail: 'Close, or go back' },
   { id: 'favorite', name: 'Favorite', detail: 'Add or remove a favorite' },
   { id: 'options', name: 'Artwork', detail: 'Fix a console game’s art' },
-  { id: 'core', name: 'Arcade core', detail: 'Pick an arcade game’s emulator' },
   { id: 'gameMenu', name: 'Game options', detail: 'Rename, emulator, art or delete' },
   { id: 'previousTab', name: 'Previous tab', detail: '' },
   { id: 'nextTab', name: 'Next tab', detail: '' },
   { id: 'volumeDown', name: 'Volume down', detail: 'Hold to keep going' },
   { id: 'volumeUp', name: 'Volume up', detail: 'Hold to keep going' },
-  { id: 'voiceSearch', name: 'Voice search', detail: 'Say a game or app' }
+  { id: 'voiceSearch', name: 'Voice search', detail: 'Say a game or app' },
+  { id: 'controlsGuide', name: 'Show the buttons', detail: 'What each button does, along the bottom' }
 ]
 
 export const DEFAULT_CONTROLS: Controls = {
@@ -27,7 +27,7 @@ export const DEFAULT_CONTROLS: Controls = {
   back: 1,
   options: 2,
   favorite: 3,
-  core: 9,
+  controlsGuide: 9,
   gameMenu: 8,
   previousTab: 4,
   nextTab: 5,

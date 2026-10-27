@@ -115,10 +115,6 @@ const api: SteamTvApi = {
     libretro: (id, query) => ipcRenderer.invoke('art:libretro', id, query),
     chooseWeb: (id, url, thumb) => ipcRenderer.invoke('art:chooseWeb', id, url, thumb)
   },
-  arcadeCores: {
-    get: (id) => ipcRenderer.invoke('arcade:cores', id),
-    set: (id, core) => ipcRenderer.invoke('arcade:setCore', id, core)
-  },
   game: {
     options: (id) => ipcRenderer.invoke('game:options', id),
     rename: (id, name) => ipcRenderer.invoke('game:rename', id, name),
