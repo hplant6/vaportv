@@ -112,6 +112,28 @@ export interface SystemStats {
 
 export type LaunchKind = 'recent' | 'app'
 
+/** What a bug report says, from Settings → General → Report a problem. The page adds what only it knows. */
+export interface BugReportInput {
+  description: string
+  includeLog: boolean
+  /** WebGL's name for the GPU. */
+  gpu?: string
+  /** The connected controllers' names. */
+  controllers: string[]
+  /** e.g. "3840×2160" */
+  display: string
+}
+
+/** The report as a GitHub new-issue link and its QR code; logLines says how many log lines fit. */
+export interface BugReport {
+  url: string
+  qr: string
+  logLines: number
+}
+
+/** What voice is listening for: a search (a few words, the library's names expected) or dictation (sentences). */
+export type VoicePurpose = 'search' | 'dictation'
+
 /** Voice search, as it goes: the model downloading (first use), listening, working out the words, then the words or why not. */
 export type VoiceState =
   | { phase: 'starting' }
@@ -639,13 +661,15 @@ export interface SteamTvApi {
   toggleFavorite(id: string): Promise<boolean>
   /** Calls back when new art has been downloaded; returns an unsubscribe. */
   onArtUpdated(callback: () => void): () => void
-  /** Listens once for voice search; what happens comes through onVoice. */
-  startVoice(): void
+  /** Listens once (for a search unless said); what happens comes through onVoice. */
+  startVoice(purpose?: VoicePurpose): void
   stopVoice(): void
   /** Titles to help speech recognition spell names. */
   setVoiceHints(titles: string[]): void
   /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */
-  onVoice(callback: (state: VoiceState) => void): () => void
+  onVoice(callback: (state: VoiceState, purpose: VoicePurpose) => void): () => void
+  /** A GitHub issue link (and its QR code) for a bug report. */
+  makeBugReport(input: BugReportInput): Promise<BugReport>
   /** A remote's Menu held: open Settings. */
   onMenuHeld(callback: () => void): () => void
   setSteamCollections(ids: string[]): Promise<void>

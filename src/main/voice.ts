@@ -6,7 +6,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import type { VoiceState } from '../shared/types'
+import type { VoicePurpose, VoiceState } from '../shared/types'
 import { ownHelper } from './helpers'
 
 // Voice search: a remote's Menu tapped (or the search screen's mic) records from the default
@@ -24,11 +24,12 @@ const SPEECH_OVER_NOISE_DB = 12
 const SPEECH_FLOOR_DB = -45
 /** Speech has to last this long to count (not a cough or a click). */
 const MIN_SPEECH_MS = 150
-/** After speaking, this much quiet ends the recording. */
-const END_SILENCE_MS = 1000
-/** Nothing said in this long: give up. */
-const NO_SPEECH_MS = 5000
-const MAX_MS = 10_000
+/** How long each kind of listening goes on: a search is a few words; a bug report, sentences with pauses. */
+const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; maxMs: number }> = {
+  // After speaking, endSilenceMs of quiet ends it; nothing said in noSpeechMs gives up.
+  search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000 },
+  dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000 }
+}
 /** vaporTV's music fades out as search opens; the room is measured once it has. */
 const MUSIC_FADE_MS = 400
 
@@ -99,7 +100,8 @@ function microphone(): Promise<string | null> {
 }
 
 /** Records until the speaker stops; resolves to the sound, or null if nothing was said. */
-function record(log: Log): Promise<Buffer | null> {
+function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
+  const { endSilenceMs, noSpeechMs, maxMs } = LIMITS[purpose]
   return new Promise((resolve, reject) => {
     const child = spawn('parecord', ['--raw', `--rate=${RATE}`, '--channels=1', '--format=s16le'], { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
@@ -148,9 +150,9 @@ function record(log: Log): Promise<Buffer | null> {
           if (!heard) speech = 0
           quiet += FRAME_MS
         }
-        if (heard && quiet >= END_SILENCE_MS) return finish(Buffer.concat(chunks))
-        if (!heard && elapsed >= NO_SPEECH_MS) return finish(null)
-        if (elapsed >= MAX_MS) return finish(heard ? Buffer.concat(chunks) : null)
+        if (heard && quiet >= endSilenceMs) return finish(Buffer.concat(chunks))
+        if (!heard && elapsed >= noSpeechMs) return finish(null)
+        if (elapsed >= maxMs) return finish(heard ? Buffer.concat(chunks) : null)
       }
     })
     child.stderr.on('data', (chunk: Buffer) => log(`voice: parecord: ${chunk.toString().trim()}`))
@@ -192,10 +194,11 @@ export function cleanTranscript(out: string): string {
     .replace(/[.!?]+$/, '')
 }
 
-function transcribe(file: string, log: Log): Promise<string> {
+function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<string> {
   return new Promise((resolve, reject) => {
     const args = ['-m', MODEL, '-f', file, '-l', 'en', '-nt', '-np', '-t', '8']
-    if (hints) args.push('--prompt', hints)
+    // Game names help a search; in a description they'd only tempt it to hear them.
+    if (hints && purpose === 'search') args.push('--prompt', hints)
     const child = spawn(whisperCli(), args, { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
     let out = ''
@@ -213,12 +216,12 @@ function transcribe(file: string, log: Log): Promise<string> {
   })
 }
 
-/** Listens once and reports along the way: listening, thinking, then what was heard (or why not). */
-export async function listen(report: Send, log: Log): Promise<void> {
+/** Listens once (for a search, or dictating a bug report) and reports along the way: listening, thinking, then what was heard (or why not). */
+export async function listen(report: (state: VoiceState, purpose: VoicePurpose) => void, log: Log, purpose: VoicePurpose = 'search'): Promise<void> {
   if (busy) return log('voice: already listening')
   cancelled = false
   const send: Send = (state) => {
-    if (!cancelled) report(state)
+    if (!cancelled) report(state, purpose)
   }
   if (process.platform !== 'linux' || !voiceReady()) {
     send({ phase: 'error', message: "Voice search isn't installed in this build" })
@@ -238,7 +241,7 @@ export async function listen(report: Send, log: Log): Promise<void> {
     if (cancelled) return
     log(`voice: listening on ${mic}`)
     send({ phase: 'listening' })
-    const pcm = await record(log)
+    const pcm = await record(log, purpose)
     if (cancelled) return log('voice: cancelled')
     if (!pcm) {
       send({ phase: 'error', message: "Didn't hear anything" })
@@ -248,7 +251,7 @@ export async function listen(report: Send, log: Log): Promise<void> {
     const file = join(tmpdir(), `vaportv-voice-${process.pid}.wav`)
     await writeFile(file, wav(pcm))
     const started = performance.now()
-    const text = await transcribe(file, log).finally(() => rm(file, { force: true }))
+    const text = await transcribe(file, log, purpose).finally(() => rm(file, { force: true }))
     log(`voice: heard "${text}" in ${Math.round(performance.now() - started)} ms`)
     send(text ? { phase: 'heard', text } : { phase: 'error', message: "Didn't catch that" })
   } catch (err) {

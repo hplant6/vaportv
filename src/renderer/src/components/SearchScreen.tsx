@@ -87,7 +87,8 @@ export function SearchScreen({ apps }: { apps: AppItem[] }) {
     }
     window.addEventListener(SEARCH_EVENT, onOpen)
     // Voice search started from a remote opens the screen to show it.
-    const offVoice = window.steamtv.onVoice((state) => {
+    const offVoice = window.steamtv.onVoice((state, purpose) => {
+      if (purpose !== 'search') return
       setFrom((f) => (f === undefined ? ((document.activeElement as HTMLElement | null) ?? null) : f))
       setVoice(state)
     })

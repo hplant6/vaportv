@@ -7,13 +7,14 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab } from '../shared/types'
+import type { AppItem, ArcadeCores, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, stopListening } from './voice'
+import { makeBugReport } from './bugReport'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
@@ -110,12 +111,17 @@ function logInput(line: string): void {
   inputLogReady.then(() => appendFile(INPUT_LOG, `${new Date().toISOString().slice(11, 23)} ${line}\n`)).catch(() => {})
 }
 ipcMain.on('input:log', (_event, line: string) => logInput(line))
-ipcMain.on('voice:start', (event) =>
-  void listen((state) => {
-    if (!event.sender.isDestroyed()) event.sender.send('voice', state)
-  }, logInput)
+ipcMain.on('voice:start', (event, purpose: VoicePurpose) =>
+  void listen(
+    (state, why) => {
+      if (!event.sender.isDestroyed()) event.sender.send('voice', state, why)
+    },
+    logInput,
+    purpose
+  )
 )
 ipcMain.on('voice:stop', () => stopListening())
+ipcMain.handle('bugReport:make', (_event, input: BugReportInput) => makeBugReport(input, INPUT_LOG))
 ipcMain.on('voice:hints', (_event, titles: string[]) => setVoiceHints(titles))
 
 const windowSize = (): [number, number] | undefined => {
@@ -870,7 +876,7 @@ app.whenReady().then(async () => {
     startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)), {
       tap: async () => {
         if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
-        listen((state) => send('voice', state), logInput)
+        listen((state, why) => send('voice', state, why), logInput)
       },
       hold: async () => {
         if (await foreground.ownInFront()) send('menu:held')

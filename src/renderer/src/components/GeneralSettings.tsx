@@ -5,6 +5,7 @@ import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { OPEN_UPDATE_EVENT } from './UpdateDialog'
 import { PLAY_INTRO_EVENT } from './Intro'
 import { OPEN_WELCOME_EVENT } from './Welcome'
+import { OPEN_BUG_REPORT_EVENT } from './BugReportDialog'
 
 const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'auto', name: 'Automatic', detail: 'By country' },
@@ -12,7 +13,7 @@ const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' }
 ]
 
-/** Settings → General: where the weather is for, its units, the intro video, updates, and the welcome tour. */
+/** Settings → General: where the weather is for, its units, the intro video, updates, the welcome tour and reporting a problem. */
 export function GeneralSettings() {
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
@@ -181,6 +182,16 @@ export function GeneralSettings() {
           >
             <span className="setting-name display">Show the welcome tour</span>
             <span className="setting-detail">The buttons, and setting up apps</span>
+          </button>
+          <button
+            className="setting-row"
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={(e) => window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail: e.currentTarget }))}
+          >
+            <span className="setting-name display">Report a problem</span>
+            <span className="setting-detail">Say or type it, then send it from your phone</span>
           </button>
         </div>
       </div>

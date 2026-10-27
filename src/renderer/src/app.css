@@ -2812,3 +2812,40 @@ button {
 .osk-hint .control-icon.wide {
   width: 60px;
 }
+
+/* Report a problem (Settings → General): what went wrong, then a QR code to send it from a phone. */
+.bug-panel {
+  width: 1080px;
+  align-items: stretch;
+}
+
+.bug-panel .section-label,
+.bug-panel .dialog-message {
+  text-align: center;
+}
+
+.bug-description {
+  min-height: 160px;
+}
+
+.bug-listening {
+  opacity: 0.6;
+}
+
+.bug-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.bug-options {
+  align-self: stretch;
+}
+
+.bug-qr {
+  align-self: center;
+  width: 560px;
+  height: 560px;
+  border-radius: 12px;
+  image-rendering: pixelated;
+}
