@@ -132,6 +132,32 @@ button {
   text-transform: uppercase;
 }
 
+/* Marvin Visions is for the header bar and titles. Everything else that used it (names in
+   lists, the Settings menu, buttons, labels) reads in IBM Plex Sans bold, in its own case. */
+.setting-name.display,
+.settings-category.display,
+.dialog-button.display,
+.search-type.display,
+.files-action.display,
+.files-paste-label.display,
+.files-viewer-name.display,
+.controls-guide-label.display,
+.control-button.display,
+.control-icon-mark.display,
+.app-tile-name.display,
+.app-setup-badge.display,
+.wide-card-title.display,
+.recent-no-art.display,
+.volume-level.display,
+.game-facts .display,
+.game-cover .display {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-stretch: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
 /* ── Header ─────────────────────────────────────────── */
 
 /* ── The top bar's corners (ClockCorner.tsx): a layout from Settings → Home in each ──
