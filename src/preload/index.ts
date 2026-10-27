@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GooglePhotosProgress, SteamTvApi, UpdateState } from '../shared/types'
+import type { GooglePhotosProgress, SteamTvApi, UpdateState, VoiceState } from '../shared/types'
 
 const api: SteamTvApi = {
   getHome: () => ipcRenderer.invoke('home:get'),
@@ -208,6 +208,19 @@ const api: SteamTvApi = {
     const listener = (): void => callback()
     ipcRenderer.on('art:updated', listener)
     return () => ipcRenderer.removeListener('art:updated', listener)
+  },
+  startVoice: () => ipcRenderer.send('voice:start'),
+  stopVoice: () => ipcRenderer.send('voice:stop'),
+  setVoiceHints: (titles) => ipcRenderer.send('voice:hints', titles),
+  onVoice: (callback) => {
+    const listener = (_event: unknown, state: VoiceState): void => callback(state)
+    ipcRenderer.on('voice', listener)
+    return () => ipcRenderer.removeListener('voice', listener)
+  },
+  onMenuHeld: (callback) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('menu:held', listener)
+    return () => ipcRenderer.removeListener('menu:held', listener)
   },
   logInput: (line) => ipcRenderer.send('input:log', line)
 }

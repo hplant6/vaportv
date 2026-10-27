@@ -13,6 +13,7 @@ import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
+import { listen, setVoiceHints, stopListening } from './voice'
 import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
@@ -109,6 +110,13 @@ function logInput(line: string): void {
   inputLogReady.then(() => appendFile(INPUT_LOG, `${new Date().toISOString().slice(11, 23)} ${line}\n`)).catch(() => {})
 }
 ipcMain.on('input:log', (_event, line: string) => logInput(line))
+ipcMain.on('voice:start', (event) =>
+  void listen((state) => {
+    if (!event.sender.isDestroyed()) event.sender.send('voice', state)
+  }, logInput)
+)
+ipcMain.on('voice:stop', () => stopListening())
+ipcMain.on('voice:hints', (_event, titles: string[]) => setVoiceHints(titles))
 
 const windowSize = (): [number, number] | undefined => {
   const m = /^(\d+)x(\d+)$/.exec(process.env.STEAMTV_WINDOW ?? '')
@@ -858,7 +866,16 @@ app.whenReady().then(async () => {
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).
     // YouTube's TV app (VacuumTube) goes back on Escape only; remotes' Back sends Backspace.
     // Not while vaporTV is in front, where Escape would go back a second time.
-    startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)))
+    // Menu tapped is voice search (over vaporTV, for now); held, it's Settings.
+    startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)), {
+      tap: async () => {
+        if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
+        listen((state) => send('voice', state), logInput)
+      },
+      hold: async () => {
+        if (await foreground.ownInFront()) send('menu:held')
+      }
+    })
     watchSteamFocus((away) => {
       logInput(away ? 'steam focus: away' : 'steam focus: back')
       send('steam-focus', away)

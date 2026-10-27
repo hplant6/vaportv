@@ -11,7 +11,7 @@ import { pressVirtualKey } from './virtualKeys'
 // for an app (Kodi, Netflix), on a second press for a game, which would lose its progress.
 // Back (Backspace) over YouTube also presses Escape, the only key its TV app goes back
 // on; `backIsEscape` says when. F11 (a Sofabaton button mapped to it) opens Steam's menu, as a controller's Steam
-// button does. Home and F11 only from remotes (a Sofabaton hub, a USB TV remote): on a real keyboard it's a key
+// button does. Menu tapped is voice search; held, Settings. Home, F11 and Menu only from remotes (a Sofabaton hub, a USB TV remote): on a real keyboard it's a key
 // that games and text boxes use.
 
 const KEY_POWER = 116
@@ -20,6 +20,11 @@ const KEY_HOME = 102
 const KEY_KP7 = 71
 const KEY_F11 = 87
 const KEY_BACKSPACE = 14
+/** Remotes' Menu button (the HID Menu key), and a keyboard's Menu key. */
+const KEY_PROPS = 130
+const KEY_COMPOSE = 127
+/** Menu held this long opens Settings instead of voice search. */
+const MENU_HOLD_MS = 600
 /** After waking, Power and Home are ignored this long: a remote's "on" sends one to wake the box. */
 const AFTER_WAKE_MS = 15_000
 /** A game closes when Home is pressed again within this long. */
@@ -31,6 +36,12 @@ const ASLEEP_GAP_MS = 5000
 const REMOTE_NAME = /sofabaton|\bremote\b|\bRC\b/i
 
 type Log = (line: string) => void
+
+/** What a remote's Menu button does, tapped and held. */
+export interface MenuActions {
+  tap: () => Promise<void>
+  hold: () => Promise<void>
+}
 
 /** Whether a device's KEY= capability bitmap (64-bit words, most significant first) has `code`. */
 export function hasKey(bitmap: string, code: number): boolean {
@@ -62,7 +73,7 @@ export function remoteKeyboards(devices: string): { path: string; remote: boolea
  * `foreground`: what's in front, and closing it, as Select + Start does (from startHotkey).
  * `backIsEscape`: whether the app in front wants Escape for a remote's Back (YouTube).
  */
-export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: () => Promise<boolean>): void {
+export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: () => Promise<boolean>, menu: MenuActions): void {
   if (process.platform !== 'linux') return
   const watched = new Set<string>()
   let lastTick = Date.now()
@@ -70,6 +81,8 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   let sleepingUntil = 0
   /** When Home was first pressed over a game; a second press soon after closes it. */
   let homeArmedAt = 0
+  /** Menu is down: when it's held long enough this fires (Settings); let go first, it's a tap. */
+  let menuTimer: ReturnType<typeof setTimeout> | undefined
 
   // The process is paused while the box sleeps, so a long gap between ticks is a wake.
   setInterval(() => {
@@ -107,6 +120,23 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     readKeys(
       path,
       (code, value) => {
+        if ((code === KEY_PROPS || code === KEY_COMPOSE) && remote) {
+          // Pressed (1), repeating while held (2), let go (0).
+          if (value === 1) {
+            clearTimeout(menuTimer)
+            menuTimer = setTimeout(() => {
+              menuTimer = undefined
+              log('remote menu: held, Settings')
+              menu.hold().catch((err) => log(`remote menu: ${err}`))
+            }, MENU_HOLD_MS)
+          } else if (value === 0 && menuTimer) {
+            clearTimeout(menuTimer)
+            menuTimer = undefined
+            log('remote menu: tapped, voice search')
+            menu.tap().catch((err) => log(`remote menu: ${err}`))
+          }
+          return
+        }
         if (value !== 1) return
         if (code === KEY_POWER) pressedPower().catch((err) => log(`remote power: ${err}`))
         else if ((code === KEY_HOME || code === KEY_KP7) && remote) pressedHome().catch((err) => log(`remote home: ${err}`))

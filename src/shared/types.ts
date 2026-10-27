@@ -112,6 +112,14 @@ export interface SystemStats {
 
 export type LaunchKind = 'recent' | 'app'
 
+/** Voice search, as it goes: the model downloading (first use), listening, working out the words, then the words or why not. */
+export type VoiceState =
+  | { phase: 'preparing' }
+  | { phase: 'listening' }
+  | { phase: 'thinking' }
+  | { phase: 'heard'; text: string }
+  | { phase: 'error'; message: string }
+
 /** The power menu's choices. */
 export type PowerAction = 'desktop' | 'steam' | 'sleep' | 'restart' | 'poweroff'
 
@@ -630,6 +638,15 @@ export interface SteamTvApi {
   toggleFavorite(id: string): Promise<boolean>
   /** Calls back when new art has been downloaded; returns an unsubscribe. */
   onArtUpdated(callback: () => void): () => void
+  /** Listens once for voice search; what happens comes through onVoice. */
+  startVoice(): void
+  stopVoice(): void
+  /** Titles to help speech recognition spell names. */
+  setVoiceHints(titles: string[]): void
+  /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */
+  onVoice(callback: (state: VoiceState) => void): () => void
+  /** A remote's Menu held: open Settings. */
+  onMenuHeld(callback: () => void): () => void
   setSteamCollections(ids: string[]): Promise<void>
   /** Rows or grid for a library tab. */
   setTabLayout(tab: LayoutTab, layout: SteamLayout): Promise<void>

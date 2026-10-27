@@ -72,10 +72,13 @@ export function startKeyboard(): void {
         window.steamtv.logInput('screensaver key')
         window.dispatchEvent(new CustomEvent(SCREENSAVER_EVENT, { detail: 'preview' }))
       }
-    } else if (event.key === 'ContextMenu' || event.key === 'Props') {
-      // A keyboard's Menu key; remotes' Menu buttons send the HID "Menu" key, which is Props.
+    } else if (event.key === 'ContextMenu') {
+      // A keyboard's Menu key. Remotes' Menu buttons send the HID "Menu" key (Props), which
+      // the main process reads instead: tapped it's voice search, held it's Settings.
       event.preventDefault()
       if (!event.repeat) openSettings()
+    } else if (event.key === 'Props') {
+      event.preventDefault()
     } else if (event.key === 'PageUp' || event.key === 'PageDown') {
       event.preventDefault()
       if (!event.repeat) switchTab(event.key === 'PageUp' ? -1 : 1)

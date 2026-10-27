@@ -4,3 +4,4 @@ dist/
 *.log
 fixtures/box/
 src/renderer/public/private/
+build/voice/

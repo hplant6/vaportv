@@ -10,7 +10,7 @@
     "build": "node scripts/private-assets.mjs && electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "dist": "node scripts/private-assets.mjs && electron-vite build && electron-builder --linux AppImage",
+    "dist": "node scripts/private-assets.mjs && scripts/whisper.sh && electron-vite build && electron-builder --linux AppImage",
     "pack:netflix": "node scripts/pack-extension.mjs",
     "test": "vitest run",
     "snapshot": "scripts/snapshot-box.sh",
@@ -58,6 +58,10 @@
       {
         "from": "build/netflix",
         "to": "netflix"
+      },
+      {
+        "from": "build/voice",
+        "to": "voice"
       },
       {
         "from": "build/library-art",

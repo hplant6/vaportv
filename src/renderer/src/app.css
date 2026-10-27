@@ -1449,17 +1449,83 @@ button {
   opacity: 0.4;
 }
 
-/* On-screen keyboard: ten keys a row, then shift, symbols, space, delete and done. */
-.osk-panel {
-  width: 1180px;
+/* On-screen keyboard, after Steam's: a tray along the bottom that slides up, staggered keys. */
+.osk-dock {
+  position: absolute;
+  inset: 0;
+  height: var(--stage-h);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* A shade at the bottom so the tray reads over anything; what's above stays visible. */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75) 45%, transparent 75%);
+  animation: osk-fade 240ms var(--ease-focus);
+}
+
+.osk-tray {
+  width: 100%;
+  padding: 28px 0 36px;
+  background: rgba(16, 11, 18, 0.97);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  animation: osk-up 260ms var(--ease-focus);
+}
+
+.osk-dock.leaving {
+  animation: osk-fade 200ms ease-in reverse forwards;
+}
+
+.osk-dock.leaving .osk-tray {
+  animation: osk-down 200ms ease-in forwards;
+}
+
+@keyframes osk-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes osk-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes osk-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.osk-head,
+.osk-rows {
+  width: 1480px;
+  margin: 0 auto;
+}
+
+.osk-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.osk-title {
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.osk-prompt {
+  font-size: var(--text-label);
+  opacity: 0.75;
 }
 
 .osk-field {
-  align-self: stretch;
   min-height: 72px;
   padding: 16px 24px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   font-family: var(--font-body);
   font-size: 32px;
   overflow-wrap: anywhere;
@@ -1469,37 +1535,46 @@ button {
   opacity: 0.5;
 }
 
-.osk-keys {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
+.osk-rows {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-self: stretch;
 }
 
-.osk-actions {
+.osk-row {
   display: flex;
   gap: 10px;
-  align-self: stretch;
+}
+
+.osk-key,
+.osk-gap {
+  flex-basis: 0;
+  min-width: 0;
 }
 
 .osk-key {
-  height: 72px;
-  min-width: 96px;
-  padding: 0 16px;
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  padding: 0;
+  border-radius: 10px;
+  font-family: var(--font-body);
   font-size: 30px;
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-  transition: background-color var(--dur-focus) var(--ease-focus);
+  background: rgba(255, 255, 255, 0.09);
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+/* Shift, delete, symbols and show: a shade darker, as Steam's are. */
+.osk-key.fn {
+  font-size: 26px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .osk-key:focus {
   background: var(--color-focus-tint);
   color: var(--color-accent);
-}
-
-.osk-key.wide {
-  flex: 1;
 }
 
 .osk-key.on,
@@ -1508,8 +1583,9 @@ button {
   background: var(--color-accent);
 }
 
-/* Done is amber already: the cursor brightens it. */
-.osk-key.done:focus {
+/* Enter is amber already: the cursor brightens it. */
+.osk-key.done:focus,
+.osk-key.on:focus {
   color: #000;
   background: var(--color-accent);
   filter: brightness(1.25);
@@ -2562,4 +2638,149 @@ button {
 
 .files-hint .control-icon.wide {
   width: 60px;
+}
+
+/* Search (a remote's Menu tapped): the field and mic along the top, matches under it. */
+.search-app {
+  position: absolute;
+  inset: 0;
+  height: var(--stage-h);
+  z-index: 800;
+}
+
+.stage:has(.search-app) .page {
+  visibility: hidden;
+}
+
+.search-content {
+  position: absolute;
+  inset: 60px 72px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.search-mic {
+  position: relative;
+  flex: none;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--color-panel);
+  color: var(--color-text);
+  display: grid;
+  place-items: center;
+  transition: background var(--dur-focus) var(--ease-focus), border-color var(--dur-focus) var(--ease-focus);
+}
+
+.search-mic svg {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.search-mic:focus {
+  outline: none;
+  color: var(--color-accent);
+  background: var(--color-focus-tint);
+}
+
+/* Listening: the mic fills and a ring pulses out from it. */
+.search-mic.listening {
+  background: var(--color-accent);
+  color: var(--color-base);
+}
+
+.search-mic.listening::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: search-pulse 1.2s ease-out infinite;
+}
+
+.search-mic.preparing,
+.search-mic.thinking {
+  color: var(--color-accent);
+  animation: search-breathe 1s ease-in-out infinite alternate;
+}
+
+@keyframes search-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes search-breathe {
+  to {
+    background: var(--color-focus-tint);
+  }
+}
+
+.search-field {
+  flex: 1;
+  min-width: 0;
+  height: 104px;
+  padding: 0 36px;
+  border-radius: 52px;
+  background: var(--color-panel);
+  display: flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: 44px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-field.empty {
+  opacity: 0.55;
+}
+
+.search-type {
+  flex: none;
+  height: 104px;
+  padding: 0 44px;
+  border-radius: 52px;
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-size: var(--text-meta);
+}
+
+.search-type:focus {
+  outline: none;
+  color: var(--color-accent);
+  background: var(--color-focus-tint);
+}
+
+.search-status {
+  margin: 18px 0 8px 136px;
+  font-size: var(--text-label);
+  opacity: 0.75;
+}
+
+.search-results {
+  flex: 1;
+  min-height: 0;
+}
+
+.search-apps {
+  display: flex;
+  gap: 54px;
+  padding: 24px 0 48px;
 }
