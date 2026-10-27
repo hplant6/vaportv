@@ -117,7 +117,6 @@ const api: SteamTvApi = {
   },
   game: {
     options: (id) => ipcRenderer.invoke('game:options', id),
-    info: (id) => ipcRenderer.invoke('game:info', id),
     rename: (id, name) => ipcRenderer.invoke('game:rename', id, name),
     setEmulator: (id, emulator) => ipcRenderer.invoke('game:setEmulator', id, emulator),
     delete: (id) => ipcRenderer.invoke('game:delete', id)

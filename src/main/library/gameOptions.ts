@@ -75,7 +75,7 @@ const DEFAULT_EMULATORS: Record<string, { name: string; core?: string }> = {
 const platformOf = (id: string): string => id.slice(0, id.indexOf(':'))
 
 /** A disc platform's game, found by its card id. */
-export async function discGame(config: Config, id: string): Promise<{ game: DiscGame; root: string; all: DiscGame[] } | undefined> {
+async function discGame(config: Config, id: string): Promise<{ game: DiscGame; root: string; all: DiscGame[] } | undefined> {
   const platform = DISC_PLATFORMS[platformOf(id)]
   if (!platform) return undefined
   const all = await platform.load(config)
