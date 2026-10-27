@@ -194,6 +194,27 @@ export interface GameOptions {
   lastPlayed?: string
 }
 
+/** Start on an app: what it opens in, its use, and (a program of its own) its version and size. */
+export interface AppDetails {
+  /** Its tile's id (`netflix`), whichever card Start was pressed on. */
+  id: string
+  name: string
+  tile?: string
+  /** "Chrome", "VacuumTube", "a Steam shortcut". */
+  opensIn: string
+  /** Minutes it's been open; missing if never opened. */
+  playtime?: number
+  /** ISO date (YYYY-MM-DD); missing if never opened. */
+  lastPlayed?: string
+  /** "312.4 MB", for a program of its own. */
+  size?: string
+  version?: string
+  /** Its Flatpak can be updated from here. */
+  updatable: boolean
+  /** On Home's Favorite Apps. */
+  onHome: boolean
+}
+
 /** Start on a Steam game: what's known of it from Steam's own files. */
 export interface SteamGameDetails {
   title: string
@@ -599,6 +620,10 @@ export interface SteamTvApi {
     steam(id: string): Promise<SteamGameDetails | null>
     /** Hands the game to Steam: its page in Steam's library, or checking its files. */
     openInSteam(id: string, what: 'page' | 'verify'): Promise<void>
+    /** An app tile's (`netflix`), or the app behind a Recents card (`app:…`, `shortcut:…`); null when it isn't one of the apps. */
+    app(id: string): Promise<AppDetails | null>
+    /** Updates an app's program; whether there was anything new. */
+    updateApp(id: string): Promise<boolean>
     /** A new name, or null for the file's own. */
     rename(id: string, name: string | null): Promise<void>
     /** A RetroArch core's name, or '' for the console's default. */

@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
-import type { GameOptions, SteamGameDetails } from '../../../shared/types'
+import type { AppDetails, GameOptions, SteamGameDetails } from '../../../shared/types'
 import calendar from '../assets/calendar.svg'
 import clock from '../assets/clock.svg'
 import drive from '../assets/drive.svg'
 import trophy from '../assets/trophy.svg'
-import { focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import program from '../assets/window.svg'
+import { FAVORITE_EVENT, focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
 import { toast } from './Toast'
 
-// Start on a game: its cover and name, what's known of it (playtime, last play, size, and a
-// Steam game's achievements), beside its settings. A console game's: changing its name,
+// Start on a game or app: its cover and name, what's known of it (playtime, last play, size,
+// and a Steam game's achievements), beside its settings. A console game's: changing its name,
 // picking the emulator it opens in, replacing its art (the Artwork window X opens), or
 // deleting it from the drive (a second press confirms). A Steam game's hand it to Steam: its
-// page there, or checking its files. B or Start closes it.
+// page there, or checking its files. An app's: showing it on Home, and updating its program.
+// B or Start closes it.
 
-/** Steam's shortcuts and app tiles: nothing to show of them here yet. */
-const NOT_A_GAME = /^(shortcut|app):/
 const STEAM_GAME = /^steam:/
+/** Recents cards that are apps: one vaporTV opened itself, or a Steam shortcut (an app's, or a game's that isn't ours). */
+const APP_CARD = /^(app|shortcut):/
 /** Delete waits this long for its second press. */
 const CONFIRM_MS = 4000
 
@@ -65,6 +67,7 @@ function GamePanel({
   panel,
   title,
   cover,
+  wide = false,
   facts,
   heading,
   error,
@@ -73,6 +76,8 @@ function GamePanel({
   panel: RefObject<HTMLDivElement | null>
   title?: string
   cover?: string
+  /** An app's tile: shown whole over a blur of itself, in the poster's place. */
+  wide?: boolean
   facts?: Fact[]
   heading: string
   error?: string | null
@@ -81,7 +86,10 @@ function GamePanel({
   return (
     <div className="dialog-backdrop">
       <div className="dialog-panel game-panel" ref={panel} data-focus-trap="">
-        <div className="game-cover">{cover ? <img src={cover} alt="" /> : <span className="display">{title}</span>}</div>
+        <div className={`game-cover${wide ? ' wide' : ''}`}>
+          {cover && wide && <img className="game-cover-blur" src={cover} alt="" />}
+          {cover ? <img src={cover} alt="" /> : <span className="display">{title}</span>}
+        </div>
         <div className="game-side">
           <h2 className="game-title">{title ?? 'Game'}</h2>
           {facts && (
@@ -128,10 +136,8 @@ export function GameDialog() {
   useEffect(() => {
     const open = (event: Event): void => {
       const card = (event as CustomEvent<HTMLElement>).detail
-      const id = card.dataset.itemId
-      if (!id) return
-      if (NOT_A_GAME.test(id)) return toast('Steam looks after its own shortcuts')
-      setItem({ id, card })
+      const id = card.dataset.itemId ?? card.dataset.appId
+      if (id) setItem({ id, card })
     }
     window.addEventListener(GAME_MENU_EVENT, open)
     return () => window.removeEventListener(GAME_MENU_EVENT, open)
@@ -142,7 +148,95 @@ export function GameDialog() {
     setItem(null)
     if (item.card.isConnected) focus(item.card)
   }
-  return STEAM_GAME.test(item.id) ? <SteamGame id={item.id} onClose={close} /> : <Game id={item.id} card={item.card} onClose={close} />
+  if (STEAM_GAME.test(item.id)) return <SteamGame id={item.id} onClose={close} />
+  if (item.card.dataset.appId || APP_CARD.test(item.id)) return <App id={item.id} onClose={close} />
+  return <Game id={item.id} card={item.card} onClose={close} />
+}
+
+function App({ id, onClose }: { id: string; onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const [details, setDetails] = useState<AppDetails | null>(null)
+  const [updating, setUpdating] = useState(false)
+
+  useEffect(() => {
+    window.steamtv.game
+      .app(id)
+      .then((found) => {
+        if (found) return setDetails(found)
+        // A Steam shortcut that isn't one of the apps: a game added to Steam, Steam's to look after.
+        toast('Steam looks after its own shortcuts')
+        onClose()
+      })
+      .catch((err: unknown) => toast(message(err)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  useCloseKeys(onClose)
+
+  // Once, when it's loaded: an update reloading it leaves the cursor where it is.
+  const loaded = details !== null
+  useEffect(() => {
+    const el = panel.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (el) focus(el)
+  }, [loaded])
+
+  // As Y on its tile does: App adds or removes it, says so and redraws Home.
+  const toggleHome = (): void => {
+    if (!details) return
+    const tile = document.createElement('span')
+    tile.dataset.appId = details.id
+    tile.setAttribute('aria-label', details.name)
+    onClose()
+    window.dispatchEvent(new CustomEvent(FAVORITE_EVENT, { detail: tile }))
+  }
+
+  const update = (): void => {
+    if (!details || updating) return
+    setUpdating(true)
+    window.steamtv.game
+      .updateApp(details.id)
+      .then((changed) => {
+        toast(changed ? `${details.name} is updated` : `${details.name} is up to date`)
+        return window.steamtv.game.app(id).then((found) => found && setDetails(found))
+      })
+      .catch((err: unknown) => toast(message(err)))
+      .finally(() => setUpdating(false))
+  }
+
+  const facts: Fact[] | undefined = details
+    ? [
+        [program, 'Opens in', details.opensIn],
+        [calendar, 'Last opened', details.lastPlayed ? day(details.lastPlayed) : 'Never'],
+        [clock, 'Time open', details.playtime ? formatPlaytime(details.playtime) : 'None yet'],
+        ...(details.size ? [[drive, 'Size', details.size] as Fact] : [])
+      ]
+    : undefined
+
+  return (
+    <GamePanel panel={panel} title={details?.name} cover={details?.tile} wide facts={facts} heading="App settings">
+      {details && (
+        <>
+          <button
+            className={`setting-row${details.onHome ? ' on' : ''}`}
+            tabIndex={-1}
+            role="switch"
+            aria-checked={details.onHome}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={toggleHome}
+          >
+            <span className="toggle" aria-hidden="true">
+              <span className="toggle-knob" />
+            </span>
+            <span className="setting-name display">Show on Home</span>
+            <span className="setting-detail">{details.onHome ? 'In Favorite Apps' : 'Only in Apps'}</span>
+          </button>
+          {details.updatable &&
+            row('Update', updating ? 'Updating…' : details.version ? `Version ${details.version}` : 'From Flathub', update)}
+        </>
+      )}
+    </GamePanel>
+  )
 }
 
 function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {

@@ -178,6 +178,19 @@ export async function steamGameFacts(steamRoot: string, userDir: string, appid: 
   }
 }
 
+/** A non-Steam shortcut's last launch (unix seconds, 0 if never) and minutes played, by its 32-bit app id. */
+export async function shortcutPlay(userDir: string, appid: number): Promise<{ lastPlayed: number; playtime: number }> {
+  let lastPlayed = 0
+  try {
+    const vdf = parseBinaryVdf(await readFile(join(userDir, 'config', 'shortcuts.vdf')))
+    for (const entry of Object.values(childObject(vdf, 'shortcuts') ?? {}))
+      if (typeof entry === 'object' && Number(childString(entry, 'appid')) === appid) lastPlayed = Number(childString(entry, 'LastPlayTime')) || 0
+  } catch {
+    // No shortcuts file: never played.
+  }
+  return { lastPlayed, playtime: minutesPlayed(await localApps(userDir), String(appid | 0)) }
+}
+
 export async function playedSteamGames(steamRoot: string, userDir: string): Promise<Played[]> {
   // Uninstalled games can't be launched from here, so they don't belong in Recents.
   const played = (await steamGames(steamRoot, userDir)).filter((game) => game.lastPlayed > 0)

@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, AppItem, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -15,10 +15,10 @@ import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, stopListening } from './voice'
 import { makeBugReport } from './bugReport'
-import { addShortcutsWithRestart, appState, inGamingMode, installForApp } from './appSetup'
+import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
-import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSteam } from './launch'
+import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSteam, shortcutGameId } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
@@ -49,7 +49,7 @@ import { fillWiiArt, loadWiiTab, wiiGames } from './library/wiiTab'
 import { fillPs3Art, loadPs3Tab, ps3Folders, ps3Games } from './library/ps3Tab'
 import { emulatedItem, fillEmulatedArt } from './library/emulated'
 import { appArt, hasSteam, loadRecents, serviceArtGames, steamRoot } from './library/recents'
-import { activeUserDir, steamGameFacts, steamGames } from './library/steam'
+import { activeUserDir, shortcutPlay, steamGameFacts, steamGames } from './library/steam'
 import { artUrl } from './library/art'
 import { isoDate } from './library/dates'
 import { arcadeGames, fillArcadeArt, loadArcadeTab } from './library/arcade'
@@ -759,6 +759,55 @@ ipcMain.handle('game:steam', async (_event, id: string): Promise<SteamGameDetail
     bytes: facts.bytes,
     achievements: facts.achievements
   }
+})
+// Start on an app: its tile id, or a Recents card's (an app vaporTV opened, or the Steam shortcut one opens through).
+async function appOfCard(config: Config, cardId: string): Promise<string | undefined> {
+  const catalog = appCatalog(config)
+  const plain = cardId.replace(/^app:/, '')
+  if (catalog.some((app) => app.id === plain)) return plain
+  const shortcut = /^shortcut:(\d+)$/.exec(cardId)?.[1]
+  if (!shortcut) return undefined
+  const url = `steam://rungameid/${shortcutGameId(Number(shortcut))}`
+  for (const app of catalog) if ((await launchUrl(config, 'app', app.id)) === url) return app.id
+  return undefined
+}
+ipcMain.handle('app:details', async (_event, cardId: string): Promise<AppDetails | null> => {
+  const config = await loadConfig()
+  const id = await appOfCard(config, cardId)
+  const app = id && appCatalog(config).find((a) => a.id === id)
+  if (!id || !app) return null
+  const program = appProgram(id)
+  const url = await launchUrl(config, 'app', id)
+  const shortcut = url && /^steam:\/\/rungameid\/(\d+)$/.exec(url)?.[1]
+  // Opened through its Steam shortcut, Steam counts its use; opened directly, vaporTV does.
+  let lastPlayed = 0
+  let playtime = 0
+  const userDir = shortcut ? await activeUserDir(steamRoot(config)) : null
+  if (shortcut && userDir) ({ lastPlayed, playtime } = await shortcutPlay(userDir, Number(BigInt(shortcut) >> 32n)))
+  else {
+    lastPlayed = (await readHistory())[`app:${id}`] ?? 0
+    playtime = Math.floor(((await readPlaytime())[`app:${id}`] ?? 0) / 60)
+  }
+  const installed = program?.flatpak && appState(id, false).ready
+  const facts = installed ? await flatpakFacts(program.flatpak!) : {}
+  const art = await appArt()
+  return {
+    id,
+    name: app.name,
+    tile: art[id]?.wide ?? app.tile,
+    opensIn: program?.program ?? (url?.startsWith('steam://open') ? 'Steam' : 'A Steam shortcut'),
+    playtime: playtime || undefined,
+    lastPlayed: lastPlayed ? isoDate(lastPlayed) : undefined,
+    size: facts.size,
+    version: facts.version,
+    updatable: !!installed,
+    onHome: favoriteAppIds(config).includes(id)
+  }
+})
+ipcMain.handle('app:update', async (_event, id: string) => {
+  const flatpak = appProgram(id)?.flatpak
+  if (!flatpak) throw new Error('Only installed programs update from here.')
+  return updateFlatpak(flatpak)
 })
 ipcMain.handle('game:openInSteam', (_event, id: string, what: 'page' | 'verify') => {
   const appid = /^steam:(\d+)$/.exec(id)?.[1]

@@ -79,6 +79,30 @@ export function appState(id: string, hasShortcut: boolean): AppState {
   return { ready: false, setup: 'shortcut' }
 }
 
+/** What an app opens in, and its Flatpak when it's a program of its own (not a website in Chrome). */
+export function appProgram(id: string): { program: string; flatpak?: string } | null {
+  const recipe = RECIPES[id]
+  if (recipe?.kind === 'web') return { program: 'Chrome' }
+  if (recipe?.kind === 'flatpak') return { program: recipe.program, flatpak: recipe.flatpak }
+  if (recipe?.kind === 'emudeck') return { program: 'ES-DE' }
+  if (recipe?.kind === 'builtin') return { program: 'vaporTV' }
+  return null
+}
+
+/** An installed Flatpak's version and size, as `flatpak info` gives them ("1.4.2", "312.4 MB"). */
+export async function flatpakFacts(flatpak: string): Promise<{ version?: string; size?: string }> {
+  const { stdout } = await exec('flatpak', ['info', flatpak]).catch(() => ({ stdout: '' }))
+  const field = (name: string): string | undefined => new RegExp(`^\\s*${name}:\\s*(.+)$`, 'm').exec(stdout)?.[1].trim()
+  return { version: field('Version'), size: field('Installed')?.replace(/\u00a0/g, ' ') }
+}
+
+/** Updates a Flatpak from Flathub; whether there was anything new. */
+export async function updateFlatpak(flatpak: string): Promise<boolean> {
+  const before = (await flatpakFacts(flatpak)).version
+  await exec('flatpak', ['update', '--noninteractive', '-y', flatpak], { timeout: 15 * 60 * 1000 })
+  return (await flatpakFacts(flatpak)).version !== before
+}
+
 /** A Flathub program with no Steam shortcut: what runs it directly, if it's installed. */
 export function directCommand(id: string): { command: string; args: string[] } | null {
   const recipe = RECIPES[id]

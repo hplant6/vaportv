@@ -10,6 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Game options (Start on a game) is redesigned: the game's cover beside its name, how long and when you last played it, its size, and its settings. B or Start closes it.
+- Start on an app (its tile, or its card in Recents): what it opens in, when you last opened it, how long it's been open, and an installed program's size, with Show on Home and Update (for programs from Flathub, such as VacuumTube, Kodi and Plex).
 - Start works on Steam games too: their playtime, last played, achievements unlocked and size, from Steam's own records, with Open in Steam (the game's page in your library) and Verify files.
 - Every window that opens over the screen (Game options, Artwork, the welcome tour, Report a problem, Wi-Fi and Bluetooth, updates, playlists and the rest) now shares one look: warm frosted glass lifted over the dimmed screen, rising in as it opens and sinking away as it closes, with its choices in a lighter box and taller rows.
 - Text comes in six sizes throughout, and nothing is smaller than 16px: the dates and names under game cards are easier to read from the couch.
