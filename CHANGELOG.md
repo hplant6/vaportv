@@ -35,7 +35,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
-- The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's. Searching shows what you type, and its results, as you type.
+- The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's, with its controller shortcuts: X deletes, Y types a space, L2 is Shift, R2 switches to symbols and Start is Enter (shown under the keys). Searching shows what you type, and its results, as you type.
 - In grids the selected card's row stays near the middle of the screen as you move up and down, instead of near the bottom (it stops at the top and the end of the page).
 - More's row: up from one of its tabs goes to the tab above it in the top bar, and down from a top-bar tab (while the row is open) to the one below it, instead of always back to More.
 - The settings and power icons are the height of the tab names, and sit a little further out.

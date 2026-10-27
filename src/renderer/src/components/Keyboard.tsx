@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
+import { hookButtons } from '../input/gamepad'
+import { play } from '../input/sounds'
+import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { OverStage } from './GooglePhotos'
 
 // An on-screen keyboard for the D-pad, for the times vaporTV needs text (a Wi-Fi password,
 // a search). Steam's own keyboard can't be opened from outside in Gaming Mode, so this one
 // is laid out like it: a tray across the bottom of the screen that slides up, the keys
-// staggered as on a real keyboard. A real keyboard types into it too; B (Escape, a remote's
-// Back) cancels.
+// staggered as on a real keyboard, with Steam's controller shortcuts (X deletes, Y is a
+// space, L2 shift, R2 symbols, Start enters). A real keyboard types into it too; B (Escape,
+// a remote's Back) cancels.
 
 /** A key: what it types, and how many key-widths it takes (1 if not given). */
 type Key = string | { label: string; units: number }
@@ -30,6 +35,9 @@ const SYMBOLS: (Key | null)[][] = [
 const INDENT = [0, 0.5, 0.75, 0]
 /** The tray slides away this long before it's gone. */
 const LEAVE_MS = 200
+
+/** Steam's keyboard shortcuts, by standard-mapping button: these are the controller's own buttons, whatever Settings assigns them. */
+const BUTTON = { delete: 2, space: 3, shift: 6, symbols: 7, enter: 9 } as const
 
 export function OnScreenKeyboard({
   title,
@@ -104,6 +112,35 @@ export function OnScreenKeyboard({
     return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
+  // Steam's shortcuts. Enter goes through a ref so the hook always sends what's typed now.
+  const done = useRef(() => onDone(text))
+  done.current = () => onDone(text)
+  useEffect(
+    () =>
+      hookButtons((button) => {
+        if (button === BUTTON.delete) setText((t) => t.slice(0, -1))
+        else if (button === BUTTON.space) setText((t) => t + ' ')
+        else if (button === BUTTON.shift) setShift((on) => !on)
+        else if (button === BUTTON.symbols) setSymbols((on) => !on)
+        else if (button === BUTTON.enter) leave.current(() => done.current())
+        else return false
+        play('move')
+        return true
+      }),
+    []
+  )
+
+  const family = useControllerFamily()
+  const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
+  useEffect(() => {
+    window.steamtv.getSettings().then((s) => setControls(s.controls))
+  }, [])
+  const hint = (button: number, label: string) => (
+    <span className="osk-hint" key={label}>
+      <ButtonIcon button={button} family={family} /> {label}
+    </span>
+  )
+
   const upper = shift && !symbols
   const type = (k: string): void => setText((t) => t + (upper ? k.toUpperCase() : k))
   const key = (label: string, onPress: () => void, units = 1, extra = '', props: Record<string, string> = {}) => (
@@ -163,6 +200,14 @@ export function OnScreenKeyboard({
               {key('Space', () => setText((t) => t + ' '), secret ? 10.5 : 12.5, '', { 'data-key': ' ' })}
               {secret && key(reveal ? 'Hide' : 'Show', () => setReveal((r) => !r), 2, ' fn')}
             </div>
+          </div>
+          <div className="osk-hints">
+            {hint(BUTTON.delete, 'Delete')}
+            {hint(BUTTON.space, 'Space')}
+            {hint(BUTTON.shift, 'Shift')}
+            {hint(BUTTON.symbols, symbols ? 'Letters' : 'Symbols')}
+            {hint(BUTTON.enter, 'Enter')}
+            {hint(controls.back, 'Close')}
           </div>
         </div>
       </div>

@@ -2784,3 +2784,30 @@ button {
   gap: 54px;
   padding: 24px 0 48px;
 }
+
+/* The keyboard's controller shortcuts, under the keys as in Steam's footer; drawn as Files' are. */
+.osk-hints {
+  display: flex;
+  justify-content: center;
+  gap: 44px;
+  width: 1480px;
+  margin: 22px auto 0;
+  font-family: var(--font-body);
+  font-size: 20px;
+  opacity: 0.85;
+}
+
+.osk-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.osk-hint .control-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.osk-hint .control-icon.wide {
+  width: 60px;
+}

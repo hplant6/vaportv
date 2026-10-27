@@ -90,6 +90,35 @@ function describePads(): string {
     .join(' ')
 }
 
+/** Buttons a hook has taken: their usual actions wait until they're let go. */
+const hooked = new Set<number>()
+let buttonHook: ((button: number) => boolean) | null = null
+/** Buttons held last time round, to tell a new press. */
+let heldButtons = new Set<number>()
+
+/**
+ * While the hook is set (the on-screen keyboard), each newly pressed button (standard index)
+ * goes to it first; one it returns true for doesn't also do its usual thing. Select and Back
+ * (wherever they're assigned) aren't offered: they always choose and close.
+ */
+export function hookButtons(hook: (button: number) => boolean): () => void {
+  buttonHook = hook
+  return () => {
+    if (buttonHook === hook) buttonHook = null
+  }
+}
+
+function offerButtons(): void {
+  const now = new Set<number>()
+  for (const pad of pads()) pad.buttons.forEach((b, i) => b.pressed && now.add(i))
+  for (const button of hooked) if (!now.has(button)) hooked.delete(button)
+  for (const button of now) {
+    if (heldButtons.has(button) || button === controls.select || button === controls.back || !buttonHook) continue
+    if (buttonHook(button)) hooked.add(button)
+  }
+  heldButtons = now
+}
+
 function poll(now: number): void {
   requestAnimationFrame(poll)
   if (paused || now < settleUntil) return
@@ -106,8 +135,9 @@ function poll(now: number): void {
   let volumeDown = false
   let volumeUp = false
   if (capture) return pollCapture(now)
+  offerButtons()
 
-  const down = (pad: Gamepad, action: ControlAction): boolean => !!pad.buttons[controls[action]]?.pressed
+  const down = (pad: Gamepad, action: ControlAction): boolean => !hooked.has(controls[action]) && !!pad.buttons[controls[action]]?.pressed
   for (const pad of pads()) {
     direction ??= readDirection(pad)
     confirm ||= down(pad, 'select')
