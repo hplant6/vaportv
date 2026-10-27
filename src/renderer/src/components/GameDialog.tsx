@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { GameOptions } from '../../../shared/types'
 import clock from '../assets/clock.svg'
-import { focus, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import { focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
 import { toast } from './Toast'
 
 // Start on a console game: its cover, name and playtime beside its settings: changing its
 // name, picking the emulator it opens in, replacing its art (the Artwork window X opens), or
-// deleting it from the drive. Deleting asks for a second press.
+// deleting it from the drive. Deleting asks for a second press. B or Start closes it.
 
 /** Cards whose games belong to Steam: their name, art and install are Steam's. */
 const STEAM_GAME = /^(steam|shortcut|app):/
@@ -90,6 +90,13 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
     window.addEventListener(TRAP_CLOSE_EVENT, close)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, close)
   }, [step])
+
+  // Start again closes it from any step, as it opened it.
+  useEffect(() => {
+    const close = (): void => leaveRef.current()
+    window.addEventListener(GAME_MENU_CLOSE_EVENT, close)
+    return () => window.removeEventListener(GAME_MENU_CLOSE_EVENT, close)
+  }, [])
 
   // The cursor starts on the first row, or on the emulator in use.
   useEffect(() => {

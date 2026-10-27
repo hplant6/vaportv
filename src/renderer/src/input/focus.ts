@@ -216,9 +216,13 @@ export function controlsGuide(): void {
 
 /** Start on a controller, G on a keyboard: the focused game's options (name, emulator, art, delete). */
 export const GAME_MENU_EVENT = 'steamtv:game-menu'
+/** The same again while they're open: closes them. */
+export const GAME_MENU_CLOSE_EVENT = 'steamtv:game-menu-close'
 
 export function gameMenu(): void {
-  if (trap()) return
+  const open = trap()
+  if (open?.classList.contains('game-panel')) window.dispatchEvent(new Event(GAME_MENU_CLOSE_EVENT))
+  if (open) return
   const el = current()
   if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(GAME_MENU_EVENT, { detail: el }))
 }
