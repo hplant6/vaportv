@@ -2133,7 +2133,6 @@ button {
   font-size: 48px;
   font-weight: 700;
   line-height: 1.25;
-  letter-spacing: 0.04em;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
