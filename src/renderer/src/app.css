@@ -2065,6 +2065,31 @@ button {
   min-height: 0;
 }
 
+/* Game options: what's known about the game, above its options. */
+.game-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+.game-info-facts {
+  margin: 0;
+  font-size: 22px;
+  opacity: 0.7;
+}
+
+.game-info-description {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1.45;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
 .artwork-list {
   display: flex;
   flex-direction: column;

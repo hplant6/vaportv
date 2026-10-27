@@ -84,6 +84,11 @@ export function arcadeTitle(description: string): string {
   return description.replace(/\s*\(.*$/, '').split(' / ')[0].trim() || description
 }
 
+/** The year MAME gives a set. */
+export async function arcadeYear(set: string): Promise<string | undefined> {
+  return (await arcadeNames()).games[set]?.[1]
+}
+
 export interface ArcadeGame extends EmulatedGame {
   system: ArcadeSystem['id']
   path: string

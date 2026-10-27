@@ -59,3 +59,6 @@ downloaded on your own box from SteamGridDB (with your SteamGridDB key, Settings
 Artwork), where the community uploads them; without a key a tile shows the app's name.
 Service names are trademarks of their owners; vaporTV is not affiliated with them.
 The emulator icons are their projects' marks, shown only to say which emulator runs a game.
+Game details in Game options (year, genre, players, makers, descriptions) are downloaded
+on your box from the libretro game database (github.com/libretro/libretro-database), and
+read from ES-DE's own gamelists when you've scraped there; vaporTV ships none of it.

@@ -188,6 +188,19 @@ export interface GameOptions {
   files: { count: number; bytes: number }
 }
 
+/** What's known about a console game (the libretro database, with ES-DE's scrape over it). */
+export interface GameInfo {
+  year?: string
+  genre?: string
+  /** How many can play: "1", "1-2", "4". */
+  players?: string
+  developer?: string
+  publisher?: string
+  description?: string
+  /** 0–1, from ES-DE's scrape. */
+  rating?: number
+}
+
 export interface LibraryTab {
   layout: SteamLayout
   /** For the "Recently played" row, which can differ from the others. */
@@ -575,6 +588,8 @@ export interface SteamTvApi {
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
   game: {
     options(id: string): Promise<GameOptions>
+    /** Year, genre, players, makers and a description, where they're known; null when nothing is. */
+    info(id: string): Promise<GameInfo | null>
     /** A new name, or null for the file's own. */
     rename(id: string, name: string | null): Promise<void>
     /** A RetroArch core's name, or '' for the console's default. */

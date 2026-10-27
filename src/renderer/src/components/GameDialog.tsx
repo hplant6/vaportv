@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import type { GameOptions } from '../../../shared/types'
+import type { GameInfo, GameOptions } from '../../../shared/types'
 import { focus, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OnScreenKeyboard } from './Keyboard'
 import { toast } from './Toast'
 
-// Start on a console game: change its name, pick the emulator it opens in, replace its art
-// (the Artwork window X opens), or delete it from the drive. Deleting asks for a second press.
+// Start on a console game: what's known about it (year, genre, players, makers, a
+// description), and changing its name, picking the emulator it opens in, replacing its art
+// (the Artwork window X opens), or deleting it from the drive. Deleting asks for a second press.
 
 /** Cards whose games belong to Steam: their name, art and install are Steam's. */
 const STEAM_GAME = /^(steam|shortcut|app):/
@@ -16,6 +17,14 @@ type Step = 'menu' | 'emulator' | 'rename'
 
 const message = (err: unknown): string =>
   (err instanceof Error ? err.message : String(err)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
+
+/** The year, genre, players and makers, in a line. */
+function facts(info: GameInfo): string {
+  const players = info.players && (info.players === '1' ? '1 player' : `${info.players.replace('-', '–')} players`)
+  const makers = info.publisher && info.publisher !== info.developer ? [info.developer, info.publisher] : [info.developer]
+  const rating = info.rating !== undefined ? `Rated ${Math.round(info.rating * 10) / 2} of 5` : undefined
+  return [info.year, info.genre, players, ...makers, rating].filter(Boolean).join(' · ')
+}
 
 function size(bytes: number): string {
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`
@@ -54,6 +63,7 @@ export function GameDialog() {
 function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [options, setOptions] = useState<GameOptions | null>(null)
+  const [info, setInfo] = useState<GameInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>('menu')
   const [confirming, setConfirming] = useState(false)
@@ -64,6 +74,11 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       .options(id)
       .then(setOptions)
       .catch((err: unknown) => setError(message(err)))
+    // Separately: the first look at a console's database downloads it.
+    window.steamtv.game
+      .info(id)
+      .then(setInfo)
+      .catch(() => setInfo(null))
   }, [id])
 
   // B goes back a step, then closes. The keyboard handles its own B.
@@ -160,6 +175,12 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       <div className="dialog-panel artwork-panel" ref={panel} data-focus-trap="">
         <h2 className="section-label display">{step === 'emulator' ? 'Emulator' : (options?.title ?? 'Game')}</h2>
         {error && <p className="dialog-message">{error}</p>}
+        {info && step === 'menu' && (
+          <div className="game-info">
+            {facts(info) && <p className="game-info-facts">{facts(info)}</p>}
+            {info.description && <p className="game-info-description">{info.description}</p>}
+          </div>
+        )}
         {options && step === 'menu' && (
           <div className="artwork-list">
             {row('Name', options.renamed ? `Was ${options.originalTitle}` : 'Change what it’s called', () => setStep('rename'))}

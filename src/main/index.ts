@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppItem, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppItem, GameInfo, GameOptions, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -31,6 +31,7 @@ import { collectionGames, isSupported, readCollections } from './library/collect
 import { dreamcastGames, fillDreamcastArt, loadDreamcastTab } from './library/dreamcastTab'
 import { fillN64Art, loadN64Tab, n64Games } from './library/n64Tab'
 import { deleteGame, gameOptions } from './library/gameOptions'
+import { gameInfo } from './library/gameInfo'
 import { fillSaturnArt, loadSaturnTab, saturnGames } from './library/saturnTab'
 import { fillNesArt, loadNesTab, nesGames } from './library/nesTab'
 import { fillSnesArt, loadSnesTab, snesGames } from './library/snesTab'
@@ -738,6 +739,12 @@ ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> 
   const game = await emulatedGame({ ...config, gameTitles: {} }, id)
   if (!game) throw new Error('Only console games have options here.')
   return gameOptions(config, id, game.title)
+})
+// What's known about it: year, genre, players, makers, a description.
+ipcMain.handle('game:info', async (_event, id: string): Promise<GameInfo | null> => {
+  const config = await loadConfig()
+  const game = await emulatedGame({ ...config, gameTitles: {} }, id)
+  return game ? gameInfo(config, game) : null
 })
 ipcMain.handle('game:rename', async (_event, id: string, name: string | null) => {
   const config = await loadConfig()
