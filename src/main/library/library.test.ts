@@ -593,8 +593,8 @@ describe('controls', () => {
     expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10 })
   })
   it('fills saved choices over the defaults and drops unusable ones', () => {
-    // Game options' default (Select) went to Back, so it takes the free B.
-    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, gameMenu: 1 })
+    // The button guide's default (Select) went to Back, so it takes the free B.
+    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, controlsGuide: 1 })
     expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
   })
   it('gives buttons saved before voice search its R3', () => {
