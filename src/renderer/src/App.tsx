@@ -25,6 +25,7 @@ import { Welcome } from './components/Welcome'
 import { FilesApp } from './components/FilesApp'
 import { SearchScreen } from './components/SearchScreen'
 import { BugReportDialog } from './components/BugReportDialog'
+import { GuideReader } from './components/GuideReader'
 import { ControlsGuide } from './components/ControlsGuide'
 import { GameDialog } from './components/GameDialog'
 import { Screensaver } from './components/Screensaver'
@@ -436,6 +437,7 @@ export function App() {
       <UpdateDialog />
       <RepairDialog />
       <BugReportDialog />
+      <GuideReader />
       <AppSetupDialog apps={home?.allApps ?? []} />
       <Welcome />
       <Screensaver />
