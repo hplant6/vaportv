@@ -34,6 +34,21 @@ describe('parseMarkdown', () => {
     expect(blocks[6]).toEqual({ kind: 'code', text: 'flatpak list' })
   })
 
+  it('reads tables', () => {
+    expect(parseMarkdown('Before\n\n| Tab | Folder |\n|---|---|\n| Switch | `switch` |\n| PS3 | (in RPCS3) |\n\nAfter')).toEqual([
+      { kind: 'paragraph', children: [{ kind: 'text', text: 'Before' }] },
+      {
+        kind: 'table',
+        head: [[{ kind: 'text', text: 'Tab' }], [{ kind: 'text', text: 'Folder' }]],
+        rows: [
+          [[{ kind: 'text', text: 'Switch' }], [{ kind: 'code', text: 'switch' }]],
+          [[{ kind: 'text', text: 'PS3' }], [{ kind: 'text', text: '(in RPCS3)' }]]
+        ]
+      },
+      { kind: 'paragraph', children: [{ kind: 'text', text: 'After' }] }
+    ])
+  })
+
   it('skips HTML comments', () => {
     expect(parseMarkdown('<!-- note -->\nHi')).toEqual([{ kind: 'paragraph', children: [{ kind: 'text', text: 'Hi' }] }])
   })

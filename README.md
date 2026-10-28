@@ -46,12 +46,16 @@
 
 To update, download the new AppImage and run setup again. To remove vaporTV, open the AppImage in Desktop Mode and click **Uninstall**. Apps can also be set up later from the **Apps** tab: anything not set up yet is dimmed with a **Set up** label.
 
+## Guides
+
+Step-by-step help for streaming apps, emulators, the Netflix extension, TV remotes and SteamOS updates is in [docs/guides](docs/guides/README.md). The same guides are built into vaporTV under **Settings → Help**.
+
 ## Features
 
 **Home and tabs**
 - **Home:** Recents (Steam games, emulated games and apps, by when you last played) and Favorite Apps, as carousels or grids
 - **Steam:** your Steam collections, including dynamic ones, and recently played
-- **Consoles:** Switch (Ryujinx), PS3 (RPCS3), Xbox 360 (Xenia), GameCube (Dolphin) and Dreamcast (Flycast), from EmuDeck's folders; a tab only shows when its emulator and games are there
+- **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Amiga, from EmuDeck's folders; a tab only shows when its emulator and games are there (see the [emulators guide](docs/guides/emulators.md))
 - **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS, Neo Geo and MAME sets, named from MAME's list, each in RetroArch with the right core (and a choice of core per game)
 - **Apps:** streaming services and media apps, with setup for anything missing
 
@@ -76,7 +80,9 @@ To update, download the new AppImage and run setup again. To remove vaporTV, ope
 | L1 / R1 | Previous / next tab |
 | Y | Add to Favorites, or take off |
 | X | Fix a console game's cover art |
-| Start | Pick an arcade game's emulator core |
+| Start | Game options: rename, emulator, art or delete (on an app: its details) |
+| Select | Show what each button does, along the bottom |
+| R3 | Voice search |
 | L2 / R2 | Volume down / up |
 | Select + Start (hold) | Close the game or app and return to vaporTV |
 

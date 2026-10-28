@@ -1,6 +1,6 @@
 // The guides (docs/guides/*.md) are written for GitHub, and vaporTV shows the same files
 // in Settings → Help. This reads the part of Markdown they use: headings, paragraphs,
-// lists (one level), pictures on a line of their own, quotes (for tips), fenced code and,
+// lists (one level), tables, pictures on a line of their own, quotes (for tips), fenced code and,
 // within a line, bold, italic, code and links. Anything else reads as plain text.
 
 export type Inline =
@@ -17,12 +17,17 @@ export type Block =
   | { kind: 'image'; src: string; alt: string }
   | { kind: 'quote'; children: Inline[] }
   | { kind: 'code'; text: string }
+  | { kind: 'table'; head: Inline[][]; rows: Inline[][][] }
 
 const HEADING = /^(#{1,3})\s+(.*)$/
 const IMAGE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/
 const BULLET = /^\s*[-*]\s+(.*)$/
 const NUMBERED = /^\s*\d+[.)]\s+(.*)$/
 const FENCE = /^```/
+const TABLE_RULE = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/
+
+/** A table row's cells: `| a | b |` → ['a', 'b']. */
+const cells = (line: string): string[] => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim())
 
 export function parseMarkdown(source: string): Block[] {
   const lines = source.replace(/\r\n?/g, '\n').split('\n')
@@ -30,7 +35,7 @@ export function parseMarkdown(source: string): Block[] {
   let i = 0
   // Lines that carry on the block above (a wrapped paragraph or list item).
   const continues = (line: string): boolean =>
-    line.trim() !== '' && !HEADING.test(line) && !BULLET.test(line) && !NUMBERED.test(line) && !FENCE.test(line) && !line.startsWith('>')
+    line.trim() !== '' && !HEADING.test(line) && !BULLET.test(line) && !NUMBERED.test(line) && !FENCE.test(line) && !line.startsWith('>') && !line.trim().startsWith('|')
 
   while (i < lines.length) {
     const line = lines[i]
@@ -62,6 +67,14 @@ export function parseMarkdown(source: string): Block[] {
       const text: string[] = []
       while (i < lines.length && lines[i].startsWith('>')) text.push(lines[i++].replace(/^>\s?/, ''))
       blocks.push({ kind: 'quote', children: parseInline(text.join(' ').trim()) })
+      continue
+    }
+    if (line.trim().startsWith('|') && TABLE_RULE.test(lines[i + 1] ?? '')) {
+      const head = cells(line).map(parseInline)
+      const rows: Inline[][][] = []
+      i += 2
+      while (i < lines.length && lines[i].trim().startsWith('|')) rows.push(cells(lines[i++]).map(parseInline))
+      blocks.push({ kind: 'table', head, rows })
       continue
     }
     const ordered = NUMBERED.test(line)

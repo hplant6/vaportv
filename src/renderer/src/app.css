@@ -3222,6 +3222,30 @@ button {
   background: none;
 }
 
+.guide-table {
+  width: 100%;
+  margin: 0 0 28px;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+  line-height: 1.35;
+}
+
+.guide-table th,
+.guide-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.guide-table th {
+  font-weight: 700;
+  border-bottom: 2px solid rgba(190, 147, 111, 0.4);
+}
+
+.guide-table tbody tr:nth-child(odd) {
+  background: rgba(190, 147, 111, 0.08);
+}
+
 .guide-link {
   text-decoration: underline;
   text-decoration-color: rgba(238, 150, 13, 0.7);

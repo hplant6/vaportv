@@ -32,7 +32,7 @@ Streaming websites are made for a mouse and keyboard, so Steam turns the control
 1. Press the **Steam** button (the Xbox button on an Xbox controller) and open the **Controller** settings.
 2. Choose **Browse layouts**, then **Templates**, then **Web Browser**, and apply it.
 
-Steam remembers the layout for that app from then on. Netflix can work differently: see the Netflix extension guide.
+Steam remembers the layout for that app from then on. Netflix works differently: see [The Netflix extension](netflix-extension.md).
 
 The apps of their own (YouTube, Jellyfin, Plex, Kodi) work with the controller as it is. Emby is driven by Steam's keyboard keys (arrows, Enter and Escape), so give it a layout that sends those if the controller does nothing in it.
 

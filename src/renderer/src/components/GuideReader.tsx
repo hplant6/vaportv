@@ -143,6 +143,27 @@ function renderBlock(block: Block, key: number): ReactNode {
           {renderInline(block.children)}
         </p>
       )
+    case 'table':
+      return (
+        <table key={key} className="guide-table">
+          <thead>
+            <tr>
+              {block.head.map((cell, i) => (
+                <th key={i}>{renderInline(cell)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, i) => (
+                  <td key={i}>{renderInline(cell)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
     case 'code':
       return (
         <pre key={key}>

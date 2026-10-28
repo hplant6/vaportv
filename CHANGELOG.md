@@ -9,7 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- Guides in Settings → Help: how to get things working, starting with streaming apps. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
+- Guides in Settings → Help: how to get things working: streaming apps, emulators, the Netflix extension, TV remotes, and what to do when an update breaks something. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
 
 ## 0.10.0
 
