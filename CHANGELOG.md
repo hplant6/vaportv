@@ -8,6 +8,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+## 0.10.0
+
 ### Added
 - Game options (Start on a game) is redesigned: the game's cover beside its name, how long and when you last played it, its size, and its settings. B or Start closes it.
 - Start on an app (its tile, or its card in Recents): what it opens in, when you last opened it, how long it's been open, and an installed program's size, with Show on Home and Update (for programs from Flathub, such as VacuumTube, Kodi and Plex).
@@ -41,6 +43,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The top bar shows up to ten tabs; past that, a More tab opens a second row with the rest.
 
 ### Changed
+- vaporTV's own lettering is kept for the top bar and titles; names, menus, buttons and labels are now in a plainer bold type, in their own case, so they're easier to read.
 - Select now shows what each button does, in a line along the bottom of the screen (H on a keyboard; press again to hide), and Game options moves to Start. An arcade game's core is picked in Game options instead, so the separate core picker is gone.
 - Thicker controller button icons.
 - The on-screen keyboard is now a tray along the bottom of the screen that slides up, laid out like Steam's, with its controller shortcuts: X deletes, Y types a space, L2 is Shift, R2 switches to symbols and Start is Enter (each shown on its key). Searching shows what you type, and its results, as you type.
