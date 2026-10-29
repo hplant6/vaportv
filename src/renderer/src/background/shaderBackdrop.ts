@@ -114,7 +114,8 @@ function between(looks: Looks, sun: number): [Look, Look, number] {
  * `canvas`, drawn at `scale` of the stage's size and stretched to fill it, or with `native` at
  * the screen's own pixels (sharp on a 4K TV, where the stage is scaled up). Each of `textures`
  * is drawn for the canvas's size and handed to the sampler2D uniform of its name (transparent
- * until it's ready; row 0 at the bottom, like gl_FragCoord). Returns a stop function.
+ * until it's ready; row 0 at the bottom, like gl_FragCoord). `time` holds the scene at that
+ * time of day, whatever Settings says. Returns a stop function.
  */
 export function startShaderBackdrop(
   canvas: HTMLCanvasElement,
@@ -123,8 +124,9 @@ export function startShaderBackdrop(
     looks,
     scale = 1,
     native = false,
+    time: fixedTime,
     textures = {}
-  }: { fragment: string; looks: Looks; scale?: number; native?: boolean; textures?: Record<string, (width: number, height: number) => Promise<TexImageSource>> }
+  }: { fragment: string; looks: Looks; scale?: number; native?: boolean; textures?: Record<string, (width: number, height: number) => Promise<TexImageSource>>; time?: BackdropTime }
 ): () => void {
   const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'high-performance' })
   if (!gl) throw new Error('WebGL not supported')
@@ -188,7 +190,7 @@ export function startShaderBackdrop(
   window.addEventListener(WEATHER_CHANGED_EVENT, loadSun)
   let held: BackdropTime = 'auto'
   const loadHeld = (): void => {
-    window.steamtv.getBackdrop().then(({ time }) => (held = time))
+    window.steamtv.getBackdrop().then((backdrop) => (held = fixedTime ?? backdrop.time))
   }
   loadHeld()
   window.addEventListener(BACKDROP_CHANGED_EVENT, loadHeld)

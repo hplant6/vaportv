@@ -3,8 +3,8 @@ import { NOISE, startShaderBackdrop, type Looks } from './shaderBackdrop'
 import sceneArt from '../assets/aurora/scene.svg'
 
 // Northern Lights: aurora curtains over a forested shore, mirrored in a still lake.
-// The aurora comes out after dark; by day it's the same shore under a winter sky. The sky,
-// aurora and water are one shader; the shore is Henry's SVG, drawn at the screen's own
+// Always night, whatever the clock or Settings say: by day it was a plain winter sky, with
+// the costly aurora still worked out and thrown away. The sky, aurora and water are one shader; the shore is Henry's SVG, drawn at the screen's own
 // resolution and handed to the shader as a texture.
 
 /** The art's artboard, in artboard pixels. */
@@ -51,17 +51,21 @@ ${NOISE}
 const float HORIZON = ${HORIZON.toFixed(5)};
 
 // Aurora: a stack of thin layers above the shore; on each, bright folds where a ridged
-// noise peaks. Low layers are green, the upper ones fade through teal to violet.
+// noise peaks. Low layers are green, the upper ones fade through teal to violet. The lake's
+// reflection, darkened and rippled, gets by on fewer: the aurora is the shader's costliest
+// part and the reflection is a third of the screen.
 const int LAYERS = 32;
+const int REFLECTED_LAYERS = 12;
 
-vec3 aurora(vec3 rd) {
+vec3 aurora(vec3 rd, int layers) {
   if (rd.y < 0.01) return vec3(0.0);
   vec3 col = vec3(0.0);
   // Each pixel starts the stack a random fraction of a layer up, so the layers blend into
   // one another instead of showing as thin horizontal stripes.
   float offset = hash2(gl_FragCoord.xy);
   for (int i = 0; i < LAYERS; i++) {
-    float fi = (float(i) + offset) / float(LAYERS);
+    if (i >= layers) break;
+    float fi = (float(i) + offset) / float(layers);
     float h = 1.0 + fi * 0.9;
     vec2 p = rd.xz / rd.y * h;
     p.y += uT * 0.012;
@@ -77,10 +81,10 @@ vec3 aurora(vec3 rd) {
     col += tint * curtain * (1.0 - fi * 0.8) * (1.0 + 1.5 * (1.0 - smoothstep(0.0, 0.15, fi)));
   }
   // Fades in from the horizon, as the far curtains thin into haze.
-  return col * 0.22 * 26.0 / float(LAYERS) * smoothstep(0.01, 0.2, rd.y);
+  return col * 0.22 * 26.0 / float(layers) * smoothstep(0.01, 0.2, rd.y);
 }
 
-vec3 sky(vec2 uv) {
+vec3 sky(vec2 uv, int layers) {
   vec3 rd = normalize(vec3(uv.x, uv.y - HORIZON, 1.1));
   float up = clamp(rd.y, 0.0, 1.0);
   vec3 col = mix(uSkyLow, uSkyHigh, pow(up, 0.5));
@@ -95,26 +99,26 @@ vec3 sky(vec2 uv) {
   col += uStars * stars(uv, 260.0, 0.06) * smoothstep(0.0, 0.25, rd.y) * (1.0 - disc) * vec3(0.85, 0.9, 1.0);
   col += day * vec3(1.0, 0.85, 0.65) * (disc + 0.25 * exp(-d * 6.0));
   col += (1.0 - day) * vec3(0.85, 0.9, 1.0) * (disc * 0.9 + 0.04 * exp(-d * 12.0));
-  col += aurora(rd) * uAurora;
+  col += aurora(rd, layers) * uAurora;
   return col;
 }
 
 // The scene above the water line at uv: the shore, and the sky wherever it shows.
-vec3 scene(vec2 uv) {
+vec3 scene(vec2 uv, int layers) {
   vec4 art = texture2D(uArt, (uv * uR.y + 0.5 * uR) / uR);
   if (art.a >= 1.0) return art.rgb * uLand;
-  return mix(sky(uv), art.rgb * uLand, art.a);
+  return mix(sky(uv, layers), art.rgb * uLand, art.a);
 }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uR) / uR.y;
   float ripple = 0.004 * sin(uv.y * 160.0 + uT * 0.8);
   vec3 col;
-  if (uv.y >= HORIZON) col = scene(uv);
+  if (uv.y >= HORIZON) col = scene(uv, LAYERS);
   else {
     // The lake: the scene mirrored, darkened, with slow ripples breaking up the reflection.
     float depth = HORIZON - uv.y;
-    col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth)) * 0.55;
+    col = scene(vec2(uv.x + ripple * smoothstep(0.0, 0.1, depth), HORIZON + depth), REFLECTED_LAYERS) * 0.55;
     col = mix(col, uNear, smoothstep(0.1, 0.3, depth) * 0.6);
   }
   // Mist on the water: a soft bank centred just above the shore's foot, spreading out over
@@ -135,7 +139,7 @@ void main() {
 }
 `
 
-/** Northern lights over a lake shore, following the time of day. Calls onUnavailable if WebGL can't run it. */
+/** Northern lights over a lake shore, at night. Calls onUnavailable if WebGL can't run it. */
 export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
 
@@ -143,7 +147,7 @@ export function AuroraBackground({ onUnavailable }: { onUnavailable: () => void 
     try {
       // Drawn at the screen's own resolution: stretched up from the stage's, the land's
       // edges and the aurora's fine rays go soft and stair-stepped.
-      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true, textures: { uArt: paintArt } })
+      return startShaderBackdrop(canvas.current!, { fragment: FRAGMENT, looks: LOOKS, native: true, time: 'night', textures: { uArt: paintArt } })
     } catch (err) {
       console.error('steamtv: northern lights backdrop unavailable:', err)
       onUnavailable()

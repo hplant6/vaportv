@@ -274,7 +274,7 @@ const BACKDROPS: { id: BackdropStyle; name: string; detail: string }[] = [
   { id: 'rain', name: 'Rain', detail: 'A puddle in the rain, close up' },
   { id: 'cityrain', name: 'City Rain', detail: 'A wet street at night, the city in a puddle' },
   { id: 'forest', name: 'Forest', detail: 'A walk through a pine forest; follows the time of day' },
-  { id: 'aurora', name: 'Northern Lights', detail: 'A snowy valley; the aurora comes out after dark' },
+  { id: 'aurora', name: 'Northern Lights', detail: 'A snowy valley under the aurora, always at night' },
   { id: 'drift', name: 'Gradient Drift', detail: 'Colours drifting behind ribbed glass' },
   { id: 'waves', name: 'Chromatic Waves', detail: 'Colour-split lines rolling on navy' },
   { id: 'tunnel', name: 'Star Tunnel', detail: 'Drifting down a tube of stars' }
@@ -305,7 +305,7 @@ const DRIFT_DIRECTIONS: { id: 'vertical' | 'horizontal'; name: string; detail: s
 ]
 
 /** Backdrops that follow the time of day, so the time can be held. */
-const TIMED_BACKDROPS: BackdropStyle[] = ['sea', 'forest', 'aurora']
+const TIMED_BACKDROPS: BackdropStyle[] = ['sea', 'forest']
 
 const BACKDROP_TIMES: { id: BackdropTime; name: string; detail?: string }[] = [
   { id: 'auto', name: 'Auto', detail: 'Follows the clock' },
