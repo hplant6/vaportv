@@ -2479,6 +2479,13 @@ button {
   object-fit: cover;
 }
 
+/* In Settings and the welcome, the shoulder buttons and triggers are drawn at 80%. */
+.setting-list .control-icon.wide,
+.welcome-list .control-icon.wide {
+  width: 64px;
+  height: 42px;
+}
+
 /* Which stick a stick-click icon means. */
 .control-icon-mark {
   position: absolute;
