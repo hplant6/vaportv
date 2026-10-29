@@ -1,5 +1,5 @@
 import { activate, back, controlsGuide, favorite, gameMenu, move, options, switchTab, voiceSearch, type Direction } from './focus'
-import { noteInput } from './idle'
+import { keepAwake, noteActivity, noteInput } from './idle'
 import { stepVolume } from './volume'
 import { ASSIGNABLE_BUTTONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 
@@ -18,6 +18,8 @@ const REPEAT_INTERVAL = 130
 let paused = false
 let blurred = false
 let steamAway = false
+/** Holds the screensaver off while Steam's menu is over vaporTV. */
+const STEAM_MENU = {}
 let controls: Controls = DEFAULT_CONTROLS
 /** Waiting for "press a button" in Settings: called with the next button pressed, or null if cancelled. */
 let capture: { onButton: (button: number | null) => void; until: number; released: boolean } | null = null
@@ -264,28 +266,35 @@ export function startGamepad(): void {
   // A launched game takes the window focus; the pad is the game's until we get it back.
   window.addEventListener('blur', () => {
     window.steamtv.logInput('window lost focus')
+    noteActivity()
     blurred = true
     setGamepadPaused(true)
   })
   window.addEventListener('focus', () => {
     window.steamtv.logInput('window focused')
+    noteActivity()
     blurred = false
     setGamepadPaused(steamAway)
   })
   // Steam's menu over us: the window keeps its focus, so this is the only sign. Coming
   // back, the A that closed the menu is still held and must not act here too.
   window.steamtv.onSteamFocus((away) => {
+    noteActivity()
+    // The screensaver doesn't start under Steam's menu either.
+    keepAwake(STEAM_MENU, away)
     steamAway = away
     setGamepadPaused(away || blurred)
   })
   window.addEventListener('gamepadconnected', (event) => {
     window.steamtv.logInput(`connected ${event.gamepad.index} "${event.gamepad.id}" ${event.gamepad.mapping || 'no-mapping'}`)
+    noteActivity()
     // Switching a controller on must not also press whatever it reports first.
     settleUntil = performance.now() + CONNECT_SETTLE_MS
     waitForRelease = true
   })
   window.addEventListener('gamepaddisconnected', (event) => {
     window.steamtv.logInput(`disconnected ${event.gamepad.index} "${event.gamepad.id}"`)
+    noteActivity()
     usableSticks.delete(`${event.gamepad.index}:${event.gamepad.id}`)
   })
   requestAnimationFrame(poll)

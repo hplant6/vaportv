@@ -11,6 +11,15 @@ export function idleMs(): number {
   return performance.now() - lastInput
 }
 
+/**
+ * Someone is here, though nothing was pressed over vaporTV: it came back in front (from a
+ * game, an app or Steam's menu, where its own timer doesn't see presses), or a controller
+ * was switched on or off. Restarts the wait without waking the screensaver.
+ */
+export function noteActivity(): void {
+  lastInput = performance.now()
+}
+
 // Things on screen that someone is watching without touching anything (a video in the Files app).
 const keepingAwake = new Set<object>()
 
