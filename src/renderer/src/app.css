@@ -133,7 +133,7 @@ button {
 }
 
 /* Marvin Visions is for the header bar and titles. Everything else that used it (names in
-   lists, the Settings menu, buttons, labels) reads in IBM Plex Sans bold, in its own case. */
+   lists, the Settings menu, buttons, labels) reads in Space Grotesk bold, in its own case. */
 .setting-name.display,
 .settings-category.display,
 .dialog-button.display,

@@ -39,8 +39,8 @@
   /* The clock and date: Marvin Visions too, else Big Shoulders at its heaviest. */
   --font-clock: 'Marvin Visions', 'Big Shoulders', sans-serif;
   --clock-weight: 900;
-  /* Descriptions, help and other small text: IBM Plex Sans. */
-  --font-body: 'IBM Plex Sans', sans-serif;
+  /* Descriptions, help and other small text: Space Grotesk. */
+  --font-body: 'Space Grotesk', sans-serif;
 
   /* The type scale: every size of text outside the clock and screensaver is one of these. */
   --text-display: 48px;
