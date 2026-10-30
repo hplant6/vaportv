@@ -25,5 +25,8 @@ VAPORTV_PUBLIC=1 npm run dist >/tmp/vaportv-release.log 2>&1 || { tail -20 /tmp/
 # The public build must not carry the extras.
 if grep -q "duckduckgo.com" out/main/index.js; then echo "The build still has the extras in it; not publishing."; exit 1; fi
 
-gh release create "$TAG" dist/vaporTV.AppImage -R "$REPO" --target "$(git rev-parse HEAD)" --title "vaporTV $VERSION" --notes "$NOTES"
+# The updater installs only what's signed with ~/.config/vaportv/update-key.pem.
+node scripts/sign-update.mjs dist/vaporTV.AppImage
+
+gh release create "$TAG" dist/vaporTV.AppImage dist/vaporTV.AppImage.sig -R "$REPO" --target "$(git rev-parse HEAD)" --title "vaporTV $VERSION" --notes "$NOTES"
 echo "Published $TAG"

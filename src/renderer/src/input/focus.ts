@@ -249,7 +249,10 @@ export function favorite(): void {
 
 export function activate(): void {
   const el = current()
-  window.steamtv.logInput(`select ${el?.getAttribute('aria-label') ?? el?.textContent?.slice(0, 40) ?? 'nothing'}`)
+  // Inside [data-no-log] (the on-screen keyboard) only that something was pressed: each
+  // key's label is a character of what's typed, a password among them.
+  const label = el?.closest('[data-no-log]') ? 'key' : el?.getAttribute('aria-label') ?? el?.textContent?.slice(0, 40) ?? 'nothing'
+  window.steamtv.logInput(`select ${label}`)
   if (!el) return
   // Launching gets the big sound; toggles and tab switches get the small one.
   play(el.dataset.selectSound === 'move' ? 'move' : 'launch')

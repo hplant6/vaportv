@@ -928,6 +928,20 @@ describe('updater', () => {
     expect(newer('0.2.0', '1.0.0')).toBe(false)
     expect(newer('v1.1.0-beta', '1.0.0')).toBe(false)
   })
+
+  it('installs only what the key signed', async () => {
+    const { signedBy } = await import('../updater')
+    const { createHash, generateKeyPairSync, sign } = await import('node:crypto')
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+    const digest = createHash('sha256').update('vaporTV').digest()
+    const signature = sign(null, digest, privateKey).toString('base64') + '\n'
+    expect(signedBy(digest, signature, publicKey)).toBe(true)
+    expect(signedBy(createHash('sha256').update('something else').digest(), signature, publicKey)).toBe(false)
+    expect(signedBy(digest, sign(null, digest, generateKeyPairSync('ed25519').privateKey).toString('base64'), publicKey)).toBe(false)
+    expect(signedBy(digest, 'not a signature', publicKey)).toBe(false)
+    // vaporTV's own key, not a test one, by default.
+    expect(signedBy(digest, signature)).toBe(false)
+  })
 })
 
 describe('boot video', () => {

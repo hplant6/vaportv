@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
@@ -262,7 +262,10 @@ export async function saveConfig(patch: Partial<Config>): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
   // Write then rename, so a crash mid-write can't leave a half-written config.
   const tmp = `${path}.tmp`
-  await writeFile(tmp, JSON.stringify({ ...current, ...patch }, null, 2) + '\n')
+  await writeFile(tmp, JSON.stringify({ ...current, ...patch }, null, 2) + '\n', { mode: 0o600 })
+  // Only its owner may read it: it holds the Google sign-in and API keys. `mode` only
+  // applies to a new file, and a crash can leave an old .tmp behind.
+  await chmod(tmp, 0o600)
   await rename(tmp, path)
 }
 

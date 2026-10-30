@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { appendFile, mkdir, writeFile } from 'node:fs/promises'
+import { appendFile, chmod, mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import home from '../../fixtures/home.json'
@@ -8,7 +8,7 @@ import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
 import type { AppDetails, AppItem, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
-import { loadConfig, recentsLayout, saveConfig, type Config } from './config'
+import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
@@ -106,9 +106,10 @@ app.on('second-instance', () => {
 // Input events (moves, controller connects, focus changes) for diagnosing phantom
 // input on the box. Rewritten each run; small.
 const INPUT_LOG = join(homedir(), '.cache', 'steamtv', 'input.log')
-const inputLogReady = mkdir(join(homedir(), '.cache', 'steamtv'), { recursive: true }).then(() =>
-  writeFile(INPUT_LOG, `steamtv started ${new Date().toISOString()}\n`)
-)
+const inputLogReady = mkdir(join(homedir(), '.cache', 'steamtv'), { recursive: true })
+  .then(() => writeFile(INPUT_LOG, `steamtv started ${new Date().toISOString()}\n`, { mode: 0o600 }))
+  // Owner-only, as config.json; an older log already there keeps its mode otherwise.
+  .then(() => chmod(INPUT_LOG, 0o600))
 function logInput(line: string): void {
   inputLogReady.then(() => appendFile(INPUT_LOG, `${new Date().toISOString().slice(11, 23)} ${line}\n`)).catch(() => {})
 }
@@ -899,6 +900,8 @@ ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(directio
 
 app.whenReady().then(async () => {
   void recordSteamShortcut()
+  // A config.json from before saves made it owner-only, until its next save.
+  chmod(configPath(), 0o600).catch(() => {})
   const config = await loadConfig()
   const root = steamRoot(config)
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.

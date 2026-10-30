@@ -165,7 +165,7 @@ export function OnScreenKeyboard({
   return (
     <OverStage>
       <div className={`osk-dock${leaving ? ' leaving' : ''}`}>
-        <div className="osk-tray" ref={panel} data-focus-trap="">
+        <div className="osk-tray" ref={panel} data-focus-trap="" data-no-log="">
           {showField && (
             <div className="osk-head">
               <h2 className="osk-title display">{title}</h2>
