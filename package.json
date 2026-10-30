@@ -17,31 +17,31 @@
     "deploy": "scripts/deploy.sh"
   },
   "dependencies": {
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
     "@dgreenheck/ez-tree": "^1.1.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
     "@react-three/postprocessing": "3.2.0",
-    "gl-noise": "1.6.1",
-    "postprocessing": "6.39.5",
-    "qrcode": "1.5.4",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "simplex-noise": "4.0.3",
-    "three": "0.183.0",
-    "three-custom-shader-material": "6.3.7"
-  },
-  "devDependencies": {
     "@types/node": "^26.6.5",
     "@types/qrcode": "1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "0.183.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "electron": "^44.7.2",
+    "electron": "^44.10.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "gl-noise": "1.6.1",
+    "postprocessing": "6.39.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "sharp": "^0.35.5",
+    "simplex-noise": "4.0.3",
+    "three": "0.183.0",
+    "three-custom-shader-material": "6.3.7",
     "typescript": "^7.0.2",
     "vite": "^7.3.7",
     "vitest": "^3.2.7"
