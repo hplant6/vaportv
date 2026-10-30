@@ -13,9 +13,21 @@ const NUMBER_WORDS: Record<string, string> = {
   eight: '8',
   nine: '9',
   ten: '10',
+  eleven: '11',
+  twelve: '12',
+  thirteen: '13',
+  fourteen: '14',
+  fifteen: '15',
+  sixteen: '16',
+  seventeen: '17',
+  eighteen: '18',
+  nineteen: '19',
+  twenty: '20',
+  // Not "i": as often the word as the number ("I Am Bread").
   ii: '2',
   iii: '3',
   iv: '4',
+  v: '5',
   vi: '6',
   vii: '7',
   viii: '8',
@@ -23,7 +35,14 @@ const NUMBER_WORDS: Record<string, string> = {
   x: '10',
   xi: '11',
   xii: '12',
-  xiii: '13'
+  xiii: '13',
+  xiv: '14',
+  xv: '15',
+  xvi: '16',
+  xvii: '17',
+  xviii: '18',
+  xix: '19',
+  xx: '20'
 }
 
 /** Words that, said first, ask for the top match to start ("play Halo", "open Netflix"). */

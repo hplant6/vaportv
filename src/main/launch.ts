@@ -1,6 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
+import { mkdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { LaunchKind } from '../shared/types'
 import type { Config } from './config'
@@ -30,7 +29,7 @@ import { loadSwitchGames } from './library/switchTab'
 import { loadXbox360Games, xeniaCommand } from './library/xbox360Tab'
 import { directCommand } from './appSetup'
 import { customApps } from './customApps'
-import { childObject, childString, parseBinaryVdf } from './library/vdf'
+import { childObject, childString, parseBinaryVdf, type VdfObject } from './library/vdf'
 import { coreLaunch } from './library/gameOptions'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
@@ -67,10 +66,33 @@ export function shortcutGameId(appid: number): string {
   return ((BigInt(appid) << 32n) | 0x02000000n).toString()
 }
 
-async function shortcutAppId(config: Config, name: string): Promise<number | null> {
+/** shortcuts.vdf as last read: Home looks up every app tile's shortcut at each load, so it's read once a change. */
+let shortcutsRead: { path: string; mtimeMs: number; size: number; vdf: VdfObject } | null = null
+
+/**
+ * The Steam account's shortcuts.vdf, or null when there's none to read (no shortcuts yet)
+ * or it can't be read (caught mid-write): then no app has a shortcut, rather than Home
+ * failing to load.
+ */
+async function shortcutsVdf(config: Config): Promise<VdfObject | null> {
   const userDir = await activeUserDir(steamRoot(config))
   if (!userDir) return null
-  const vdf = parseBinaryVdf(await readFile(join(userDir, 'config', 'shortcuts.vdf')))
+  const path = join(userDir, 'config', 'shortcuts.vdf')
+  try {
+    const { mtimeMs, size } = await stat(path)
+    if (shortcutsRead?.path === path && shortcutsRead.mtimeMs === mtimeMs && shortcutsRead.size === size) return shortcutsRead.vdf
+    const vdf = parseBinaryVdf(await readFile(path))
+    shortcutsRead = { path, mtimeMs, size, vdf }
+    return vdf
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') console.error(`steamtv: could not read ${path}:`, err)
+    return null
+  }
+}
+
+async function shortcutAppId(config: Config, name: string): Promise<number | null> {
+  const vdf = await shortcutsVdf(config)
+  if (!vdf) return null
   for (const entry of Object.values(childObject(vdf, 'shortcuts') ?? {})) {
     if (typeof entry === 'object' && childString(entry, 'AppName')?.toLowerCase() === name.toLowerCase()) {
       return Number(childString(entry, 'appid'))

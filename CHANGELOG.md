@@ -14,6 +14,10 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Fixed
 - What you type on the on-screen keyboard (a Wi-Fi or admin password) no longer goes into vaporTV's log, so it can't end up in a Report a problem.
 - vaporTV's settings file, which holds your Google sign-in and API keys, and its log can now be read only by your account.
+- An update that can't be saved (the disk full, say) now says so, instead of the update window sticking at its last percent with Later and Back not working.
+- Settings changed in quick succession (tabs, layouts, music, playlists, weather) and plays, playtime and favourites recorded at the same moment no longer overwrite one another.
+- Search and voice search find games numbered past 10 or with V in their names: "Grand Theft Auto five" finds Grand Theft Auto V, and "Final Fantasy 15" finds Final Fantasy XV.
+- Home no longer fails to load when Steam's list of non-Steam games can't be read, and it loads faster, reading that list once instead of once per app.
 
 ### Changed
 - Updates are signed: vaporTV installs only an update it can tell came from vaporTV.

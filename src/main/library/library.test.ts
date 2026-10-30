@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -942,6 +942,26 @@ describe('updater', () => {
     // vaporTV's own key, not a test one, by default.
     expect(signedBy(digest, signature)).toBe(false)
   })
+
+  it('gives up on a download it can no longer write, rather than waiting forever', async () => {
+    const { installUpdate } = await import('../updater')
+    const dir = await mkdtemp(join(tmpdir(), 'vaportv-update-'))
+    const feed = join(dir, 'releases.json')
+    const size = 4 * 1024 * 1024
+    const asset = (name: string, bytes: number) => ({ name, browser_download_url: `https://example.test/${name}`, size: bytes })
+    await writeFile(feed, JSON.stringify([{ tag_name: 'v99.0.0', assets: [asset('vaporTV.AppImage', size), asset('vaporTV.AppImage.sig', 4)] }]))
+    // Somewhere it can't be written (as when the disk fills), and more than a stream buffers.
+    vi.stubEnv('APPIMAGE', join(dir, 'gone', 'vaporTV.AppImage'))
+    vi.stubGlobal('fetch', async (url: string) => new Response(url.endsWith('.sig') ? 'AAAA' : new Uint8Array(size)))
+    try {
+      const info = { current: '0.1.0', version: '99.0.0', size, notes: [] }
+      await expect(installUpdate({ updateFeed: feed }, info, () => {})).rejects.toThrow(/ENOENT/)
+    } finally {
+      vi.unstubAllEnvs()
+      vi.unstubAllGlobals()
+      await rm(dir, { recursive: true, force: true })
+    }
+  }, 5000)
 })
 
 describe('boot video', () => {

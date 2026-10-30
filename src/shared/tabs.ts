@@ -34,7 +34,6 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
 export const BAR_TABS = 10
 /** Names the More row holds. */
 export const MORE_TABS = 11
-export const MAX_TABS = BAR_TABS + MORE_TABS
 
 /**
  * Where the tabs that show go: those with something in them and not switched off. With a

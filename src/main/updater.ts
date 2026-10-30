@@ -4,6 +4,9 @@ import { createWriteStream, existsSync } from 'node:fs'
 import { chmod, open, readFile, rename, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { Readable, Transform } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import type { ReadableStream as WebReadableStream } from 'node:stream/web'
 import { app } from 'electron'
 import { EXTRAS } from '../shared/build'
 import type { UpdateInfo } from '../shared/types'
@@ -126,21 +129,21 @@ export async function installUpdate(config: Config, info: UpdateInfo, progress: 
   const res = await fetch(asset.browser_download_url, { headers: { 'User-Agent': 'vaporTV' } })
   if (!res.ok || !res.body) throw new Error(`Download failed (${res.status})`)
   const hash = createHash('sha256')
-  const file = createWriteStream(partial)
   let received = 0
   let shown = -1
-  try {
-    for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
+  const count = new Transform({
+    transform(chunk: Buffer, _encoding, next) {
       hash.update(chunk)
-      if (!file.write(chunk)) await new Promise((resolve) => file.once('drain', resolve))
       received += chunk.length
       const percent = Math.floor((received / asset.size) * 100)
       if (percent !== shown) progress((shown = percent))
+      next(null, chunk)
     }
-    await new Promise<void>((resolve, reject) => {
-      file.once('error', reject)
-      file.end(resolve)
-    })
+  })
+  try {
+    // A pipeline, so a failed write (the disk full) ends the download with that error
+    // rather than waiting forever for room to write.
+    await pipeline(Readable.fromWeb(res.body as WebReadableStream<Uint8Array>), count, createWriteStream(partial))
     if (received !== asset.size) throw new Error('The download was cut short')
     const sum = hash.digest()
     const digest = asset.digest?.replace(/^sha256:/, '')
@@ -155,7 +158,6 @@ export async function installUpdate(config: Config, info: UpdateInfo, progress: 
     await chmod(partial, 0o755)
     await rename(partial, target)
   } catch (err) {
-    file.destroy()
     await rm(partial, { force: true })
     throw err
   }

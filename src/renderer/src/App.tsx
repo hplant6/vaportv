@@ -97,7 +97,8 @@ export function App() {
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getHome().then(setHome)
+      // Failing, Home keeps what it showed (it tries again on the next refresh); logged, as "steamtv:" lines are.
+      window.steamtv.getHome().then(setHome, (err: unknown) => console.error('steamtv: home:', err))
     }
     load()
     const timer = setInterval(load, HOME_REFRESH)

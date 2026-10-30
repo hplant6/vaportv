@@ -16,14 +16,29 @@ async function writeJson(path: string, value: unknown): Promise<void> {
   await rename(`${path}.tmp`, path)
 }
 
+let changing: Promise<unknown> = Promise.resolve()
+
+/**
+ * One change at a time to these files. Each reads a file, changes it and writes it back,
+ * so two at once (a game's play time landing as another is recorded) would lose one, or
+ * both write the same .tmp.
+ */
+function inTurn<T>(change: () => Promise<T>): Promise<T> {
+  const run = changing.then(change)
+  changing = run.catch(() => {})
+  return run
+}
+
 export async function readHistory(): Promise<Record<string, number>> {
   return JSON.parse(await readFile(HISTORY, 'utf8').catch(() => '{}'))
 }
 
-export async function recordPlay(id: string, at = Math.floor(Date.now() / 1000)): Promise<void> {
-  const history = await readHistory()
-  history[id] = at
-  await writeJson(HISTORY, history)
+export function recordPlay(id: string, at = Math.floor(Date.now() / 1000)): Promise<void> {
+  return inTurn(async () => {
+    const history = await readHistory()
+    history[id] = at
+    await writeJson(HISTORY, history)
+  })
 }
 
 export async function readPlaytime(): Promise<Record<string, number>> {
@@ -33,9 +48,11 @@ export async function readPlaytime(): Promise<Record<string, number>> {
 /** Adds a session's seconds to what `id` has played. */
 export async function addPlaytime(id: string, seconds: number): Promise<void> {
   if (!(seconds > 0)) return
-  const playtime = await readPlaytime()
-  playtime[id] = Math.round((playtime[id] ?? 0) + seconds)
-  await writeJson(PLAYTIME, playtime)
+  return inTurn(async () => {
+    const playtime = await readPlaytime()
+    playtime[id] = Math.round((playtime[id] ?? 0) + seconds)
+    await writeJson(PLAYTIME, playtime)
+  })
 }
 
 /** Seconds → whole minutes, or undefined under one (nothing to show). */
@@ -49,20 +66,24 @@ export async function readFavorites(): Promise<string[]> {
 }
 
 /** Adds or removes a favourite; resolves with whether it's now a favourite. */
-export async function toggleFavorite(id: string): Promise<boolean> {
-  const favorites = await readFavorites()
-  const on = !favorites.includes(id)
-  await writeJson(FAVORITES, on ? [...favorites, id] : favorites.filter((f) => f !== id))
-  return on
+export function toggleFavorite(id: string): Promise<boolean> {
+  return inTurn(async () => {
+    const favorites = await readFavorites()
+    const on = !favorites.includes(id)
+    await writeJson(FAVORITES, on ? [...favorites, id] : favorites.filter((f) => f !== id))
+    return on
+  })
 }
 
 /** A deleted game: out of the play history and favourites. */
-export async function forgetGame(id: string): Promise<void> {
-  const history = await readHistory()
-  if (id in history) {
-    delete history[id]
-    await writeJson(HISTORY, history)
-  }
-  const favorites = await readFavorites()
-  if (favorites.includes(id)) await writeJson(FAVORITES, favorites.filter((f) => f !== id))
+export function forgetGame(id: string): Promise<void> {
+  return inTurn(async () => {
+    const history = await readHistory()
+    if (id in history) {
+      delete history[id]
+      await writeJson(HISTORY, history)
+    }
+    const favorites = await readFavorites()
+    if (favorites.includes(id)) await writeJson(FAVORITES, favorites.filter((f) => f !== id))
+  })
 }

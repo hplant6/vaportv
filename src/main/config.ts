@@ -250,8 +250,21 @@ export async function loadConfig(): Promise<Config> {
   }
 }
 
-/** Merges `patch` into config.json, keeping everything else in the file as it was. */
-export async function saveConfig(patch: Partial<Config>): Promise<void> {
+let saving: Promise<void> = Promise.resolve()
+
+/**
+ * Merges `patch` into config.json, keeping everything else in the file as it was. One save
+ * at a time: two at once would both write config.json.tmp, losing one, or leaving a mix of
+ * both that isn't JSON. A patch built from what's saved (adding to a list, say) is a
+ * function of the config, so it's worked out in turn too, from the config as it then is.
+ */
+export function saveConfig(patch: Partial<Config> | ((config: Config) => Partial<Config>)): Promise<void> {
+  const run = saving.then(() => writeConfig(patch))
+  saving = run.catch(() => {})
+  return run
+}
+
+async function writeConfig(patch: Partial<Config> | ((config: Config) => Partial<Config>)): Promise<void> {
   const path = configPath()
   let current: Record<string, unknown> = {}
   try {
@@ -262,7 +275,8 @@ export async function saveConfig(patch: Partial<Config>): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
   // Write then rename, so a crash mid-write can't leave a half-written config.
   const tmp = `${path}.tmp`
-  await writeFile(tmp, JSON.stringify({ ...current, ...patch }, null, 2) + '\n', { mode: 0o600 })
+  const changes = typeof patch === 'function' ? patch(current as Config) : patch
+  await writeFile(tmp, JSON.stringify({ ...current, ...changes }, null, 2) + '\n', { mode: 0o600 })
   // Only its owner may read it: it holds the Google sign-in and API keys. `mode` only
   // applies to a new file, and a crash can leave an old .tmp behind.
   await chmod(tmp, 0o600)

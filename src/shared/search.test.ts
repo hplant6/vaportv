@@ -18,6 +18,10 @@ describe('search', () => {
 
   it('scores spoken names against titles', () => {
     expect(matchScore('final fantasy seven', 'Final Fantasy VII')).toBe(100)
+    expect(matchScore('grand theft auto five', 'Grand Theft Auto V')).toBe(100)
+    expect(matchScore('final fantasy 15', 'Final Fantasy XV')).toBe(100)
+    expect(matchScore('final fantasy fourteen', 'Final Fantasy XIV')).toBe(100)
+    expect(matchScore('v rising', 'V Rising')).toBe(100)
     expect(matchScore('streetfighter', 'Street Fighter')).toBe(100)
     expect(matchScore('zel', 'The Legend of Zelda')).toBeGreaterThan(30)
     expect(matchScore('metroid prim', 'Metroid Prime')).toBeGreaterThan(75)

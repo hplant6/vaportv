@@ -89,17 +89,15 @@ export async function searchPlaces(query: string): Promise<PlaceMatch[]> {
 
 /** Uses a chosen place for the weather, or (null) goes back to guessing from the connection. */
 export async function setPlace(place: PlaceMatch | null): Promise<void> {
-  const { weather } = await loadConfig()
-  await saveConfig({
+  await saveConfig(({ weather }) => ({
     weather: place
       ? { ...weather, latitude: place.latitude, longitude: place.longitude, place: place.name, country: place.country }
       : { unit: weather?.unit }
-  })
+  }))
   changeListeners.forEach((listener) => listener())
 }
 
 export async function setTemperatureUnit(unit: TemperatureUnit): Promise<void> {
-  const { weather } = await loadConfig()
-  await saveConfig({ weather: { ...weather, unit: unit === 'auto' ? undefined : unit } })
+  await saveConfig(({ weather }) => ({ weather: { ...weather, unit: unit === 'auto' ? undefined : unit } }))
   changeListeners.forEach((listener) => listener())
 }

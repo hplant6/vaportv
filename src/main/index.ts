@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, AppItem, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
@@ -530,13 +530,12 @@ ipcMain.handle('tabs:settings', async () => {
 })
 ipcMain.handle('tabs:set', async (_event, arrangement: TabArrangement, off: HideableTab[]) => {
   // Tabs with nothing in them aren't listed, so keep where they were for when they have games.
-  const config = await loadConfig()
   const listed = new Set([...arrangement.bar, ...arrangement.more, ...off])
   const kept = (tabs: HideableTab[] | undefined): HideableTab[] => (tabs ?? []).filter((t) => !listed.has(t))
-  await saveConfig({
+  await saveConfig((config) => ({
     tabLayout: { bar: [...arrangement.bar, ...kept(config.tabLayout?.bar)], more: [...arrangement.more, ...kept(config.tabLayout?.more)] },
     tabsHidden: [...off, ...kept(config.tabsHidden)]
-  })
+  }))
 })
 ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   const location = await getLocation()
@@ -617,8 +616,7 @@ ipcMain.handle('settings:tabLayout', (_event, tab: LayoutTab, layout: SteamLayou
 )
 ipcMain.handle('settings:favoritesLayout', (_event, layout: SteamLayout) => saveConfig({ favoritesLayout: layout }))
 ipcMain.handle('settings:recentsLayout', async (_event, tab: RecentsTab, layout: SteamLayout) => {
-  const config = await loadConfig()
-  await saveConfig({ recentsLayouts: { ...config.recentsLayouts, [tab]: layout } })
+  await saveConfig((config) => ({ recentsLayouts: { ...config.recentsLayouts, [tab]: layout } }))
 })
 ipcMain.handle('settings:braveSearchKey', (_event, key: string) => saveConfig({ braveSearchKey: key.trim() || undefined }))
 ipcMain.handle('settings:steamGridDbKey', async (_event, key: string) => {
@@ -628,14 +626,17 @@ ipcMain.handle('settings:steamGridDbKey', async (_event, key: string) => {
 
 ipcMain.handle('settings:music', async (_event, kind: MusicKind, choice: string | null) => {
   // Saving either layer settles both, so an old rain-as-music choice doesn't come back.
-  const choices = { ...musicChoices(await loadConfig()), [kind]: choice }
-  return saveConfig({ music: choices.music ?? undefined, ambience: choices.ambience ?? '' })
+  return saveConfig((config) => {
+    const choices = { ...musicChoices(config), [kind]: choice }
+    return { music: choices.music ?? undefined, ambience: choices.ambience ?? '' }
+  })
 })
 ipcMain.handle('settings:playlists', async (_event, lists: Playlist[]) => {
-  const config = await loadConfig()
-  // Deleting the playlist that's playing stops the music rather than leaving a choice that plays nothing.
-  const playing = config.music?.startsWith(PLAYLIST) && !lists.some((p) => PLAYLIST + p.id === config.music)
-  await saveConfig({ playlists: lists, ...(playing ? { music: undefined } : {}) })
+  await saveConfig((config) => {
+    // Deleting the playlist that's playing stops the music rather than leaving a choice that plays nothing.
+    const playing = config.music?.startsWith(PLAYLIST) && !lists.some((p) => PLAYLIST + p.id === config.music)
+    return { playlists: lists, ...(playing ? { music: undefined } : {}) }
+  })
 })
 ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
   saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
