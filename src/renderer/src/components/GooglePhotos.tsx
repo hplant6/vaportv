@@ -100,6 +100,14 @@ export function GooglePhotosSettings() {
     })
   }
 
+  const signOut = (): void => {
+    window.steamtv.googlePhotos.signOut().then((revoked) => {
+      // Offline, Google still holds the access it gave; only the person can take it back now.
+      toast(revoked ? 'Signed out of Google' : "Signed out here, but Google couldn't be reached: remove vaporTV in your Google Account, under Security", 10_000)
+      refresh()
+    })
+  }
+
   return (
     <>
       <div className="settings-group">
@@ -153,7 +161,7 @@ export function GooglePhotosSettings() {
                   onSelect={() => window.steamtv.googlePhotos.clear().then(refresh)}
                 />
               )}
-              <ActionRow label="Sign out" detail="Drive and Photos" onSelect={() => window.steamtv.googlePhotos.signOut().then(refresh)} />
+              <ActionRow label="Sign out" detail="Drive and Photos; removes their photos from the TV" onSelect={signOut} />
             </>
           )}
         </div>

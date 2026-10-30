@@ -3,7 +3,7 @@ import type { BugReport } from '../../../shared/types'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OverStage } from './GooglePhotos'
 
-// Settings → General → Report a problem: a QR code that opens a GitHub issue on a phone,
+// Settings → Help → Report a problem: a QR code that opens a GitHub issue on a phone,
 // filled in with vaporTV's version, the system and recent log lines. What went wrong is
 // typed there, where it's easier than with a controller.
 
@@ -77,7 +77,7 @@ function Report({ onClose }: { onClose: () => void }) {
         <div className="bug-text">
           <h2 className="bug-title display">Report a problem</h2>
           <p className="dialog-message">
-            {error ?? 'Scan the code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in: describe what went wrong, then press Submit.'}
+            {error ?? 'Scan the code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in (with what you pressed and said taken out): describe what went wrong, then press Submit. Reports are public, so check it over first.'}
           </p>
           <p className="dialog-message bug-account">You need a GitHub account to send it.</p>
           <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClose}>

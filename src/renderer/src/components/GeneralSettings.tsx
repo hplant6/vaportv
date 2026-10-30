@@ -95,7 +95,7 @@ export function GeneralSettings() {
           >
             <span className="setting-name display">Location</span>
             <span className="setting-detail">
-              {location?.place ? `${location.place} · ${location.chosen ? 'chosen' : 'detected'}` : 'Not found yet · A to choose'}
+              {location?.place ? `${location.place} · ${location.chosen ? 'chosen' : 'guessed from your internet address'}` : 'Not found yet · A to choose'}
             </span>
           </button>
         </div>

@@ -64,7 +64,7 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
-import { chooseDriveFolder, driveFolders, driveStatus, startDriveSync, syncDrive } from './addons/googleDrive'
+import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
 import { bluetoothStatus, connectBluetooth, disconnectBluetooth, findBluetoothDevices, forgetBluetooth, pairBluetooth, setBluetoothPowered } from './bluetooth'
 import { cancelPick, clearPhotos, googlePhotosStatus, signIn as googleSignIn, signOut as googleSignOut, startPick } from './addons/googlePhotos'
@@ -686,7 +686,13 @@ ipcMain.handle('gphotos:signIn', async () => {
   if (ok) void syncDrive()
   return ok
 })
-ipcMain.handle('gphotos:signOut', () => googleSignOut())
+// Signing out takes Google's photos off the TV too: picked ones and the Drive folder's.
+ipcMain.handle('gphotos:signOut', async () => {
+  const revoked = await googleSignOut()
+  await forgetDrive()
+  await clearPhotos()
+  return revoked
+})
 ipcMain.handle('gphotos:pick', (event) =>
   startPick((progress) => {
     if (!event.sender.isDestroyed()) event.sender.send('gphotos:progress', progress)

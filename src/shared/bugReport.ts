@@ -3,6 +3,10 @@
 // the title, are typed on the phone; the link fills in the rest. A QR code holds under
 // 3 KB and gets hard to scan off a TV well before that, so the log part is cut to fit:
 // its error lines first, then the latest lines.
+//
+// The issue is public, so what's personal in the log is taken out first: the label of each
+// button pressed (file and folder names, Wi-Fi networks, Bluetooth devices, playlists) and
+// what voice search heard. The log on the box keeps them, for looking into over ssh.
 
 const NEW_ISSUE = 'https://github.com/hplant6/vaportv/issues/new'
 /** Longest link put in the code: dense enough to scan off a TV across a room. */
@@ -11,13 +15,24 @@ const MAX_URL = 2000
 const MAX_ERROR_LINES = 8
 const ERROR_LINE = /error|fail|couldn'?t|can'?t|exited|crash|uncaught|refused|denied|not found|timed? ?out/i
 
-/** Error lines, then the latest, in the log's order, each once; home folder paths shortened to ~. */
-export function pickLogLines(lines: string[], latest: number, home: string): string[] {
+/** A log line with button labels, what voice search heard, and the home folder taken out. */
+export function scrub(line: string, home: string): string {
+  return line
+    .split(home)
+    .join('~')
+    .replace(/\b(select|favorite) (?!key$|nothing$).+$/, '$1 (a button)')
+    .replace(/\bvoice: heard "(.*)"/, (_, text: string) => `voice: heard ${text.split(/\s+/).filter(Boolean).length} words`)
+}
+
+/** Error lines, then the latest, in the log's order, each once, scrubbed for a public report. */
+export function pickLogLines(raw: string[], latest: number, home: string): string[] {
+  // Scrubbed first, so a label that reads like an error ("Crash Bandicoot") isn't kept as one.
+  const lines = raw.map((line) => scrub(line, home))
   const keep = new Set<number>()
   const errors = lines.flatMap((line, i) => (ERROR_LINE.test(line) ? [i] : [])).slice(-MAX_ERROR_LINES)
   for (const i of errors) keep.add(i)
   for (let i = Math.max(0, lines.length - latest); i < lines.length; i++) keep.add(i)
-  return [...keep].sort((a, b) => a - b).map((i) => lines[i].split(home).join('~'))
+  return [...keep].sort((a, b) => a - b).map((i) => lines[i])
 }
 
 export function issueBody(system: string[], log: string[]): string {

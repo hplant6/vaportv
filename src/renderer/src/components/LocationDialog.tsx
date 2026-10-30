@@ -83,7 +83,7 @@ export function LocationDialog({ onClose }: { onClose: () => void }) {
           ))}
           <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => choose(null)}>
             <span className="setting-name display">Automatic</span>
-            <span className="setting-detail">From your internet connection</span>
+            <span className="setting-detail">Guessed from your internet address by ipwho.is</span>
           </button>
         </div>
       </div>

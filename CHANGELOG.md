@@ -9,6 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- A Privacy guide in Settings → Help: what vaporTV sends where, what it keeps on the box, and how to clear it.
 - Guides in Settings → Help: how to get things working: streaming apps, emulators, the Netflix extension, TV remotes, and what to do when an update breaks something. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
 
 ### Fixed
@@ -18,8 +19,11 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Settings changed in quick succession (tabs, layouts, music, playlists, weather) and plays, playtime and favourites recorded at the same moment no longer overwrite one another.
 - Search and voice search find games numbered past 10 or with V in their names: "Grand Theft Auto five" finds Grand Theft Auto V, and "Final Fantasy 15" finds Final Fantasy XV.
 - Home no longer fails to load when Steam's list of non-Steam games can't be read, and it loads faster, reading that list once instead of once per app.
+- Report a problem leaves out what's personal: the names on the buttons you pressed (files, Wi-Fi networks, Bluetooth devices) and what voice search heard. It also now says the report will be public.
+- Signing out of Google takes its photos off the screensaver, signs the sign-in window's Chrome out of Google too, and tells you if Google couldn't be reached to take back vaporTV's access.
 
 ### Changed
+- Settings says when your location is guessed from your internet address, and which service guesses it.
 - Updates are signed: vaporTV installs only an update it can tell came from vaporTV.
 
 ## 0.10.0

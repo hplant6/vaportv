@@ -153,13 +153,23 @@ export async function signIn(): Promise<boolean> {
   return true
 }
 
-export async function signOut(): Promise<void> {
+/** Forgets the sign-in; whether Google took back its access too (it can't, offline). */
+export async function signOut(): Promise<boolean> {
   const client = (await loadConfig()).googlePhotos
-  if (!client) return
+  if (!client) return true
+  let revoked = true
   if (client.refreshToken) {
-    await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(client.refreshToken)}`, { method: 'POST' }).catch(() => {})
+    const res = await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(client.refreshToken)}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(8000)
+    }).catch(() => null)
+    revoked = !!res?.ok
   }
   await saveConfig({ googlePhotos: { clientId: client.clientId, clientSecret: client.clientSecret } })
+  // The sign-in window's Chrome stays signed in to Google otherwise, and the next sign-in
+  // (anyone's, at this TV) would go straight through without a password.
+  await rm(SIGN_IN_PROFILE, { recursive: true, force: true })
+  return revoked
 }
 
 export async function accessToken(client: Client): Promise<string> {

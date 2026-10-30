@@ -221,6 +221,15 @@ export async function driveFolders(): Promise<DriveFolder[]> {
   ]
 }
 
+/** After signing out: the folder's photos leave the screensaver, and its status is forgotten. */
+export async function forgetDrive(): Promise<void> {
+  while (syncing) await new Promise((resolve) => setTimeout(resolve, 500))
+  await rm(LOCAL, { recursive: true, force: true })
+  lastSync = null
+  lastError = null
+  lastFolder = null
+}
+
 /** Uses another folder (or, with null, the default one again) and syncs it now. */
 export async function chooseDriveFolder(folder: DriveFolder | null): Promise<void> {
   while (syncing) await new Promise((resolve) => setTimeout(resolve, 500))

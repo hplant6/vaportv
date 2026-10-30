@@ -7,6 +7,27 @@ describe('bug report', () => {
     expect(pickLogLines(lines, 2, '/home/deck')).toEqual(['voice: whisper exited 1', 'launch ~/x failed', 'ok 4', 'ok 5'])
   })
 
+  it('takes out button labels and what voice search heard', () => {
+    const lines = [
+      '12:00:00.000 select Holiday photos',
+      '12:00:01.000 select key',
+      '12:00:02.000 favorite Crash Bandicoot',
+      '12:00:03.000 voice: heard "play Halo 2" in 812 ms',
+      '12:00:04.000 voice: whisper exited 1: /home/deck/x'
+    ]
+    expect(pickLogLines(lines, 5, '/home/deck')).toEqual([
+      '12:00:00.000 select (a button)',
+      '12:00:01.000 select key',
+      '12:00:02.000 favorite (a button)',
+      '12:00:03.000 voice: heard 3 words in 812 ms',
+      '12:00:04.000 voice: whisper exited 1: ~/x'
+    ])
+  })
+
+  it("doesn't keep a label as an error line", () => {
+    expect(pickLogLines(['select Crash Bandicoot', 'ok'], 1, '/home/deck')).toEqual(['ok'])
+  })
+
   it('fits the link under the QR limit by dropping the oldest log lines', () => {
     const lines = Array.from({ length: 60 }, (_, i) => `12:00:${String(i).padStart(2, '0')} gamepad press: [0 "Xbox Wireless Controller" standard] line ${i}`)
     const { url, logLines } = fitLog(['vaporTV 0.9.0'], lines)

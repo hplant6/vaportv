@@ -827,7 +827,8 @@ export interface SteamTvApi {
     status(): Promise<GooglePhotosStatus>
     /** Opens Google sign-in on the TV; resolves whether it worked. */
     signIn(): Promise<boolean>
-    signOut(): Promise<void>
+    /** Signs out and removes Google's photos from the screensaver; whether Google took back its access. */
+    signOut(): Promise<boolean>
     /** Starts choosing photos on a phone: a QR code for it, then progress through onProgress. */
     pick(): Promise<{ qr: string; url: string } | { error: string }>
     cancel(): Promise<void>
