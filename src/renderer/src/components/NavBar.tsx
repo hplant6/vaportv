@@ -148,8 +148,9 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
                 className={`nav-tab nav-more-tab display${t.id === active ? ' active' : ''}`}
                 tabIndex={-1}
                 aria-label={t.label}
-                // Only reachable while the row is open.
-                {...(open ? { 'data-focusable': '' } : {})}
+                // Always reachable, open or not: it's under the bar, so Down from the bar or Up from the page comes here
+                // first, and focusing it opens the row.
+                data-focusable=""
                 data-select-sound="move"
                 onClick={() => pick(t.id)}
               >

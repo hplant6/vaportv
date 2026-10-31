@@ -316,7 +316,7 @@ button {
 }
 
 /* Closed, the row is see-through and untouchable, but still takes focus: Down from the bar
-   moves into it, and that opens it. */
+   or Up from the page moves into it, and that opens it. */
 .nav-more-band,
 .nav-more-list {
   opacity: 0;
@@ -345,6 +345,8 @@ button {
 
 /* More's row: under the bar's tabs, centred on them. */
 .nav-more-list {
+  /* How far the selected tab's underline sits from the bottom of its name's line. */
+  --more-underline-drop: 0px;
   position: absolute;
   left: 340.82px;
   top: 49.8px;
@@ -366,7 +368,21 @@ button {
 .nav-tab.nav-more-tab.active {
   color: var(--color-accent-line);
   text-shadow: 0 0 10px var(--color-accent-line);
-  border-bottom: 3px solid var(--color-accent-line);
+}
+
+/* Its underline is drawn over the row, not added to the tab, so the name stays level with the others. */
+.nav-tab.nav-more-tab {
+  position: relative;
+}
+
+.nav-tab.nav-more-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--more-underline-drop);
+  height: 3px;
+  background: var(--color-accent-line);
 }
 
 .nav-tabs {
@@ -417,7 +433,7 @@ button {
 }
 
 /* The tab you're on: gold, glowing and underlined. */
-.nav-tab.active:not(.nav-icon-tab) {
+.nav-tab.active:not(.nav-icon-tab, .nav-more-tab) {
   height: 40px;
   border-bottom: 3px solid var(--color-accent-line);
 }
