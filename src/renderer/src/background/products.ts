@@ -50,6 +50,12 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
       if (material.name === 'Material.015' || material.name === 'Material.002') material.normalMap = null
     }
   },
+  wii: {
+    model: 'private/wii.glb',
+    zoom: 0.88,
+    elevation: 15,
+    shiftRight: 0.05
+  },
   n64: {
     model: 'private/n64.glb'
   },

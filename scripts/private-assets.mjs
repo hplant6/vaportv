@@ -17,6 +17,7 @@ const ASSETS = [
   { from: 'fonts/marvin-visions-big-bold.woff2', to: 'display.woff2', name: 'Marvin Visions Big Bold' },
   { from: 'models/ps3-slim.glb', to: 'ps3-slim.glb', name: 'PS3 Slim model' },
   { from: 'models/switch.glb', to: 'switch.glb', name: 'Switch model' },
+  { from: 'models/wii.glb', to: 'wii.glb', name: 'Wii model' },
   { from: 'models/wiiu.glb', to: 'wiiu.glb', name: 'Wii U model' },
   { from: 'models/n64.glb', to: 'n64.glb', name: 'N64 model' },
   { from: 'models/xbox360.glb', to: 'xbox360.glb', name: 'Xbox 360 model' },
