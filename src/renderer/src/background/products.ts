@@ -23,6 +23,11 @@ export interface Product {
 }
 
 export const PRODUCTS: Partial<Record<string, Product>> = {
+  steam: {
+    model: 'private/steamdeck.glb',
+    // A Steam Deck: long and thin, so it looks small at the others' distance.
+    zoom: 1.1
+  },
   ps3: {
     model: 'private/ps3-slim.glb',
     white: 0.9,
