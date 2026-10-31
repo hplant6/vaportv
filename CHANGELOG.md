@@ -8,6 +8,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Changed
+- Games and apps with no art yet show their name over a dark fade instead of static.
+
 ### Added
 - Home can have a backdrop of its own: Settings → Backdrop → Home backdrop. The other screens keep the one chosen above it.
 - Console backdrops: the Steam tab shows a Steam Deck, Apps a pile of VHS tapes, Arcade an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console, black and lit in neon magenta and cyan on a mirror floor, the camera slowly swinging round it like a product shot. At High and Medium, their brightest light glows. At High and Medium their brightest light glows. Settings → Backdrop → Console backdrops sets how sharp they're drawn (High draws at the screen's full resolution, sharp on a 4K TV; Medium and Low do less work). The models aren't in the public repo; builds without them show the usual backdrop on those tabs.

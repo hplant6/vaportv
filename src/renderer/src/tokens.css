@@ -24,6 +24,8 @@
   /* The tab the cursor is on, when it isn't the one you're on (no glow, so still told apart). */
   --color-nav-hover: #ee960d;
   --color-card-footer: #060408;
+  /* A card with no art yet: a warm-black fade behind its title. */
+  --gradient-empty: linear-gradient(to bottom, #140e05, #09070b);
   /* Settings' panels: a faint warm tint, a warm hairline, and the amber tint under the cursor. */
   --color-panel: rgba(190, 147, 111, 0.08);
   --color-panel-line: rgba(255, 226, 183, 0.18);

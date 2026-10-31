@@ -570,11 +570,11 @@ button {
   font-size: var(--text-label);
   text-align: center;
   overflow-wrap: anywhere;
-  /* No art yet: the title over vaporTV's own static. */
-  background: center / cover url('./assets/empty/portrait.webp');
+  /* No art yet: the title over a dark fade. */
+  background: var(--gradient-empty);
 }
 
-/* No art: the title on a black band across the card's full width, over the static. */
+/* No art: the title on a black band across the card's full width, over the fade. */
 .no-art-band {
   width: 100%;
   padding: 48px 24px;
@@ -1209,7 +1209,7 @@ button {
   height: 100%;
   font-size: var(--text-title);
   text-align: center;
-  background: center / cover url('./assets/empty/wide.webp');
+  background: var(--gradient-empty);
 }
 
 .wide-card-title {
@@ -1220,7 +1220,7 @@ button {
   width: 100%;
   font-size: var(--text-label);
   text-align: center;
-  background: center / cover url('./assets/empty/wide.webp');
+  background: var(--gradient-empty);
 }
 
 .setting-input {
