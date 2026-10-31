@@ -22,6 +22,15 @@ export interface Product {
   fix?: (material: MeshStandardMaterial) => void
 }
 
+const GENESIS: Product = {
+  model: 'private/genesis.glb',
+  zoom: 0.85,
+  // The shell's fine plastic grain was scaled down in Blender, which glTF drops: at full size it reads as dents.
+  fix: (material) => {
+    if (material.name === 'Shell.001') material.normalMap = null
+  }
+}
+
 export const PRODUCTS: Partial<Record<string, Product>> = {
   steam: {
     model: 'private/steamdeck.glb',
@@ -79,14 +88,9 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     white: 0.35,
     exposure: 0.75
   },
-  genesis: {
-    model: 'private/genesis.glb',
-    zoom: 0.85,
-    // The shell's fine plastic grain was scaled down in Blender, which glTF drops: at full size it reads as dents.
-    fix: (material) => {
-      if (material.name === 'Shell.001') material.normalMap = null
-    }
-  },
+  genesis: GENESIS,
+  // No 32X model: it sat on top of a Genesis anyway.
+  sega32x: GENESIS,
   n64: {
     model: 'private/n64.glb'
   },
