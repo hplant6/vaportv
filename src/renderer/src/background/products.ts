@@ -99,9 +99,11 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     zoom: 0.85,
     // The X on top took its colour from an image texture with no image (black in Blender), which glTF makes white.
     // The power and eject buttons and trim are pure-white mirror metal, which the floor's reflection blows out to
-    // white blobs: darker, and nothing quite a mirror.
+    // white blobs: darker, and nothing quite a mirror. The front's right-hand panel (Material.013) had a bump map,
+    // which glTF exported as an all-black normal map: its normals all tilted, catching the cyan rim as a cyan stripe.
     fix: (material) => {
       if (material.name === 'Alpha.028') material.color.setScalar(0.009)
+      if (material.name === 'Material.013') material.normalMap = null
       if (material.name.startsWith('Silver')) material.color.setScalar(0.15)
       material.roughness = Math.max(material.roughness, 0.3)
     }
