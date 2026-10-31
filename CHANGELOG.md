@@ -9,7 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- Console backdrops: the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console, black and lit in neon magenta and cyan on a mirror floor, the camera slowly swinging round it like a product shot. Settings → Backdrop → Console backdrops sets how sharp they're drawn (High draws at the screen's full resolution, sharp on a 4K TV; Medium and Low do less work). The models aren't in the public repo; builds without them show the usual backdrop on those tabs.
+- Console backdrops: the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, SNES, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console, black and lit in neon magenta and cyan on a mirror floor, the camera slowly swinging round it like a product shot. Settings → Backdrop → Console backdrops sets how sharp they're drawn (High draws at the screen's full resolution, sharp on a 4K TV; Medium and Low do less work). The models aren't in the public repo; builds without them show the usual backdrop on those tabs.
 - A Privacy guide in Settings → Help: what vaporTV sends where, what it keeps on the box, and how to clear it.
 - Guides in Settings → Help: how to get things working: streaming apps, emulators, the Netflix extension, TV remotes, and what to do when an update breaks something. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
 

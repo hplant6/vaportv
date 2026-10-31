@@ -59,6 +59,15 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     white: 0.35,
     exposure: 0.55
   },
+  snes: {
+    model: 'private/snes.glb',
+    zoom: 0.88,
+    elevation: 15,
+    shiftRight: 0.05,
+    // Grey plastic, lit like the PlayStation.
+    white: 0.35,
+    exposure: 1.05
+  },
   n64: {
     model: 'private/n64.glb'
   },
