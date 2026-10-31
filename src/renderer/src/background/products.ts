@@ -6,7 +6,7 @@ import type { MeshStandardMaterial } from 'three'
 // tab shows the usual backdrop.
 
 export interface Product {
-  /** The model (glTF binary), exported from Blender with the console lying as it should on the floor. */
+  /** The model (glTF binary, encrypted as .vtm by scripts/private-assets.mjs), exported from Blender with the console lying as it should on the floor. */
   model: string
   /** How much nearer the camera comes than for the PS3 (1): a thin console looks smaller at the same width, its front edge further off. */
   zoom?: number
@@ -27,7 +27,7 @@ export interface Product {
 }
 
 const GENESIS: Product = {
-  model: 'private/genesis.glb',
+  model: 'private/genesis.vtm',
   zoom: 0.85,
   // The shell's fine plastic grain was scaled down in Blender, which glTF drops: at full size it reads as dents.
   fix: (material) => {
@@ -38,19 +38,19 @@ const GENESIS: Product = {
 export const PRODUCTS: Partial<Record<string, Product>> = {
   apps: {
     // A pile of VHS tapes: it sits low, so in closer and lifted a little. Bloom blurs the sleeves' bright art.
-    model: 'private/apps.glb',
+    model: 'private/apps.vtm',
     zoom: 1.12,
     shiftDown: -0.04,
     bloom: false
   },
   steam: {
-    model: 'private/steamdeck.glb',
+    model: 'private/steamdeck.vtm',
     // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.
     zoom: 1.1,
     shiftDown: 0.05
   },
   ps3: {
-    model: 'private/ps3-slim.glb',
+    model: 'private/ps3-slim.vtm',
     white: 0.9,
     // The PS logo's colour ran through a ColorRamp.
     fix: (material) => {
@@ -58,7 +58,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     }
   },
   switch: {
-    model: 'private/switch.glb',
+    model: 'private/switch.vtm',
     zoom: 1.25,
     white: 0.6,
     // The button labels' bump came out as a normal map, which shades them wrong.
@@ -67,7 +67,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     }
   },
   wiiu: {
-    model: 'private/wiiu.glb',
+    model: 'private/wiiu.vtm',
     zoom: 0.88,
     elevation: 15,
     shiftRight: 0.05,
@@ -77,7 +77,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     }
   },
   wii: {
-    model: 'private/wii.glb',
+    model: 'private/wii.vtm',
     zoom: 0.88,
     elevation: 15,
     shiftRight: 0.05,
@@ -86,7 +86,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     exposure: 0.55
   },
   snes: {
-    model: 'private/snes.glb',
+    model: 'private/snes.vtm',
     zoom: 0.88,
     shiftRight: -0.02,
     // Grey plastic, lit like the PlayStation.
@@ -94,7 +94,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     exposure: 1.05
   },
   nes: {
-    model: 'private/nes.glb',
+    model: 'private/nes.vtm',
     zoom: 0.78,
     // Lighter plastic than the SNES's, so a little less exposure.
     white: 0.35,
@@ -105,16 +105,16 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   sega32x: GENESIS,
   arcade: {
     // An 8BitDo arcade stick. White plastic, dimmed like the Wii.
-    model: 'private/arcade.glb',
+    model: 'private/arcade.vtm',
     zoom: 0.92,
     white: 0.35,
     exposure: 0.7
   },
   n64: {
-    model: 'private/n64.glb'
+    model: 'private/n64.vtm'
   },
   xbox: {
-    model: 'private/xbox.glb',
+    model: 'private/xbox.vtm',
     zoom: 0.85,
     // The X on top took its colour from an image texture with no image (black in Blender), which glTF makes white.
     // The power and eject buttons and trim are pure-white mirror metal, which the floor's reflection blows out to
@@ -128,18 +128,18 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     }
   },
   xbox360: {
-    model: 'private/xbox360.glb',
+    model: 'private/xbox360.vtm',
     zoom: 0.82,
     elevation: 15
   },
   gamecube: {
-    model: 'private/gamecube.glb',
+    model: 'private/gamecube.vtm',
     zoom: 0.62,
     elevation: 22,
     white: 0.7
   },
   psp: {
-    model: 'private/psp.glb',
+    model: 'private/psp.vtm',
     // Its roughness maps are fingerprints and smudges, which read as haze on the screen and blotches on the
     // shell: one even gloss instead (the body keeps its metalness map, which glTF packs in the same texture).
     fix: (material) => {
@@ -149,22 +149,22 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     }
   },
   saturn: {
-    model: 'private/saturn.glb',
+    model: 'private/saturn.vtm',
     zoom: 0.85,
     white: 0.525
   },
   ps2: {
-    model: 'private/ps2.glb',
+    model: 'private/ps2.vtm',
     zoom: 0.95
   },
   psx: {
-    model: 'private/psx.glb',
+    model: 'private/psx.vtm',
     zoom: 0.93,
     white: 0.35,
     exposure: 1.05
   },
   dreamcast: {
-    model: 'private/dreamcast.glb',
+    model: 'private/dreamcast.vtm',
     zoom: 0.72,
     // White plastic: the white lights at full strength wash it out.
     white: 0.45

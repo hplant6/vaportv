@@ -145,9 +145,21 @@ function buildFloor(scene: THREE.Scene, size: number): Reflector {
   return mirror
 }
 
+declare const __MODEL_KEY__: string
+
+/** A model as private-assets.mjs encrypted it (12-byte IV, then AES-256-GCM ciphertext and tag), decrypted. */
+async function loadModel(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`${url}: ${response.status}`)
+  const data = new Uint8Array(await response.arrayBuffer())
+  const hex = __MODEL_KEY__.match(/../g) ?? []
+  const key = await crypto.subtle.importKey('raw', new Uint8Array(hex.map((b) => parseInt(b, 16))), 'AES-GCM', false, ['decrypt'])
+  return crypto.subtle.decrypt({ name: 'AES-GCM', iv: data.subarray(0, 12) }, key, data.subarray(12))
+}
+
 /** The console, its base centred on the origin. Returns its size. */
 async function buildConsole(scene: THREE.Scene, product: Product): Promise<THREE.Vector3> {
-  const gltf = await new GLTFLoader().loadAsync(product.model)
+  const gltf = await new GLTFLoader().parseAsync(await loadModel(product.model), '')
   const model = gltf.scene
   const box = new THREE.Box3().setFromObject(model)
   const centre = box.getCenter(new THREE.Vector3())
