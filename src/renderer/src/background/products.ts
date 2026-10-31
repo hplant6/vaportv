@@ -54,7 +54,10 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     model: 'private/wii.glb',
     zoom: 0.88,
     elevation: 15,
-    shiftRight: 0.05
+    shiftRight: 0.05,
+    // White plastic, dimmed to match the PlayStation.
+    white: 0.35,
+    exposure: 0.55
   },
   n64: {
     model: 'private/n64.glb'
