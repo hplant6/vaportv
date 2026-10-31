@@ -1043,7 +1043,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">The Steam tab shows a Steam Deck, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console instead of the backdrop above. How sharp it's drawn:</p>
+          <p className="settings-help">The Steam tab shows a Steam Deck, the Arcade tab an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console instead of the backdrop above. How sharp it's drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

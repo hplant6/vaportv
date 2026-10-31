@@ -91,6 +91,13 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   genesis: GENESIS,
   // No 32X model: it sat on top of a Genesis anyway.
   sega32x: GENESIS,
+  arcade: {
+    // An 8BitDo arcade stick. White plastic, dimmed like the Wii.
+    model: 'private/arcade.glb',
+    zoom: 0.92,
+    white: 0.35,
+    exposure: 0.7
+  },
   n64: {
     model: 'private/n64.glb'
   },

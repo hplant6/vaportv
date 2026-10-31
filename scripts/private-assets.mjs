@@ -31,7 +31,8 @@ const ASSETS = [
   { from: 'models/steamdeck.glb', to: 'steamdeck.glb', name: 'Steam Deck model' },
   { from: 'models/nes.glb', to: 'nes.glb', name: 'NES model' },
   { from: 'models/genesis.glb', to: 'genesis.glb', name: 'Genesis model' },
-  { from: 'models/xbox.glb', to: 'xbox.glb', name: 'Xbox model' }
+  { from: 'models/xbox.glb', to: 'xbox.glb', name: 'Xbox model' },
+  { from: 'models/arcade.glb', to: 'arcade.glb', name: 'Arcade stick model' }
 ]
 
 await rm(OUT, { recursive: true, force: true })
