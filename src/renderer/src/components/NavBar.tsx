@@ -5,7 +5,6 @@ import { GearIcon, PowerIcon } from './icons'
 import { ClockCorner } from './ClockCorner'
 import { PowerMenu } from './PowerMenu'
 import { TAB_LIST } from '../../../shared/tabs'
-import { focus } from '../input/focus'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade' | 'settings'
 
@@ -13,21 +12,24 @@ export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'psx' | 'psp
 export const TABS = TAB_LIST as { id: Screen; label: string }[]
 
 
-/** Whether the last bar had More open, for the next screen's bar to start from. */
+/** Whether the last bar had its second row open, for the next screen's bar to start from. */
 let moreWasOpen = false
+
+/** Down from the bar (a tab, Settings or power) opens the second row on the tab under it. */
+const INTO_SECOND_ROW = 'nearest:.nav-more-tab'
 
 export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) {
   const [powerOpen, setPowerOpen] = useState(false)
   // Tabs with nothing to show (no Steam, or no games for a console) are left out; the rest
-  // sit in the bar or under More, as arranged in Settings → Tabs.
+  // sit in the bar or its second row, as arranged in Settings → Tabs.
   const arrangement = useTabArrangement()
   const label = (id: Screen): { id: Screen; label: string } => TABS.find((t) => t.id === id) ?? { id, label: id }
   const bar = ['home' as const, ...arrangement.bar].map(label)
   const more = arrangement.more.map(label)
-  // On a tab under More, its row stays open to show where you are.
+  // On a tab in the second row, it stays open to show where you are.
   const inMore = more.some((t) => t.id === active)
   // Each screen has its own bar, so a new one starts as the last was and then opens or
-  // closes: stepping onto or off a tab under More (L1/R1) animates the line like A does.
+  // closes: stepping onto or off a tab in the second row (L1/R1) animates the line as Down does.
   const [moreOpen, setMoreOpen] = useState(moreWasOpen)
   useEffect(() => {
     // Two frames, so the starting state is drawn before the change.
@@ -41,6 +43,9 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     moreWasOpen = open
   }, [open])
 
+  // With a second row, Down from the bar steps into it (focusing it opens it).
+  const down = more.length > 0 ? { 'data-nav-down': INTO_SECOND_ROW } : {}
+
   const tab = (id: Screen, content: React.ReactNode, label: string, icon = false) => (
     <button
       key={id}
@@ -49,23 +54,14 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
       aria-label={label}
       data-focusable=""
       data-select-sound="move"
+      {...down}
       onClick={() => onNavigate(id)}
     >
       {content}
     </button>
   )
 
-  // A on More opens its row and steps into it (onto the tab you're on, if it's there).
-  const toggleMore = (): void => {
-    if (open) return setMoreOpen(inMore)
-    setMoreOpen(true)
-    requestAnimationFrame(() => {
-      const target = document.querySelector<HTMLElement>('.nav-more-tab.active') ?? document.querySelector<HTMLElement>('.nav-more-tab')
-      if (target) focus(target)
-    })
-  }
-
-  // Leaving the bar folds More away again (unless you're on one of its tabs).
+  // Leaving the bar folds the second row away again (unless you're on one of its tabs).
   const onBlur = (event: FocusEvent<HTMLElement>): void => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMoreOpen(inMore)
   }
@@ -74,10 +70,10 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
   return (
     <>
       <ClockCorner side="left" />
-      {/* Up from More's row goes to the tab above, and down from a tab to the one below it. */}
+      {/* Up from the second row goes to the tab above, and down from a tab to the one below it. */}
       <nav className={`nav${open ? ' more-open' : ''}`} onBlur={onBlur} data-focus-direct="">
         <img className="nav-line" src={navLine} alt="" />
-        {/* The lower line, drawn here so it can drop down to make room for More's row. */}
+        {/* The lower line, drawn here so it can drop down to make room for the second row. */}
         <svg className="nav-line-lower" width="1848" height="96" viewBox="0 0 1848 96" fill="none" aria-hidden="true">
           <path stroke="url(#nav-line-lower-paint)" strokeWidth="2" strokeOpacity="0.14" />
           <defs>
@@ -88,7 +84,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
             </linearGradient>
           </defs>
         </svg>
-        {/* A faint band behind More's row, fading in once the line has dropped. */}
+        {/* A faint band behind the second row, fading in once the line has dropped. */}
         {more.length > 0 && (
           <svg className="nav-more-band" width="1337" height="67" viewBox="0 0 1337 67" fill="none" aria-hidden="true">
             <path
@@ -110,22 +106,6 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
           {tab('settings', <GearIcon />, 'Settings', true)}
           <div className="nav-tab-list">
             {bar.map((t) => tab(t.id, t.label, t.label))}
-            {more.length > 0 && (
-              <button
-                id="nav-more"
-                className={`nav-tab display${open ? ' open' : ''}${inMore ? ' active' : ''}`}
-                tabIndex={-1}
-                aria-label="More"
-                aria-expanded={open}
-                data-focusable=""
-                data-select-sound="move"
-                // Down steps into More's row (opening it), as A does.
-                data-nav-down=".nav-more-tab"
-                onClick={toggleMore}
-              >
-                More
-              </button>
-            )}
           </div>
           <span className="nav-power">
             <button
@@ -137,6 +117,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
               aria-expanded={powerOpen}
               data-focusable=""
               data-select-sound="move"
+              {...down}
               onClick={() => setPowerOpen(true)}
             >
               <PowerIcon />
@@ -149,7 +130,8 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
           <div
             className="nav-more-list"
             data-focus-memory="nav-more"
-            data-back-focus="#nav-more"
+            // B goes up to the bar's tab you're on (or, from a tab in this row, Home).
+            data-back-focus=".nav-tab-list .nav-tab.active"
             aria-hidden={!open}
             onFocus={() => setMoreOpen(true)}
           >

@@ -174,7 +174,7 @@ export function App() {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail
       const current = screenRef.current
-      // Only the tabs on show, in the bar's order then More's, so L1/R1 skips empty ones.
+      // Only the tabs on show, in the bar's order then the second row's, so L1/R1 skips empty ones.
       const order = tabOrder() as Screen[]
       const power = document.getElementById('power-button')
       const onPower = !!power && document.activeElement === power

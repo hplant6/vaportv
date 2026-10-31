@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { HideableTab, TabArrangement } from '../../shared/types'
 import { arrangeTabs, TAB_LIST } from '../../shared/tabs'
 
-// Which tabs show, and where: the bar (after Home) or More's row. Those with something in
+// Which tabs show, and where: the bar (after Home) or its second row. Those with something in
 // them, less any switched off, arranged as in Settings → Tabs. Shared by the nav bar and
 // L1/R1 (which steps through them in that order); refreshed now and then as games are added
 // or removed, and at once when Settings changes them.
@@ -36,7 +36,7 @@ function start(): void {
   setInterval(load, REFRESH_MS)
 }
 
-/** The screens in the order L1/R1 step through them: Settings, Home, the bar's tabs, then More's. */
+/** The screens in the order L1/R1 step through them: Settings, Home, the bar's tabs, then the second row's. */
 export function tabOrder(): string[] {
   return ['settings', 'home', ...arrangement.bar, ...arrangement.more]
 }

@@ -1050,19 +1050,19 @@ describe('Xbox', () => {
 })
 
 describe('tab arrangement', () => {
-  const all = ['steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'wii', 'dreamcast', 'arcade'] as const
+  const all = ['steam', 'apps', 'switch', 'ps3', 'xbox', 'xbox360', 'ps2', 'gamecube', 'wii', 'dreamcast', 'saturn', 'arcade'] as const
 
-  it('fills the bar in bar order, then More', async () => {
+  it('fills the bar in bar order, then the second row', async () => {
     const { arrangeTabs } = await import('../../shared/tabs')
-    // Nine after Home fill the bar's ten; the rest go under More.
-    expect(arrangeTabs(all, [])).toEqual({ bar: all.slice(0, 9), more: ['dreamcast', 'arcade'] })
-    // Room for everything: no More.
+    // Ten after Home fill the bar's eleven; the rest go in the second row.
+    expect(arrangeTabs(all, [])).toEqual({ bar: all.slice(0, 10), more: ['saturn', 'arcade'] })
+    // Room for everything: no second row.
     expect(arrangeTabs(['apps', 'switch'], [])).toEqual({ bar: ['apps', 'switch'], more: [] })
     // Switched off, or without content: left out.
     expect(arrangeTabs(['apps', 'switch'], ['switch'])).toEqual({ bar: ['apps'], more: [] })
   })
 
-  it('follows a saved arrangement, placing new tabs and keeping the bar within its ten', async () => {
+  it('follows a saved arrangement, placing new tabs and keeping the bar within its eleven', async () => {
     const { arrangeTabs } = await import('../../shared/tabs')
     const saved = { bar: ['switch', 'apps'] as const, more: ['steam'] as const }
     // Saved order kept; PS3 isn't in it yet, so it joins the bar (there's room).
@@ -1070,10 +1070,10 @@ describe('tab arrangement', () => {
       bar: ['switch', 'apps', 'ps3'],
       more: ['steam']
     })
-    // A bar saved too full: what doesn't fit goes to the front of More.
+    // A bar saved too full: what doesn't fit goes to the front of the second row.
     const crowded = arrangeTabs(all, [], { bar: [...all], more: [] })
-    expect(crowded.bar).toHaveLength(9)
-    expect(crowded.more).toEqual(['dreamcast', 'arcade'])
+    expect(crowded.bar).toHaveLength(10)
+    expect(crowded.more).toEqual(['saturn', 'arcade'])
   })
 })
 

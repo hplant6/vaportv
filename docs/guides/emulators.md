@@ -90,7 +90,7 @@ vaporTV finds covers on its own: from RetroArch's thumbnail collection, and from
 
 ## Arranging the tabs
 
-With many consoles, the top bar fills up: past ten names, the rest go under **More**. In **Settings → Tabs** you can choose which tabs sit in the bar and which go under More, put them in any order, or switch off the ones you don't use. **Settings → Consoles** sets how each console's tab shows its games.
+With many consoles, the top bar fills up: past eleven names, the rest go in a **second row** under it, which opens when you press down from the bar. In **Settings → Tabs** you can choose which tabs sit in the bar and which go in the second row, put them in any order, or switch off the ones you don't use. **Settings → Consoles** sets how each console's tab shows its games.
 
 ## If something's wrong
 

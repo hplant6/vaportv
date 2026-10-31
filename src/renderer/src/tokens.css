@@ -21,8 +21,8 @@
   --color-text: #ffffff;
   --color-accent: #ee960d;
   --color-accent-line: #fca10f;
-  /* The tab the cursor is on, when it isn't the one you're on (no glow, so still told apart). */
-  --color-nav-hover: #ee960d;
+  /* The tab the cursor is on, when it isn't the one you're on: a paler yellow than the gold, no glow. */
+  --color-nav-hover: #f1cb4d;
   --color-card-footer: #060408;
   /* A card with no art yet: a warm-black fade behind its title. */
   --gradient-empty: linear-gradient(to bottom, #140e05, #09070b);

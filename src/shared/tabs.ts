@@ -1,9 +1,10 @@
 import type { HideableTab, TabArrangement } from './types'
 
-// The top bar's tabs, their labels and default order, and how many the bar holds. Past ten
-// names, More joins them and the rest go in a second row under it. Settings → Tabs can
-// move any tab (but Home, always first) between the bar and More, reorder them, or
-// switch them off.
+// The top bar's tabs, their labels and default order, and how many the bar holds. Past
+// eleven names, the rest go in a second row under it, which Down from the bar opens.
+// Settings → Tabs can move any tab (but Home, always first) between the bar and the second
+// row, reorder them, or switch them off. (The second row is `more` in code and config: it
+// was once opened by a More tab.)
 
 export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -30,16 +31,16 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'arcade', label: 'Arcade' }
 ]
 
-/** Names the bar holds, Home included; More is added after them when there are more. */
-export const BAR_TABS = 10
-/** Names the More row holds. */
+/** Names the bar holds, Home included. */
+export const BAR_TABS = 11
+/** Names the second row holds. */
 export const MORE_TABS = 11
 
 /**
  * Where the tabs that show go: those with something in them and not switched off. With a
  * saved arrangement, in its order (a tab it doesn't mention yet joins the bar if there's
- * room, else More); without one, in bar order, filling the bar before More. The bar never
- * takes more than it holds; what doesn't fit moves to the front of More.
+ * room, else the second row); without one, in bar order, filling the bar first. The bar never
+ * takes more than it holds; what doesn't fit moves to the front of the second row.
  */
 export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<HideableTab>, saved?: TabArrangement): TabArrangement {
   const has = new Set(available)
@@ -50,7 +51,7 @@ export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<H
   const room = BAR_TABS - 1
   for (const { id } of TAB_LIST) {
     if (id === 'home' || !shows(id) || bar.includes(id) || more.includes(id)) continue
-    // Without a saved arrangement, More only starts once the bar is full.
+    // Without a saved arrangement, the second row only starts once the bar is full.
     if (bar.length < room && (saved || more.length === 0)) bar.push(id)
     else more.push(id)
   }

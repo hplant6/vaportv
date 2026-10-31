@@ -70,6 +70,24 @@ function vertical(from: DOMRect, candidates: HTMLElement[], sign: 1 | -1): HTMLE
   return scored.filter((c) => c.gap <= nearestRow + ROW_TOLERANCE).sort((a, b) => a.offset - b.offset)[0].el
 }
 
+/**
+ * Where a data-nav-* selector sends the cursor: its first match, or with a "nearest:" prefix, whichever match lines up
+ * best with where it's coming from (the bar's tabs down into the second row: the tab under the one you're on).
+ */
+function namedTarget(named: string, from: DOMRect, direction: Direction): HTMLElement | null {
+  if (!named.startsWith('nearest:')) return document.querySelector<HTMLElement>(named)
+  const across = direction === 'up' || direction === 'down'
+  const centre = across ? from.left + from.width / 2 : from.top + from.height / 2
+  let best: HTMLElement | null = null
+  let bestOffset = Infinity
+  for (const el of document.querySelectorAll<HTMLElement>(named.slice('nearest:'.length))) {
+    const r = el.getBoundingClientRect()
+    const offset = Math.abs((across ? r.left + r.width / 2 : r.top + r.height / 2) - centre)
+    if (offset < bestOffset) [best, bestOffset] = [el, offset]
+  }
+  return best
+}
+
 export type InputSource = 'keyboard' | 'gamepad'
 
 // In Desktop Mode, Steam also turns the controller's d-pad into arrow keys, so one
@@ -117,7 +135,7 @@ export function move(direction: Direction, source: InputSource): void {
         vertical(rect, candidates.filter((el) => !el.closest('[data-nav-scope]')), sign))
       : vertical(rect, candidates, sign)
   let target =
-    (named ? document.querySelector<HTMLElement>(named) : null) ??
+    (named ? namedTarget(named, rect, direction) : null) ??
     (direction === 'left' || direction === 'right'
       ? horizontal(rect, candidates, direction === 'right' ? 1 : -1)
       : upDown(direction === 'down' ? 1 : -1))
@@ -125,7 +143,7 @@ export function move(direction: Direction, source: InputSource): void {
 
   // Re-entering a row returns to where you were in it; a container's own target
   // (a pane's category) is exact, so it isn't swapped for that. Nor is a move between
-  // rows inside a data-focus-direct container (the bar and More's row): it goes to what
+  // rows inside a data-focus-direct container (the bar and its second row): it goes to what
   // lies that way.
   const group = memoryGroup(target)
   const direct = from.closest('[data-focus-direct]')

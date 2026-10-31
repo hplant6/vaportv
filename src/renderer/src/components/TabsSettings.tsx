@@ -12,14 +12,14 @@ type Places = Record<Place, HideableTab[]>
 const PLACES: Place[] = ['bar', 'more', 'off']
 /** How many each place holds (the bar's ten include Home). */
 const ROOM: Record<Place, number> = { bar: BAR_TABS - 1, more: MORE_TABS, off: Infinity }
-const FULL: Record<Place, string> = { bar: `The bar holds ${BAR_TABS} tabs with Home`, more: `More holds ${MORE_TABS} tabs`, off: '' }
+const FULL: Record<Place, string> = { bar: `The bar holds ${BAR_TABS} tabs with Home`, more: `The second row holds ${MORE_TABS} tabs`, off: '' }
 
 const label = (id: HideableTab | 'home'): string => TAB_LIST.find((t) => t.id === id)?.label ?? id
 
 /**
  * One step up or down for a picked-up tab: within its place, or over the edge into the next
  * place (the end of the one above, the start of the one below). Moving up into a full place
- * pushes that place's last tab down to take its spot (a full bar's last tab goes to More);
+ * pushes that place's last tab down to take its spot (a full bar's last tab goes to the second row);
  * moving down into a full one can't. Null if it can't go, or a message if it's full.
  */
 function step(places: Places, id: HideableTab, direction: 'up' | 'down'): Places | string | null {
@@ -47,7 +47,7 @@ function step(places: Places, id: HideableTab, direction: 'up' | 'down'): Places
 }
 
 /**
- * Settings → Tabs: where each tab goes (the top bar, More's row, or off) and in what order.
+ * Settings → Tabs: where each tab goes (the top bar, its second row, or off) and in what order.
  * A picks a tab up, Up and Down move it (over into the next place at either end), A puts it
  * down and saves, B puts it back. Home always comes first in the bar.
  */
@@ -140,7 +140,7 @@ export function TabsSettings() {
       {group(
         'bar',
         'Top bar',
-        `Up to ${BAR_TABS} tabs, with Home always first. A picks a tab up; up and down move it, here or into More or Off. Moving one up into a full bar sends its last tab to More.`,
+        `Up to ${BAR_TABS} tabs, with Home always first. A picks a tab up; up and down move it, here or into the second row or Off. Moving one up into a full bar sends its last tab to the second row.`,
         places.bar,
         <div className="setting-row tab-row fixed">
           <MoveIcon className="tab-grip" />
@@ -148,7 +148,7 @@ export function TabsSettings() {
           <span className="setting-detail">Always first</span>
         </div>
       )}
-      {group('more', 'More', `Up to ${MORE_TABS} tabs, in a second row that More opens. More shows once anything is here.`, places.more)}
+      {group('more', 'Second row', `Up to ${MORE_TABS} tabs, in a row under the bar: press down from the bar to open it.`, places.more)}
       {group('off', 'Off', "Tabs you don't use. Consoles appear in this list once they have games.", places.off)}
     </>
   )

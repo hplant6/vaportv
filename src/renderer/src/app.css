@@ -315,7 +315,7 @@ button {
   transition-delay: 0ms;
 }
 
-/* Closed, the row is see-through and untouchable, but still takes focus: Down on More
+/* Closed, the row is see-through and untouchable, but still takes focus: Down from the bar
    moves into it, and that opens it. */
 .nav-more-band,
 .nav-more-list {
@@ -362,18 +362,11 @@ button {
   font-size: var(--text-label);
 }
 
-/* The tab you're on, under More: gold, no glow (More itself glows). */
+/* The tab you're on, in the second row: gold and underlined like the bar's, glowing less (the row is smaller). */
 .nav-tab.nav-more-tab.active {
   color: var(--color-accent-line);
-  text-shadow: none;
-}
-
-/* More, open or holding the tab you're on: gold, glowing and underlined. */
-.nav-tab.open:not(.nav-icon-tab) {
-  height: 40px;
-  color: var(--color-accent);
+  text-shadow: 0 0 10px var(--color-accent-line);
   border-bottom: 3px solid var(--color-accent-line);
-  text-shadow: 0 -1px 20px rgba(238, 215, 13, 0.66);
 }
 
 .nav-tabs {
@@ -423,13 +416,18 @@ button {
     text-shadow var(--dur-focus) var(--ease-focus);
 }
 
-/* The tab you're on: gold and glowing. */
+/* The tab you're on: gold, glowing and underlined. */
+.nav-tab.active:not(.nav-icon-tab) {
+  height: 40px;
+  border-bottom: 3px solid var(--color-accent-line);
+}
+
 .nav-tab.active {
   color: var(--color-accent);
   text-shadow: 0 0 18px var(--color-accent-line);
 }
 
-/* The tab the cursor is on: gold, no glow (the one you're on glows). */
+/* The tab the cursor is on: pale yellow, no glow (the one you're on glows). */
 .nav-tab:focus:not(.active) {
   color: var(--color-nav-hover);
 }
