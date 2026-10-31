@@ -94,6 +94,18 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   n64: {
     model: 'private/n64.glb'
   },
+  xbox: {
+    model: 'private/xbox.glb',
+    zoom: 0.85,
+    // The X on top took its colour from an image texture with no image (black in Blender), which glTF makes white.
+    // The power and eject buttons and trim are pure-white mirror metal, which the floor's reflection blows out to
+    // white blobs: darker, and nothing quite a mirror.
+    fix: (material) => {
+      if (material.name === 'Alpha.028') material.color.setScalar(0.009)
+      if (material.name.startsWith('Silver')) material.color.setScalar(0.15)
+      material.roughness = Math.max(material.roughness, 0.3)
+    }
+  },
   xbox360: {
     model: 'private/xbox360.glb',
     zoom: 0.82,
