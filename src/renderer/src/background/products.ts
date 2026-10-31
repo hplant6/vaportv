@@ -97,7 +97,8 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     white: 0.525
   },
   ps2: {
-    model: 'private/ps2.glb'
+    model: 'private/ps2.glb',
+    zoom: 0.95
   },
   psx: {
     model: 'private/psx.glb',
