@@ -16,6 +16,8 @@ export interface Product {
   shiftRight?: number
   /** How bright its white lights are, against the PS3's first look (1). */
   white?: number
+  /** Overall brightness, all lights included (1): for a light-coloured console that outshines the black ones. */
+  exposure?: number
   /** Fixes for what glTF couldn't carry over from Blender, by material. */
   fix?: (material: MeshStandardMaterial) => void
 }
@@ -82,7 +84,8 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   },
   psx: {
     model: 'private/psx.glb',
-    white: 0.6
+    white: 0.35,
+    exposure: 0.55
   },
   dreamcast: {
     model: 'private/dreamcast.glb',

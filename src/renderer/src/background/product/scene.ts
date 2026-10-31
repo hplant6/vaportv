@@ -169,7 +169,7 @@ export function startProduct(
   renderer.setPixelRatio(level.pixels === 'native' ? native : Math.min(level.pixels, native))
   renderer.setSize(WIDTH, HEIGHT, false)
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.0
+  renderer.toneMappingExposure = product.exposure ?? 1
   RectAreaLightUniformsLib.init()
 
   const scene = new THREE.Scene()
