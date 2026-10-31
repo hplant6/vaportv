@@ -75,13 +75,18 @@ export function App() {
   const disableWebgl = useCallback(() => setWebgl(false), [])
   // Null until the setting loads, so the sea doesn't flash up before another backdrop.
   const [backdrop, setBackdrop] = useState<BackdropStyle | null>(null)
+  // Home's own backdrop (Settings → Backdrop → Home backdrop), or null for the same as the other screens.
+  const [homeBackdrop, setHomeBackdrop] = useState<BackdropStyle | null>(null)
+  const shownBackdrop = screen === 'home' && homeBackdrop ? homeBackdrop : backdrop
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
   const [productQuality, setProductQuality] = useState<ConsoleBackdropQuality>('high')
   const [custom, setCustom] = useState<{ items: CustomBackdrop[]; start: string; shuffle: boolean } | null>(null)
-  // If another backdrop can't run, the sea stands in.
-  const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
+  // If another backdrop can't run, the sea stands in (on Home only, when it's Home's own that failed).
+  const homeBackdropRef = useRef(homeBackdrop)
+  homeBackdropRef.current = homeBackdrop
+  const backdropUnavailable = useCallback(() => (screenRef.current === 'home' && homeBackdropRef.current ? setHomeBackdrop('sea') : setBackdrop('sea')), [])
   // Some consoles' tabs have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows the usual one there too.
   const [productsDown, setProductsDown] = useState<string[]>([])
   const product = productsDown.includes(screen) ? undefined : PRODUCTS[screen]
@@ -89,11 +94,12 @@ export function App() {
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors, consoleBackdropQuality, custom }) => {
+      window.steamtv.getBackdrop().then(({ style, homeStyle, drift, driftDirection, tunnelColors, consoleBackdropQuality, custom }) => {
         setTunnelColors(tunnelColors)
         setProductQuality(consoleBackdropQuality)
         setCustom(custom)
         setBackdrop(style)
+        setHomeBackdrop(homeStyle)
         setDriftPreset(drift)
         setDriftDirection(driftDirection)
       })
@@ -211,30 +217,30 @@ export function App() {
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }
 
   return (
-    <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
+    <div className={`stage${shownBackdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
       {product && webgl ? (
         <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />
-      ) : backdrop === 'custom' && custom ? (
+      ) : shownBackdrop === 'custom' && custom ? (
         // Your own picture or video needs no WebGL.
         <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
       ) : !webgl ? (
         <div className="stage-bg" style={fallback} />
-      ) : backdrop === 'rain' ? (
+      ) : shownBackdrop === 'rain' ? (
         <RainBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'cityrain' ? (
+      ) : shownBackdrop === 'cityrain' ? (
         <CityRainBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'forest' ? (
+      ) : shownBackdrop === 'forest' ? (
         <ForestBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'aurora' ? (
+      ) : shownBackdrop === 'aurora' ? (
         <AuroraBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'waves' ? (
+      ) : shownBackdrop === 'waves' ? (
         <WavesBackground onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'tunnel' ? (
+      ) : shownBackdrop === 'tunnel' ? (
         <StarTunnelBackground colors={tunnelColors} onUnavailable={backdropUnavailable} />
-      ) : backdrop === 'drift' ? (
+      ) : shownBackdrop === 'drift' ? (
         <DriftBackground preset={driftPreset} direction={driftDirection} onUnavailable={backdropUnavailable} />
       ) : (
-        backdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
+        shownBackdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
       )}
       <div className="stage-scrim" />
       {screen === 'home' && home && <Home data={home} onNavigate={setScreen} />}

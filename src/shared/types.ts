@@ -338,6 +338,8 @@ export interface Settings {
   musicVolume: MusicVolume
   ambienceVolume: MusicVolume
   backdrop: BackdropStyle
+  /** Home's own backdrop, or null when it shows the same as the other screens. */
+  homeBackdrop: BackdropStyle | null
   /** Your own backdrops: the one that loops (its file), or 'shuffle' for all of them. */
   backdropFile: string | null
   /** Your own backdrops left out of the shuffle (their files). */
@@ -733,16 +735,20 @@ export interface SteamTvApi {
   addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{
     style: BackdropStyle
+    /** Home's own backdrop, or null when it shows `style` like the other screens. */
+    homeStyle: BackdropStyle | null
     time: BackdropTime
     drift: string
     driftDirection: 'vertical' | 'horizontal'
     tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
     consoleBackdropQuality: ConsoleBackdropQuality
-    /** With style 'custom': your pictures and videos, the one to start on, and whether to shuffle them (else it loops). */
+    /** With style or homeStyle 'custom': your pictures and videos, the one to start on, and whether to shuffle them (else it loops). */
     custom: { items: CustomBackdrop[]; start: string; shuffle: boolean } | null
   }>
   /** For 'custom', `file` says which of your own loops, or 'shuffle' for all of them. */
   setBackdrop(style: BackdropStyle, file?: string): Promise<void>
+  /** Home's own backdrop; null for the same as the other screens. */
+  setHomeBackdrop(style: BackdropStyle | null): Promise<void>
   /** Deletes one of your own backdrops. */
   removeBackdrop(file: string): Promise<void>
   /** Which of your own backdrops the shuffle leaves out (their files). */

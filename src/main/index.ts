@@ -188,13 +188,13 @@ function customBackdropFile(config: Config, items: CustomBackdrop[]): string | n
 }
 
 /** The chosen backdrop, or the sea if it's one that's since been removed (Particles, Desert Dunes, or all of your own). */
-async function backdropChoice(config: Config): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
+async function backdropChoice(config: Config, wanted = config.backdrop): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
   const offered: BackdropStyle[] = ['sea', 'rain', 'cityrain', 'forest', 'aurora', 'drift', 'waves', 'tunnel']
-  if (config.backdrop === 'custom') {
+  if (wanted === 'custom') {
     const custom = await customChoice(config)
     return custom ? { style: 'custom', custom } : { style: 'sea', custom: null }
   }
-  return { style: config.backdrop && offered.includes(config.backdrop) ? config.backdrop : 'sea', custom: null }
+  return { style: wanted && offered.includes(wanted) ? wanted : 'sea', custom: null }
 }
 
 const DEFAULT_DRIFT_PRESET = 'molten'
@@ -588,6 +588,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
     backdrop: (await backdropChoice(config)).style,
+    homeBackdrop: config.homeBackdrop ? (await backdropChoice(config, config.homeBackdrop)).style : null,
     backdropFile: customBackdropFile(config, await customBackdrops()),
     backdropShuffleOff: config.backdropShuffleOff ?? [],
     customBackdrops: await customBackdrops(),
@@ -658,14 +659,17 @@ ipcMain.handle('backdrops:shuffleOff', (_event, files: string[]) => saveConfig({
 ipcMain.handle('music:add', async (_event, path: string, kind: MusicKind) => importMusic(await loadConfig(), path, kind))
 ipcMain.handle('settings:backdropTime', (_event, time: BackdropTime) => saveConfig({ backdropTime: time }))
 ipcMain.handle('settings:backdrop', (_event, style: BackdropStyle, file?: string) => saveConfig(file ? { backdrop: style, backdropFile: file } : { backdrop: style }))
+ipcMain.handle('settings:homeBackdrop', (_event, style: BackdropStyle | null) => saveConfig({ homeBackdrop: style ?? undefined }))
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
 ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:consoleBackdropQuality', (_event, quality: ConsoleBackdropQuality) => saveConfig({ consoleBackdropQuality: quality }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
-  const { style, custom } = await backdropChoice(config)
-  return { style, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high' }
+  const main = await backdropChoice(config)
+  const home = config.homeBackdrop ? await backdropChoice(config, config.homeBackdrop) : null
+  const custom = main.custom ?? home?.custom ?? null
+  return { style: main.style, homeStyle: home?.style ?? null, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high' }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('music:trackUrl', async (_event, file: string) => trackUrl(await loadConfig(), file))

@@ -182,6 +182,8 @@ export interface Config {
   ambience?: string
   ambienceVolume?: MusicVolume
   backdrop?: BackdropStyle
+  /** Home's own backdrop; without one, Home shows `backdrop` like the other screens. */
+  homeBackdrop?: BackdropStyle
   /** Your own backdrops (~/Pictures/vaporTV Backdrops): the file that loops, or 'shuffle'. Kept when another backdrop is chosen. */
   backdropFile?: string
   /** Your own backdrops the shuffle leaves out. */

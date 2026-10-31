@@ -573,11 +573,22 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setBackdropShuffleOff(next).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
-  /** Your own: one to loop (by file name), or 'shuffle' for all of them. */
+  /** Your own: one to loop (by file name), or 'shuffle' for all of them. When only Home shows them, the other screens keep theirs. */
   const chooseCustomBackdrop = (file: string): void => {
-    if (settings?.backdrop === 'custom' && settings.backdropFile === file) return
-    setSettings((current) => current && { ...current, backdrop: 'custom', backdropFile: file })
-    window.steamtv.setBackdrop('custom', file).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+    if (!settings) return
+    const style = settings.homeBackdrop === 'custom' && settings.backdrop !== 'custom' ? settings.backdrop : 'custom'
+    if (settings.backdrop === style && settings.backdropFile === file) return
+    setSettings((current) => current && { ...current, backdrop: style, backdropFile: file })
+    window.steamtv.setBackdrop(style, file).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  /** Whether a backdrop shows anywhere (the other screens, or Home), so its own settings appear. */
+  const backdropShown = (style: BackdropStyle): boolean => settings?.backdrop === style || settings?.homeBackdrop === style
+
+  const chooseHomeBackdrop = (style: BackdropStyle | null): void => {
+    if (!settings || settings.homeBackdrop === style) return
+    setSettings({ ...settings, homeBackdrop: style })
+    window.steamtv.setHomeBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseTunnelColors = (colors: SettingsData['tunnelColors']): void => {
@@ -892,7 +903,35 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         </div>
 
-        {settings?.backdrop === 'custom' && (
+        <div className="settings-group">
+          <h3 className="settings-heading display">Home backdrop</h3>
+          <p className="settings-help">Home can have a backdrop of its own; the other screens keep the one above.</p>
+          <div className="setting-list" data-focus-memory="settings-home-backdrop">
+            {settings && (
+              <ChoiceRow label="Same as the other screens" selected={settings.homeBackdrop === null} onSelect={() => chooseHomeBackdrop(null)} />
+            )}
+            {settings &&
+              BACKDROPS.map((b) => (
+                <ChoiceRow
+                  key={b.id}
+                  label={b.name}
+                  detail={b.detail}
+                  selected={settings.homeBackdrop === b.id}
+                  onSelect={() => chooseHomeBackdrop(b.id)}
+                />
+              ))}
+            {settings && settings.customBackdrops.length > 0 && (
+              <ChoiceRow
+                label="Your videos"
+                detail={`${settings.customBackdrops.length} added · loop one or shuffle them`}
+                selected={settings.homeBackdrop === 'custom'}
+                onSelect={() => chooseHomeBackdrop('custom')}
+              />
+            )}
+          </div>
+        </div>
+
+        {settings && backdropShown('custom') && (
           <>
             <div className="settings-group">
               <h3 className="settings-heading display">Your videos</h3>
@@ -972,7 +1011,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         </div>
 
-        {settings?.backdrop === 'drift' && (
+        {settings && backdropShown('drift') && (
           <div className="settings-group">
             <h3 className="settings-heading display">Gradient Drift colours</h3>
             <div className="setting-list" data-focus-memory="settings-drift">
@@ -989,7 +1028,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         )}
 
-        {settings?.backdrop === 'drift' && (
+        {settings && backdropShown('drift') && (
           <div className="settings-group">
             <h3 className="settings-heading display">Gradient Drift ribs</h3>
             <div className="setting-list" data-focus-memory="settings-drift-direction">
@@ -1006,7 +1045,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         )}
 
-        {settings?.backdrop === 'tunnel' && (
+        {settings && backdropShown('tunnel') && (
           <div className="settings-group">
             <h3 className="settings-heading display">Star Tunnel colours</h3>
             <div className="setting-list" data-focus-memory="settings-tunnel-colors">
@@ -1023,7 +1062,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         )}
 
-        {settings && TIMED_BACKDROPS.includes(settings.backdrop) && (
+        {settings && TIMED_BACKDROPS.some(backdropShown) && (
           <div className="settings-group">
             <h3 className="settings-heading display">Backdrop time of day</h3>
             <div className="setting-list" data-focus-memory="settings-backdrop">
