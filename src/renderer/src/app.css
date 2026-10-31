@@ -345,8 +345,8 @@ button {
 
 /* More's row: under the bar's tabs, centred on them. */
 .nav-more-list {
-  /* How far the selected tab's underline sits from the bottom of its name's line. */
-  --more-underline-drop: 0px;
+  /* How far the selected tab's underline sits below the bottom of its name's line (negative: above). */
+  --more-underline-drop: 2px;
   position: absolute;
   left: 340.82px;
   top: 49.8px;
@@ -380,7 +380,7 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: var(--more-underline-drop);
+  bottom: calc(-1 * var(--more-underline-drop));
   height: 2px;
   background: var(--color-accent-line);
 }
