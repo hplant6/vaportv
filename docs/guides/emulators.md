@@ -86,7 +86,7 @@ Press **Start** on a console game for its options:
 
 ## Covers
 
-vaporTV finds covers on its own: from RetroArch's thumbnail collection, and from [SteamGridDB](https://www.steamgriddb.com/) once you add a free SteamGridDB key in **Settings → Artwork**. A game without a cover shows its name on a black band until it has one.
+vaporTV finds covers on its own: from RetroArch's thumbnail collection, and from [SteamGridDB](https://www.steamgriddb.com/) once you add a free SteamGridDB key in **Settings → Artwork**. A game without a cover shows its name until it has one.
 
 ## Arranging the tabs
 
