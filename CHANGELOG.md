@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Changed
 - The top bar: More is gone. Press down from the bar, or up from the top of a page, to open the second row, on the tab nearest; the bar holds one more tab in its place. The tab you're on is underlined again, and the one the cursor is on is a paler yellow. Picking a tab from the bar (or L1/R1 there) keeps the cursor in the bar, on the new tab.
-- Games and apps with no art yet show their name over a dark fade instead of static.
+- Games and apps with no art yet show their name on a dark fade instead of on a black band over static.
 
 ### Added
 - Home can have a backdrop of its own: Settings → Backdrop → Home backdrop. The other screens keep the one chosen above it.
