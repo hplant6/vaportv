@@ -39,6 +39,7 @@ const api: SteamTvApi = {
   getBackdrop: () => ipcRenderer.invoke('backdrop:get'),
   setBackdrop: (style, file) => ipcRenderer.invoke('settings:backdrop', style, file),
   setTunnelColors: (colors) => ipcRenderer.invoke('settings:tunnelColors', colors),
+  setConsoleBackdropQuality: (quality) => ipcRenderer.invoke('settings:consoleBackdropQuality', quality),
   setDriftDirection: (direction) => ipcRenderer.invoke('settings:driftDirection', direction),
   setDriftPreset: (name) => ipcRenderer.invoke('settings:driftPreset', name),
   setBackdropTime: (time) => ipcRenderer.invoke('settings:backdropTime', time),

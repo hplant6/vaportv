@@ -299,6 +299,12 @@ const TUNNEL_COLORS: { id: SettingsData['tunnelColors']; name: string; detail: s
   { id: 'ember', name: 'Ember', detail: 'Red, orange and gold' }
 ]
 
+const CONSOLE_BACKDROP_QUALITIES: { id: SettingsData['consoleBackdropQuality']; name: string; detail: string }[] = [
+  { id: 'high', name: 'High', detail: 'Sharp, at the full resolution of your screen' },
+  { id: 'medium', name: 'Medium', detail: 'Drawn at 1080p and scaled up: less work on a 4K TV' },
+  { id: 'low', name: 'Low', detail: 'Softer, and at most 30 frames a second: least work' }
+]
+
 const DRIFT_DIRECTIONS: { id: 'vertical' | 'horizontal'; name: string; detail: string }[] = [
   { id: 'vertical', name: 'Vertical', detail: 'Ribs running up and down' },
   { id: 'horizontal', name: 'Horizontal', detail: 'Ribs running across' }
@@ -578,6 +584,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.tunnelColors === colors) return
     setSettings({ ...settings, tunnelColors: colors })
     window.steamtv.setTunnelColors(colors).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
+  const chooseConsoleBackdropQuality = (quality: SettingsData['consoleBackdropQuality']): void => {
+    if (!settings || settings.consoleBackdropQuality === quality) return
+    setSettings({ ...settings, consoleBackdropQuality: quality })
+    window.steamtv.setConsoleBackdropQuality(quality).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
   const chooseDriftDirection = (direction: 'vertical' | 'horizontal'): void => {
@@ -1028,6 +1040,23 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             </div>
           </div>
         )}
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Console backdrops</h3>
+          <p className="settings-help">The PS3, PSP, Switch, Wii U, N64, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console instead of the backdrop above. How sharp it's drawn:</p>
+          <div className="setting-list" data-focus-memory="settings-console-backdrop">
+            {settings &&
+              CONSOLE_BACKDROP_QUALITIES.map((q) => (
+                <ChoiceRow
+                  key={q.id}
+                  label={q.name}
+                  detail={q.detail}
+                  selected={settings.consoleBackdropQuality === q.id}
+                  onSelect={() => chooseConsoleBackdropQuality(q.id)}
+                />
+              ))}
+          </div>
+        </div>
       </>
     ),
     music: (

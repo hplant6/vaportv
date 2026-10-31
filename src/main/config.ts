@@ -3,7 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, ClockCorners, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -193,6 +193,8 @@ export interface Config {
   driftDirection?: 'vertical' | 'horizontal'
   /** Star Tunnel's colours (default nebula). */
   tunnelColors?: 'nebula' | 'starlight' | 'ice' | 'ember'
+  /** The consoles' own tab backdrops: how sharp, and how much work (default high). */
+  consoleBackdropQuality?: ConsoleBackdropQuality
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */

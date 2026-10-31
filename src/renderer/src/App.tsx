@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { BackdropStyle, CustomBackdrop } from '../../shared/types'
+import type { BackdropStyle, ConsoleBackdropQuality, CustomBackdrop } from '../../shared/types'
 import { CustomBackground } from './background/CustomBackground'
 import type { HomeData } from '../../shared/types'
 import { DriftBackground } from './background/DriftBackground'
 import { StarTunnelBackground, type TunnelColors } from './background/StarTunnelBackground'
 import { ForestBackground } from './background/ForestBackground'
 import { CityRainBackground } from './background/CityRainBackground'
+import { ProductBackground } from './background/ProductBackground'
+import { PRODUCTS } from './background/products'
 import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
@@ -76,14 +78,20 @@ export function App() {
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
+  const [productQuality, setProductQuality] = useState<ConsoleBackdropQuality>('high')
   const [custom, setCustom] = useState<{ items: CustomBackdrop[]; start: string; shuffle: boolean } | null>(null)
   // If another backdrop can't run, the sea stands in.
   const backdropUnavailable = useCallback(() => setBackdrop('sea'), [])
+  // Some consoles' tabs have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows the usual one there too.
+  const [productsDown, setProductsDown] = useState<string[]>([])
+  const product = productsDown.includes(screen) ? undefined : PRODUCTS[screen]
+  const productUnavailable = useCallback(() => setProductsDown((down) => [...down, screenRef.current]), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors, custom }) => {
+      window.steamtv.getBackdrop().then(({ style, drift, driftDirection, tunnelColors, consoleBackdropQuality, custom }) => {
         setTunnelColors(tunnelColors)
+        setProductQuality(consoleBackdropQuality)
         setCustom(custom)
         setBackdrop(style)
         setDriftPreset(drift)
@@ -204,7 +212,9 @@ export function App() {
 
   return (
     <div className={`stage${backdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
-      {backdrop === 'custom' && custom ? (
+      {product && webgl ? (
+        <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />
+      ) : backdrop === 'custom' && custom ? (
         // Your own picture or video needs no WebGL.
         <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
       ) : !webgl ? (

@@ -14,4 +14,15 @@ describe('backdrop pacing', () => {
     const onBattery = pacer()
     expect(frames.filter((t) => onBattery(t)).length).toBe(30)
   })
+
+  it('caps the frame rate when asked, battery or not', async () => {
+    const { pacer } = await import('./pace')
+    const frames = Array.from({ length: 60 }, (_, i) => i * (1000 / 60))
+    battery = false
+    const capped = pacer(30)
+    expect(frames.filter((t) => capped(t)).length).toBe(30)
+    battery = true
+    const both = pacer(30)
+    expect(frames.filter((t) => both(t)).length).toBe(30)
+  })
 })
