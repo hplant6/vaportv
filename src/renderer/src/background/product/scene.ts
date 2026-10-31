@@ -177,7 +177,7 @@ export function startProduct(
   scene.environment = environment(renderer)
   scene.environmentIntensity = 0.6
   const camera = new THREE.PerspectiveCamera(32, WIDTH / HEIGHT, 0.02, 50)
-  camera.setViewOffset(WIDTH, HEIGHT, -(product.shiftRight ?? 0) * WIDTH, -SHIFT_DOWN * HEIGHT, WIDTH, HEIGHT)
+  camera.setViewOffset(WIDTH, HEIGHT, -(product.shiftRight ?? 0) * WIDTH, -(SHIFT_DOWN + (product.shiftDown ?? 0)) * HEIGHT, WIDTH, HEIGHT)
   const mirror = buildFloor(scene, level.reflection)
 
   // Set once the console's loaded: everything's scaled to its footprint (the longer of width and depth, so the camera

@@ -14,6 +14,8 @@ export interface Product {
   elevation?: number
   /** Moves it this much of the screen's width to the right (negative: left), keeping its perspective. */
   shiftRight?: number
+  /** Moves it this much of the screen's height further down (negative: up), keeping its perspective. */
+  shiftDown?: number
   /** How bright its white lights are, against the PS3's first look (1). */
   white?: number
   /** Overall brightness, all lights included (1): for a light-coloured console that outshines the black ones. */
@@ -33,13 +35,16 @@ const GENESIS: Product = {
 
 export const PRODUCTS: Partial<Record<string, Product>> = {
   apps: {
-    // A pile of VHS tapes.
-    model: 'private/apps.glb'
+    // A pile of VHS tapes: it sits low, so in closer and lifted a little.
+    model: 'private/apps.glb',
+    zoom: 1.12,
+    shiftDown: -0.04
   },
   steam: {
     model: 'private/steamdeck.glb',
-    // A Steam Deck: long and thin, so it looks small at the others' distance.
-    zoom: 1.1
+    // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.
+    zoom: 1.1,
+    shiftDown: 0.05
   },
   ps3: {
     model: 'private/ps3-slim.glb',
