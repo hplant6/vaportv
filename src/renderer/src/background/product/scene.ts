@@ -2,6 +2,10 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
 import type { ConsoleBackdropQuality } from '../../../../shared/types'
@@ -40,13 +44,17 @@ const SHIFT_DOWN = 0.1
 /**
  * Settings → Backdrop → Console backdrops. `pixels`: drawn at this many pixels per stage pixel ('native' = the
  * screen's own, so sharp on a 4K TV, where the stage is scaled up 2x); `reflection`: the floor's reflection drawn
- * at this fraction of the stage's size (soft on purpose); `fps`: at most this many frames a second.
+ * at this fraction of the stage's size (soft on purpose); `fps`: at most this many frames a second; `bloom`: the glow
+ * round the brightest light (rim glints, highlights, their reflections), which Low leaves off.
  */
-const QUALITY: Record<ConsoleBackdropQuality, { pixels: number | 'native'; reflection: number; fps: number }> = {
-  high: { pixels: 'native', reflection: 1 / 4, fps: Infinity },
-  medium: { pixels: 1, reflection: 1 / 4, fps: Infinity },
-  low: { pixels: 0.75, reflection: 1 / 8, fps: 30 }
+const QUALITY: Record<ConsoleBackdropQuality, { pixels: number | 'native'; reflection: number; fps: number; bloom: boolean }> = {
+  high: { pixels: 'native', reflection: 1 / 4, fps: Infinity, bloom: true },
+  medium: { pixels: 1, reflection: 1 / 4, fps: Infinity, bloom: true },
+  low: { pixels: 0.75, reflection: 1 / 8, fps: 30, bloom: false }
 }
+
+/** Bloom: how strong, how wide (0-1), and how bright light has to be before tone mapping to glow. */
+const BLOOM = { strength: 0.6, radius: 0.5, threshold: 0.8 }
 
 /** The mirror floor: its reflection this dark, and fading to black from FLOOR_FADE[0] to [1] metres out. */
 const FLOOR_TINT = 0x3a3a3a
@@ -180,6 +188,18 @@ export function startProduct(
   camera.setViewOffset(WIDTH, HEIGHT, -(product.shiftRight ?? 0) * WIDTH, -(SHIFT_DOWN + (product.shiftDown ?? 0)) * HEIGHT, WIDTH, HEIGHT)
   const mirror = buildFloor(scene, level.reflection)
 
+  // With bloom, the scene's drawn in linear light to a multisampled half-float target, glows added, then tone mapped
+  // (OutputPass uses the renderer's ACES and exposure) and drawn to the screen.
+  let composer: EffectComposer | null = null
+  if (level.bloom && product.bloom !== false) {
+    const pixels = renderer.getPixelRatio()
+    const buffer = new THREE.WebGLRenderTarget(WIDTH * pixels, HEIGHT * pixels, { type: THREE.HalfFloatType, samples: 4 })
+    composer = new EffectComposer(renderer, buffer)
+    composer.addPass(new RenderPass(scene, camera))
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(WIDTH, HEIGHT), BLOOM.strength, BLOOM.radius, BLOOM.threshold))
+    composer.addPass(new OutputPass())
+  }
+
   // Set once the console's loaded: everything's scaled to its footprint (the longer of width and depth, so the camera
   // stays as far off a deep console's front edge as it does the PS3's).
   const target = new THREE.Vector3()
@@ -224,7 +244,8 @@ export function startProduct(
     offset.setFromSphericalCoords(distance, Math.PI / 2 - elevation, SWING * Math.sin(phase))
     camera.position.copy(target).add(offset)
     camera.lookAt(aim)
-    renderer.render(scene, camera)
+    if (composer) composer.render()
+    else renderer.render(scene, camera)
     if (!shown) {
       shown = true
       onReady()
@@ -246,6 +267,7 @@ export function startProduct(
       }
     })
     scene.environment?.dispose()
+    composer?.dispose()
     renderer.dispose()
     renderer.forceContextLoss()
   }

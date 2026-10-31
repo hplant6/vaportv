@@ -20,6 +20,8 @@ export interface Product {
   white?: number
   /** Overall brightness, all lights included (1): for a light-coloured console that outshines the black ones. */
   exposure?: number
+  /** False to leave out the glow round its brightest light (on by default at High and Medium quality). */
+  bloom?: boolean
   /** Fixes for what glTF couldn't carry over from Blender, by material. */
   fix?: (material: MeshStandardMaterial) => void
 }
@@ -35,10 +37,11 @@ const GENESIS: Product = {
 
 export const PRODUCTS: Partial<Record<string, Product>> = {
   apps: {
-    // A pile of VHS tapes: it sits low, so in closer and lifted a little.
+    // A pile of VHS tapes: it sits low, so in closer and lifted a little. Bloom blurs the sleeves' bright art.
     model: 'private/apps.glb',
     zoom: 1.12,
-    shiftDown: -0.04
+    shiftDown: -0.04,
+    bloom: false
   },
   steam: {
     model: 'private/steamdeck.glb',
