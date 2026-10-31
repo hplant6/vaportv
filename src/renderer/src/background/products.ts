@@ -62,8 +62,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   snes: {
     model: 'private/snes.glb',
     zoom: 0.88,
-    elevation: 15,
-    shiftRight: 0.05,
+    shiftRight: -0.02,
     // Grey plastic, lit like the PlayStation.
     white: 0.35,
     exposure: 1.05
@@ -102,6 +101,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   },
   psx: {
     model: 'private/psx.glb',
+    zoom: 0.93,
     white: 0.35,
     exposure: 1.05
   },
