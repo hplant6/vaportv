@@ -23,7 +23,8 @@ const ASSETS = [
   { from: 'models/gamecube.glb', to: 'gamecube.glb', name: 'GameCube model' },
   { from: 'models/psp.glb', to: 'psp.glb', name: 'PSP model' },
   { from: 'models/saturn.glb', to: 'saturn.glb', name: 'Saturn model' },
-  { from: 'models/dreamcast.glb', to: 'dreamcast.glb', name: 'Dreamcast model' }
+  { from: 'models/dreamcast.glb', to: 'dreamcast.glb', name: 'Dreamcast model' },
+  { from: 'models/ps2.glb', to: 'ps2.glb', name: 'PS2 model' }
 ]
 
 await rm(OUT, { recursive: true, force: true })

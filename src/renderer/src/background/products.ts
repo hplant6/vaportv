@@ -77,6 +77,9 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     zoom: 0.85,
     white: 0.525
   },
+  ps2: {
+    model: 'private/ps2.glb'
+  },
   dreamcast: {
     model: 'private/dreamcast.glb',
     zoom: 0.72,
