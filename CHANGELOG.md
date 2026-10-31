@@ -9,7 +9,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Changed
-- The top bar: More is gone. Press down from the bar to open the second row, on the tab under the one you're on; the bar holds one more tab in its place. The tab you're on is underlined again, and the one the cursor is on is a paler yellow.
+- The top bar: More is gone. Press down from the bar to open the second row, on the tab under the one you're on; the bar holds one more tab in its place. The tab you're on is underlined again, and the one the cursor is on is a paler yellow. Picking a tab from the bar (or L1/R1 there) keeps the cursor in the bar, on the new tab.
 - Games and apps with no art yet show their name over a dark fade instead of static.
 
 ### Added

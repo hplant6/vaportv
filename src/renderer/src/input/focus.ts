@@ -27,11 +27,33 @@ export function focus(el: HTMLElement): void {
 
 /**
  * For screens that load their content after opening: once it's there, move focus
- * into it unless the user has already gone somewhere other than the menu.
+ * into it unless the user has already gone somewhere other than the menu, or picked
+ * this screen from the menu and so stays there (data-stay, set by takeBarCursor).
  */
 export function focusContentDefault(): void {
   const el = document.activeElement
-  if (!(el instanceof HTMLElement) || !el.matches(FOCUSABLE) || el.closest('.nav')) focusDefault()
+  if (!(el instanceof HTMLElement) || !el.matches(FOCUSABLE) || (el.closest('.nav') && !el.hasAttribute('data-stay'))) focusDefault()
+}
+
+/** Set when a screen is picked from the bar (a tab, or L1/R1 there): the new screen's bar keeps the cursor. */
+let stayInBar = false
+
+export function keepCursorInBar(): void {
+  stayInBar = true
+}
+
+/**
+ * The new screen's bar: if the last screen was left from the bar, the cursor goes to the tab you're on and stays,
+ * however the screen's content loads. It's moved on like any other focus.
+ */
+export function takeBarCursor(): void {
+  if (!stayInBar) return
+  stayInBar = false
+  const tab = document.querySelector<HTMLElement>('.nav .nav-tab.active')
+  if (!tab) return
+  tab.dataset.stay = ''
+  tab.addEventListener('blur', () => delete tab.dataset.stay, { once: true })
+  focus(tab)
 }
 
 export function focusDefault(): void {

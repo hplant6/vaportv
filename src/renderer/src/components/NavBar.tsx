@@ -4,6 +4,7 @@ import navLine from '../assets/nav-line.svg'
 import { GearIcon, PowerIcon } from './icons'
 import { ClockCorner } from './ClockCorner'
 import { PowerMenu } from './PowerMenu'
+import { keepCursorInBar, takeBarCursor } from '../input/focus'
 import { TAB_LIST } from '../../../shared/tabs'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade' | 'settings'
@@ -39,6 +40,12 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     return () => cancelAnimationFrame(frame)
   }, [inMore])
   const open = moreOpen && more.length > 0
+  // Picked from the bar, a screen keeps the cursor on its tab (before the screen's own default focus runs).
+  useEffect(takeBarCursor, [])
+  const pick = (id: Screen): void => {
+    keepCursorInBar()
+    onNavigate(id)
+  }
   useEffect(() => {
     moreWasOpen = open
   }, [open])
@@ -55,7 +62,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
       data-focusable=""
       data-select-sound="move"
       {...down}
-      onClick={() => onNavigate(id)}
+      onClick={() => pick(id)}
     >
       {content}
     </button>
@@ -144,7 +151,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
                 // Only reachable while the row is open.
                 {...(open ? { 'data-focusable': '' } : {})}
                 data-select-sound="move"
-                onClick={() => onNavigate(t.id)}
+                onClick={() => pick(t.id)}
               >
                 {t.label}
               </button>

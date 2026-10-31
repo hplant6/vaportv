@@ -12,7 +12,7 @@ import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
 import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
-import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
+import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, keepCursorInBar, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
 import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabOrder } from './availableTabs'
@@ -189,6 +189,9 @@ export function App() {
         // Off the power button: the screen's own default focus takes over.
         power.blur()
         if (target === current) focusDefault()
+      } else if (document.activeElement?.closest('.nav')) {
+        // From the bar, the cursor stays in the bar, on the new tab.
+        keepCursorInBar()
       }
       setScreen(target)
     }
