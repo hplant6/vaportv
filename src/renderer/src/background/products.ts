@@ -32,6 +32,10 @@ const GENESIS: Product = {
 }
 
 export const PRODUCTS: Partial<Record<string, Product>> = {
+  apps: {
+    // A pile of VHS tapes.
+    model: 'private/apps.glb'
+  },
   steam: {
     model: 'private/steamdeck.glb',
     // A Steam Deck: long and thin, so it looks small at the others' distance.
