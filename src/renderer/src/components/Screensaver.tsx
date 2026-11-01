@@ -259,6 +259,8 @@ const WEATHER_REFRESH_MS = 15 * 60 * 1000
 /** Held-still spots for the big clock; the centre one is centred on itself. */
 const CLOCK_SPOTS: Record<Exclude<ScreensaverClockSpot, 'moving'>, React.CSSProperties> = {
   topLeft: { left: '64px', top: '56px' },
+  // Where the slideshow keeps its clock.
+  bottomLeft: { left: '64px', top: 'auto', bottom: '56px' },
   center: { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }
 }
 

@@ -251,6 +251,7 @@ const SCREENSAVER_STYLES: { id: ScreensaverStyle; name: string; detail: string }
 const CLOCK_SPOTS: { id: ScreensaverClockSpot; name: string; detail: string }[] = [
   { id: 'moving', name: 'Moving', detail: 'A new spot every minute · safest for OLED TVs' },
   { id: 'topLeft', name: 'Top left', detail: 'Stays put' },
+  { id: 'bottomLeft', name: 'Bottom left', detail: 'Stays put' },
   { id: 'center', name: 'Center', detail: 'Stays put' }
 ]
 

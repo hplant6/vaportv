@@ -381,7 +381,7 @@ export interface Settings {
 export type ScreensaverStyle = 'slideshow' | 'backdrop' | 'clock'
 
 /** Where the big clock sits (backdrop and clock styles): moving every minute so it can't burn in, or held still. */
-export type ScreensaverClockSpot = 'moving' | 'topLeft' | 'center'
+export type ScreensaverClockSpot = 'moving' | 'topLeft' | 'bottomLeft' | 'center'
 
 /** Which pictures the slideshow mixes together. */
 export interface ScreensaverSources {
