@@ -15,7 +15,7 @@
   <a href="#controller">Controller</a>
 </p>
 
-![vaporTV's Home screen: Recents and Favorite Apps over the sea](docs/screenshots/home.jpg)
+![vaporTV's Home screen: Recents and Favorite Apps over the Rain backdrop](docs/screenshots/home.jpg)
 
 > **Status: early.** vaporTV runs daily on its author's living-room box. Expect rough edges, and please [report them](https://github.com/hplant6/vaportv/issues): **Settings → Help → Report a problem** fills in the details for you.
 
@@ -52,10 +52,20 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 
 | | |
 |---|---|
-| ![The Arcade tab: Recently played and the Atomiswave carousel, with cover art](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
-| **Arcade:** Atomiswave, NAOMI, CPS, Neo Geo and MAME sets, named and with cover art | **Settings:** everything from the controller, in two columns |
+| ![The Arcade tab: Recently played and Atomiswave games over an arcade stick lit in neon](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
+| **Arcade:** Atomiswave, NAOMI, CPS, Neo Geo and MAME sets, named and with cover art, over its console backdrop | **Settings:** everything from the controller, in two columns |
 | ![Home over the Gradient Drift backdrop](docs/screenshots/home-drift.jpg) | ![The welcome tour's button guide](docs/screenshots/welcome.jpg) |
 | **Home**, here over the Gradient Drift backdrop | **A welcome tour** on the first start, showing the buttons |
+
+### Console backdrops
+
+Each console's tab shows that console, slowly turning on a mirror floor.
+
+| ![Steam Deck](docs/screenshots/console-steam.jpg) | ![Switch](docs/screenshots/console-switch.jpg) | ![PS3](docs/screenshots/console-ps3.jpg) | ![Xbox](docs/screenshots/console-xbox.jpg) | ![PS2](docs/screenshots/console-ps2.jpg) |
+|:--:|:--:|:--:|:--:|:--:|
+| **Steam** | **Switch** | **PS3** | **Xbox** | **PS2** |
+| ![GameCube](docs/screenshots/console-gamecube.jpg) | ![Wii](docs/screenshots/console-wii.jpg) | ![Dreamcast](docs/screenshots/console-dreamcast.jpg) | ![Genesis](docs/screenshots/console-genesis.jpg) | ![Arcade stick](docs/screenshots/console-arcade.jpg) |
+| **GameCube** | **Wii** | **Dreamcast** | **Genesis** | **Arcade** |
 
 ### Backdrops
 
