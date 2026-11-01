@@ -245,6 +245,7 @@ function SettingsPane({ backTo, children }: { backTo: string; children: ReactNod
 const SCREENSAVER_STYLES: { id: ScreensaverStyle; name: string; detail: string }[] = [
   { id: 'slideshow', name: 'Slideshow', detail: 'Game art and photos' },
   { id: 'backdrop', name: 'Living backdrop', detail: 'The backdrop with a big clock' },
+  { id: 'consoles', name: 'Consoles', detail: 'Each of your consoles in turn, 5 seconds apiece' },
   { id: 'clock', name: 'Clock & weather', detail: 'On black' }
 ]
 

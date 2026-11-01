@@ -378,7 +378,7 @@ export interface Settings {
 }
 
 /** What the screensaver shows: a slideshow, the backdrop with a big clock, or a clock with the weather. */
-export type ScreensaverStyle = 'slideshow' | 'backdrop' | 'clock'
+export type ScreensaverStyle = 'slideshow' | 'backdrop' | 'consoles' | 'clock'
 
 /** Where the big clock sits (backdrop and clock styles): moving every minute so it can't burn in, or held still. */
 export type ScreensaverClockSpot = 'moving' | 'topLeft' | 'bottomLeft' | 'center'

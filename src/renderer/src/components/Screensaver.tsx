@@ -3,6 +3,7 @@ import type { ScreensaverPhoto, ScreensaverClockSpot, ScreensaverStyle } from '.
 import { idleMs, keptAwake, onScreensaver, onScreensaverStep, screensaverUp, setScreensaverUp } from '../input/idle'
 import { useNow } from './useNow'
 import { AberrationLogo } from './AberrationLogo'
+import { ConsoleShow } from './ConsoleShow'
 
 /** Settings fires this after changing the delay, or to preview the screensaver (detail: 'preview'). */
 export const SCREENSAVER_EVENT = 'steamtv:screensaver'
@@ -121,6 +122,15 @@ export function Screensaver() {
   if (style === 'backdrop') {
     return (
       <div className="screensaver over-backdrop">
+        <DriftingClock spot={clockSpot} />
+        <ScreensaverLogo />
+      </div>
+    )
+  }
+  if (style === 'consoles') {
+    return (
+      <div className="screensaver">
+        <ConsoleShow />
         <DriftingClock spot={clockSpot} />
         <ScreensaverLogo />
       </div>
