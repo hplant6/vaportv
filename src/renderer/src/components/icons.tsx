@@ -60,3 +60,23 @@ export function StopIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+/** Skip to the next song (Settings → Music → Now playing). */
+export function NextIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <path d="M3 3.9v10.2a.6.6 0 0 0 .92.5l7.6-5.1a.6.6 0 0 0 0-1l-7.6-5.1a.6.6 0 0 0-.92.5Z" />
+      <rect x="13" y="3.3" width="2.2" height="11.4" rx="0.8" />
+    </svg>
+  )
+}
+
+/** Back to the song before. */
+export function PreviousIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
+      <path d="M15 3.9v10.2a.6.6 0 0 1-.92.5l-7.6-5.1a.6.6 0 0 1 0-1l7.6-5.1a.6.6 0 0 1 .92.5Z" />
+      <rect x="2.8" y="3.3" width="2.2" height="11.4" rx="0.8" />
+    </svg>
+  )
+}

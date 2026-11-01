@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
-import { MUSIC_CHANGED_EVENT } from '../components/BackgroundMusic'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import { MUSIC_CHANGED_EVENT, skipTrack, useNowPlaying } from '../components/BackgroundMusic'
 import { AddMusicRow } from '../components/AddMusic'
 import { AddBackdropRow } from '../components/AddBackdrop'
 import { RemoveBackdropRow } from '../components/RemoveBackdrop'
@@ -25,7 +25,7 @@ import { ToggleRow } from '../components/ToggleRow'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
 import { PlaylistDialog } from '../components/PlaylistDialog'
-import { ChevronIcon, PlayIcon, StopIcon } from '../components/icons'
+import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 
@@ -320,6 +320,40 @@ const BACKDROP_TIMES: { id: BackdropTime; name: string; detail?: string }[] = [
   { id: 'sunset', name: 'Sunset' },
   { id: 'night', name: 'Night' }
 ]
+
+/** The song music is on now, with buttons to go back a song or on to the next (when there's more than one). */
+function NowPlaying({ tracks }: { tracks: MusicTrack[] }) {
+  const now = useNowPlaying('music')
+  const track = tracks.find((t) => t.file === now.file)
+  if (!now.file) return null
+  const skipButton = (step: 1 | -1) => (
+    <button
+      className="song-preview"
+      tabIndex={-1}
+      aria-label={step === 1 ? 'Next song' : 'Previous song'}
+      data-focusable=""
+      data-select-sound="move"
+      onClick={() => skipTrack('music', step)}
+    >
+      {step === 1 ? <NextIcon className="song-preview-icon" /> : <PreviousIcon className="song-preview-icon" />}
+    </button>
+  )
+  return (
+    <div className="settings-group">
+      <h3 className="settings-heading display">Now playing</h3>
+      <div className="setting-list" data-focus-memory="settings-now-playing">
+        <div className="song-row now-playing">
+          <div className="setting-row now-playing-info">
+            <span className="setting-name display">{track?.name ?? now.file}</span>
+            <span className="setting-detail">{now.playing ? (track?.credit ?? 'Playing') : 'Paused'}</span>
+          </div>
+          {now.canSkip && skipButton(-1)}
+          {now.canSkip && skipButton(1)}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /** One single-choice row (a radio), styled like the layout options. */
 function ChoiceRow({ label, detail, selected, onSelect }: { label: string; detail?: string; selected: boolean; onSelect: () => void }) {
@@ -1100,6 +1134,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     ),
     music: (
       <>
+        {settings && <NowPlaying tracks={settings.musicTracks.music} />}
+
         <div className="settings-group">
           <h3 className="settings-heading display">Music</h3>
           <p className="settings-help">Plays quietly while you browse and pauses during games, over the ambience.</p>

@@ -2046,6 +2046,24 @@ button {
   height: 24px;
 }
 
+/* Settings → Music → Now playing: the song's name (not a control), then back and next buttons. */
+/* The song's name over who made it, so a long title has the row's width. */
+.settings-pane .now-playing-info {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+}
+
+.now-playing-info .setting-name,
+.now-playing-info .setting-detail {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
 .tab-grip {
   flex: none;

@@ -254,6 +254,8 @@ export type MusicKind = 'music' | 'ambience'
 export interface MusicLayer {
   /** One track loops; several play in this order, or at random when `shuffle`. */
   urls: string[]
+  /** Each url's track file (as MusicTrack.file), so Settings can name what's playing. */
+  files: string[]
   shuffle: boolean
   volume: number
 }
