@@ -52,10 +52,12 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 
 | | |
 |---|---|
-| ![The Arcade tab: Recently played and Atomiswave games over an arcade stick lit in neon](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
+| ![The Arcade tab: Recently played and Atomiswave games over an arcade stick lit in neon](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the Home backdrop choices on the right](docs/screenshots/settings.jpg) |
 | **Arcade:** Atomiswave, NAOMI, CPS and MAME sets, named and with cover art, over its console backdrop | **Settings:** everything from the controller, in two columns |
 | ![Home over the Gradient Drift backdrop](docs/screenshots/home-drift.jpg) | ![The welcome tour's button guide](docs/screenshots/welcome.jpg) |
 | **Home**, here over the Gradient Drift backdrop | **A welcome tour** on the first start, showing the buttons |
+| ![Game options for Detroit: Become Human: its cover, playtime, last played and size, with Open in Steam and Verify files](docs/screenshots/game-options.jpg) | ![The Consoles screensaver: a PS3 lit in neon, with the time and date in the corner](docs/screenshots/screensaver-consoles.jpg) |
+| **Game options** (Start on any game): its cover, playtime and size. Steam games open in Steam or verify their files; console games can be renamed, moved to another emulator, given new art, or deleted | **The Consoles screensaver:** each of your consoles in turn, with the clock where you want it |
 
 ### Console backdrops
 
