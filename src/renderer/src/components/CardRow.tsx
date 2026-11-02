@@ -56,7 +56,7 @@ export function CardRow({ title, items, logos, memoryKey, hasDefault, note, clas
           <RecentCard
             key={item.id}
             item={item}
-            logo={logos[item.platform]}
+            logo={logos[item.id] ?? logos[item.platform]}
             isDefault={hasDefault && index === 0}
             onFocus={() => reveal(index)}
           />

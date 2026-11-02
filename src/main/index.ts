@@ -60,6 +60,7 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
+import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
@@ -325,6 +326,9 @@ function favoriteAppIds(config: Config): string[] {
 
 const RECENTS_TABS: RecentsTab[] = ['home', 'steam', 'switch', 'ps2', 'psx', 'psp', 'ps3', 'xbox', 'xbox360', 'gamecube', 'wii', 'wiiu', 'dreamcast', 'saturn', 'n64', 'nes', 'snes', 'genesis', 'sega32x', 'neogeo', 'arcade']
 
+/** RetroArch's footer icon (as the RetroArch platforms use in fixtures/home.json). */
+const RETROARCH_LOGO = 'fixtures/logos/retroarch.svg'
+
 ipcMain.handle('home:get', async (): Promise<HomeData> => {
   const config = await loadConfig()
   fillArt()
@@ -347,7 +351,14 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
     recents,
     apps,
     allApps,
-    platformLogos: { ...icons, ...home.platformLogos },
+    // Bundled icons win; installed emulators fill in the ones that can't ship (emulatorIcons). A game moved to a
+    // RetroArch core shows RetroArch's, keyed by its own id (CardRow looks the id up before the platform).
+    platformLogos: {
+      ...icons,
+      ...(await emulatorIcons(config)),
+      ...home.platformLogos,
+      ...Object.fromEntries(Object.keys(config.gameEmulators ?? {}).map((id) => [id, RETROARCH_LOGO]))
+    },
     recentsLayout: recentsLayout(config, 'home'),
     favoritesLayout: config.favoritesLayout ?? 'rows'
   }

@@ -27,6 +27,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Guides in Settings → Help: how to get things working: streaming apps, emulators, the Netflix extension, TV remotes, and what to do when an update breaks something. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
 
 ### Fixed
+- PlayStation cards show DuckStation's icon (they had none). vaporTV now takes it from your DuckStation install (it can't ship with vaporTV), and a game you've moved to a RetroArch core shows RetroArch's icon.
 - What you type on the on-screen keyboard (a Wi-Fi or admin password) no longer goes into vaporTV's log, so it can't end up in a Report a problem.
 - vaporTV's settings file, which holds your Google sign-in and API keys, and its log can now be read only by your account.
 - An update that can't be saved (the disk full, say) now says so, instead of the update window sticking at its last percent with Later and Back not working.
