@@ -107,8 +107,8 @@ export interface Config {
   genesisLayout?: SteamLayout
   /** How the 32X tab lays out its games (default rows). Set from Settings. */
   sega32xLayout?: SteamLayout
-  /** How the Amiga tab lays out its games (default rows). Set from Settings. */
-  amigaLayout?: SteamLayout
+  /** How the Neo Geo tab lays out its games (default rows). Set from Settings. */
+  neogeoLayout?: SteamLayout
   /** How the Wii U tab lays out its games (default rows). Set from Settings. */
   wiiuLayout?: SteamLayout
   /** How the PSX and PSP tabs lay out their games (default rows). Set from Settings. */
@@ -148,8 +148,6 @@ export interface Config {
   genesisTitles?: Record<string, string>
   /** Name overrides for 32X games, by file name (relative to roms/sega32x). */
   sega32xTitles?: Record<string, string>
-  /** Name overrides for Amiga games, by file name (relative to roms/amiga). */
-  amigaTitles?: Record<string, string>
   /** Name overrides for Wii U games, by title folder name (in roms/wiiu). */
   wiiuTitles?: Record<string, string>
   /** Name overrides for PSX and PSP games, by file name (relative to roms/psx, roms/psp). */
@@ -171,8 +169,6 @@ export interface Config {
   genesisPlusGxCore?: string
   /** RetroArch's PicoDrive core for the 32X tab (default: the Flatpak's cores folder). */
   picodriveCore?: string
-  /** RetroArch's PUAE core for the Amiga tab (default: the Flatpak's cores folder). */
-  puaeCore?: string
   /** Ryujinx launcher (default ~/Applications/publish/Ryujinx.sh). */
   ryujinx?: string
   /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */

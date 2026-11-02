@@ -20,7 +20,7 @@ import { cleanXbox360Title, scanXbox360 } from './xbox360'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
 import { parseWpctlVolume } from '../volume'
 import { assignButton, DEFAULT_CONTROLS, resolveControls } from '../../shared/controls'
-import { arcadeGames, arcadeTitle, loadArcadeTab } from './arcade'
+import { arcadeGames, arcadeTitle, loadArcadeTab, loadNeoGeoTab } from './arcade'
 import type { Config } from '../config'
 import { dumpName } from './discs'
 import { libretroCover, libretroCovers, thumbnailName } from './libretroThumbnails'
@@ -650,9 +650,12 @@ describe('arcade', () => {
       expect(chosen.find((g) => g.id === 'arcade:arcade/720')).toMatchObject({ core: 'mame2003_plus', defaultCore: 'mame' })
       expect(chosen.find((g) => g.id === 'arcade:cps2/sfa3')).toMatchObject({ core: 'fbneo', defaultCore: 'fbneo' })
 
-      // Carousels turned off are left out of the tab.
-      const tab = await loadArcadeTab({ arcadeRowsHidden: ['neogeo', 'cps'] } as Config)
+      // Carousels turned off are left out of the tab; Neo Geo sets are on their own tab, not here.
+      const tab = await loadArcadeTab({ arcadeRowsHidden: ['cps'] } as Config)
       expect(tab.rows.map((row) => row.id)).toEqual(['naomi', 'arcade'])
+      const neoGeo = await loadNeoGeoTab({} as Config)
+      expect(neoGeo.rows.map((row) => row.id)).toEqual(['all'])
+      expect(neoGeo.rows[0].items.map((item) => item.id)).toEqual(['arcade:neogeo/mslug'])
     } finally {
       delete process.env.STEAMTV_ARCADE_ROMS
     }
@@ -1135,10 +1138,9 @@ describe('saturn', () => {
   })
 })
 
-describe('cartridge and floppy tabs', () => {
+describe('cartridge tabs', () => {
   it('lists a game per zipped or loose dump, skipping saves and lists', async () => {
     const { scanSnes } = await import('./snes')
-    const { scanAmiga } = await import('./amiga')
     const root = await mkdtemp(join(tmpdir(), 'steamtv-retro-'))
     for (const name of [
       'Super Metroid (Japan, USA) (En,Ja).zip',
@@ -1155,11 +1157,6 @@ describe('cartridge and floppy tabs', () => {
     expect(snes.map((g) => g.title)).toEqual(['Spider-Man', 'Spider-Man vs. The Kingpin', 'Star Fox', 'Super Metroid', 'The Legend of Zelda - A Link to the Past'])
     // The retail cart, not the contest one.
     expect(snes.find((g) => g.title === 'Star Fox')!.path).toMatch(/Star Fox \(USA\)\.zip$/)
-    const amiga = await mkdtemp(join(tmpdir(), 'steamtv-amiga-'))
-    for (const name of ['Turrican II - The Final Fight (Europe).zip', 'Worms - The Director\'s Cut (Europe) (AGA).zip', 'metadata.txt'])
-      await writeFile(join(amiga, name), '')
-    const games = await scanAmiga(amiga)
-    expect(games.map((g) => g.id)).toEqual(['amiga:Turrican II - The Final Fight (Europe).zip', "amiga:Worms - The Director's Cut (Europe) (AGA).zip"])
   })
 })
 

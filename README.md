@@ -53,7 +53,7 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 | | |
 |---|---|
 | ![The Arcade tab: Recently played and Atomiswave games over an arcade stick lit in neon](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the backdrop choices on the right](docs/screenshots/settings.jpg) |
-| **Arcade:** Atomiswave, NAOMI, CPS, Neo Geo and MAME sets, named and with cover art, over its console backdrop | **Settings:** everything from the controller, in two columns |
+| **Arcade:** Atomiswave, NAOMI, CPS and MAME sets, named and with cover art, over its console backdrop | **Settings:** everything from the controller, in two columns |
 | ![Home over the Gradient Drift backdrop](docs/screenshots/home-drift.jpg) | ![The welcome tour's button guide](docs/screenshots/welcome.jpg) |
 | **Home**, here over the Gradient Drift backdrop | **A welcome tour** on the first start, showing the buttons |
 
@@ -78,8 +78,8 @@ Each console's tab shows that console, slowly turning on a mirror floor.
 **Home and tabs**
 - **Home:** Recents (Steam games, emulated games and apps, by when you last played) and Favorite Apps, as carousels or grids
 - **Steam:** your Steam collections, including dynamic ones, and recently played
-- **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Amiga, each opening its games in the right emulator; a tab only shows when its emulator and games are there
-- **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS, Neo Geo and MAME sets, named from MAME's list, each in RetroArch with the right core (and a choice of core per game)
+- **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Neo Geo, each opening its games in the right emulator; a tab only shows when its emulator and games are there
+- **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS and MAME sets, named from MAME's list, each in RetroArch with the right core (and a choice of core per game)
 - **Apps:** streaming services and media apps, with setup for anything missing, and **Files**, for browsing your folders, USB drives and SD cards, and copying games onto the box
 - **The top bar:** up to eleven tabs, with the rest in a second row that opens when you press down from it; **Settings → Tabs** puts each tab where you want it, or switches it off
 

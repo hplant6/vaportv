@@ -27,7 +27,7 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'snes', label: 'SNES' },
   { id: 'genesis', label: 'Genesis' },
   { id: 'sega32x', label: '32X' },
-  { id: 'amiga', label: 'Amiga' },
+  { id: 'neogeo', label: 'Neo Geo' },
   { id: 'arcade', label: 'Arcade' }
 ]
 

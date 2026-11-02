@@ -41,7 +41,7 @@ const LOADERS: Record<string, () => Promise<LibraryTab>> = {
   snes: () => window.steamtv.getSnesTab(),
   genesis: () => window.steamtv.getGenesisTab(),
   sega32x: () => window.steamtv.getSega32xTab(),
-  amiga: () => window.steamtv.getAmigaTab(),
+  neogeo: () => window.steamtv.getNeoGeoTab(),
   arcade: () => window.steamtv.getArcadeTab()
 }
 

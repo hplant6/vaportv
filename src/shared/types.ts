@@ -159,14 +159,14 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade'
+export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
 /** Where the tabs go, in order: the top bar (after Home) and More's row. */
 export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */
-export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'amiga' | 'arcade'
+export type RecentsTab = 'home' | 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
 
 /** A library tab (Steam, Switch): sections of games and how to lay them out. */
 /** Select on a console game: the game options window. */
@@ -320,7 +320,7 @@ export interface Settings {
   snesLayout: SteamLayout
   genesisLayout: SteamLayout
   sega32xLayout: SteamLayout
-  amigaLayout: SteamLayout
+  neogeoLayout: SteamLayout
   psxLayout: SteamLayout
   pspLayout: SteamLayout
   wiiuLayout: SteamLayout
@@ -684,15 +684,15 @@ export interface SteamTvApi {
   getGenesisTab(): Promise<LibraryTab>
   /** The 32X tab: games for PicoDrive. */
   getSega32xTab(): Promise<LibraryTab>
-  /** The Amiga tab: games for PUAE. */
-  getAmigaTab(): Promise<LibraryTab>
+  /** The Neo Geo tab: the Neo Geo's arcade sets (from roms/neogeo), out of the Arcade tab. */
+  getNeoGeoTab(): Promise<LibraryTab>
   /** The Wii U tab: title folders for Cemu. */
   getWiiUTab(): Promise<LibraryTab>
   /** The PSX tab: PlayStation discs for DuckStation. */
   getPsxTab(): Promise<LibraryTab>
   /** The PSP tab: UMD images for PPSSPP. */
   getPspTab(): Promise<LibraryTab>
-  /** The Arcade tab: ROM sets from the Atomiswave, NAOMI, CPS, Neo Geo and arcade folders. */
+  /** The Arcade tab: ROM sets from the Atomiswave, NAOMI, CPS and arcade folders. */
   getArcadeTab(): Promise<LibraryTab>
   /** Adds or removes a Switch game from Favorites; resolves with whether it's now a favourite. */
   toggleFavorite(id: string): Promise<boolean>

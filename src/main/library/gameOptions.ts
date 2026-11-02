@@ -3,7 +3,6 @@ import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import type { EmulatorChoice, GameOptions } from '../../shared/types'
 import type { Config } from '../config'
-import { amigaRoot, loadAmigaGames } from './amigaTab'
 import { arcadeCoreChoices, arcadeGames } from './arcade'
 import { cleanNoIntroTitle, discContent, dumpName, type DiscGame } from './discs'
 import { dreamcastRoot, loadDreamcastGames } from './dreamcastTab'
@@ -46,8 +45,7 @@ const DISC_PLATFORMS: Record<string, { load: Loader; root: (config: Config) => s
   nes: { load: loadNesGames, root: nesRoot },
   snes: { load: loadSnesGames, root: snesRoot },
   genesis: { load: loadGenesisGames, root: genesisRoot },
-  sega32x: { load: loadSega32xGames, root: sega32xRoot },
-  amiga: { load: loadAmigaGames, root: amigaRoot }
+  sega32x: { load: loadSega32xGames, root: sega32xRoot }
 }
 
 /** What each console opens in unless a game is moved, and the RetroArch core that is, if it's one. */
@@ -68,8 +66,7 @@ const DEFAULT_EMULATORS: Record<string, { name: string; core?: string }> = {
   nes: { name: 'Mesen', core: 'mesen' },
   snes: { name: 'Snes9x', core: 'snes9x' },
   genesis: { name: 'Genesis Plus GX', core: 'genesis_plus_gx' },
-  sega32x: { name: 'PicoDrive', core: 'picodrive' },
-  amiga: { name: 'PUAE', core: 'puae' }
+  sega32x: { name: 'PicoDrive', core: 'picodrive' }
 }
 
 const platformOf = (id: string): string => id.slice(0, id.indexOf(':'))

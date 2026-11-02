@@ -427,11 +427,11 @@ export function App() {
           onNavigate={setScreen}
         />
       )}
-      {screen === 'amiga' && home && (
+      {screen === 'neogeo' && home && (
         <Library
-          screen="amiga"
-          load={window.steamtv.getAmigaTab}
-          empty="No Amiga games found. vaporTV looks in your EmuDeck roms/amiga folder."
+          screen="neogeo"
+          load={window.steamtv.getNeoGeoTab}
+          empty="No Neo Geo games found. vaporTV looks in your EmuDeck roms/neogeo folder."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}
@@ -441,7 +441,7 @@ export function App() {
         <Library
           screen="arcade"
           load={window.steamtv.getArcadeTab}
-          empty="No arcade games to show. vaporTV looks in your EmuDeck roms folders (atomiswave, naomi, naomi2, cps, neogeo and arcade), and shows the carousels turned on in Settings → Consoles."
+          empty="No arcade games to show. vaporTV looks in your EmuDeck roms folders (atomiswave, naomi, naomi2, cps and arcade), and shows the carousels turned on in Settings → Consoles."
           onFavorite={window.steamtv.toggleFavorite}
           logos={home.platformLogos}
           onNavigate={setScreen}

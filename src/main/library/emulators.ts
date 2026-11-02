@@ -37,7 +37,6 @@ export const MESEN_CORE = join(CORES, 'mesen_libretro.so')
 export const SNES9X_CORE = join(CORES, 'snes9x_libretro.so')
 export const GENESIS_PLUS_GX_CORE = join(CORES, 'genesis_plus_gx_libretro.so')
 export const PICODRIVE_CORE = join(CORES, 'picodrive_libretro.so')
-export const PUAE_CORE = join(CORES, 'puae_libretro.so')
 
 /** The RetroArch cores the Arcade tab uses by default, by board family. */
 export type ArcadeCore = 'flycast' | 'fbneo' | 'mame'
@@ -99,8 +98,8 @@ export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.genesisPlusGxCore ?? GENESIS_PLUS_GX_CORE)
     case 'sega32x':
       return canRun(config.retroarch ?? RETROARCH) && existsSync(config.picodriveCore ?? PICODRIVE_CORE)
-    case 'amiga':
-      return canRun(config.retroarch ?? RETROARCH) && existsSync(config.puaeCore ?? PUAE_CORE)
+    case 'neogeo':
+      return canRun(config.retroarch ?? RETROARCH) && (['fbneo', 'mame'] as const).some((core) => existsSync(arcadeCoreFile(config, core)))
     case 'arcade':
       return canRun(config.retroarch ?? RETROARCH) && (['flycast', 'fbneo', 'mame'] as const).some((core) => existsSync(arcadeCoreFile(config, core)))
   }

@@ -5,15 +5,17 @@ import { arcadeRowName, type ArcadeRow } from '../../shared/arcade'
 import type { CollectionRow, LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
 import { readFavorites, readHistory } from '../history'
-import { emulatedItem, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
+import { emulatedItem, emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
 import { arcadeCoreFile, RETROARCH, type ArcadeCore as Core } from './emulators'
 
 // The Arcade tab gathers several boards' folders: each game is a MAME-style ROM set
 // (sf2.zip), named from MAME's list, and opens in RetroArch with that board's core.
+// Neo Geo sets are found the same way (ids stay arcade:neogeo/<set>, so history,
+// favourites and chosen cores carry over) but have a tab of their own.
 
 export interface ArcadeSystem {
-  id: Exclude<ArcadeRow, 'recent' | 'favorites'>
+  id: Exclude<ArcadeRow, 'recent' | 'favorites'> | 'neogeo'
   name: string
   /** Folders under the ROM root (EmuDeck's names), and the core each one's sets are for. */
   folders: { dir: string; core: Core }[]
@@ -29,7 +31,7 @@ export const ARCADE_SYSTEMS: ArcadeSystem[] = [
     name: arcadeRowName('cps'),
     folders: ['cps', 'cps1', 'cps2', 'cps3'].map((dir) => ({ dir, core: 'fbneo' as const }))
   },
-  { id: 'neogeo', name: arcadeRowName('neogeo'), folders: [{ dir: 'neogeo', core: 'fbneo' }] },
+  { id: 'neogeo', name: 'Neo Geo', folders: [{ dir: 'neogeo', core: 'fbneo' }] },
   {
     id: 'arcade',
     name: arcadeRowName('arcade'),
@@ -164,17 +166,33 @@ export async function arcadeGames(config: Config): Promise<ArcadeGame[]> {
   return withNames(config, found.sort((a, b) => a.title.localeCompare(b.title)))
 }
 
+const isNeoGeo = (game: ArcadeGame): boolean => game.system === 'neogeo'
+
+/** The Arcade tab's games: every board but the Neo Geo. */
+export async function arcadeTabGames(config: Config): Promise<ArcadeGame[]> {
+  return (await arcadeGames(config)).filter((game) => !isNeoGeo(game))
+}
+
+/** The Neo Geo tab's games. */
+export async function neoGeoGames(config: Config): Promise<ArcadeGame[]> {
+  return (await arcadeGames(config)).filter(isNeoGeo)
+}
+
+export async function loadNeoGeoTab(config: Config): Promise<LibraryTab> {
+  return emulatedTab(await neoGeoGames(config), config.neogeoLayout ?? 'rows', recentsLayout(config, 'neogeo'))
+}
+
 export async function loadArcadeTab(config: Config): Promise<LibraryTab> {
   const layout = config.arcadeLayout ?? 'rows'
   const recents = recentsLayout(config, 'arcade')
-  const games = await arcadeGames(config)
+  const games = await arcadeTabGames(config)
   if (!games.length) return { layout, recentsLayout: recents, rows: [] }
   const history = await readHistory()
   const favorites = await readFavorites()
   const items = await Promise.all(games.map((game) => emulatedItem(game, history[game.id], favorites.includes(game.id))))
   const byId = new Map(items.map((item) => [item.id, item]))
   // Carousels turned off in Settings are left out; their games still count elsewhere.
-  const hidden = new Set(config.arcadeRowsHidden ?? [])
+  const hidden = new Set<string>(config.arcadeRowsHidden ?? [])
   const rows: CollectionRow[] = []
   const recent = items.filter((item) => history[item.id]).sort((a, b) => history[b.id] - history[a.id])
   if (recent.length && !hidden.has('recent')) rows.push({ id: 'recent', name: arcadeRowName('recent'), items: recent, notInstalled: 0 })
@@ -183,7 +201,7 @@ export async function loadArcadeTab(config: Config): Promise<LibraryTab> {
     rows.push({ id: 'favorites', name: arcadeRowName('favorites'), items: favorite, notInstalled: 0 })
   }
   for (const system of ARCADE_SYSTEMS) {
-    if (hidden.has(system.id)) continue
+    if (system.id === 'neogeo' || hidden.has(system.id)) continue
     const systemItems = items.filter((_, i) => games[i].system === system.id)
     if (systemItems.length) rows.push({ id: system.id, name: system.name, items: systemItems, notInstalled: 0, hint: 'Y to favourite' })
   }

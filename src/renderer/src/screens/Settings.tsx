@@ -881,11 +881,11 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
-          <h3 className="settings-heading display">Amiga tab layout</h3>
-          <p className="settings-help">How the Amiga tab shows your games.</p>
-          {settings && <LayoutChoice tab="amiga" value={settings.amigaLayout} onChoose={chooseLayout} />}
+          <h3 className="settings-heading display">Neo Geo tab layout</h3>
+          <p className="settings-help">How the Neo Geo tab shows your games.</p>
+          {settings && <LayoutChoice tab="neogeo" value={settings.neogeoLayout} onChoose={chooseLayout} />}
           {settings && (
-            <RecentsChoice tab="amiga" value={settings.recentsLayouts.amiga} onChoose={chooseRecentsLayout} />
+            <RecentsChoice tab="neogeo" value={settings.recentsLayouts.neogeo} onChoose={chooseRecentsLayout} />
           )}
         </div>
 

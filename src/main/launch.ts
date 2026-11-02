@@ -14,7 +14,6 @@ import { loadNesGames, mesenCommand } from './library/nesTab'
 import { loadSnesGames, snes9xCommand } from './library/snesTab'
 import { loadGenesisGames, genesisPlusGxCommand } from './library/genesisTab'
 import { loadSega32xGames, picodriveCommand } from './library/sega32xTab'
-import { loadAmigaGames, puaeCommand } from './library/amigaTab'
 import { cemuCommand, loadWiiUGames } from './library/wiiuTab'
 import { duckstationCommand, loadPsxGames } from './library/psxTab'
 import { discContent } from './library/discs'
@@ -34,7 +33,7 @@ import { coreLaunch } from './library/gameOptions'
 
 // Steam games and shortcuts launch through Steam, so Steam Input, the overlay menu
 // and Gaming Mode's window switching behave as they would from Steam's own library.
-// Emulated games (Switch, PS2, PSX, PSP, PS3, Xbox, Xbox 360, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X, Amiga, arcade) open in their emulator directly.
+// Emulated games (Switch, PS2, PSX, PSP, PS3, Xbox, Xbox 360, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X, arcade incl. Neo Geo) open in their emulator directly.
 
 // Favorite Apps tile id -> the Steam shortcut it opens (matched by name, case-insensitive;
 // the first of several names that exists). Override or extend with `favorites` in config.json.
@@ -333,19 +332,6 @@ async function launchSega32x(config: Config, id: string): Promise<boolean> {
   return true
 }
 
-/** Amiga games open in RetroArch's PUAE core. */
-async function launchAmiga(config: Config, id: string): Promise<boolean> {
-  const game = (await loadAmigaGames(config)).find((g) => g.id === id)
-  if (!game) return false
-  const { command, args } = puaeCommand(config, game)
-  console.log(`steamtv: launching ${game.path} in PUAE`)
-  run(command, args, { played: id })
-  emulatorGame = game.title
-  directIsApp = false
-  await recordPlay(id)
-  return true
-}
-
 /** Saturn games open in RetroArch's Kronos core. */
 async function launchSaturn(config: Config, id: string): Promise<boolean> {
   const game = (await loadSaturnGames(config)).find((g) => g.id === id)
@@ -461,7 +447,6 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   if (id.startsWith('snes:')) return launchSnes(config, id)
   if (id.startsWith('genesis:')) return launchGenesis(config, id)
   if (id.startsWith('sega32x:')) return launchSega32x(config, id)
-  if (id.startsWith('amiga:')) return launchAmiga(config, id)
   if (id.startsWith('wiiu:')) return launchWiiU(config, id)
   if (id.startsWith('psx:')) return launchPsx(config, id)
   if (id.startsWith('psp:')) return launchPsp(config, id)

@@ -13,7 +13,6 @@ import { nesGames } from './nesTab'
 import { snesGames } from './snesTab'
 import { genesisGames } from './genesisTab'
 import { sega32xGames } from './sega32xTab'
-import { amigaGames } from './amigaTab'
 import { wiiUGames } from './wiiuTab'
 import { psxGames } from './psxTab'
 import { pspGames } from './pspTab'
@@ -152,7 +151,6 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
       ...(await snesGames(config)),
       ...(await genesisGames(config)),
       ...(await sega32xGames(config)),
-      ...(await amigaGames(config)),
       ...(await wiiUGames(config)),
       ...(await psxGames(config)),
       ...(await pspGames(config)),

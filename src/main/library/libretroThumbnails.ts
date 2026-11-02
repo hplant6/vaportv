@@ -26,7 +26,6 @@ const SYSTEMS: Record<string, string[]> = {
   snes: ['Nintendo - Super Nintendo Entertainment System'],
   genesis: ['Sega - Mega Drive - Genesis'],
   sega32x: ['Sega - 32X'],
-  amiga: ['Commodore - Amiga'],
   psx: ['Sony - PlayStation'],
   psp: ['Sony - PlayStation Portable'],
   wiiu: ['Nintendo - Wii U'],

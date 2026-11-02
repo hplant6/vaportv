@@ -11,7 +11,6 @@ import { nesGames } from './library/nesTab'
 import { snesGames } from './library/snesTab'
 import { genesisGames } from './library/genesisTab'
 import { sega32xGames } from './library/sega32xTab'
-import { amigaGames } from './library/amigaTab'
 import { wiiUGames } from './library/wiiuTab'
 import { psxGames } from './library/psxTab'
 import { pspGames } from './library/pspTab'
@@ -77,7 +76,7 @@ async function gameArt(config: Config): Promise<ScreensaverPhoto[]> {
       }
     }
   }
-  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, psxGames, pspGames, dreamcastGames, saturnGames, n64Games, nesGames, snesGames, genesisGames, sega32xGames, amigaGames, arcadeGames]
+  const loaders = [switchGames, ps2Games, ps3Games, xboxGames, xbox360Games, gamecubeGames, wiiGames, wiiUGames, psxGames, pspGames, dreamcastGames, saturnGames, n64Games, nesGames, snesGames, genesisGames, sega32xGames, arcadeGames]
   const emulated = (await Promise.all(loaders.map((load) => load(config).catch(() => [])))).flat()
   for (const game of emulated) {
     const { hero } = await cachedArt(game.artKey)

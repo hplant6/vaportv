@@ -48,8 +48,8 @@ New games show up the next time you open their tab, or when you come back to vap
 | SNES | snes | RetroArch (Snes9x) | .sfc, .smc, .fig, .swc, .bs, .zip, .7z |
 | Genesis | genesis | RetroArch (Genesis Plus GX) | .md, .gen, .smd, .bin, .zip, .7z |
 | 32X | sega32x | RetroArch (PicoDrive) | .32x, .bin, .zip, .7z |
-| Amiga | amiga | RetroArch (PUAE) | .adf, .ipf, .lha, .hdf, .zip, .7z |
-| Arcade | atomiswave, naomi, naomi2, cps1–3, neogeo, arcade, mame, fbneo | RetroArch (Flycast, FinalBurn Neo, MAME) | .zip, .7z |
+| Neo Geo | neogeo | RetroArch (FinalBurn Neo, MAME) | .zip, .7z |
+| Arcade | atomiswave, naomi, naomi2, cps1–3, arcade, mame, fbneo | RetroArch (Flycast, FinalBurn Neo, MAME) | .zip, .7z |
 
 On a TV, this table is easier to read on your phone: scan the QR code beside this guide.
 
