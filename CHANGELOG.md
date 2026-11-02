@@ -6,7 +6,7 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
-## Unreleased
+## 0.12.0
 
 ### Added
 - Press the left stick (L3) to skip to the next song; a note at the bottom says which. It's Next song in Settings → Controller, so it can go on another button.
@@ -20,6 +20,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Netflix's pop-up notifications ("New Arrival") no longer appear: nothing on screen could close them. Websites in vaporTV's Chrome can't send notifications any more (vaporTV asks for the admin password once to set this).
 - Netflix shows no scrollbars at all, the video player's included.
 - A new version of vaporTV's Netflix extension reaches Chrome the next time Netflix opens, rather than whenever Chrome next looks (up to a day, and before, never at all: 0.1.0 stayed).
+- After an update, vaporTV comes back on screen even when Steam is slow to show its own: it used to give up after two minutes, leaving the old picture frozen on the TV.
+- The Repair window says when it's this version of vaporTV changing part of its setup, instead of blaming a SteamOS update.
 
 ## 0.11.0
 
