@@ -595,6 +595,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     driftDirection: config.driftDirection ?? 'vertical',
     tunnelColors: config.tunnelColors ?? 'nebula',
     consoleBackdropQuality: config.consoleBackdropQuality ?? 'high',
+    consoleBackdrops: config.consoleBackdrops ?? true,
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
@@ -661,13 +662,14 @@ ipcMain.handle('settings:homeBackdrop', (_event, style: BackdropStyle | null) =>
 ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ driftPreset: name }))
 ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:consoleBackdropQuality', (_event, quality: ConsoleBackdropQuality) => saveConfig({ consoleBackdropQuality: quality }))
+ipcMain.handle('settings:consoleBackdrops', (_event, on: boolean) => saveConfig({ consoleBackdrops: on }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()
   const main = await backdropChoice(config)
   const home = config.homeBackdrop ? await backdropChoice(config, config.homeBackdrop) : null
   const custom = main.custom ?? home?.custom ?? null
-  return { style: main.style, homeStyle: home?.style ?? null, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high' }
+  return { style: main.style, homeStyle: home?.style ?? null, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high', consoleBackdrops: config.consoleBackdrops ?? true }
 })
 ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
 ipcMain.handle('music:trackUrl', async (_event, file: string) => trackUrl(await loadConfig(), file))

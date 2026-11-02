@@ -77,7 +77,9 @@ export function App() {
   const [backdrop, setBackdrop] = useState<BackdropStyle | null>(null)
   // Home's own backdrop (Settings → Backdrop → Home backdrop), or null for the same as the other screens.
   const [homeBackdrop, setHomeBackdrop] = useState<BackdropStyle | null>(null)
-  const shownBackdrop = screen === 'home' && homeBackdrop ? homeBackdrop : backdrop
+  // Tabs backdrop → Consoles (the default): console tabs show their console, and screens without one Home's backdrop.
+  const [consolesOn, setConsolesOn] = useState(true)
+  const shownBackdrop = (screen === 'home' || consolesOn) && homeBackdrop ? homeBackdrop : backdrop
   const [driftPreset, setDriftPreset] = useState('molten')
   const [driftDirection, setDriftDirection] = useState<'vertical' | 'horizontal'>('vertical')
   const [tunnelColors, setTunnelColors] = useState<TunnelColors>('nebula')
@@ -89,14 +91,15 @@ export function App() {
   const backdropUnavailable = useCallback(() => (screenRef.current === 'home' && homeBackdropRef.current ? setHomeBackdrop('sea') : setBackdrop('sea')), [])
   // Some consoles' tabs have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows the usual one there too.
   const [productsDown, setProductsDown] = useState<string[]>([])
-  const product = productsDown.includes(screen) ? undefined : PRODUCTS[screen]
+  const product = !consolesOn || productsDown.includes(screen) ? undefined : PRODUCTS[screen]
   const productUnavailable = useCallback(() => setProductsDown((down) => [...down, screenRef.current]), [])
 
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getBackdrop().then(({ style, homeStyle, drift, driftDirection, tunnelColors, consoleBackdropQuality, custom }) => {
+      window.steamtv.getBackdrop().then(({ style, homeStyle, drift, driftDirection, tunnelColors, consoleBackdropQuality, consoleBackdrops, custom }) => {
         setTunnelColors(tunnelColors)
         setProductQuality(consoleBackdropQuality)
+        setConsolesOn(consoleBackdrops)
         setCustom(custom)
         setBackdrop(style)
         setHomeBackdrop(homeStyle)

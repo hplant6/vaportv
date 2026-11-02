@@ -193,6 +193,8 @@ export interface Config {
   tunnelColors?: 'nebula' | 'starlight' | 'ice' | 'ember'
   /** The consoles' own tab backdrops: how sharp, and how much work (default high). */
   consoleBackdropQuality?: ConsoleBackdropQuality
+  /** Tabs backdrop → Consoles: each console tab shows its console in 3D (default on). Off, every tab shows `backdrop`. */
+  consoleBackdrops?: boolean
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */

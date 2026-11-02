@@ -355,6 +355,8 @@ export interface Settings {
   /** Star Tunnel's colours. */
   tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
   consoleBackdropQuality: ConsoleBackdropQuality
+  /** Tabs backdrop → Consoles: console tabs show their console in 3D; other screens show Home's backdrop. */
+  consoleBackdrops: boolean
   /** Where music is read from, for the hint in Settings. */
   musicFolder: string
   /** Switching the controller off puts the box to sleep (while vaporTV is on screen). */
@@ -744,6 +746,8 @@ export interface SteamTvApi {
     driftDirection: 'vertical' | 'horizontal'
     tunnelColors: 'nebula' | 'starlight' | 'ice' | 'ember'
     consoleBackdropQuality: ConsoleBackdropQuality
+  /** Tabs backdrop → Consoles: console tabs show their console in 3D; other screens show Home's backdrop. */
+  consoleBackdrops: boolean
     /** With style or homeStyle 'custom': your pictures and videos, the one to start on, and whether to shuffle them (else it loops). */
     custom: { items: CustomBackdrop[]; start: string; shuffle: boolean } | null
   }>
@@ -759,6 +763,7 @@ export interface SteamTvApi {
   setDriftDirection(direction: 'vertical' | 'horizontal'): Promise<void>
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>
   setConsoleBackdropQuality(quality: ConsoleBackdropQuality): Promise<void>
+  setConsoleBackdrops(on: boolean): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<Record<MusicKind, MusicLayer>>

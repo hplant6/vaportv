@@ -593,10 +593,26 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setScreensaverDelay(minutes).then(() => window.dispatchEvent(new Event(SCREENSAVER_EVENT)))
   }
 
+  /** A Tabs backdrop: every tab shows it, the consoles' too. */
   const chooseBackdrop = (style: BackdropStyle): void => {
-    if (!settings || settings.backdrop === style) return
-    setSettings({ ...settings, backdrop: style })
-    window.steamtv.setBackdrop(style).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+    if (!settings || (settings.backdrop === style && !settings.consoleBackdrops)) return
+    setSettings({ ...settings, backdrop: style, consoleBackdrops: false })
+    Promise.all([window.steamtv.setBackdrop(style), window.steamtv.setConsoleBackdrops(false)]).then(() =>
+      window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT))
+    )
+  }
+
+  /**
+   * Tabs backdrop → Consoles: console tabs show their console, and the screens without one Home's backdrop. Home
+   * following the tabs has nothing to follow then, so it keeps what it was showing as its own.
+   */
+  const chooseConsoles = (): void => {
+    if (!settings || settings.consoleBackdrops) return
+    const homeBackdrop = settings.homeBackdrop ?? settings.backdrop
+    setSettings({ ...settings, consoleBackdrops: true, homeBackdrop })
+    Promise.all([window.steamtv.setConsoleBackdrops(true), window.steamtv.setHomeBackdrop(homeBackdrop)]).then(() =>
+      window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT))
+    )
   }
 
   /** Puts one of your own backdrops in the shuffle or leaves it out; at least one stays in. */
@@ -613,10 +629,17 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const chooseCustomBackdrop = (file: string): void => {
     if (!settings) return
     const style = settings.homeBackdrop === 'custom' && settings.backdrop !== 'custom' ? settings.backdrop : 'custom'
-    if (settings.backdrop === style && settings.backdropFile === file) return
-    setSettings((current) => current && { ...current, backdrop: style, backdropFile: file })
-    window.steamtv.setBackdrop(style, file).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+    // Your own, for the tabs: shown on them in place of the consoles.
+    const consoles = style === 'custom' ? false : settings.consoleBackdrops
+    if (settings.backdrop === style && settings.backdropFile === file && consoles === settings.consoleBackdrops) return
+    setSettings((current) => current && { ...current, backdrop: style, backdropFile: file, consoleBackdrops: consoles })
+    Promise.all([window.steamtv.setBackdrop(style, file), window.steamtv.setConsoleBackdrops(consoles)]).then(() =>
+      window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT))
+    )
   }
+
+  /** What Home shows: its own, else the tabs' (which Consoles leaves it showing, with no console of its own). */
+  const homeShows = settings ? (settings.homeBackdrop ?? (settings.consoleBackdrops ? settings.backdrop : null)) : null
 
   /** Whether a backdrop shows anywhere (the other screens, or Home), so its own settings appear. */
   const backdropShown = (style: BackdropStyle): boolean => settings?.backdrop === style || settings?.homeBackdrop === style
@@ -916,35 +939,11 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     backdrop: (
       <>
         <div className="settings-group">
-          <h3 className="settings-heading display">Backdrop</h3>
-          <div className="setting-list" data-focus-memory="settings-backdrop-style">
-            {settings &&
-              BACKDROPS.map((b) => (
-                <ChoiceRow
-                  key={b.id}
-                  label={b.name}
-                  detail={b.detail}
-                  selected={settings.backdrop === b.id}
-                  onSelect={() => chooseBackdrop(b.id)}
-                />
-              ))}
-            {settings && settings.customBackdrops.length > 0 && (
-              <ChoiceRow
-                label="Your videos"
-                detail={`${settings.customBackdrops.length} added · loop one or shuffle them`}
-                selected={settings.backdrop === 'custom'}
-                onSelect={() => chooseBackdrop('custom')}
-              />
-            )}
-          </div>
-        </div>
-
-        <div className="settings-group">
           <h3 className="settings-heading display">Home backdrop</h3>
-          <p className="settings-help">Home can have a backdrop of its own; the other screens keep the one above.</p>
+          <p className="settings-help">Home can have a backdrop of its own; the other screens keep the tabs backdrop below.</p>
           <div className="setting-list" data-focus-memory="settings-home-backdrop">
-            {settings && (
-              <ChoiceRow label="Same as the other screens" selected={settings.homeBackdrop === null} onSelect={() => chooseHomeBackdrop(null)} />
+            {settings && !settings.consoleBackdrops && (
+              <ChoiceRow label="Same as the tabs" selected={settings.homeBackdrop === null} onSelect={() => chooseHomeBackdrop(null)} />
             )}
             {settings &&
               BACKDROPS.map((b) => (
@@ -952,7 +951,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                   key={b.id}
                   label={b.name}
                   detail={b.detail}
-                  selected={settings.homeBackdrop === b.id}
+                  selected={homeShows === b.id}
                   onSelect={() => chooseHomeBackdrop(b.id)}
                 />
               ))}
@@ -960,8 +959,40 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               <ChoiceRow
                 label="Your videos"
                 detail={`${settings.customBackdrops.length} added · loop one or shuffle them`}
-                selected={settings.homeBackdrop === 'custom'}
+                selected={homeShows === 'custom'}
                 onSelect={() => chooseHomeBackdrop('custom')}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Tabs backdrop</h3>
+          <div className="setting-list" data-focus-memory="settings-backdrop-style">
+            {settings && (
+              <ChoiceRow
+                label="Consoles"
+                detail="Each tab shows its console in 3D · Settings shows Home's backdrop"
+                selected={settings.consoleBackdrops}
+                onSelect={chooseConsoles}
+              />
+            )}
+            {settings &&
+              BACKDROPS.map((b) => (
+                <ChoiceRow
+                  key={b.id}
+                  label={b.name}
+                  detail={b.detail}
+                  selected={!settings.consoleBackdrops && settings.backdrop === b.id}
+                  onSelect={() => chooseBackdrop(b.id)}
+                />
+              ))}
+            {settings && settings.customBackdrops.length > 0 && (
+              <ChoiceRow
+                label="Your videos"
+                detail={`${settings.customBackdrops.length} added · loop one or shuffle them`}
+                selected={!settings.consoleBackdrops && settings.backdrop === 'custom'}
+                onSelect={() => chooseBackdrop('custom')}
               />
             )}
           </div>
@@ -1118,7 +1149,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, Arcade an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Neo Geo, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console instead of the backdrop above. How sharp it's drawn:</p>
+          <p className="settings-help">The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, Arcade an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Neo Geo, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console when Tabs backdrop is set to Consoles (the Consoles screensaver shows them too). How sharp they're drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

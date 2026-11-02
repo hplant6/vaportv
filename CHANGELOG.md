@@ -11,6 +11,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Changed
 - Neo Geo has a tab of its own, next to Arcade, instead of a carousel on the Arcade tab. Its games keep their history, favourites and chosen cores. Settings → Consoles → Neo Geo tab layout sets how it shows them.
 - The Amiga tab is gone.
+- Settings → Backdrop: Home backdrop comes first, then Tabs backdrop (was just Backdrop), whose first choice is now Consoles: each console tab shows its console in 3D, as before. Pick any other backdrop there to show it on every tab instead, consoles included.
 - The top bar: More is gone. Press down from the bar, or up from the top of a page, to open the second row, on the tab nearest; the bar holds one more tab in its place. The tab you're on is underlined again, and the one the cursor is on is a paler yellow. Picking a tab from the bar (or L1/R1 there) keeps the cursor in the bar, on the new tab.
 - Games and apps with no art yet show their name on a dark fade instead of on a black band over static.
 
@@ -18,7 +19,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Settings → Music → Now playing: the song that's on, with buttons to go back a song or skip to the next.
 - A Consoles screensaver: each of your consoles' backdrops in turn, five seconds apiece (Settings → Screensaver).
 - The screensaver's clock can stay in the bottom left corner (Settings → Screensaver → Clock position).
-- Home can have a backdrop of its own: Settings → Backdrop → Home backdrop. The other screens keep the one chosen above it.
+- Home can have a backdrop of its own: Settings → Backdrop → Home backdrop, at the top. The other screens keep the Tabs backdrop chosen below it.
 - Console backdrops: the Steam tab shows a Steam Deck, Apps a pile of VHS tapes, Arcade an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Neo Geo, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console, black and lit in neon magenta and cyan on a mirror floor, the camera slowly swinging round it like a product shot. At High and Medium their brightest light glows. Settings → Backdrop → Console backdrops sets how sharp they're drawn (High draws at the screen's full resolution, sharp on a 4K TV; Medium and Low do less work). The models come with the release (they aren't in the source code on GitHub).
 - A Privacy guide in Settings → Help: what vaporTV sends where, what it keeps on the box, and how to clear it.
 - Guides in Settings → Help: how to get things working: streaming apps, emulators, the Netflix extension, TV remotes, and what to do when an update breaks something. Read one full screen (up and down to scroll, L1 and R1 for the others), or scan its QR code to read it on your phone. The same guides are on GitHub, in docs/guides.
