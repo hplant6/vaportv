@@ -4,12 +4,12 @@ import { ProductBackground } from '../background/ProductBackground'
 import { PRODUCTS, type Product } from '../background/products'
 import { tabOrder, useTabArrangement } from '../availableTabs'
 
-/** How long each console is on screen, from when it starts to fade in. */
+/** How long one console fades into the next; the one underneath goes once the new one is fully up. */
+const FADE_MS = 2000
+/** How long each console holds once it's fully faded in. */
 const HOLD_MS = 5000
 /** The next one starts loading this long before its turn, so it's ready to fade straight in. */
-const PRELOAD_MS = 2000
-/** ProductBackground's fade: the one underneath goes once the new one is fully up. */
-const FADE_MS = 1200
+const PRELOAD_MS = 2500
 
 /** Tabs with a backdrop of their own that isn't a console (the Apps tab's VHS tapes). */
 const NOT_CONSOLES = new Set(['apps'])
@@ -48,6 +48,8 @@ export function ConsoleShow() {
   const [ready, setReady] = useState<number[]>([])
   /** The current one's time is up: the next shows as soon as it's ready. */
   const [due, setDue] = useState(false)
+  /** When the camera's swing began: every console joins it, so the camera keeps moving through each fade. */
+  const epoch = useRef(performance.now())
 
   useEffect(() => {
     window.steamtv.getBackdrop().then((backdrop) => setQuality(backdrop.consoleBackdropQuality))
@@ -71,8 +73,9 @@ export function ConsoleShow() {
   useEffect(() => {
     if (!current || !currentReady || consoles.length < 2) return
     setDue(false)
-    const load = setTimeout(() => queue(current.id), HOLD_MS - PRELOAD_MS)
-    const turn = setTimeout(() => setDue(true), HOLD_MS)
+    // Its time counts from when it started to fade in: the fade, then the hold.
+    const load = setTimeout(() => queue(current.id), FADE_MS + HOLD_MS - PRELOAD_MS)
+    const turn = setTimeout(() => setDue(true), FADE_MS + HOLD_MS)
     return () => {
       clearTimeout(load)
       clearTimeout(turn)
@@ -117,18 +120,40 @@ export function ConsoleShow() {
   return (
     <>
       {shots.map((shot) => (
-        <ShotView key={shot.key} shot={shot} quality={quality} onReady={() => onReady(shot.key)} onFail={() => onFail(shot)} />
+        <ShotView key={shot.key} shot={shot} quality={quality} epoch={epoch.current} onReady={() => onReady(shot.key)} onFail={() => onFail(shot)} />
       ))}
     </>
   )
 }
 
 /** One console, with steady callbacks (ProductBackground restarts its scene when onUnavailable changes). */
-function ShotView({ shot, quality, onReady, onFail }: { shot: Shot; quality: ConsoleBackdropQuality; onReady: () => void; onFail: () => void }) {
+function ShotView({
+  shot,
+  quality,
+  epoch,
+  onReady,
+  onFail
+}: {
+  shot: Shot
+  quality: ConsoleBackdropQuality
+  epoch: number
+  onReady: () => void
+  onFail: () => void
+}) {
   const fail = useRef(onFail)
   useLayoutEffect(() => {
     fail.current = onFail
   })
   const unavailable = useCallback(() => fail.current(), [])
-  return <ProductBackground product={PRODUCTS[shot.id]!} quality={quality} show={shot.show} onReady={onReady} onUnavailable={unavailable} />
+  return (
+    <ProductBackground
+      product={PRODUCTS[shot.id]!}
+      quality={quality}
+      show={shot.show}
+      onReady={onReady}
+      onUnavailable={unavailable}
+      epoch={epoch}
+      fadeMs={FADE_MS}
+    />
+  )
 }

@@ -180,7 +180,10 @@ export function startProduct(
   product: Product,
   quality: ConsoleBackdropQuality,
   onReady: () => void,
-  onError: (err: unknown) => void
+  onError: (err: unknown) => void,
+  /** When the camera's swing began (performance.now() time): set, it joins the swing there rather than starting it,
+   *  so the screensaver's consoles share one continuous camera move. */
+  epoch?: number
 ): () => void {
   const level = QUALITY[quality]
   // The screen's own pixels per stage pixel: 2 on a 4K TV, under 1 on a Deck. Medium and low never draw more than the screen has.
@@ -245,7 +248,8 @@ export function startProduct(
       return
     }
     if (!pace(now)) return
-    time += last === null ? 0 : Math.min((now - last) / 1000, 0.1)
+    if (!shown && epoch !== undefined) time = Math.max(0, (now - epoch) / 1000)
+    else time += last === null ? 0 : Math.min((now - last) / 1000, 0.1)
     last = now
 
     // A sine swing slows into each end on its own; `front` is 1 passing straight on, 0 at the ends.

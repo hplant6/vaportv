@@ -11,18 +11,25 @@ export function ProductBackground({
   quality,
   onUnavailable,
   show = true,
-  onReady
+  onReady,
+  epoch,
+  fadeMs = 1200
 }: {
   product: Product
   quality: ConsoleBackdropQuality
   onUnavailable: () => void
   show?: boolean
   onReady?: () => void
+  /** See startProduct: when the shared camera swing began. Read once, when the scene starts. */
+  epoch?: number
+  /** How long it takes to fade in. */
+  fadeMs?: number
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   // Hidden until the console is loaded and the first frame is drawn, then faded in.
   const [ready, setReady] = useState(false)
   const readyCallback = useRef(onReady)
+  const startEpoch = useRef(epoch)
   useLayoutEffect(() => {
     readyCallback.current = onReady
   })
@@ -45,7 +52,8 @@ export function ProductBackground({
               setReady(true)
               readyCallback.current?.()
             },
-            fail
+            fail,
+            startEpoch.current
           )
       })
       .catch(fail)
@@ -55,5 +63,5 @@ export function ProductBackground({
     }
   }, [product, quality, onUnavailable])
 
-  return <canvas className="stage-canvas" ref={canvas} style={{ opacity: ready && show ? 1 : 0, transition: 'opacity 1.2s ease' }} />
+  return <canvas className="stage-canvas" ref={canvas} style={{ opacity: ready && show ? 1 : 0, transition: `opacity ${fadeMs}ms ease-in-out` }} />
 }
