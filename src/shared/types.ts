@@ -262,6 +262,8 @@ export interface MusicLayer {
   urls: string[]
   /** Each url's track file (as MusicTrack.file), so Settings can name what's playing. */
   files: string[]
+  /** And each one's name, for the toast when the controller skips to it. */
+  names: string[]
   shuffle: boolean
   volume: number
 }

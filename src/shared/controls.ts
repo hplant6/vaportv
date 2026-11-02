@@ -3,7 +3,7 @@
 
 import type { ControllerFamily } from './controllers'
 
-export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'controlsGuide' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch'
+export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'controlsGuide' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch' | 'nextSong'
 
 /** Action → standard-mapping button index. */
 export type Controls = Record<ControlAction, number>
@@ -19,6 +19,7 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string 
   { id: 'volumeDown', name: 'Volume down', detail: 'Hold to keep going' },
   { id: 'volumeUp', name: 'Volume up', detail: 'Hold to keep going' },
   { id: 'voiceSearch', name: 'Voice search', detail: 'Say a game or app' },
+  { id: 'nextSong', name: 'Next song', detail: 'Skip to the next music track' },
   { id: 'controlsGuide', name: 'Show the buttons', detail: 'What each button does, along the bottom' }
 ]
 
@@ -33,7 +34,8 @@ export const DEFAULT_CONTROLS: Controls = {
   nextTab: 5,
   volumeDown: 6,
   volumeUp: 7,
-  voiceSearch: 11
+  voiceSearch: 11,
+  nextSong: 10
 }
 
 /** Buttons an action can be given: face, shoulders, triggers, Select/Start, stick clicks. Not the D-pad or Home (Steam's). */

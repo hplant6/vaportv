@@ -50,7 +50,8 @@ export function ControlsGuide() {
     [icon(c.options), 'Artwork'],
     [icon(c.gameMenu), 'Game options'],
     [[icon(c.volumeDown), icon(c.volumeUp)], 'Volume'],
-    [icon(c.voiceSearch), 'Voice search']
+    [icon(c.voiceSearch), 'Voice search'],
+    [icon(c.nextSong), 'Next song']
   ]
 
   return (

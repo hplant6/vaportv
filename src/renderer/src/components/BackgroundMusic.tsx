@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MusicKind } from '../../../shared/types'
 import { introDone } from './Intro'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { toast } from './Toast'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -42,9 +43,16 @@ export function useNowPlaying(kind: MusicKind): NowPlaying {
   return state
 }
 
-/** Move a layer on to its next track (1) or back to the one before (-1). */
-export function skipTrack(kind: MusicKind, step: 1 | -1): void {
-  window.dispatchEvent(new CustomEvent(SKIP_EVENT, { detail: { kind, step } }))
+/**
+ * Move a layer on to its next track (1) or back to the one before (-1). `announce`: say which, in a toast (the
+ * controller's Next song, pressed with nothing on screen to show it).
+ */
+export function skipTrack(kind: MusicKind, step: 1 | -1, announce = false): void {
+  if (announce && !nowPlaying[kind].canSkip) {
+    toast(nowPlaying[kind].file ? 'Only one song to play' : 'No music playing')
+    return
+  }
+  window.dispatchEvent(new CustomEvent(SKIP_EVENT, { detail: { kind, step, announce } }))
 }
 
 const FADE_MS = 1200
@@ -76,6 +84,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     let fade: ReturnType<typeof setInterval> | undefined
     let playlist: string[] = []
     let files: string[] = []
+    let names: string[] = []
     let random = false
     /** Tracks played before this one, newest last, so Previous can go back in a shuffle too. */
     let history: string[] = []
@@ -129,6 +138,7 @@ function Layer({ kind }: { kind: MusicKind }) {
         target.current = volume
         playlist = urls.map(absolute)
         files = layers[kind].files
+        names = layers[kind].names
         if (playlist.length === 0) {
           history = []
           fadeTo(0, () => {
@@ -165,7 +175,7 @@ function Layer({ kind }: { kind: MusicKind }) {
 
     // Skipped from Settings: back goes to the last one played (else the one before in the list).
     const onSkip = (event: Event): void => {
-      const { kind: which, step } = (event as CustomEvent<{ kind: MusicKind; step: 1 | -1 }>).detail
+      const { kind: which, step, announce } = (event as CustomEvent<{ kind: MusicKind; step: 1 | -1; announce: boolean }>).detail
       if (which !== kind || playlist.length < 2) return
       let next: string
       if (step === 1) {
@@ -181,6 +191,7 @@ function Layer({ kind }: { kind: MusicKind }) {
         el.volume = 0
         show()
         start()
+        if (announce) toast(`♪ ${names[playlist.indexOf(next)] ?? 'Next song'}`)
       }
       // Fade out what's sounding first; a paused layer just changes track.
       if (el.paused) swap()

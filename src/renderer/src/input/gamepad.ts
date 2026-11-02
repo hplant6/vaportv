@@ -1,6 +1,7 @@
 import { activate, back, controlsGuide, favorite, gameMenu, move, options, switchTab, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { stepVolume } from './volume'
+import { skipTrack } from '../components/BackgroundMusic'
 import { ASSIGNABLE_BUTTONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 
 /** Settings fires this after the buttons change. */
@@ -33,6 +34,7 @@ let optionsDown = false
 let guideDown = false
 let gameMenuDown = false
 let voiceDown = false
+let nextSongDown = false
 let anyDown = false
 let previousTabDown = false
 let nextTabDown = false
@@ -134,6 +136,7 @@ function poll(now: number): void {
   let guidePressed = false
   let gameMenuPressed = false
   let voicePressed = false
+  let nextSongPressed = false
   let previousTab = false
   let nextTab = false
   let volumeDown = false
@@ -151,6 +154,7 @@ function poll(now: number): void {
     guidePressed ||= down(pad, 'controlsGuide')
     gameMenuPressed ||= down(pad, 'gameMenu')
     voicePressed ||= down(pad, 'voiceSearch')
+    nextSongPressed ||= down(pad, 'nextSong')
     previousTab ||= down(pad, 'previousTab')
     nextTab ||= down(pad, 'nextTab')
     volumeDown ||= down(pad, 'volumeDown')
@@ -158,7 +162,7 @@ function poll(now: number): void {
   }
 
   if (waitForRelease) {
-    if (direction || confirm || backPressed || favoritePressed || optionsPressed || guidePressed || gameMenuPressed || voicePressed || previousTab || nextTab || volumeDown || volumeUp) return
+    if (direction || confirm || backPressed || favoritePressed || optionsPressed || guidePressed || gameMenuPressed || voicePressed || nextSongPressed || previousTab || nextTab || volumeDown || volumeUp) return
     waitForRelease = false
   }
 
@@ -199,6 +203,11 @@ function poll(now: number): void {
   gameMenuDown = gameMenuPressed
   if (voicePressed && !voiceDown) voiceSearch()
   voiceDown = voicePressed
+  if (nextSongPressed && !nextSongDown) {
+    window.steamtv.logInput('next song (controller)')
+    skipTrack('music', 1, true)
+  }
+  nextSongDown = nextSongPressed
   if (previousTab && !previousTabDown) switchTab(-1)
   previousTabDown = previousTab
   if (nextTab && !nextTabDown) switchTab(1)

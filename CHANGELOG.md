@@ -8,6 +8,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Added
+- Press the left stick (L3) to skip to the next song; a note at the bottom says which. It's Next song in Settings → Controller, so it can go on another button.
+
 ### Fixed
 - Netflix works with a controller: the D-pad or left stick moves between titles, A opens, B goes back (and in the player, A plays and pauses). Before, only a TV remote moved around it.
 - Netflix's pop-up notifications ("New Arrival") no longer appear: nothing on screen could close them. Websites in vaporTV's Chrome can't send notifications any more (vaporTV asks for the admin password once to set this).

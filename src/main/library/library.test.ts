@@ -589,8 +589,9 @@ describe('controls', () => {
     expect(next.back).toBe(0)
   })
   it('takes a free button without touching the others', () => {
+    // L3 is Next song's: it takes Favorite's old Y in the swap.
     const next = assignButton(DEFAULT_CONTROLS, 'favorite', 10)
-    expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10 })
+    expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10, nextSong: 3 })
   })
   it('fills saved choices over the defaults and drops unusable ones', () => {
     // The button guide's default (Select) went to Back, so it takes the free B.
@@ -600,6 +601,12 @@ describe('controls', () => {
   it('gives buttons saved before voice search its R3', () => {
     const { voiceSearch: _, ...before } = DEFAULT_CONTROLS
     expect(resolveControls(before as never).voiceSearch).toBe(11)
+  })
+  it('gives buttons saved before Next song its L3, or the one button left if L3 was taken', () => {
+    const { nextSong: _, ...before } = DEFAULT_CONTROLS
+    expect(resolveControls(before as never).nextSong).toBe(10)
+    // Favorite was moved to L3 before Next song existed: Next song gets the free Y.
+    expect(resolveControls({ ...before, favorite: 10 } as never).nextSong).toBe(3)
   })
 })
 

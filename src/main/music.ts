@@ -167,7 +167,8 @@ export async function currentMusic(config: Config): Promise<Record<MusicKind, Mu
     // A playlist's tracks in its order, less any no longer there.
     const list = kind === 'music' && choice?.startsWith(PLAYLIST) ? playlists(config).find((p) => PLAYLIST + p.id === choice) : undefined
     const chosen = list ? list.files.filter((f) => files.includes(f)) : choice === SHUFFLE ? files : files.filter((f) => f === choice)
-    return { urls: chosen.map(url), files: chosen, shuffle: choice === SHUFFLE || !!list?.shuffle, volume: Math.min(1, MUSIC_VOLUME[volume ?? 'medium'] * (kind === 'music' ? MUSIC_GAIN : 1)) }
+    const names = chosen.map((file) => tracks[kind].find((t) => t.file === file)?.name ?? file)
+    return { urls: chosen.map(url), files: chosen, names, shuffle: choice === SHUFFLE || !!list?.shuffle, volume: Math.min(1, MUSIC_VOLUME[volume ?? 'medium'] * (kind === 'music' ? MUSIC_GAIN : 1)) }
   }
   return { music: layer('music', config.musicVolume), ambience: layer('ambience', config.ambienceVolume) }
 }
