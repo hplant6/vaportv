@@ -10,3 +10,13 @@
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* No scrollbar down the side: the page scrolls itself as the cursor moves, and on a TV it's only in the way. */
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}

@@ -1,5 +1,5 @@
-// vaporTV for Netflix: the D-pad (arrow keys) moves between titles on Netflix's
-// website, as on a TV. Netflix's own keyboard support stops at Tab; Chrome's spatial
+// vaporTV for Netflix: the D-pad (arrow keys, or a controller's, read below) moves
+// between titles on Netflix's website, as on a TV. Netflix's own keyboard support stops at Tab; Chrome's spatial
 // navigation gets caught in its hover previews and moves behind its info panel.
 //
 // Left/right go along a row (paging it with Netflix's own arrow at the ends), up/down
@@ -212,6 +212,78 @@ window.addEventListener(
   },
   true
 )
+
+// --- A controller ----------------------------------------------------------------------
+//
+// With no Steam Input layout for Netflix (Steam's default for a shortcut is to pass the controller
+// through as a gamepad), Chrome sees a gamepad and no keys at all. So the extension reads it itself
+// and plays it as the keys a remote sends: the D-pad or left stick is the arrows, A is Enter and B is
+// Back. A layout that does send keys hides the gamepad from Chrome, so nothing happens twice.
+
+const PAD = { a: 0, b: 1, up: 12, down: 13, left: 14, right: 15 }
+/** How far the stick has to go to count as a press. */
+const STICK = 0.6
+/** Held: the first repeat after this long, then one every REPEAT_MS. */
+const REPEAT_DELAY_MS = 400
+const REPEAT_MS = 130
+
+/** A key as a remote would send it, to this page's own handlers and Netflix's (the player's Space and arrows). */
+function press(key) {
+  const target = document.activeElement ?? document.body
+  const event = new KeyboardEvent('keydown', { key, code: key === ' ' ? 'Space' : key, bubbles: true, cancelable: true, composed: true })
+  const unhandled = target.dispatchEvent(event)
+  target.dispatchEvent(new KeyboardEvent('keyup', { key, code: key === ' ' ? 'Space' : key, bubbles: true, cancelable: true, composed: true }))
+  return !unhandled
+}
+
+/** A: what Enter does. A made-up Enter doesn't follow a link or press a button, so if nothing took it, click. */
+function activate() {
+  if (location.pathname.startsWith('/watch')) return press(' ')
+  if (press('Enter')) return
+  const el = document.activeElement
+  if (el instanceof HTMLElement && el !== document.body) el.click()
+}
+
+/** B: Back, as a remote's. On the browse pages with nothing open, the page before. */
+function back() {
+  if (press('BrowserBack')) return
+  if (history.length > 1 && !location.pathname.startsWith('/browse')) history.back()
+}
+
+const held = new Map()
+
+function pollPad(now) {
+  requestAnimationFrame(pollPad)
+  if (document.hidden || !document.hasFocus()) return held.clear()
+  const pad = [...navigator.getGamepads()].find((p) => p && p.connected)
+  if (!pad) return held.clear()
+  const button = (i) => !!pad.buttons[i]?.pressed
+  const [x = 0, y = 0] = pad.axes
+  const state = {
+    up: button(PAD.up) || y < -STICK,
+    down: button(PAD.down) || y > STICK,
+    left: button(PAD.left) || x < -STICK,
+    right: button(PAD.right) || x > STICK,
+    a: button(PAD.a),
+    b: button(PAD.b)
+  }
+  for (const [name, down] of Object.entries(state)) {
+    if (!down) {
+      held.delete(name)
+      continue
+    }
+    const since = held.get(name)
+    const repeats = name !== 'a' && name !== 'b'
+    if (since === undefined) held.set(name, { at: now, next: now + REPEAT_DELAY_MS })
+    else if (!repeats || now < since.next) continue
+    else since.next = now + REPEAT_MS
+    if (name === 'a') activate()
+    else if (name === 'b') back()
+    else press({ up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[name])
+  }
+}
+
+requestAnimationFrame(pollPad)
 
 /** The title last chosen on the page, to come back to when its info panel closes. */
 let lastCard = null

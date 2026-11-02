@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "vaporTV for Netflix",
-  "version": "0.1.0",
-  "description": "Netflix from the couch: the arrow keys move between titles, with no hover previews in the way.",
+  "version": "0.2.0",
+  "description": "Netflix from the couch: a remote or a controller moves between titles, with no hover previews in the way.",
   "content_scripts": [
     {
       "matches": ["https://www.netflix.com/*"],

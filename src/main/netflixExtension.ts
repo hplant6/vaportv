@@ -34,11 +34,13 @@ async function packed(): Promise<Packed | null> {
   )
 }
 
-/** The policy setup writes: Chrome installs the extension, and keeps it, from the update file. */
+/** The policy setup writes: Chrome installs the extension, and keeps it, from the update file; and no site sends notifications. */
 export async function netflixPolicy(): Promise<string | null> {
   const info = await packed()
   if (!info) return null
-  return JSON.stringify({ ExtensionInstallForcelist: [`${info.id};file://${UPDATES}`] }, null, 2) + '\n'
+  // Web notifications off: on a TV nobody can click a site's pop-up closed ("New Arrival" from Netflix sat in the
+  // corner). Set by policy, so it also overrides a site that was let send them.
+  return JSON.stringify({ ExtensionInstallForcelist: [`${info.id};file://${UPDATES}`], DefaultNotificationsSetting: 2 }, null, 2) + '\n'
 }
 
 /** Whether the policy in place is this one (so setup needn't ask for the password again). */

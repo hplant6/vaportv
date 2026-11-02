@@ -6,6 +6,13 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## Unreleased
+
+### Fixed
+- Netflix works with a controller: the D-pad or left stick moves between titles, A opens, B goes back (and in the player, A plays and pauses). Before, only a TV remote moved around it.
+- Netflix's pop-up notifications ("New Arrival") no longer appear: nothing on screen could close them. Websites in vaporTV's Chrome can't send notifications any more (vaporTV asks for the admin password once to set this).
+- Netflix no longer shows a scrollbar down the right-hand side.
+
 ## 0.11.0
 
 ### Changed
