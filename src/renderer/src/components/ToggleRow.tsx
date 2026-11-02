@@ -1,12 +1,17 @@
+import { RowLabel } from './RowLabel'
+
 /** A setting that's on or off, shown as a switch. */
 export function ToggleRow({
   label,
+  subtitle,
   detail,
   on,
   onToggle,
   onFocus
 }: {
   label: string
+  /** A second line under the name (a track's credit). */
+  subtitle?: string
   detail?: string
   on: boolean
   onToggle: () => void
@@ -28,7 +33,7 @@ export function ToggleRow({
       <span className="toggle" aria-hidden="true">
         <span className="toggle-knob" />
       </span>
-      <span className="setting-name display">{label}</span>
+      <RowLabel label={label} subtitle={subtitle} />
       {detail && <span className="setting-detail">{detail}</span>}
     </button>
   )

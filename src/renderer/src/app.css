@@ -2046,22 +2046,29 @@ button {
   height: 24px;
 }
 
-/* Settings → Music → Now playing: the song's name (not a control), then back and next buttons. */
-/* The song's name over who made it, so a long title has the row's width. */
-.settings-pane .now-playing-info {
+/* A name with a second line under it (a track's artist and licence): Now playing, the songs, the playlist dialog. */
+.setting-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: center;
   gap: 6px;
 }
 
-.now-playing-info .setting-name,
-.now-playing-info .setting-detail {
+.setting-text .setting-name,
+.setting-sub {
   flex: none;
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.setting-sub {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  letter-spacing: 0.04em;
 }
 
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */

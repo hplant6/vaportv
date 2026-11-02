@@ -22,6 +22,7 @@ import { EXTRAS } from '../../../shared/build'
 import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
+import { RowLabel } from '../components/RowLabel'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
 import { PlaylistDialog } from '../components/PlaylistDialog'
@@ -346,8 +347,7 @@ function NowPlaying({ tracks }: { tracks: MusicTrack[] }) {
       <div className="setting-list" data-focus-memory="settings-now-playing">
         <div className="song-row now-playing">
           <div className="setting-row now-playing-info">
-            <span className="setting-name display">{track?.name ?? now.file}</span>
-            <span className="setting-detail">{now.playing ? (track?.credit ?? 'Playing') : 'Paused'}</span>
+            <RowLabel label={track?.name ?? now.file} subtitle={now.playing ? (track?.credit ?? 'Playing') : 'Paused'} />
           </div>
           {now.canSkip && skipButton(-1)}
           {now.canSkip && skipButton(1)}
@@ -358,7 +358,20 @@ function NowPlaying({ tracks }: { tracks: MusicTrack[] }) {
 }
 
 /** One single-choice row (a radio), styled like the layout options. */
-function ChoiceRow({ label, detail, selected, onSelect }: { label: string; detail?: string; selected: boolean; onSelect: () => void }) {
+function ChoiceRow({
+  label,
+  subtitle,
+  detail,
+  selected,
+  onSelect
+}: {
+  label: string
+  /** A second line under the name (a track's credit). */
+  subtitle?: string
+  detail?: string
+  selected: boolean
+  onSelect: () => void
+}) {
   return (
     <button
       className={`setting-row${selected ? ' on' : ''}`}
@@ -371,7 +384,7 @@ function ChoiceRow({ label, detail, selected, onSelect }: { label: string; detai
       onClick={onSelect}
     >
       <span className="radio" aria-hidden="true" />
-      <span className="setting-name display">{label}</span>
+      <RowLabel label={label} subtitle={subtitle} />
       {detail && <span className="setting-detail">{detail}</span>}
     </button>
   )
@@ -512,7 +525,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           settings.musicTracks.music.map((track, i) => (
             // A song with a button beside it to hear it first; Left from the button comes back to the song.
             <div key={track.file} id={`song-${i}`} className="song-row">
-              <ChoiceRow label={track.name} detail={track.credit} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
+              <ChoiceRow label={track.name} subtitle={track.credit} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
               <button
                 className={`song-preview${preview === track.file ? ' playing' : ''}`}
                 tabIndex={-1}
@@ -531,7 +544,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             <ChoiceRow
               key={track.file}
               label={track.name}
-              detail={track.credit}
+              subtitle={track.credit}
               selected={settings.ambience === track.file}
               onSelect={() => chooseMusic('ambience', track.file)}
             />

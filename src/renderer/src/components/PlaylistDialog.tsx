@@ -100,7 +100,8 @@ export function PlaylistDialog({
               <ToggleRow
                 key={track.file}
                 label={track.name}
-                detail={at >= 0 ? `#${at + 1}` : track.credit}
+                subtitle={track.credit}
+                detail={at >= 0 ? `#${at + 1}` : undefined}
                 on={at >= 0}
                 onToggle={() => toggleTrack(track.file)}
                 onFocus={reveal}
