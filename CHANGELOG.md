@@ -6,7 +6,7 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
-## Unreleased
+## 0.11.0
 
 ### Changed
 - Neo Geo has a tab of its own, next to Arcade, instead of a carousel on the Arcade tab. Its games keep their history, favourites and chosen cores. Settings → Consoles → Neo Geo tab layout sets how it shows them.
@@ -14,11 +14,18 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Settings → Backdrop: Home backdrop comes first, then Tabs backdrop (was just Backdrop), whose first choice is now Consoles: each console tab shows its console in 3D, as before. Pick any other backdrop there to show it on every tab instead, consoles included.
 - The top bar: More is gone. Press down from the bar, or up from the top of a page, to open the second row, on the tab nearest; the bar holds one more tab in its place. The tab you're on is underlined again, and the one the cursor is on is a paler yellow. Picking a tab from the bar (or L1/R1 there) keeps the cursor in the bar, on the new tab.
 - Games and apps with no art yet show their name on a dark fade instead of on a black band over static.
+- The built-in Chris Zabriskie playlist is now called Ambient.
+- Songs show who made them on a second line, under the title, in Settings → Music and the playlist window.
+- The on-screen keyboard's controller buttons are drawn as boldly as everywhere else.
+- Settings says when your location is guessed from your internet address, and which service guesses it.
+- Updates are signed: vaporTV installs only an update it can tell came from vaporTV.
 
 ### Added
 - A Retro playlist in Settings → Music: 13 chiptunes by Juhani Junkala, Aron Ben Elal, Shiru and Oblidivm, from OpenGameArt. It's added alongside any playlists you've already made.
 - The built-in music is volume-matched, so no track jumps out louder or quieter than the rest.
 - Settings → Music → Now playing: the song that's on, with buttons to go back a song or skip to the next.
+- Your songs and the ones that come with vaporTV are listed apart, yours first, and yours show their artist, album and length under the title (read from files named "Artist - Title" and the folders they're in).
+- Preview a song from the playlist window too, with the play button beside it.
 - A Consoles screensaver: each of your consoles' backdrops in turn, five seconds apiece (Settings → Screensaver).
 - The screensaver's clock can stay in the bottom left corner (Settings → Screensaver → Clock position).
 - Home can have a backdrop of its own: Settings → Backdrop → Home backdrop, at the top. The other screens keep the Tabs backdrop chosen below it.
@@ -36,10 +43,6 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Home no longer fails to load when Steam's list of non-Steam games can't be read, and it loads faster, reading that list once instead of once per app.
 - Report a problem leaves out what's personal: the names on the buttons you pressed (files, Wi-Fi networks, Bluetooth devices) and what voice search heard. It also now says the report will be public.
 - Signing out of Google takes its photos off the screensaver, signs the sign-in window's Chrome out of Google too, and tells you if Google couldn't be reached to take back vaporTV's access.
-
-### Changed
-- Settings says when your location is guessed from your internet address, and which service guesses it.
-- Updates are signed: vaporTV installs only an update it can tell came from vaporTV.
 
 ## 0.10.0
 
