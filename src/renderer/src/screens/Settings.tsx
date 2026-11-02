@@ -23,6 +23,7 @@ import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
 import { RowLabel } from '../components/RowLabel'
+import { OnScreenKeyboard } from '../components/Keyboard'
 import { songGroups, TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
@@ -101,36 +102,31 @@ function LayoutRow({
 }
 
 function KeyRow({ service, hint, onSave }: { service: string; hint: string | null; onSave: (key: string) => void }) {
+  // Typed on vaporTV's keyboard (a real text box brings Steam's up too, and every press lands twice).
   const [editing, setEditing] = useState(false)
-  const input = useRef<HTMLInputElement>(null)
-
+  const row = useRef<HTMLButtonElement>(null)
+  const wasEditing = useRef(false)
+  // Back on this row once the keyboard has gone.
   useEffect(() => {
-    if (editing) input.current?.focus()
+    if (wasEditing.current && !editing && row.current) focus(row.current)
+    wasEditing.current = editing
   }, [editing])
-
   if (editing) {
     return (
-      <input
-        ref={input}
-        className="setting-row setting-input"
-        data-focusable=""
-        placeholder={`Paste or type your ${service} API key, then Enter`}
-        aria-label={`${service} API key`}
-        spellCheck={false}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            onSave(event.currentTarget.value)
-            setEditing(false)
-          } else if (event.key === 'Escape') {
-            setEditing(false)
-          }
+      <OnScreenKeyboard
+        title={`${service} API key`}
+        prompt={`Type your ${service} API key`}
+        onDone={(key) => {
+          setEditing(false)
+          if (key.trim()) onSave(key.trim())
         }}
-        onBlur={() => setEditing(false)}
+        onCancel={() => setEditing(false)}
       />
     )
   }
   return (
     <button
+      ref={row}
       className="setting-row"
       tabIndex={-1}
       aria-label={`${service} API key`}

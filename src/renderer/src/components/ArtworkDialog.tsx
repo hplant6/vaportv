@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { focus, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import { TextRow } from './TextRow'
 import { toast } from './Toast'
 
 // Fixing a console game's art by hand. X on a card opens it: first where the cover comes
@@ -73,6 +74,8 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
   const [pictures, setPictures] = useState<Picture[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  /** The keyboard is up for the picture search: it has the cursor and B, not this dialog. */
+  const [typing, setTyping] = useState(false)
 
   useEffect(() => {
     window.steamtv.art
@@ -126,9 +129,10 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
         setStep({ kind: 'matches' })
       } else onClose()
     }
+    if (typing) return
     window.addEventListener(TRAP_CLOSE_EVENT, back)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, back)
-  }, [step, saving, onClose])
+  }, [step, saving, onClose, typing])
 
   // The cursor starts on the first choice of each step, once it has loaded (on a picture
   // step, the first picture, so the search box doesn't take it).
@@ -176,7 +180,7 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
 
   return (
     <div className="dialog-backdrop">
-      <div className="dialog-panel artwork-panel" ref={panel} data-focus-trap="">
+      <div className="dialog-panel artwork-panel" ref={panel} {...(typing ? {} : { 'data-focus-trap': '' })}>
         <h2 className="section-label display">{heading}</h2>
         {error && <p className="dialog-message">{error}</p>}
 
@@ -273,26 +277,26 @@ function Artwork({ id, onClose }: { id: string; onClose: () => void }) {
 
         {(step.kind === 'web' || step.kind === 'libretro') && (
           <>
-            <input
-              className="setting-row setting-input artwork-query"
-              data-focusable=""
-              aria-label="Search for"
-              spellCheck={false}
+            <TextRow
+              label="Search for"
               value={query}
-              disabled={saving}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && query.trim()) findPictures(step.kind as PictureSource, query.trim())
+              placeholder="What to search for"
+              title="Search for pictures"
+              className="artwork-query"
+              onDone={(text) => {
+                setQuery(text)
+                if (text.trim() && !saving) findPictures(step.kind as PictureSource, text.trim())
               }}
+              onTyping={setTyping}
             />
             <p className="dialog-message">
               {saving
                 ? 'Saving…'
                 : pictures === null
                   ? 'Searching…'
-                  : 'Pick a picture; it’s cropped to fit the card. Up to edit the search.'}
+                  : 'Pick a picture; it’s cropped to fit the card. Up, then A, to change the search.'}
             </p>
-            {pictures?.length === 0 && !error && <p className="dialog-message">Nothing found. Edit the search and press Enter.</p>}
+            {pictures?.length === 0 && !error && <p className="dialog-message">Nothing found. Up, then A, to change the search.</p>}
             <div className="artwork-covers" ref={list}>
               {pictures?.map((picture) => (
                 <button
