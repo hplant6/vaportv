@@ -1,5 +1,5 @@
-import { spawn } from 'node:child_process'
-import { mkdir, readFile, stat } from 'node:fs/promises'
+import { execFile, spawn } from 'node:child_process'
+import { mkdir, readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { LaunchKind } from '../shared/types'
 import type { Config } from './config'
@@ -476,5 +476,59 @@ export async function launch(config: Config, kind: LaunchKind, id: string, name?
   // `steam <url>` forwards to the running client and exits. Steam launched us with
   // LD_PRELOAD cleared (see the shortcut's launch options), which suits it too.
   run('steam', [url])
+  // An app (not a Steam game, which may be showing an update or EULA dialog) is made sure of.
+  const isShortcut = appid !== null && BigInt(/\d+$/.exec(url)![0]) >> 32n > 0n
+  if (appid !== null && (kind === 'app' || isShortcut)) ensureStarted(url, appid)
   return true
+}
+
+/** Resends a launch Steam ignored at these times after the first (ms), then gives up. */
+const RESEND_AT = [6000, 14000, 24000, 36000]
+let launchGeneration = 0
+
+/** Whether Steam has started `appid`: its `reaper SteamLaunch AppId=<appid>` is running. */
+async function steamStarted(appid: number): Promise<boolean> {
+  const want = `SteamLaunch\0AppId=${appid}\0`
+  for (const pid of await readdir('/proc').catch(() => [] as string[])) {
+    if (!/^\d+$/.test(pid)) continue
+    const cmdline = await readFile(`/proc/${pid}/cmdline`, 'latin1').catch(() => '')
+    if (cmdline.includes(want)) return true
+  }
+  return false
+}
+
+/** What gamescope is drawing: an app id, or null if that can't be read. */
+async function onScreenApp(): Promise<number | null> {
+  return new Promise((resolve) =>
+    execFile('xprop', ['-root', 'GAMESCOPE_FOCUSED_APP_GFX'], { env: { ...process.env, DISPLAY: ':0' }, timeout: 2000 }, (err, stdout) => {
+      const id = /=\s*(\d+)/.exec(stdout ?? '')?.[1]
+      resolve(err || !id ? null : Number(id))
+    })
+  )
+}
+
+/**
+ * Steam silently drops a launch now and then, most of all just after it has closed another app (it
+ * took three presses to open YouTube after Netflix). Until the app's started, while vaporTV is still
+ * what's on screen, the launch is sent again a few times. A newer launch, or anything else coming up
+ * on screen (the app, a Steam dialog), ends the watch.
+ */
+function ensureStarted(url: string, appid: number): void {
+  const generation = ++launchGeneration
+  const ownApp = Number(process.env.SteamAppId) || null
+  const began = Date.now()
+  let resent = 0
+  const check = async (): Promise<void> => {
+    if (generation !== launchGeneration || (await steamStarted(appid))) return
+    const showing = await onScreenApp()
+    if (ownApp !== null && showing !== null && showing !== ownApp) return
+    if (resent < RESEND_AT.length && Date.now() - began >= RESEND_AT[resent]) {
+      resent++
+      console.log(`steamtv: ${url} hasn't started; asking Steam again (${resent})`)
+      run('steam', [url])
+    }
+    if (resent < RESEND_AT.length || Date.now() - began < RESEND_AT[RESEND_AT.length - 1] + 6000) setTimeout(check, 1000)
+    else console.log(`steamtv: ${url} didn't start`)
+  }
+  setTimeout(check, 1000)
 }

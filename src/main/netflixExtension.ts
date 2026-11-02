@@ -73,19 +73,53 @@ export async function stageNetflixExtension(): Promise<void> {
 /** Where Chrome keeps the extensions it has installed: one folder per version, as <version>_<n>. */
 const INSTALLED = (id: string): string => join(homedir(), '.var', 'app', BROWSER, 'config', 'google-chrome', 'Default', 'Extensions', id)
 
+/** Chrome's settings files: each may hold an extension's record (installed version, where) and its checksum. */
+const PREFS = ['Preferences', 'Secure Preferences'].map((name) => join(homedir(), '.var', 'app', BROWSER, 'config', 'google-chrome', 'Default', name))
+
 /**
  * Chrome looks for a newer version of a policy's extension only every few hours, and never while it's
  * kept running, so a new vaporTV's extension could wait a day (0.2.0 did). With Chrome closed, its copy
- * of an older version is taken away: at its next start Chrome installs the policy's extension afresh,
- * which is the version just staged. Only this extension's folder; nothing else of Chrome's.
+ * of an older version is taken away, folder and record both (with the folder alone gone Chrome thinks it
+ * installed and broken, and loads nothing): at its next start Chrome installs the policy's extension
+ * afresh, the version just staged. Only this extension's; nothing else of Chrome's.
  */
 async function replaceOlderInstall(info: Packed): Promise<void> {
   const dir = INSTALLED(info.id)
   const versions = await readdir(dir).catch(() => [] as string[])
-  if (versions.length === 0 || versions.some((v) => v.split('_')[0] === info.version)) return
+  const recorded = await recordedVersion(info.id)
+  const current = versions.some((v) => v.split('_')[0] === info.version) && (recorded === null || recorded === info.version)
+  if ((versions.length === 0 && recorded === null) || current) return
   if (await chromeRunning()) return
   await rm(dir, { recursive: true, force: true })
-  console.log(`steamtv: Chrome had vaporTV for Netflix ${versions.join(', ')}; it installs ${info.version} when it next starts`)
+  for (const file of PREFS) await forget(file, info.id)
+  console.log(`steamtv: Chrome had vaporTV for Netflix ${versions.join(', ') || recorded}; it installs ${info.version} when it next starts`)
+}
+
+/** The version Chrome's settings say it has installed, or null if they don't list it. */
+async function recordedVersion(id: string): Promise<string | null> {
+  for (const file of PREFS) {
+    const prefs = await readFile(file, 'utf8').then((text) => JSON.parse(text), () => null)
+    const entry = prefs?.extensions?.settings?.[id]
+    if (entry) return entry.manifest?.version ?? (typeof entry.path === 'string' ? (entry.path.split('/').pop() ?? '').split('_')[0] : 'unknown')
+  }
+  return null
+}
+
+/** Takes the extension's record (and its checksum) out of one of Chrome's settings files. */
+export async function forget(file: string, id: string): Promise<void> {
+  const text = await readFile(file, 'utf8').catch(() => null)
+  if (!text) return
+  const prefs = JSON.parse(text)
+  let changed = false
+  if (prefs.extensions?.settings?.[id]) {
+    delete prefs.extensions.settings[id]
+    changed = true
+  }
+  if (prefs.protection?.macs?.extensions?.settings?.[id]) {
+    delete prefs.protection.macs.extensions.settings[id]
+    changed = true
+  }
+  if (changed) await writeFile(file, JSON.stringify(prefs))
 }
 
 function chromeRunning(): Promise<boolean> {
