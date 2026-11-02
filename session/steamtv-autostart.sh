@@ -57,14 +57,19 @@ if [ -z "$GAME_ID" ] || [ -z "$STEAMTV_APPID" ]; then
   exit 0
 fi
 
-for _ in $(seq 120); do
+# At boot Steam can take a while; once it has been up a few minutes (a deploy, a restart of
+# vaporTV) its UI is either listed already or never will be until something launches.
+steam_pid=$(pgrep -o -f 'ubuntu12_32/steam' || true)
+steam_age=$(ps -o etimes= -p "${steam_pid:-0}" 2>/dev/null | tr -d ' ')
+wait_s=120
+[ "${steam_age:-0}" -gt 180 ] && wait_s=15
+for _ in $(seq "$wait_s"); do
   steam_ui_ready && break
   sleep 1
 done
-if ! steam_ui_ready; then
-  log "Steam UI not ready after 2 minutes; giving up"
-  exit 1
-fi
+# Not listed is no reason to give up: Steam sometimes leaves its UI out of the list after the
+# app on screen closes, yet takes the launch all the same.
+steam_ui_ready || log "Steam UI not listed after ${wait_s}s; launching anyway"
 # Let the UI settle; a launch in its first moments is sometimes ignored.
 sleep 3
 
