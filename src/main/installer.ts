@@ -360,7 +360,7 @@ export async function setupDamage(): Promise<SetupDamage> {
   const wake = !existsSync(WAKE_RULE) && !existsSync(OLD_WAKE_RULE) && existsSync(previous(WAKE_RULE))
   const netflix = (await launchUrl(config, 'app', 'netflix')) !== null && (await netflixPolicy()) !== null && !(await netflixPolicyCurrent())
   const keep = (wake || netflix || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
-  return { wake, netflix, keep, password: await hasPassword() }
+  return { wake, netflix, netflixOutdated: netflix && existsSync(NETFLIX_POLICY), keep, password: await hasPassword() }
 }
 
 /**

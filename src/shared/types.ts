@@ -564,8 +564,10 @@ export interface UpdateState {
 export interface SetupDamage {
   /** The controller wake rule (moved to /etc/previous). */
   wake: boolean
-  /** The Chrome policy that installs vaporTV for Netflix. */
+  /** The Chrome policy that installs vaporTV for Netflix (and turns off websites' notifications). */
   netflix: boolean
+  /** That policy is there but from an older vaporTV (a new one changed it), rather than removed by an update. */
+  netflixOutdated?: boolean
   /** The keep list that carries both through updates. */
   keep: boolean
   /** The user has an admin password to repair with. */
