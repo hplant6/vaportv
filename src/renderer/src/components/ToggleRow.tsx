@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { RowLabel } from './RowLabel'
 
 /** A setting that's on or off, shown as a switch. */
@@ -11,7 +12,7 @@ export function ToggleRow({
 }: {
   label: string
   /** A second line under the name (a track's credit). */
-  subtitle?: string
+  subtitle?: ReactNode
   detail?: string
   on: boolean
   onToggle: () => void

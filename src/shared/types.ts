@@ -243,6 +243,12 @@ export interface MusicTrack {
   name: string
   /** Who made a built-in track and its licence, shown beside it (CC BY asks for credit). */
   credit?: string
+  /** Ships with vaporTV (else it's one of yours, from the music folder). */
+  builtIn?: boolean
+  /** Yours: the artist, from a file named "Artist - Title". */
+  artist?: string
+  /** Yours: the subfolder it's in, as an album ("Album/Track.wav"). */
+  album?: string
 }
 
 export type MusicVolume = 'low' | 'medium' | 'high'

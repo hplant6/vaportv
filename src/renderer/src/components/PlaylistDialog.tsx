@@ -5,6 +5,7 @@ import { PlayIcon, StopIcon } from './icons'
 import { OnScreenKeyboard } from './Keyboard'
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from './MusicPreview'
 import { ToggleRow } from './ToggleRow'
+import { songGroups, TrackLine } from './TrackLine'
 
 // Settings → Music → Playlists: one playlist's name, whether it shuffles, and which tracks are in
 // it (in the order they were put in), each with a button beside it to hear it first, as in the
@@ -107,7 +108,13 @@ export function PlaylistDialog({
             onToggle={() => save({ ...current, shuffle: !current.shuffle })}
             onFocus={reveal}
           />
-          {tracks.map((track, i) => {
+          {songGroups(tracks).map(({ heading, track, i }) => {
+            if (heading)
+              return (
+                <h4 key={heading} className="song-group-heading display">
+                  {heading}
+                </h4>
+              )
             const at = current.files.indexOf(track.file)
             const playing = preview === track.file
             return (
@@ -115,7 +122,7 @@ export function PlaylistDialog({
               <div key={track.file} id={`playlist-track-${i}`} className="song-row">
                 <ToggleRow
                   label={track.name}
-                  subtitle={track.credit}
+                  subtitle={<TrackLine track={track} />}
                   detail={at >= 0 ? `#${at + 1}` : undefined}
                   on={at >= 0}
                   onToggle={() => toggleTrack(track.file)}

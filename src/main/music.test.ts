@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { currentMusic, importMusic, musicChoices, musicTracks, playlists } from './music'
+import { currentMusic, importMusic, musicChoices, musicTracks, playlists, splitTrackName } from './music'
 
 // The browser and importer only touch home and drive mounts, so the fixture lives in home.
 let root: string
@@ -37,7 +37,12 @@ describe('background music', () => {
     expect(tracks.music).toHaveLength(22)
     expect(tracks.music.slice(0, 7).every((t) => t.file.startsWith('builtin:zabriskie-') && t.credit?.includes('CC BY 4.0'))).toBe(true)
     expect(tracks.music.slice(7, 20).every((t) => t.file.startsWith('builtin:retro-') && /CC0|CC BY 3\.0|Oblidivm/.test(t.credit ?? ''))).toBe(true)
-    expect(tracks.music.slice(20).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
+    // Yours: a subfolder is the album; nothing is built in.
+    expect(tracks.music.slice(20)).toEqual([
+      { file: 'Loose song .wav', name: 'Loose song' },
+      { file: join('Albums', 'Track.mp3'), name: 'Track', album: 'Albums' }
+    ])
+    expect(tracks.music.slice(0, 20).every((t) => t.builtIn)).toBe(true)
     expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Crickets (built in)', 'Ocean waves (built in)', 'Birdsong (built in)', 'Waves'])
   })
 
@@ -74,6 +79,15 @@ describe('background music', () => {
     expect(playlists({}).find((p) => p.id === 'zabriskie')!.name).toBe('Ambient')
     expect(playlists({ playlists: [{ id: 'zabriskie', name: 'Chris Zabriskie', files: [], shuffle: false }] })[0].name).toBe('Ambient')
     expect(playlists({ playlists: [{ id: 'zabriskie', name: 'Chill', files: [], shuffle: false }] })[0].name).toBe('Chill')
+  })
+
+  it('reads the artist from a file named "Artist - Title"', () => {
+    expect(splitTrackName('Okaya - Whispers')).toEqual({ artist: 'Okaya', title: 'Whispers' })
+    // Split at the first " - ": the rest stays in the title.
+    expect(splitTrackName('Yehezkel Raz - Valley of Gold - Instrumental version')).toEqual({ artist: 'Yehezkel Raz', title: 'Valley of Gold - Instrumental version' })
+    expect(splitTrackName('Loose song')).toEqual({ title: 'Loose song' })
+    expect(splitTrackName('Spider-Man')).toEqual({ title: 'Spider-Man' })
+    expect(splitTrackName(' - Untitled')).toEqual({ title: ' - Untitled' })
   })
 
   it('plays every track of a layer when shuffled', async () => {

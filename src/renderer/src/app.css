@@ -2071,6 +2071,16 @@ button {
   letter-spacing: 0.04em;
 }
 
+/* Songs (Settings → Music, the playlist dialog): Yours, then Included, each under a small heading. */
+.song-group-heading {
+  margin: 0;
+  padding: 22px 32px 8px;
+  font-size: var(--text-small);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
 /* Settings → Tabs: a grip on each row; a picked-up row is outlined in gold until put down. */
 .tab-grip {
   flex: none;

@@ -23,6 +23,7 @@ import { usePageScroll } from './usePageScroll'
 import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
 import { RowLabel } from '../components/RowLabel'
+import { songGroups, TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
 import { PlaylistDialog } from '../components/PlaylistDialog'
@@ -347,7 +348,7 @@ function NowPlaying({ tracks }: { tracks: MusicTrack[] }) {
       <div className="setting-list" data-focus-memory="settings-now-playing">
         <div className="song-row now-playing">
           <div className="setting-row now-playing-info">
-            <RowLabel label={track?.name ?? now.file} subtitle={now.playing ? (track?.credit ?? 'Playing') : 'Paused'} />
+            <RowLabel label={track?.name ?? now.file} subtitle={!now.playing ? 'Paused' : track ? <TrackLine track={track} /> : 'Playing'} />
           </div>
           {now.canSkip && skipButton(-1)}
           {now.canSkip && skipButton(1)}
@@ -367,7 +368,7 @@ function ChoiceRow({
 }: {
   label: string
   /** A second line under the name (a track's credit). */
-  subtitle?: string
+  subtitle?: ReactNode
   detail?: string
   selected: boolean
   onSelect: () => void
@@ -522,10 +523,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         )}
         {kind === 'music' &&
           songsOpen &&
-          settings.musicTracks.music.map((track, i) => (
+          songGroups(settings.musicTracks.music).map(({ heading, track, i }) =>
+            heading ? (
+              <h4 key={heading} className="song-group-heading display">
+                {heading}
+              </h4>
+            ) : (
             // A song with a button beside it to hear it first; Left from the button comes back to the song.
             <div key={track.file} id={`song-${i}`} className="song-row">
-              <ChoiceRow label={track.name} subtitle={track.credit} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
+              <ChoiceRow label={track.name} subtitle={<TrackLine track={track} />} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
               <button
                 className={`song-preview${preview === track.file ? ' playing' : ''}`}
                 tabIndex={-1}
@@ -538,13 +544,14 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
                 {preview === track.file ? <StopIcon className="song-preview-icon" /> : <PlayIcon className="song-preview-icon" />}
               </button>
             </div>
-          ))}
+            )
+          )}
         {kind === 'ambience' &&
           settings.musicTracks.ambience.map((track) => (
             <ChoiceRow
               key={track.file}
               label={track.name}
-              subtitle={track.credit}
+              subtitle={<TrackLine track={track} />}
               selected={settings.ambience === track.file}
               onSelect={() => chooseMusic('ambience', track.file)}
             />

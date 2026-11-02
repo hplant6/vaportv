@@ -103,8 +103,8 @@ export function musicFolder(config: Config): string {
 export async function musicTracks(config: Config): Promise<Record<MusicKind, MusicTrack[]>> {
   const found = await folderTracks(config)
   const of = (kind: MusicKind): MusicTrack[] => [
-    ...BUILT_IN.filter((t) => t.kind === kind).map(({ file, name, credit }) => ({ file, name, credit })),
-    ...found.filter((t) => t.kind === kind).map(({ file, name }) => ({ file, name }))
+    ...BUILT_IN.filter((t) => t.kind === kind).map(({ file, name, credit }) => ({ file, name, credit, builtIn: true })),
+    ...found.filter((t) => t.kind === kind).map(({ kind: _, ...track }) => track)
   ]
   return { music: of('music'), ambience: of('ambience') }
 }
@@ -125,11 +125,20 @@ async function folderTracks(config: Config): Promise<(MusicTrack & { kind: Music
       const file = relative(root, path)
       const [top, ...rest] = file.split(sep)
       const kind: MusicKind = rest.length > 0 && top === KIND_FOLDER.ambience ? 'ambience' : 'music'
-      // The kind's own folder isn't part of the name; other subfolders are ("Album · Track").
-      const shown = rest.length > 0 && (top === KIND_FOLDER.music || top === KIND_FOLDER.ambience) ? rest.join(sep) : file
-      return { file, kind, name: shown.replace(AUDIO, '').trim().replace(/[/\\]/g, ' · ') }
+      // The kind's own folder isn't part of the name; another subfolder is its album ("Album/Track.wav").
+      const parts = (rest.length > 0 && (top === KIND_FOLDER.music || top === KIND_FOLDER.ambience) ? rest : [top, ...rest]).map((p) => p.trim())
+      const { title, artist } = splitTrackName(parts[parts.length - 1].replace(AUDIO, '').trim())
+      const album = parts.length > 1 ? parts.slice(0, -1).join(' · ') : undefined
+      return { file, kind, name: title, ...(artist ? { artist } : {}), ...(album ? { album } : {}) }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** A file named "Artist - Title" (split at the first " - "; the title keeps any more), else all of it as the title. */
+export function splitTrackName(base: string): { title: string; artist?: string } {
+  const at = base.indexOf(' - ')
+  if (at <= 0 || at + 3 >= base.length) return { title: base }
+  return { artist: base.slice(0, at).trim(), title: base.slice(at + 3).trim() }
 }
 
 /**
