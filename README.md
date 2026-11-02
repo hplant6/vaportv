@@ -30,7 +30,7 @@ vaporTV is a front end: it shows and opens what's already on your box. Here's wh
 | **Emulated console games** | **[EmuDeck](https://www.emudeck.com/)**, with its emulators installed and your games in its `Emulation/roms` folders. vaporTV doesn't emulate anything itself; a console's tab appears once its emulator and its games are there. The [emulators guide](docs/guides/emulators.md) lists every console's folder, emulator and file types. |
 | **Cover art and app tiles** | A free **[SteamGridDB](https://www.steamgriddb.com/) API key** (sign in there, then Preferences → API), added in **Settings → Artwork**. Console games also get box art from RetroArch's thumbnails without one. Until art arrives, a card shows its name. |
 | **Streaming apps** | Internet, and the setup's app picks: Netflix, Disney+ and the other services open in Google Chrome (setup installs it from Flathub); YouTube, Emby, Jellyfin, Plex and Kodi install their own apps. See the [streaming apps guide](docs/guides/streaming-apps.md). |
-| **Controller or remote wake, Netflix remote control** (optional) | An admin password, which SteamOS doesn't have until you set one: open Konsole in Desktop Mode and run `passwd`. Without it, setup skips just these steps. |
+| **Controller or remote wake; Netflix with a controller or remote** (optional) | An admin password, which SteamOS doesn't have until you set one: open Konsole in Desktop Mode and run `passwd`. Without it, setup skips just these steps. |
 | **Voice search** (optional) | A microphone (a remote's, or a headset's). The speech model (about 150 MB) downloads the first time you use it; after that, speech is understood on the box, with nothing sent anywhere. |
 
 A controller is all you need to use it; a TV remote (such as a Sofabaton) or a keyboard works too. The download is around 400 MB.
@@ -66,6 +66,10 @@ Each console's tab shows that console, slowly turning on a mirror floor.
 | **Steam** | **Switch** | **PS3** | **Xbox** | **PS2** |
 | ![GameCube](docs/screenshots/console-gamecube.jpg) | ![Wii](docs/screenshots/console-wii.jpg) | ![Dreamcast](docs/screenshots/console-dreamcast.jpg) | ![Genesis](docs/screenshots/console-genesis.jpg) | ![Arcade stick](docs/screenshots/console-arcade.jpg) |
 | **GameCube** | **Wii** | **Dreamcast** | **Genesis** | **Arcade** |
+| ![Neo Geo](docs/screenshots/console-neogeo.jpg) | | | | |
+| **Neo Geo** | | | | |
+
+PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and the Apps tab a pile of VHS tapes. The **Consoles** screensaver shows each of yours in turn.
 
 ### Backdrops
 
@@ -78,9 +82,9 @@ Each console's tab shows that console, slowly turning on a mirror floor.
 **Home and tabs**
 - **Home:** Recents (Steam games, emulated games and apps, by when you last played) and Favorite Apps, as carousels or grids
 - **Steam:** your Steam collections, including dynamic ones, and recently played
-- **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Neo Geo, each opening its games in the right emulator; a tab only shows when its emulator and games are there
+- **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Neo Geo, each opening its games in the right emulator; a tab only shows when its emulator and games are there. Cards show the icon of the emulator a game opens in
 - **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS and MAME sets, named from MAME's list, each in RetroArch with the right core (and a choice of core per game)
-- **Apps:** streaming services and media apps, with setup for anything missing, and **Files**, for browsing your folders, USB drives and SD cards, and copying games onto the box
+- **Apps:** streaming services and media apps, with setup for anything missing, and **Files**, for browsing your folders, USB drives and SD cards, and copying games onto the box. **Netflix** works with a controller or a TV remote through vaporTV's own extension, with its pop-ups and scrollbars out of the way
 - **The top bar:** up to eleven tabs, with the rest in a second row that opens when you press down from it; **Settings → Tabs** puts each tab where you want it, or switches it off
 
 **Games**
@@ -91,16 +95,17 @@ Each console's tab shows that console, slowly turning on a mirror floor.
 
 **Art**
 - Covers from [SteamGridDB](https://www.steamgriddb.com/) (with a free API key) and the libretro thumbnails
-- Pick any game's art by hand: SteamGridDB, RetroArch's box art, or a web image search
+- Pick any game's art by hand: SteamGridDB, RetroArch's box art, or a web image search (with a free [Brave Search API](https://brave.com/search/api/) key, added in **Settings → Artwork**)
 
 **Backdrops**
 - **Console backdrops:** each console's tab shows that console, black and lit in neon on a mirror floor, the camera slowly swinging round it like a product shot, its brightest edges glowing. The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, and Arcade an arcade stick. **Settings → Backdrop → Console backdrops** trades sharpness for less work on the GPU
-- **Eight live backdrops** for everything else: Sea and Forest (both following the time of day), Rain, City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
-- **Home can have its own backdrop**, separate from the other screens
+- **Eight live backdrops**: Sea and Forest (both following the time of day), Rain, City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
+- **Home backdrop and Tabs backdrop**, chosen apart: the tabs show their consoles, or any backdrop instead, on every tab
 
 **Sound and screensaver**
-- Background **music** with **ambience** under it (rain, crickets, ocean waves, birdsong), each with its own volume; built-in tracks by Chris Zabriskie, **playlists**, and your own music added from a USB drive
-- A **screensaver**: a slideshow of your game art, Steam screenshots and photos, the backdrop with a big clock, or a clock with the weather
+- Background **music** with **ambience** under it (rain, crickets, ocean waves, birdsong), each with its own volume. Two playlists come with it, **Ambient** (Chris Zabriskie) and **Retro** (chiptunes from OpenGameArt), all volume-matched; make your own, preview any song, and add music from a USB drive. Your songs are listed apart from the included ones, with their artist and length
+- **Now playing** in Settings → Music, with back and next; **L3** skips to the next song from anywhere
+- A **screensaver**: a slideshow of your game art, Steam screenshots and photos; the backdrop with a big clock; **your consoles**, one after another; or a clock with the weather. The clock moves around (kind to OLED TVs) or stays put in a corner or the middle
 
 **Around the room**
 - **Select + Start** (held) closes whatever is running and comes back to vaporTV
@@ -122,6 +127,7 @@ Each console's tab shows that console, slowly turning on a mirror floor.
 | Start | Game options: rename, emulator, art or delete (on an app: its details) |
 | Select | Show what each button does, along the bottom |
 | R3 | Voice search |
+| L3 | Next song |
 | L2 / R2 | Volume down / up |
 | Select + Start (hold) | Close the game or app and return to vaporTV |
 
