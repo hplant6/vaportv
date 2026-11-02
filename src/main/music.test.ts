@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { currentMusic, importMusic, musicChoices, musicTracks } from './music'
+import { currentMusic, importMusic, musicChoices, musicTracks, playlists } from './music'
 
 // The browser and importer only touch home and drive mounts, so the fixture lives in home.
 let root: string
@@ -33,10 +33,11 @@ afterAll(() => rm(root, { recursive: true, force: true }))
 describe('background music', () => {
   it('splits tracks into music and ambience', async () => {
     const tracks = await musicTracks({ musicFolder: music })
-    // The built-in Chris Zabriskie tracks first, each with its credit, then the folder's.
-    expect(tracks.music).toHaveLength(9)
+    // The built-in tracks first (Chris Zabriskie's, then Retro's), each with its credit, then the folder's.
+    expect(tracks.music).toHaveLength(16)
     expect(tracks.music.slice(0, 7).every((t) => t.file.startsWith('builtin:zabriskie-') && t.credit?.includes('CC BY 4.0'))).toBe(true)
-    expect(tracks.music.slice(7).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
+    expect(tracks.music.slice(7, 14).every((t) => t.file.startsWith('builtin:retro-') && /CC0|CC BY 3\.0/.test(t.credit ?? ''))).toBe(true)
+    expect(tracks.music.slice(14).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
     expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Crickets (built in)', 'Ocean waves (built in)', 'Birdsong (built in)', 'Waves'])
   })
 
@@ -61,10 +62,20 @@ describe('background music', () => {
     expect((await currentMusic({ musicFolder: music, music: 'playlist:zabriskie', playlists: [] })).music.urls).toEqual([])
   })
 
+  it('adds a built-in playlist newer than the saved ones once, and keeps one deleted deleted', () => {
+    const mine = { id: 'mine', name: 'Mine', files: [], shuffle: false }
+    expect(playlists({}).map((p) => p.id)).toEqual(['zabriskie', 'retro'])
+    // Saved before Retro shipped: it joins at the end; Zabriskie, deleted then, doesn't come back.
+    expect(playlists({ playlists: [mine] }).map((p) => p.id)).toEqual(['mine', 'retro'])
+    // Saved since (every built-in already offered): deleting Retro sticks.
+    expect(playlists({ playlists: [mine], builtinPlaylists: ['zabriskie', 'retro'] }).map((p) => p.id)).toEqual(['mine'])
+    expect(playlists({}).find((p) => p.id === 'retro')!.files).toHaveLength(7)
+  })
+
   it('plays every track of a layer when shuffled', async () => {
     const layers = await currentMusic({ musicFolder: music, music: 'shuffle', ambience: 'Ambience/Waves.wav' })
     expect(layers.music.shuffle).toBe(true)
-    expect(layers.music.urls).toHaveLength(9)
+    expect(layers.music.urls).toHaveLength(16)
     expect(layers.ambience).toMatchObject({ shuffle: false })
     expect(layers.ambience.urls).toHaveLength(1)
   })

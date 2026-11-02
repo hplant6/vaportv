@@ -16,6 +16,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Games and apps with no art yet show their name on a dark fade instead of on a black band over static.
 
 ### Added
+- A Retro playlist in Settings → Music: chiptunes by Juhani Junkala, Aron Ben Elal and Shiru, from OpenGameArt. It's added alongside any playlists you've already made.
 - Settings → Music → Now playing: the song that's on, with buttons to go back a song or skip to the next.
 - A Consoles screensaver: each of your consoles' backdrops in turn, five seconds apiece (Settings → Screensaver).
 - The screensaver's clock can stay in the bottom left corner (Settings → Screensaver → Clock position).

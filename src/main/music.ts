@@ -37,17 +37,40 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
   { file: 'builtin:zabriskie-i-fuck-you-not', name: 'I Fuck You Not', credit: 'Chris Zabriskie · Mayor Feedback · CC BY 4.0', url: 'music/zabriskie-i-fuck-you-not.ogg', kind: 'music' },
   { file: 'builtin:zabriskie-i-hope-to-be-able-to-live', name: 'I Hope to Be Able to Live the Rest of My Life Without Ever Having to Make That Choice', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-i-hope-to-be-able-to-live.ogg', kind: 'music' },
   { file: 'builtin:zabriskie-what-if-she-doesnt-need-a-scarf', name: 'What If She Doesn’t Need a Scarf?', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-what-if-she-doesnt-need-a-scarf.ogg', kind: 'music' },
-  { file: 'builtin:zabriskie-your-journey-is-resuming-now', name: 'Your Journey Is Resuming Now', credit: 'Chris Zabriskie · Abandon Babylon · CC BY 4.0', url: 'music/zabriskie-your-journey-is-resuming-now.ogg', kind: 'music' }
+  { file: 'builtin:zabriskie-your-journey-is-resuming-now', name: 'Your Journey Is Resuming Now', credit: 'Chris Zabriskie · Abandon Babylon · CC BY 4.0', url: 'music/zabriskie-your-journey-is-resuming-now.ogg', kind: 'music' },
+  // Retro: chiptunes from opengameart.org (credited here, in Settings beside each track, and in NOTICE.md), re-encoded
+  // to Opus. Juhani Junkala's Retro Game Music Pack and Aron Ben Elal's Chiploop are CC0; Shiru's are CC BY 3.0.
+  { file: 'builtin:retro-junkala-title-screen', name: 'Title Screen', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-title-screen.ogg', kind: 'music' },
+  { file: 'builtin:retro-junkala-level-1', name: 'Level 1', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-1.ogg', kind: 'music' },
+  { file: 'builtin:retro-junkala-level-2', name: 'Level 2', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-2.ogg', kind: 'music' },
+  { file: 'builtin:retro-junkala-level-3', name: 'Level 3', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-3.ogg', kind: 'music' },
+  { file: 'builtin:retro-elal-chiploop', name: 'Chiploop', credit: 'Aron Ben Elal · CC0', url: 'music/retro-elal-chiploop.ogg', kind: 'music' },
+  { file: 'builtin:retro-shiru-time-up', name: 'Time Up', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-time-up.ogg', kind: 'music' },
+  { file: 'builtin:retro-shiru-moonlight', name: 'Moonlight', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-moonlight.ogg', kind: 'music' }
 ]
 
-/** The playlist there is until any are made or changed: the built-in Chris Zabriskie tracks, in order. */
+const builtInFiles = (prefix: string): string[] => BUILT_IN.filter((t) => t.file.startsWith(prefix)).map((t) => t.file)
+
+/** The playlists that ship with vaporTV, in order: the built-in tracks of each. */
 const DEFAULT_PLAYLISTS: Playlist[] = [
-  { id: 'zabriskie', name: 'Chris Zabriskie', files: BUILT_IN.filter((t) => t.file.startsWith('builtin:zabriskie-')).map((t) => t.file), shuffle: false }
+  { id: 'zabriskie', name: 'Chris Zabriskie', files: builtInFiles('builtin:zabriskie-'), shuffle: false },
+  { id: 'retro', name: 'Retro', files: builtInFiles('builtin:retro-'), shuffle: false }
 ]
 
-/** Music's playlists: the saved ones, or the built-in one until any are saved. */
+/** The built-in playlists there were before config kept count (`builtinPlaylists`). */
+const FIRST_BUILT_IN = ['zabriskie']
+
+/** Built-in playlist ids, recorded when playlists are saved so one deleted isn't added again. */
+export const BUILT_IN_PLAYLIST_IDS = DEFAULT_PLAYLISTS.map((p) => p.id)
+
+/**
+ * Music's playlists: the saved ones, plus any built-in playlist newer than them (shipped since they were saved),
+ * at the end; or the built-in ones until any are saved.
+ */
 export function playlists(config: Config): Playlist[] {
-  return config.playlists ?? DEFAULT_PLAYLISTS
+  if (!config.playlists) return DEFAULT_PLAYLISTS
+  const known = new Set([...(config.builtinPlaylists ?? FIRST_BUILT_IN), ...config.playlists.map((p) => p.id)])
+  return [...config.playlists, ...DEFAULT_PLAYLISTS.filter((p) => !known.has(p.id))]
 }
 
 export function musicFolder(config: Config): string {

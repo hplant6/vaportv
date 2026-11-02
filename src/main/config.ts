@@ -130,6 +130,8 @@ export interface Config {
   gameEmulators?: Record<string, string>
   /** Music playlists made in Settings; unset until one is changed (then the built-in one is a saved one). */
   playlists?: Playlist[]
+  /** Built-in playlists already offered (their ids): one deleted since stays deleted, a new one is added. */
+  builtinPlaylists?: string[]
   /** Recents layout per screen, where chosen; see recentsLayout(). */
   recentsLayouts?: Partial<Record<RecentsTab, SteamLayout>>
   /** Home's Favorite Apps: a sideways row (default) or the grid. */

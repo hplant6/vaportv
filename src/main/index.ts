@@ -60,7 +60,7 @@ import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
-import { currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
+import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
@@ -636,7 +636,7 @@ ipcMain.handle('settings:playlists', async (_event, lists: Playlist[]) => {
   await saveConfig((config) => {
     // Deleting the playlist that's playing stops the music rather than leaving a choice that plays nothing.
     const playing = config.music?.startsWith(PLAYLIST) && !lists.some((p) => PLAYLIST + p.id === config.music)
-    return { playlists: lists, ...(playing ? { music: undefined } : {}) }
+    return { playlists: lists, builtinPlaylists: BUILT_IN_PLAYLIST_IDS, ...(playing ? { music: undefined } : {}) }
   })
 })
 ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
