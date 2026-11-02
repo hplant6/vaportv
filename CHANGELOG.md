@@ -12,6 +12,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Press the left stick (L3) to skip to the next song; a note at the bottom says which. It's Next song in Settings → Controller, so it can go on another button.
 
 ### Fixed
+- The weather corner no longer goes blank when the weather service is briefly down: it tries again at once, then shows the last temperature it had for your place (up to a day old), and always your town's name. With nothing to show it asks again after a minute, not a quarter of an hour.
 - Typing a weather location, a picture search (Artwork) or an API key uses vaporTV's own keyboard. Before, Steam's keyboard came up over a text box and every controller press landed twice, so a place like Long Beach couldn't be picked from the results.
 - Netflix works with a controller: the D-pad or left stick moves between titles, A opens, B goes back (and in the player, A plays and pauses). Before, only a TV remote moved around it.
 - Netflix's pop-up notifications ("New Arrival") no longer appear: nothing on screen could close them. Websites in vaporTV's Chrome can't send notifications any more (vaporTV asks for the admin password once to set this).

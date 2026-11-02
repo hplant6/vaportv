@@ -72,7 +72,8 @@ export interface PlaceMatch {
 }
 
 export interface Weather {
-  temperature: number
+  /** Null when it couldn't be fetched and there's no recent one to show (the town still is). */
+  temperature: number | null
   unit: 'fahrenheit' | 'celsius'
   /** The town it's for, e.g. "Long Beach"; absent if not known. */
   city?: string

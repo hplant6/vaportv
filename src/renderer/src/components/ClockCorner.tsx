@@ -48,13 +48,25 @@ function store<T>(initial: T, start: (set: (value: T) => void) => () => void) {
   }
 }
 
+/** Without a temperature (the service down, no network), asked again soon: after 1 minute, then 2, 4… up to WEATHER_REFRESH. */
+const WEATHER_RETRY = 60 * 1000
+
 const weatherStore = store<Weather | null>(null, (set) => {
-  const load = (): void => void window.steamtv.getWeather().then(set)
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let retry = WEATHER_RETRY
+  const load = (): void => {
+    clearTimeout(timer)
+    void window.steamtv.getWeather().then((weather) => {
+      set(weather)
+      const missing = !weather || weather.temperature === null
+      timer = setTimeout(load, missing ? retry : WEATHER_REFRESH)
+      retry = missing ? Math.min(retry * 2, WEATHER_REFRESH) : WEATHER_RETRY
+    })
+  }
   load()
-  const timer = setInterval(load, WEATHER_REFRESH)
   window.addEventListener(WEATHER_CHANGED_EVENT, load)
   return () => {
-    clearInterval(timer)
+    clearTimeout(timer)
     window.removeEventListener(WEATHER_CHANGED_EVENT, load)
   }
 })
@@ -138,7 +150,7 @@ export function ClockLayout({ id, side }: { id: ClockWidget; side: 'left' | 'rig
   const sensorUnit = useCorners().sensorUnit
   const needsStats = id === 'cpuUsage' || id === 'cpuTemp' || id === 'gpuUsage' || id === 'gpuTemp'
   const stats = needsStats ? <Stats id={id} side={side} unit={sensorUnit} /> : null
-  const temp = weather ? degrees(weather.temperature, weather.unit) : '--'
+  const temp = weather && weather.temperature !== null ? degrees(weather.temperature, weather.unit) : '--'
 
   switch (id) {
     case 'dateTemp':

@@ -280,7 +280,7 @@ function DriftingClock({ spot }: { spot: ScreensaverClockSpot }) {
   const [temperature, setTemperature] = useState<number | null>(null)
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.getWeather().then((w) => setTemperature(w ? Math.round(w.temperature) : null))
+      window.steamtv.getWeather().then((w) => setTemperature(w && w.temperature !== null ? Math.round(w.temperature) : null))
     }
     load()
     const timer = setInterval(load, WEATHER_REFRESH_MS)
