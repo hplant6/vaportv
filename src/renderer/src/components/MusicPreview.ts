@@ -7,7 +7,8 @@ export const MUSIC_HOLD_EVENT = 'steamtv:music-hold'
 export const PREVIEW_EVENT = 'steamtv:preview'
 
 const PREVIEW_MS = 30_000
-const VOLUME = 0.45
+// Twice the old 0.45: the built-in music is loudness-matched 6 dB or so quieter (music.ts MUSIC_GAIN).
+const VOLUME = 0.9
 
 let audio: HTMLAudioElement | null = null
 let playing: string | null = null

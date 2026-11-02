@@ -34,10 +34,10 @@ describe('background music', () => {
   it('splits tracks into music and ambience', async () => {
     const tracks = await musicTracks({ musicFolder: music })
     // The built-in tracks first (Chris Zabriskie's, then Retro's), each with its credit, then the folder's.
-    expect(tracks.music).toHaveLength(16)
+    expect(tracks.music).toHaveLength(22)
     expect(tracks.music.slice(0, 7).every((t) => t.file.startsWith('builtin:zabriskie-') && t.credit?.includes('CC BY 4.0'))).toBe(true)
-    expect(tracks.music.slice(7, 14).every((t) => t.file.startsWith('builtin:retro-') && /CC0|CC BY 3\.0/.test(t.credit ?? ''))).toBe(true)
-    expect(tracks.music.slice(14).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
+    expect(tracks.music.slice(7, 20).every((t) => t.file.startsWith('builtin:retro-') && /CC0|CC BY 3\.0|Oblidivm/.test(t.credit ?? ''))).toBe(true)
+    expect(tracks.music.slice(20).map((t) => t.name)).toEqual(['Albums · Track', 'Loose song'])
     expect(tracks.ambience.map((t) => t.name)).toEqual(['Rain (built in)', 'Crickets (built in)', 'Ocean waves (built in)', 'Birdsong (built in)', 'Waves'])
   })
 
@@ -69,13 +69,16 @@ describe('background music', () => {
     expect(playlists({ playlists: [mine] }).map((p) => p.id)).toEqual(['mine', 'retro'])
     // Saved since (every built-in already offered): deleting Retro sticks.
     expect(playlists({ playlists: [mine], builtinPlaylists: ['zabriskie', 'retro'] }).map((p) => p.id)).toEqual(['mine'])
-    expect(playlists({}).find((p) => p.id === 'retro')!.files).toHaveLength(7)
+    expect(playlists({}).find((p) => p.id === 'retro')!.files).toHaveLength(13)
   })
 
   it('plays every track of a layer when shuffled', async () => {
     const layers = await currentMusic({ musicFolder: music, music: 'shuffle', ambience: 'Ambience/Waves.wav' })
     expect(layers.music.shuffle).toBe(true)
-    expect(layers.music.urls).toHaveLength(16)
+    expect(layers.music.urls).toHaveLength(22)
+    // The built-in music is loudness-matched quieter, so music (not ambience) plays at twice the level.
+    expect(layers.music.volume).toBe(0.5)
+    expect(layers.ambience.volume).toBe(0.25)
     expect(layers.ambience).toMatchObject({ shuffle: false })
     expect(layers.ambience.urls).toHaveLength(1)
   })

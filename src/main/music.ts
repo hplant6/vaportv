@@ -9,6 +9,12 @@ import { artUrl } from './library/art'
 /** Volume levels for background music: quiet enough to sit under menu sounds. */
 export const MUSIC_VOLUME: Record<MusicVolume, number> = { low: 0.12, medium: 0.25, high: 0.45 }
 
+/**
+ * The built-in music is loudness-matched to -16 LUFS (EBU R128), as much as 9 dB under how most of it was mastered;
+ * the music layer plays twice as loud (+6 dB) to make that up, so each volume level sounds about as it did before.
+ */
+const MUSIC_GAIN = 2
+
 /** A saved choice that plays every track of its kind in random order. */
 export const SHUFFLE = 'shuffle'
 
@@ -39,14 +45,22 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
   { file: 'builtin:zabriskie-what-if-she-doesnt-need-a-scarf', name: 'What If She Doesn’t Need a Scarf?', credit: 'Chris Zabriskie · I Want You to Think About Me · CC BY 4.0', url: 'music/zabriskie-what-if-she-doesnt-need-a-scarf.ogg', kind: 'music' },
   { file: 'builtin:zabriskie-your-journey-is-resuming-now', name: 'Your Journey Is Resuming Now', credit: 'Chris Zabriskie · Abandon Babylon · CC BY 4.0', url: 'music/zabriskie-your-journey-is-resuming-now.ogg', kind: 'music' },
   // Retro: chiptunes from opengameart.org (credited here, in Settings beside each track, and in NOTICE.md), re-encoded
-  // to Opus. Juhani Junkala's Retro Game Music Pack and Aron Ben Elal's Chiploop are CC0; Shiru's are CC BY 3.0.
+  // to Opus. Juhani Junkala's Retro Game Music Pack and Aron Ben Elal's Chiploop are CC0; Shiru's are CC BY 3.0;
+  // Oblidivm asks for "Music by Oblidivm" with a link to oblidivmmusic.blogspot.com.
+  // All the built-in music (Zabriskie's too) is loudness-matched to -16 LUFS: see MUSIC_GAIN.
   { file: 'builtin:retro-junkala-title-screen', name: 'Title Screen', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-title-screen.ogg', kind: 'music' },
   { file: 'builtin:retro-junkala-level-1', name: 'Level 1', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-1.ogg', kind: 'music' },
   { file: 'builtin:retro-junkala-level-2', name: 'Level 2', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-2.ogg', kind: 'music' },
   { file: 'builtin:retro-junkala-level-3', name: 'Level 3', credit: 'Juhani Junkala · Retro Game Music Pack · CC0', url: 'music/retro-junkala-level-3.ogg', kind: 'music' },
   { file: 'builtin:retro-elal-chiploop', name: 'Chiploop', credit: 'Aron Ben Elal · CC0', url: 'music/retro-elal-chiploop.ogg', kind: 'music' },
   { file: 'builtin:retro-shiru-time-up', name: 'Time Up', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-time-up.ogg', kind: 'music' },
-  { file: 'builtin:retro-shiru-moonlight', name: 'Moonlight', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-moonlight.ogg', kind: 'music' }
+  { file: 'builtin:retro-shiru-moonlight', name: 'Moonlight', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-moonlight.ogg', kind: 'music' },
+  { file: 'builtin:retro-shiru-intruder-alert', name: 'Intruder Alert', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-intruder-alert.ogg', kind: 'music' },
+  { file: 'builtin:retro-shiru-voidfiller', name: 'Voidfiller', credit: 'Shiru · CC BY 3.0', url: 'music/retro-shiru-voidfiller.ogg', kind: 'music' },
+  { file: 'builtin:retro-oblidivm-jump2sky', name: 'Jump2Sky', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-jump2sky.ogg', kind: 'music' },
+  { file: 'builtin:retro-oblidivm-survive', name: 'Survive', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-survive.ogg', kind: 'music' },
+  { file: 'builtin:retro-oblidivm-the-labyrinth', name: 'The Labyrinth', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-the-labyrinth.ogg', kind: 'music' },
+  { file: 'builtin:retro-oblidivm-the-undefeated', name: 'The Undefeated', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-the-undefeated.ogg', kind: 'music' }
 ]
 
 const builtInFiles = (prefix: string): string[] => BUILT_IN.filter((t) => t.file.startsWith(prefix)).map((t) => t.file)
@@ -136,7 +150,7 @@ export async function currentMusic(config: Config): Promise<Record<MusicKind, Mu
     // A playlist's tracks in its order, less any no longer there.
     const list = kind === 'music' && choice?.startsWith(PLAYLIST) ? playlists(config).find((p) => PLAYLIST + p.id === choice) : undefined
     const chosen = list ? list.files.filter((f) => files.includes(f)) : choice === SHUFFLE ? files : files.filter((f) => f === choice)
-    return { urls: chosen.map(url), files: chosen, shuffle: choice === SHUFFLE || !!list?.shuffle, volume: MUSIC_VOLUME[volume ?? 'medium'] }
+    return { urls: chosen.map(url), files: chosen, shuffle: choice === SHUFFLE || !!list?.shuffle, volume: Math.min(1, MUSIC_VOLUME[volume ?? 'medium'] * (kind === 'music' ? MUSIC_GAIN : 1)) }
   }
   return { music: layer('music', config.musicVolume), ambience: layer('ambience', config.ambienceVolume) }
 }

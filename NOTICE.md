@@ -38,6 +38,12 @@ either version 3 of the License, or (at your option) any later version. See
 | "Chiploop" (`retro-elal-chiploop.ogg`) | `src/renderer/public/music/` | Aron Ben Elal (iamoneabe), [opengameart.org/content/chiploop](https://opengameart.org/content/chiploop) (re-encoded to Opus from the MP3) | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) |
 | "Time Up" (`retro-shiru-time-up.ogg`) | `src/renderer/public/music/` | Shiru (shiru8bit), [opengameart.org/content/8-bit-chiptune-time-up](https://opengameart.org/content/8-bit-chiptune-time-up) (re-encoded to Opus from the FLAC) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
 | "Moonlight" (`retro-shiru-moonlight.ogg`) | `src/renderer/public/music/` | Shiru (shiru8bit), [opengameart.org/content/8-bit-chiptune-moonlight](https://opengameart.org/content/8-bit-chiptune-moonlight) (re-encoded to Opus from the FLAC) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| "Intruder Alert" (`retro-shiru-intruder-alert.ogg`) | `src/renderer/public/music/` | Shiru (shiru8bit), via [opengameart.org](https://opengameart.org) (re-encoded to Opus from the FLAC) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| "Voidfiller" (`retro-shiru-voidfiller.ogg`) | `src/renderer/public/music/` | Shiru (shiru8bit), via [opengameart.org](https://opengameart.org) (re-encoded to Opus from the FLAC) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| "Jump2Sky" (`retro-oblidivm-jump2sky.ogg`) | `src/renderer/public/music/` | Music by Oblidivm, [oblidivmmusic.blogspot.com](https://oblidivmmusic.blogspot.com), via [opengameart.org](https://opengameart.org) (re-encoded to Opus) | Free to use with this credit, per the artist's notes and OpenGameArt listing |
+| "Survive" (`retro-oblidivm-survive.ogg`) | `src/renderer/public/music/` | Music by Oblidivm, [oblidivmmusic.blogspot.com](https://oblidivmmusic.blogspot.com), via [opengameart.org](https://opengameart.org) (re-encoded to Opus) | Free to use with this credit, per the artist's notes and OpenGameArt listing |
+| "The Labyrinth" (`retro-oblidivm-the-labyrinth.ogg`) | `src/renderer/public/music/` | Music by Oblidivm, [oblidivmmusic.blogspot.com](https://oblidivmmusic.blogspot.com), via [opengameart.org](https://opengameart.org) (re-encoded to Opus) | Free to use with this credit, per the artist's notes and OpenGameArt listing |
+| "The Undefeated" (`retro-oblidivm-the-undefeated.ogg`) | `src/renderer/public/music/` | Music by Oblidivm, [oblidivmmusic.blogspot.com](https://oblidivmmusic.blogspot.com), via [opengameart.org](https://opengameart.org) (re-encoded to Opus) | Free to use with this credit, per the artist's notes and OpenGameArt listing |
 | whisper.cpp (`whisper-cli`, speech to text for voice search; built by `scripts/whisper.sh`, shipped beside the app with its licence) | `voice/` in the app | Georgi Gerganov and the ggml authors ([ggml-org/whisper.cpp](https://github.com/ggml-org/whisper.cpp)) | MIT |
 | Whisper English model (`ggml-base.en.bin`), downloaded on first use, not shipped | `~/.local/share/steamtv/voice/` | OpenAI (Whisper), converted by the whisper.cpp project | MIT |
 | Arcade game names, years and parent sets (`arcade-names.json`) | `src/main/library/` | MAME 0289 `-listxml`, the MAME team; rebuilt by `scripts/make-arcade-names.py` | GPL-2.0-or-later (MAME) |
@@ -60,6 +66,9 @@ either version 3 of the License, or (at your option) any later version. See
 | Tilt Warp (menus and titles) | `src/renderer/src/assets/fonts/` | Andy Clymer (The Tilt Project Authors) | SIL Open Font License 1.1 (`TiltWarp-OFL.txt`) |
 | Big Shoulders (clock and date) | `src/renderer/src/assets/fonts/` | Patric King (The Big Shoulders Project Authors) | SIL Open Font License 1.1 (`BigShoulders-OFL.txt`) |
 | React, three.js, React Three Fiber, drei, postprocessing, qrcode and other npm dependencies | `package.json` | their authors | MIT / Apache-2.0 / ISC (see each package) |
+
+All the built-in music above (Chris Zabriskie's and the Retro playlist's) is loudness-matched to -16 LUFS (EBU R128) when re-encoded; nothing else about the recordings is changed.
+
 
 vaporTV ships no streaming-service or app logos. App tiles and their small icons are
 downloaded on your own box from SteamGridDB (with your SteamGridDB key, Settings →
