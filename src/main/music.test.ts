@@ -70,6 +70,10 @@ describe('background music', () => {
     // Saved since (every built-in already offered): deleting Retro sticks.
     expect(playlists({ playlists: [mine], builtinPlaylists: ['zabriskie', 'retro'] }).map((p) => p.id)).toEqual(['mine'])
     expect(playlists({}).find((p) => p.id === 'retro')!.files).toHaveLength(13)
+    // The built-in Chris Zabriskie playlist is now called Ambient; a saved copy under the old name follows, a renamed one doesn't.
+    expect(playlists({}).find((p) => p.id === 'zabriskie')!.name).toBe('Ambient')
+    expect(playlists({ playlists: [{ id: 'zabriskie', name: 'Chris Zabriskie', files: [], shuffle: false }] })[0].name).toBe('Ambient')
+    expect(playlists({ playlists: [{ id: 'zabriskie', name: 'Chill', files: [], shuffle: false }] })[0].name).toBe('Chill')
   })
 
   it('plays every track of a layer when shuffled', async () => {

@@ -67,7 +67,7 @@ const builtInFiles = (prefix: string): string[] => BUILT_IN.filter((t) => t.file
 
 /** The playlists that ship with vaporTV, in order: the built-in tracks of each. */
 const DEFAULT_PLAYLISTS: Playlist[] = [
-  { id: 'zabriskie', name: 'Chris Zabriskie', files: builtInFiles('builtin:zabriskie-'), shuffle: false },
+  { id: 'zabriskie', name: 'Ambient', files: builtInFiles('builtin:zabriskie-'), shuffle: false },
   { id: 'retro', name: 'Retro', files: builtInFiles('builtin:retro-'), shuffle: false }
 ]
 
@@ -84,7 +84,15 @@ export const BUILT_IN_PLAYLIST_IDS = DEFAULT_PLAYLISTS.map((p) => p.id)
 export function playlists(config: Config): Playlist[] {
   if (!config.playlists) return DEFAULT_PLAYLISTS
   const known = new Set([...(config.builtinPlaylists ?? FIRST_BUILT_IN), ...config.playlists.map((p) => p.id)])
-  return [...config.playlists, ...DEFAULT_PLAYLISTS.filter((p) => !known.has(p.id))]
+  return [...config.playlists.map(renamed), ...DEFAULT_PLAYLISTS.filter((p) => !known.has(p.id))]
+}
+
+/** Built-in playlists' old names, by id: a saved copy still called that takes the new name (one renamed by hand keeps its own). */
+const OLD_NAMES: Record<string, { from: string; to: string }> = { zabriskie: { from: 'Chris Zabriskie', to: 'Ambient' } }
+
+const renamed = (playlist: Playlist): Playlist => {
+  const old = OLD_NAMES[playlist.id]
+  return old && playlist.name === old.from ? { ...playlist, name: old.to } : playlist
 }
 
 export function musicFolder(config: Config): string {

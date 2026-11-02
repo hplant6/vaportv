@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MusicTrack, Playlist } from '../../../shared/types'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
+import { PlayIcon, StopIcon } from './icons'
 import { OnScreenKeyboard } from './Keyboard'
+import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from './MusicPreview'
 import { ToggleRow } from './ToggleRow'
 
 // Settings → Music → Playlists: one playlist's name, whether it shuffles, and which tracks are in
-// it (in the order they were put in). Every change saves straight away; B closes. A new playlist
-// starts by asking for its name.
+// it (in the order they were put in), each with a button beside it to hear it first, as in the
+// Songs list. Every change saves straight away; B closes. A new playlist starts by asking for its name.
 
 export function PlaylistDialog({
   playlist,
@@ -26,6 +28,17 @@ export function PlaylistDialog({
   const list = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState<Playlist | null>(playlist)
   const [naming, setNaming] = useState(!playlist)
+  const [preview, setPreview] = useState<string | null>(previewing())
+
+  // The preview button shows what's playing; closing the dialog stops it.
+  useEffect(() => {
+    const onPreview = (event: Event): void => setPreview((event as CustomEvent<string | null>).detail)
+    window.addEventListener(PREVIEW_EVENT, onPreview)
+    return () => {
+      window.removeEventListener(PREVIEW_EVENT, onPreview)
+      stopPreview()
+    }
+  }, [])
 
   useEffect(() => {
     if (naming) return
@@ -94,18 +107,33 @@ export function PlaylistDialog({
             onToggle={() => save({ ...current, shuffle: !current.shuffle })}
             onFocus={reveal}
           />
-          {tracks.map((track) => {
+          {tracks.map((track, i) => {
             const at = current.files.indexOf(track.file)
+            const playing = preview === track.file
             return (
-              <ToggleRow
-                key={track.file}
-                label={track.name}
-                subtitle={track.credit}
-                detail={at >= 0 ? `#${at + 1}` : undefined}
-                on={at >= 0}
-                onToggle={() => toggleTrack(track.file)}
-                onFocus={reveal}
-              />
+              // A track with a button beside it to hear it first; Left from the button comes back to the track.
+              <div key={track.file} id={`playlist-track-${i}`} className="song-row">
+                <ToggleRow
+                  label={track.name}
+                  subtitle={track.credit}
+                  detail={at >= 0 ? `#${at + 1}` : undefined}
+                  on={at >= 0}
+                  onToggle={() => toggleTrack(track.file)}
+                  onFocus={reveal}
+                />
+                <button
+                  className={`song-preview${playing ? ' playing' : ''}`}
+                  tabIndex={-1}
+                  aria-label={playing ? `Stop ${track.name}` : `Preview ${track.name}`}
+                  data-focusable=""
+                  data-select-sound="move"
+                  data-nav-left={`#playlist-track-${i} .setting-row`}
+                  onFocus={(e) => reveal(e.currentTarget.parentElement!)}
+                  onClick={() => togglePreview(track.file)}
+                >
+                  {playing ? <StopIcon className="song-preview-icon" /> : <PlayIcon className="song-preview-icon" />}
+                </button>
+              </div>
             )
           })}
           <button
