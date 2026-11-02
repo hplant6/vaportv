@@ -39,6 +39,7 @@ const ASSETS = [
   { from: 'models/genesis.glb', to: 'genesis.vtm', name: 'Genesis model' },
   { from: 'models/xbox.glb', to: 'xbox.vtm', name: 'Xbox model' },
   { from: 'models/arcade.glb', to: 'arcade.vtm', name: 'Arcade stick model' },
+  { from: 'models/neogeo.glb', to: 'neogeo.vtm', name: 'Neo Geo model' },
   { from: 'models/apps.glb', to: 'apps.vtm', name: 'VHS tapes model' }
 ]
 

@@ -110,6 +110,10 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     white: 0.35,
     exposure: 0.7
   },
+  neogeo: {
+    // The Neo Geo AES: black, with its gold logo.
+    model: 'private/neogeo.vtm'
+  },
   n64: {
     model: 'private/n64.vtm'
   },
