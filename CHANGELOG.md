@@ -16,7 +16,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Typing a weather location, a picture search (Artwork) or an API key uses vaporTV's own keyboard. Before, Steam's keyboard came up over a text box and every controller press landed twice, so a place like Long Beach couldn't be picked from the results.
 - Netflix works with a controller: the D-pad or left stick moves between titles, A opens, B goes back (and in the player, A plays and pauses). Before, only a TV remote moved around it.
 - Netflix's pop-up notifications ("New Arrival") no longer appear: nothing on screen could close them. Websites in vaporTV's Chrome can't send notifications any more (vaporTV asks for the admin password once to set this).
-- Netflix no longer shows a scrollbar down the right-hand side.
+- Netflix shows no scrollbars at all, the video player's included.
+- A new version of vaporTV's Netflix extension reaches Chrome the next time Netflix opens, rather than whenever Chrome next looks (up to a day).
 
 ## 0.11.0
 

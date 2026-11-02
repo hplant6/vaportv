@@ -11,12 +11,14 @@
   border-radius: 6px;
 }
 
-/* No scrollbar down the side: the page scrolls itself as the cursor moves, and on a TV it's only in the way. */
-html {
-  scrollbar-width: none;
+/* No scrollbars anywhere, the page's or any panel's (the player has one of its own): the page scrolls
+   itself as the cursor moves, and on a TV they're only in the way. */
+* {
+  scrollbar-width: none !important;
 }
 
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  display: none;
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }

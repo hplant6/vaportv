@@ -550,9 +550,11 @@ ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   const location = await getLocation()
   return location ? sunTimes(new Date(), location.latitude, location.longitude) : null
 })
-ipcMain.handle('launch', async (_event, kind: LaunchKind, id: string, name?: string) =>
-  launch(await loadConfig(), kind, id, name)
-)
+ipcMain.handle('launch', async (_event, kind: LaunchKind, id: string, name?: string) => {
+  // Netflix: a Chrome that has closed since vaporTV started gets the extension's newest version now.
+  if (kind === 'app' && id === 'netflix') await stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
+  return launch(await loadConfig(), kind, id, name)
+})
 
 ipcMain.handle('settings:get', async (): Promise<Settings> => {
   const config = await loadConfig()

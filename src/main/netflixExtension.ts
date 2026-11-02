@@ -1,5 +1,6 @@
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { app } from 'electron'
@@ -60,9 +61,35 @@ export async function stageNetflixExtension(): Promise<void> {
   </app>
 </gupdate>
 `
-  if ((await readFile(UPDATES, 'utf8').catch(() => '')) === updates && existsSync(CRX)) return
-  await mkdir(STAGE, { recursive: true })
-  // The .crx before the update file that names its version, so Chrome never finds one without the other.
-  await copyFile(packedFile('vaportv-netflix.crx'), CRX)
-  await writeFile(UPDATES, updates)
+  if ((await readFile(UPDATES, 'utf8').catch(() => '')) !== updates || !existsSync(CRX)) {
+    await mkdir(STAGE, { recursive: true })
+    // The .crx before the update file that names its version, so Chrome never finds one without the other.
+    await copyFile(packedFile('vaportv-netflix.crx'), CRX)
+    await writeFile(UPDATES, updates)
+  }
+  await replaceOlderInstall(info)
+}
+
+/** Where Chrome keeps the extensions it has installed: one folder per version, as <version>_<n>. */
+const INSTALLED = (id: string): string => join(homedir(), '.var', 'app', BROWSER, 'config', 'google-chrome', 'Default', 'Extensions', id)
+
+/**
+ * Chrome looks for a newer version of a policy's extension only every few hours, and never while it's
+ * kept running, so a new vaporTV's extension could wait a day (0.2.0 did). With Chrome closed, its copy
+ * of an older version is taken away: at its next start Chrome installs the policy's extension afresh,
+ * which is the version just staged. Only this extension's folder; nothing else of Chrome's.
+ */
+async function replaceOlderInstall(info: Packed): Promise<void> {
+  const dir = INSTALLED(info.id)
+  const versions = await readdir(dir).catch(() => [] as string[])
+  if (versions.length === 0 || versions.some((v) => v.split('_')[0] === info.version)) return
+  if (await chromeRunning()) return
+  await rm(dir, { recursive: true, force: true })
+  console.log(`steamtv: Chrome had vaporTV for Netflix ${versions.join(', ')}; it installs ${info.version} when it next starts`)
+}
+
+function chromeRunning(): Promise<boolean> {
+  return new Promise((resolve) =>
+    execFile('flatpak', ['ps', '--columns=application'], (err, stdout) => resolve(!err && stdout.split('\n').some((line) => line.trim() === BROWSER)))
+  )
 }
