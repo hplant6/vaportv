@@ -56,7 +56,7 @@ import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames }
 import { searchDuckDuckGo } from './library/duckduckgo'
 import { hasLibretroThumbnails, libretroCovers } from './library/libretroThumbnails'
 import { searchWebImages, webCover } from './library/webImages'
-import { DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
+import { adoptSteamFavorites, DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
@@ -623,7 +623,10 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     braveSearchKeyHint: config.braveSearchKey ? config.braveSearchKey.slice(-4) : null
   }
 })
-ipcMain.handle('steam-tab:get', async () => loadSteamTab(await loadConfig()))
+ipcMain.handle('steam-tab:get', async () => {
+  await adoptSteamFavorites(await loadConfig()).catch(() => {})
+  return loadSteamTab(await loadConfig())
+})
 ipcMain.handle('settings:steamCollections', (_event, ids: string[]) => saveConfig({ steamCollections: ids }))
 ipcMain.handle('settings:tabLayout', (_event, tab: LayoutTab, layout: SteamLayout) =>
   saveConfig({ [`${tab}Layout`]: layout })

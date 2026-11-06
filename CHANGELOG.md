@@ -6,6 +6,14 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## Unreleased
+
+### Added
+- Favourite Steam games right in vaporTV: press Y on any Steam game, as on the console tabs. Your favourites lead the Steam tab, and an All games row at the bottom lists every installed game so you can find the ones to add. Games already in Steam's Favorites collection are brought over the first time you open the tab.
+
+### Changed
+- Steam's own Favorites collection is called Steam favorites in Settings and no longer shows on the Steam tab by default (vaporTV's Favorites row replaces it). Turn it back on in Settings → Steam tab collections.
+
 ## 0.12.0
 
 ### Added

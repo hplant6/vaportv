@@ -37,8 +37,10 @@ export interface Config {
   screensaverSources?: Partial<ScreensaverSources>
   /** Folder of your own screensaver photos (default ~/Pictures/Screensaver). */
   screensaverFolder?: string
-  /** Steam collection ids shown on the Steam tab, in order (default: Favorites). Set from Settings. */
+  /** Steam collection ids shown on the Steam tab, in order (default: none). Set from Settings. */
   steamCollections?: string[]
+  /** Steam's Favorites collection has been copied into vaporTV's favourites (once). */
+  steamFavoritesAdopted?: boolean
   /** How the Steam tab lays out collections (default rows). Set from Settings. */
   steamLayout?: SteamLayout
   /** How the Switch tab lays out its games (default rows). Set from Settings. */

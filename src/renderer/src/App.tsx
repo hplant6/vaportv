@@ -254,7 +254,8 @@ export function App() {
         <Library
           screen="steam"
           load={window.steamtv.getSteamTab}
-          empty="No collections chosen. Pick which ones show here in Settings."
+          onFavorite={window.steamtv.toggleFavorite}
+          empty="No Steam games installed."
           logos={home.platformLogos}
           onNavigate={setScreen}
         />

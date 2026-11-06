@@ -93,7 +93,9 @@ export async function readCollections(userDir: string): Promise<CollectionConten
     const removed = new Set(stored.removed ?? [])
     const appids = dynamic ? [] : (stored.added ?? []).filter((id) => !removed.has(id))
     const rule = stored.filterSpec ? parseFilter(stored.filterSpec) : null
-    collections.push({ id: stored.id, name: stored.name, dynamic, appids, rule })
+    // Steam names its own "Favorites"; vaporTV has a Favorites row of its own.
+    const name = stored.id === 'favorite' ? 'Steam favorites' : stored.name
+    collections.push({ id: stored.id, name, dynamic, appids, rule })
   }
   // Favorites first, then the rest by name.
   return collections.sort((a, b) => (a.id === 'favorite' ? -1 : b.id === 'favorite' ? 1 : a.name.localeCompare(b.name)))

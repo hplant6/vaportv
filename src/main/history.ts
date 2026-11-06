@@ -7,7 +7,7 @@ const DATA = join(homedir(), '.local', 'share', 'steamtv')
 const HISTORY = join(DATA, 'history.json')
 // How long things steamtv launched itself (emulators, apps it runs directly) have run: id → seconds.
 const PLAYTIME = join(DATA, 'playtime.json')
-// Games marked as favourites in steamtv (Switch for now), in the order added.
+// Games marked as favourites in vaporTV (Steam and emulated), in the order added.
 const FAVORITES = join(DATA, 'favorites.json')
 
 async function writeJson(path: string, value: unknown): Promise<void> {
@@ -72,6 +72,15 @@ export function toggleFavorite(id: string): Promise<boolean> {
     const on = !favorites.includes(id)
     await writeJson(FAVORITES, on ? [...favorites, id] : favorites.filter((f) => f !== id))
     return on
+  })
+}
+
+/** Adds favourites not already there, at the end, in the order given. */
+export function addFavorites(ids: string[]): Promise<void> {
+  return inTurn(async () => {
+    const favorites = await readFavorites()
+    const added = ids.filter((id, i) => !favorites.includes(id) && ids.indexOf(id) === i)
+    if (added.length) await writeJson(FAVORITES, [...favorites, ...added])
   })
 }
 

@@ -241,7 +241,7 @@ describe('collections', () => {
     )
     const collections = await readCollections(user)
     expect(collections.map((c) => [c.name, c.dynamic, c.appids.length])).toEqual([
-      ['Favorites', false, 1],
+      ['Steam favorites', false, 1],
       ['Couch co-op', false, 2],
       ['Installed locally', true, 0]
     ])
@@ -297,19 +297,36 @@ describe('collections', () => {
         ['user-collections.uc-x', { value: JSON.stringify({ id: 'uc-x', name: 'Other', added: [10] }) }]
       ])
     )
-    const { layout, rows } = await loadSteamTab({ steamRoot: root })
+    const { layout, rows } = await loadSteamTab({ steamRoot: root }, [])
     expect(layout).toBe('rows')
     expect(rows.map((r) => [r.name, r.items.map((i) => i.title), r.notInstalled])).toEqual([
       // Recently played first (installed games, newest first; Proton is a tool, not a game).
       ['Recently played', ['Dead Island 2', 'Old Game'], 0],
-      // Default selection is Favorites; most recently played first; app 99 isn't installed.
-      ['Favorites', ['Dead Island 2', 'Old Game'], 1]
+      // No Steam collections by default; every installed game last, A–Z.
+      ['All games', ['Dead Island 2', 'Old Game'], 0]
     ])
-    const { rows: both } = await loadSteamTab({ steamRoot: root, steamCollections: ['favorite', 'uc-x'] })
-    expect(both.map((r) => r.name)).toEqual(['Recently played', 'Favorites', 'Other'])
-    // With no collections chosen, the tab still shows what was played.
-    const { rows: none } = await loadSteamTab({ steamRoot: root, steamCollections: [] })
-    expect(none.map((r) => r.name)).toEqual(['Recently played'])
+    const { rows: both } = await loadSteamTab({ steamRoot: root, steamCollections: ['favorite', 'uc-x'] }, [])
+    expect(both.map((r) => [r.name, r.notInstalled])).toEqual([
+      ['Recently played', 0],
+      // Steam's own Favorites, renamed so it isn't mistaken for vaporTV's; app 99 isn't installed.
+      ['Steam favorites', 1],
+      ['Other', 0],
+      ['All games', 0]
+    ])
+  })
+
+  it('puts vaporTV favourites first on the Steam tab, in the order added, starred', async () => {
+    const { root } = await fakeSteam()
+    const { rows } = await loadSteamTab({ steamRoot: root }, ['switch:x', 'steam:30', 'steam:99', 'steam:10'])
+    const favorites = rows[0]
+    expect(favorites.name).toBe('Favorites')
+    // Only installed Steam games; other tabs' favourites and uninstalled games are left out.
+    expect(favorites.items.map((i) => i.title)).toEqual(['Old Game', 'Dead Island 2'])
+    const all = rows.find((r) => r.id === 'all')
+    expect(all?.items.map((i) => [i.title, i.favorite])).toEqual([
+      ['Dead Island 2', true],
+      ['Old Game', true]
+    ])
   })
 })
 

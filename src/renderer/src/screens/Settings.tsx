@@ -759,7 +759,9 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Steam tab collections</h3>
-          <p className="settings-help">Choose which of your Steam collections appear on the Steam tab.</p>
+          <p className="settings-help">
+            Choose which of your Steam collections also appear on the Steam tab. Its Favorites row is vaporTV's own: press Y on a game.
+          </p>
           {settings && settings.collections.length === 0 && (
             <p className="settings-help">No Steam collections found on this computer.</p>
           )}
