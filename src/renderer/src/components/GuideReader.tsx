@@ -8,7 +8,7 @@ import { OverStage } from './GooglePhotos'
 
 // Settings → Help → a guide: read full screen. Up and down scroll, L1 and R1 go to the
 // other guides, B closes. The QR code opens the same guide on GitHub, on a phone, where
-// links work and commands can be copied.
+// links work and commands can be copied (or, for a guide with its own, that link: Ko-fi).
 
 /** Opens a guide (detail: { file, from }: the guide, and the row to come back to). */
 export const OPEN_GUIDE_EVENT = 'steamtv:guide'
@@ -59,10 +59,10 @@ function Reader({ index, onStep, onClose }: { index: number; onStep: (step: numb
     target.current = 0
     page.current?.scrollTo({ top: 0 })
     setQr(null)
-    QRCode.toDataURL(guide.url, { margin: 1, width: 320, errorCorrectionLevel: 'L', color: { dark: '#000000', light: '#ffffff' } })
+    QRCode.toDataURL(guide.qr?.url ?? guide.url, { margin: 1, width: 320, errorCorrectionLevel: 'L', color: { dark: '#000000', light: '#ffffff' } })
       .then(setQr)
       .catch(() => setQr(null))
-  }, [guide.url])
+  }, [guide.url, guide.qr?.url])
 
   useEffect(() => {
     const onDirection = (event: Event): void => {
@@ -100,7 +100,7 @@ function Reader({ index, onStep, onClose }: { index: number; onStep: (step: numb
         </div>
         <aside className="dialog-panel guide-side">
           {qr ? <img className="guide-qr" src={qr} alt="" /> : <div className="guide-qr guide-qr-waiting" />}
-          <p className="guide-side-text">Scan to read this guide on your phone, with links that open and commands you can copy.</p>
+          <p className="guide-side-text">{guide.qr?.text ?? 'Scan to read this guide on your phone, with links that open and commands you can copy.'}</p>
           <p className="guide-side-hint">
             {GUIDES.length > 1 && <>L1 / R1 · other guides ({index + 1} of {GUIDES.length})<br /></>}
             B · back

@@ -6,9 +6,11 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
-## Unreleased
+## 0.13.0
 
 ### Added
+- Settings → Help → Guides → Support vaporTV: a QR code for tipping on Ko-fi, and what's coming next (a theming engine).
+- Game playlists: your own lists of games from any mix of consoles and Steam, each a row on Home under Favorite Apps (like custom collections in ES-DE). Press Start on a game and choose Playlists to put it in one, take it out, or start a new one with it. Settings → Home → Game playlists renames them, changes their order on Home, takes games out and deletes them.
 - Favourite Steam games right in vaporTV: press Y on any Steam game, as on the console tabs. Your favourites lead the Steam tab, and an All games row at the bottom lists every installed game so you can find the ones to add. Games already in Steam's Favorites collection are brought over the first time you open the tab.
 
 ### Changed

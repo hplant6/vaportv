@@ -16,6 +16,13 @@ export interface Guide {
   blocks: Block[]
   /** The guide on GitHub, for reading it on a phone. */
   url: string
+  /** Where the guide's QR code goes, and the words under it, when not to the guide itself. */
+  qr?: { url: string; text: string }
+}
+
+/** Guides whose QR code opens something other than the guide. */
+const QR: Record<string, Guide['qr']> = {
+  'support.md': { url: 'https://ko-fi.com/vaportv', text: "Scan to open vaporTV's Ko-fi page on your phone." },
 }
 
 const byFile = new Map(Object.entries(sources).map(([path, text]) => [path.split('/').pop() ?? path, text]))
@@ -24,7 +31,7 @@ export const GUIDES: Guide[] = guideIndex(byFile.get('README.md') ?? '').flatMap
   const text = byFile.get(file)
   if (!text) return []
   const blocks = parseMarkdown(text)
-  return [{ file, title: guideTitle(blocks), blurb, blocks, url: GITHUB + file }]
+  return [{ file, title: guideTitle(blocks), blurb, blocks, url: GITHUB + file, qr: QR[file] }]
 })
 
 /** A picture a guide links to (images/x.webp), as the page can load it. */
