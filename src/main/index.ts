@@ -7,9 +7,11 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, PlaylistChoice, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
+import { createPlaylist, deletePlaylist, forgetInPlaylists, movePlaylist, readPlaylists, renamePlaylist, togglePlaylistItem } from './playlists'
+import { playlistRows } from './library/playlistItems'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { startRemoteKeys } from './remoteKeys'
@@ -360,7 +362,8 @@ ipcMain.handle('home:get', async (): Promise<HomeData> => {
       ...Object.fromEntries(Object.keys(config.gameEmulators ?? {}).map((id) => [id, RETROARCH_LOGO]))
     },
     recentsLayout: recentsLayout(config, 'home'),
-    favoritesLayout: config.favoritesLayout ?? 'rows'
+    favoritesLayout: config.favoritesLayout ?? 'rows',
+    playlists: (await playlistRows(config, await readPlaylists())).filter((p) => p.items.length)
   }
 })
 ipcMain.handle('appSetup:install', async (event, id: string) => {
@@ -764,6 +767,16 @@ ipcMain.handle('xbox360-tab:get', async () => {
   return loadXbox360Tab(config)
 })
 // Select on a console game: its name, emulator and deleting it (art has its own window).
+ipcMain.handle('gamePlaylists:list', async () => playlistRows(await loadConfig(), await readPlaylists()))
+ipcMain.handle('gamePlaylists:forGame', async (_event, id: string): Promise<PlaylistChoice[]> =>
+  (await readPlaylists()).map((p) => ({ id: p.id, name: p.name, count: p.items.length, has: p.items.includes(id) }))
+)
+ipcMain.handle('gamePlaylists:create', (_event, name: string, gameId?: string) => createPlaylist(name, gameId))
+ipcMain.handle('gamePlaylists:toggle', (_event, playlist: string, gameId: string) => togglePlaylistItem(playlist, gameId))
+ipcMain.handle('gamePlaylists:rename', (_event, playlist: string, name: string) => renamePlaylist(playlist, name))
+ipcMain.handle('gamePlaylists:move', (_event, playlist: string, direction: 'up' | 'down') => movePlaylist(playlist, direction))
+ipcMain.handle('gamePlaylists:delete', (_event, playlist: string) => deletePlaylist(playlist))
+
 ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> => {
   const config = await loadConfig()
   // The card shows the given name; the options want the name before it too.
@@ -869,6 +882,7 @@ ipcMain.handle('game:delete', async (_event, id: string) => {
   const config = await loadConfig()
   await deleteGame(config, id)
   await forgetGame(id)
+  await forgetInPlaylists(id)
   const drop = (map: Record<string, string> | undefined): Record<string, string> => Object.fromEntries(Object.entries(map ?? {}).filter(([key]) => key !== id))
   await saveConfig({ gameTitles: drop(config.gameTitles), gameEmulators: drop(config.gameEmulators), arcadeGameCores: drop(config.arcadeGameCores) })
   // The last game of a console takes its tab with it.

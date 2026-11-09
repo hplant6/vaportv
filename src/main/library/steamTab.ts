@@ -14,9 +14,9 @@ const STEAM_FAVORITES = 'favorite'
 /** How many games the Recently played row shows. */
 const RECENT_LIMIT = 20
 
-const steamId = (appid: string | number): string => `steam:${appid}`
+export const steamId = (appid: string | number): string => `steam:${appid}`
 
-async function steamItem(root: string, userDir: string, game: SteamGame, favorites: string[]): Promise<RecentItem> {
+export async function steamItem(root: string, userDir: string, game: SteamGame, favorites: string[]): Promise<RecentItem> {
   const art = await steamGameArt(root, userDir, game.appid)
   return {
     id: steamId(game.appid),

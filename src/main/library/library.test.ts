@@ -8,6 +8,7 @@ import { launchUrl, shortcutGameId } from '../launch'
 import { collectionGames, isSupported, readCollections } from './collections'
 import { loadRecents, pickRecent, toRecentItem } from './recents'
 import { loadSteamTab } from './steamTab'
+import { withMoved, withNew, withToggled } from '../playlists'
 import { scanDreamcast } from './dreamcast'
 import { dreamcastContent } from './dreamcastTab'
 import { parseEmuDeckSettings, shortcutAppId } from './emudeck'
@@ -33,7 +34,7 @@ import { parseSleepBlocker } from '../power'
 import { exifDate } from '../screensaver'
 import { deviceKind, parseDevices } from '../bluetooth'
 import { parseNetworks, terseFields } from '../wifi'
-import { hasKey, remoteKeyboards } from '../remoteKeys'
+import { controllersIn, hasKey, remoteKeyboards } from '../remoteKeys'
 import { childObject, childString, dumpBinaryVdf, parseBinaryVdf, parseTextVdf, type VdfObject } from './vdf'
 
 // Builds binary VDF the way Steam writes shortcuts.vdf.
@@ -327,6 +328,31 @@ describe('collections', () => {
       ['Dead Island 2', true],
       ['Old Game', true]
     ])
+  })
+})
+
+describe('game playlists', () => {
+  it('makes, fills, empties and orders playlists', () => {
+    let lists = withNew([], 'Couch co-op', 'a', 'steam:10')
+    lists = withNew(lists, 'Racing', 'b')
+    expect(lists.map((p) => [p.name, p.items])).toEqual([
+      ['Couch co-op', ['steam:10']],
+      ['Racing', []]
+    ])
+    // Any console's games, in the order added; a second toggle takes it out.
+    let toggled = withToggled(lists, 'b', 'switch:Cruisn_Blast.xci')
+    expect(toggled.on).toBe(true)
+    toggled = withToggled(toggled.next, 'b', 'steam:30')
+    expect(toggled.next[1].items).toEqual(['switch:Cruisn_Blast.xci', 'steam:30'])
+    toggled = withToggled(toggled.next, 'b', 'switch:Cruisn_Blast.xci')
+    expect(toggled.on).toBe(false)
+    expect(toggled.next[1].items).toEqual(['steam:30'])
+    // The other playlist is untouched.
+    expect(toggled.next[0].items).toEqual(['steam:10'])
+    lists = toggled.next
+    expect(withMoved(lists, 'b', 'up').map((p) => p.id)).toEqual(['b', 'a'])
+    expect(withMoved(lists, 'b', 'down').map((p) => p.id)).toEqual(['a', 'b'])
+    expect(withMoved(lists, 'a', 'up').map((p) => p.id)).toEqual(['a', 'b'])
   })
 })
 
@@ -918,6 +944,10 @@ describe('remote power', () => {
     expect(hasKey('10004000000000 0', 102)).toBe(true)
     expect(hasKey('10004000000000 0', 116)).toBe(true)
     expect(remoteKeyboards(keyboard)).toEqual([{ path: '/dev/input/event9', remote: false }])
+  })
+
+  it('names the controllers that are on, to tell when one is switched on during a bounce', () => {
+    expect(controllersIn(devices)).toEqual(['Microsoft X-Box 360 pad'])
   })
 })
 

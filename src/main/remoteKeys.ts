@@ -30,16 +30,19 @@ const AFTER_WAKE_MS = 15_000
 /** A game closes when Home is pressed again within this long. */
 const HOME_AGAIN_MS = 3000
 const RESCAN_MS = 5000
-/** A gap this long between ticks means the box was asleep. */
-const ASLEEP_GAP_MS = 5000
+/** Asleep at least this long between ticks: the box slept (rather than vaporTV stalling). */
+const ASLEEP_MS = 2000
 /**
- * Awake again this soon after Power slept it, the box didn't sleep: the Sofabaton hub
- * reconnects seconds into sleep and that wakes it (5-6 s in). It goes back to sleep once,
+ * Asleep less than this, the box didn't really sleep: the Sofabaton hub reconnects
+ * seconds into sleep and that wakes it (5-7 s in), however the sleep began (remote Power,
+ * the controller switched off, the power menu, Steam's own Sleep). It goes back to sleep
  * after RESLEEP_DELAY_MS, when the hub's reconnect is over (a second sleep holds), unless
- * Power comes in meanwhile: that's someone switching the box back on.
+ * someone is waking it meanwhile: Power or another remote key, or a controller switched on.
  */
 const BOUNCE_MS = 10_000
 const RESLEEP_DELAY_MS = 8000
+/** A bounce this soon after vaporTV slept it again isn't put back to sleep: no loops. */
+const RESLEEP_ONCE_MS = 60_000
 /** Remotes, by the names their receivers give: a Sofabaton hub, a TV remote's USB dongle ("... RC"). */
 const REMOTE_NAME = /sofabaton|\bremote\b|\bRC\b/i
 
@@ -77,6 +80,19 @@ export function remoteKeyboards(devices: string): { path: string; remote: boolea
     .map((d) => ({ path: `/dev/input/${d.event}`, remote: d.remote }))
 }
 
+/** Controllers' names (devices with a joystick handler), from the kernel's device list. */
+export function controllersIn(devices: string): string[] {
+  return devices
+    .split('\n\n')
+    .filter((block) => /^H: Handlers=.*\bjs\d+\b/m.test(block))
+    .map((block) => /^N: Name="(.*)"$/m.exec(block)?.[1] ?? '')
+    .filter(Boolean)
+}
+
+async function controllerNames(): Promise<string[]> {
+  return controllersIn(await readFile('/proc/bus/input/devices', 'utf8').catch(() => ''))
+}
+
 /**
  * `foreground`: what's in front, and closing it, as Select + Start does (from startHotkey).
  * `backIsEscape`: whether the app in front wants Escape for a remote's Back (YouTube).
@@ -85,32 +101,57 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   if (process.platform !== 'linux') return
   const watched = new Set<string>()
   let lastTick = Date.now()
+  // The monotonic clock stops while the box sleeps; the wall clock doesn't. Their
+  // difference between ticks is time asleep, which a stalled process doesn't have.
+  let lastMono = performance.now()
   let awokeAt = 0
   let sleepingUntil = 0
-  /** When Power last slept the box, until a bounce back awake has been dealt with. */
-  let sleptAt = 0
+  /** Controllers on at the last tick, and at the last one before the box slept. */
+  let controllers: string[] = []
+  let controllersBeforeSleep: string[] = []
+  /** When vaporTV last put the box back to sleep after a bounce. */
+  let resleptAt = 0
   let resleepTimer: ReturnType<typeof setTimeout> | undefined
   /** When Home was first pressed over a game; a second press soon after closes it. */
   let homeArmedAt = 0
   /** Menu is down: when it's held long enough this fires (Settings); let go first, it's a tap. */
   let menuTimer: ReturnType<typeof setTimeout> | undefined
 
-  // The process is paused while the box sleeps, so a long gap between ticks is a wake.
-  setInterval(() => {
+  const cancelResleep = (why: string): boolean => {
+    if (!resleepTimer) return false
+    clearTimeout(resleepTimer)
+    resleepTimer = undefined
+    log(`sleep: ${why}, staying awake`)
+    return true
+  }
+
+  // The process is paused while the box sleeps, so time asleep between ticks is a wake.
+  setInterval(async () => {
     const now = Date.now()
-    if (now - lastTick > ASLEEP_GAP_MS) {
-      awokeAt = now
-      if (now - sleptAt < BOUNCE_MS) resleepTimer = setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
-      sleptAt = 0
-    }
+    const mono = performance.now()
+    const asleep = now - lastTick - (mono - lastMono)
     lastTick = now
+    lastMono = mono
+    if (asleep >= ASLEEP_MS) {
+      awokeAt = now
+      controllersBeforeSleep = controllers
+      if (asleep < BOUNCE_MS && now - resleptAt > RESLEEP_ONCE_MS) {
+        log(`sleep: woke after ${(asleep / 1000).toFixed(1)} s, going back to sleep in ${RESLEEP_DELAY_MS / 1000} s unless someone's waking it`)
+        clearTimeout(resleepTimer)
+        resleepTimer = setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
+      } else if (asleep < BOUNCE_MS) log(`sleep: woke after ${(asleep / 1000).toFixed(1)} s again, staying awake`)
+    }
+    controllers = await controllerNames()
+    const switchedOn = controllers.find((name) => !controllersBeforeSleep.includes(name))
+    if (switchedOn) cancelResleep(`a controller came on (${switchedOn})`)
   }, 1000)
 
   const sleepAgain = async (): Promise<void> => {
     resleepTimer = undefined
     const why = await sleepBlocker()
-    if (why) return log(`remote power: woke straight back up, staying awake (${why})`)
-    log('remote power: woke straight back up, sleeping again')
+    if (why) return log(`sleep: woke straight back up, staying awake (${why})`)
+    log('sleep: woke straight back up, sleeping again')
+    resleptAt = Date.now()
     await power('sleep')
   }
 
@@ -118,17 +159,12 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
 
   const pressedPower = async (): Promise<void> => {
     const now = Date.now()
-    if (resleepTimer) {
-      clearTimeout(resleepTimer)
-      resleepTimer = undefined
-      return log('remote power: switched back on, staying awake')
-    }
+    if (cancelResleep('remote power: switched back on')) return
     if (justWoke(now) || now < sleepingUntil) return log('remote power: ignored (just woke)')
     const why = await sleepBlocker()
     if (why) return log(`remote power: staying awake (${why})`)
     log('remote power: sleeping')
     sleepingUntil = now + AFTER_WAKE_MS
-    sleptAt = Date.now()
     await power('sleep')
   }
 
@@ -167,6 +203,7 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
           return
         }
         if (value !== 1) return
+        if (code !== KEY_POWER) cancelResleep(`a key was pressed (${code})`)
         if (code === KEY_POWER) pressedPower().catch((err) => log(`remote power: ${err}`))
         else if ((code === KEY_HOME || code === KEY_KP7) && remote) pressedHome().catch((err) => log(`remote home: ${err}`))
         else if (code === KEY_BACKSPACE && remote) {

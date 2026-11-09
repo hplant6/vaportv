@@ -28,6 +28,7 @@ import { songGroups, TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
 import { PlaylistDialog } from '../components/PlaylistDialog'
+import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
@@ -742,6 +743,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               ))}
           </div>
         </div>
+
+        <GamePlaylistsSettings />
       </>
     ),
     steam: (

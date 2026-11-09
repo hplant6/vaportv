@@ -692,6 +692,27 @@ button {
   top: 118px;
 }
 
+/* Favorite Apps where the Figma frame has it, then your game playlists' rows below it. */
+.home-lower {
+  position: absolute;
+  left: 36px;
+  top: 650px;
+  width: 1865.14px;
+  display: flex;
+  flex-direction: column;
+  gap: 72px;
+  padding-bottom: 45px;
+}
+
+.home-lower.no-recents {
+  top: 118px;
+}
+
+.home-lower .favorites {
+  position: static;
+  width: auto;
+}
+
 /* Recents as a grid: it and Favorite Apps stack down the page. */
 .home-flow {
   position: absolute;
@@ -2327,6 +2348,7 @@ button {
   min-height: 0;
   padding: 0 29px 29px;
   overflow-y: auto;
+  scroll-padding: 12px 0 29px;
   scrollbar-width: none;
 }
 

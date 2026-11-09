@@ -19,6 +19,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
             <div className="home-flow">
               <CollectionGrid title="Recents" items={data.recents} memoryKey="recents" hasDefault />
               <FavoriteApps data={data} variant="flow" />
+              <Playlists data={data} />
             </div>
           ) : (
             <>
@@ -32,7 +33,11 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
                   hasDefault
                 />
               )}
-              <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
+              {/* Favorite Apps keeps its place in the Figma frame; playlist rows follow it down the page. */}
+              <div className={`home-lower${data.recents.length ? '' : ' no-recents'}`}>
+                <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
+                <Playlists data={data} />
+              </div>
             </>
           )}
         </div>
@@ -58,4 +63,19 @@ function FavoriteApps({ data, variant }: { data: HomeData; variant?: 'no-recents
       )}
     </section>
   )
+}
+
+/** Your game playlists, a row each, in the order set in Settings → Home. */
+function Playlists({ data }: { data: HomeData }) {
+  return data.playlists.map((playlist) => (
+    <CardRow
+      key={playlist.id}
+      className="playlist-row"
+      title={playlist.name}
+      items={playlist.items}
+      logos={data.platformLogos}
+      memoryKey={`playlist-${playlist.id}`}
+      hasDefault={false}
+    />
+  ))
 }

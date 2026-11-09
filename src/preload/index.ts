@@ -118,6 +118,15 @@ const api: SteamTvApi = {
     libretro: (id, query) => ipcRenderer.invoke('art:libretro', id, query),
     chooseWeb: (id, url, thumb) => ipcRenderer.invoke('art:chooseWeb', id, url, thumb)
   },
+  gamePlaylists: {
+    list: () => ipcRenderer.invoke('gamePlaylists:list'),
+    forGame: (id) => ipcRenderer.invoke('gamePlaylists:forGame', id),
+    create: (name, gameId) => ipcRenderer.invoke('gamePlaylists:create', name, gameId),
+    toggle: (playlist, gameId) => ipcRenderer.invoke('gamePlaylists:toggle', playlist, gameId),
+    rename: (playlist, name) => ipcRenderer.invoke('gamePlaylists:rename', playlist, name),
+    move: (playlist, direction) => ipcRenderer.invoke('gamePlaylists:move', playlist, direction),
+    delete: (playlist) => ipcRenderer.invoke('gamePlaylists:delete', playlist)
+  },
   game: {
     options: (id) => ipcRenderer.invoke('game:options', id),
     steam: (id) => ipcRenderer.invoke('game:steam', id),

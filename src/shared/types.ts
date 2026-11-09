@@ -50,6 +50,30 @@ export interface HomeData {
   recentsLayout: SteamLayout
   /** Favorite Apps: one sideways row ('rows') or the grid. */
   favoritesLayout: SteamLayout
+  /** Your game playlists that have games to show, each a row under Favorite Apps. */
+  playlists: PlaylistRow[]
+}
+
+/** A game playlist as stored: games from any console or Steam, by id, in the order added. */
+export interface GamePlaylist {
+  id: string
+  name: string
+  items: string[]
+}
+
+/** A game playlist with its games as cards (the ones vaporTV can find now). */
+export interface PlaylistRow {
+  id: string
+  name: string
+  items: RecentItem[]
+}
+
+/** A playlist as the game menu lists it: whether this game is in it. */
+export interface PlaylistChoice {
+  id: string
+  name: string
+  count: number
+  has: boolean
 }
 
 export type TemperatureUnit = 'auto' | 'fahrenheit' | 'celsius'
@@ -634,6 +658,20 @@ export interface SteamTvApi {
     reset(id: string): Promise<void>
   }
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
+  /** Game playlists (your own lists of games, rows on Home). */
+  gamePlaylists: {
+    /** Every playlist, its games as cards, for Settings. */
+    list(): Promise<PlaylistRow[]>
+    /** Every playlist, and whether this game is in it, for its game menu. */
+    forGame(id: string): Promise<PlaylistChoice[]>
+    /** A new playlist, with this game in it if one is given; resolves with its id. */
+    create(name: string, gameId?: string): Promise<string>
+    /** Puts the game in the playlist or takes it out; whether it's in it now. */
+    toggle(playlist: string, gameId: string): Promise<boolean>
+    rename(playlist: string, name: string): Promise<void>
+    move(playlist: string, direction: 'up' | 'down'): Promise<void>
+    delete(playlist: string): Promise<void>
+  }
   game: {
     options(id: string): Promise<GameOptions>
     /** A Steam game's playtime, last play, size and achievements; null when it isn't installed. */

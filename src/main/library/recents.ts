@@ -125,6 +125,30 @@ async function playedApps(config: Config): Promise<Played[]> {
   })
 }
 
+/** Every console game vaporTV finds, all consoles and arcade. */
+export async function emulatedGames(config: Config): Promise<EmulatedGame[]> {
+  return [
+    ...(await switchGames(config)),
+    ...(await ps3Games(config)),
+    ...(await xbox360Games(config)),
+    ...(await ps2Games(config)),
+    ...(await xboxGames(config)),
+    ...(await gamecubeGames(config)),
+    ...(await wiiGames(config)),
+    ...(await dreamcastGames(config)),
+    ...(await n64Games(config)),
+    ...(await saturnGames(config)),
+    ...(await nesGames(config)),
+    ...(await snesGames(config)),
+    ...(await genesisGames(config)),
+    ...(await sega32xGames(config)),
+    ...(await wiiUGames(config)),
+    ...(await psxGames(config)),
+    ...(await pspGames(config)),
+    ...(await arcadeGames(config))
+  ]
+}
+
 export async function loadRecents(config: Config, now = Date.now()): Promise<RecentItem[]> {
   const root = steamRoot(config)
   const userDir = await activeUserDir(root)
@@ -136,26 +160,7 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
         })
       : [],
     userDir ? playedShortcuts(userDir).then(async (s) => [...s, ...(await playedApps(config))]) : playedApps(config),
-    playedEmulated([
-      ...(await switchGames(config)),
-      ...(await ps3Games(config)),
-      ...(await xbox360Games(config)),
-      ...(await ps2Games(config)),
-      ...(await xboxGames(config)),
-      ...(await gamecubeGames(config)),
-      ...(await wiiGames(config)),
-      ...(await dreamcastGames(config)),
-      ...(await n64Games(config)),
-      ...(await saturnGames(config)),
-      ...(await nesGames(config)),
-      ...(await snesGames(config)),
-      ...(await genesisGames(config)),
-      ...(await sega32xGames(config)),
-      ...(await wiiUGames(config)),
-      ...(await psxGames(config)),
-      ...(await pspGames(config)),
-      ...(await arcadeGames(config))
-    ])
+    playedEmulated(await emulatedGames(config))
   ])
   const days = config.recentDays ?? DEFAULT_RECENT_DAYS
   const limit = config.recentLimit ?? DEFAULT_RECENT_LIMIT

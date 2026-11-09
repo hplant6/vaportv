@@ -6,6 +6,7 @@ import drive from '../assets/drive.svg'
 import trophy from '../assets/trophy.svg'
 import program from '../assets/window.svg'
 import { FAVORITE_EVENT, focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import { NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
 import { toast } from './Toast'
@@ -14,7 +15,7 @@ import { toast } from './Toast'
 // and a Steam game's achievements), beside its settings. A console game's: changing its name,
 // picking the emulator it opens in, replacing its art (the Artwork window X opens), or
 // deleting it from the drive (a second press confirms). A Steam game's hand it to Steam: its
-// page there, or checking its files. An app's: showing it on Home, and updating its program.
+// page there, or checking its files. Both put the game in your playlists (rows on Home). An app's: showing it on Home, and updating its program.
 // B or Start closes it.
 
 const STEAM_GAME = /^steam:/
@@ -23,7 +24,7 @@ const APP_CARD = /^(app|shortcut):/
 /** Delete waits this long for its second press. */
 const CONFIRM_MS = 4000
 
-type Step = 'menu' | 'emulator' | 'rename'
+type Step = 'menu' | 'emulator' | 'rename' | 'playlists' | 'newPlaylist'
 
 const message = (err: unknown): string =>
   (err instanceof Error ? err.message : String(err)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
@@ -105,7 +106,8 @@ function GamePanel({
           )}
           {error && <p className="dialog-message">{error}</p>}
           {children && (
-            <div className="game-settings">
+            // Five rows and up run past the box: it scrolls to keep the cursor's row in view.
+            <div className="game-settings" onFocus={(e) => e.target.scrollIntoView({ block: 'nearest' })}>
               <h3 className="game-settings-title display">{heading}</h3>
               {children}
             </div>
@@ -114,6 +116,11 @@ function GamePanel({
       </div>
     </div>
   )
+}
+
+/** The Playlists row: how many it's in. */
+function playlistsRow(count: number | null, open: () => void) {
+  return row('Playlists', count === null ? '' : count ? `In ${count === 1 ? '1 playlist' : `${count} playlists`}` : 'Add it to a playlist on Home', open)
 }
 
 /** B and Start close it (B on a step goes back to the menu first, through `back`). Off while the keyboard has B. */
@@ -243,6 +250,8 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [details, setDetails] = useState<SteamGameDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<'menu' | 'playlists' | 'newPlaylist'>('menu')
+  const playlists = usePlaylistCount(id, step)
 
   useEffect(() => {
     window.steamtv.game
@@ -251,12 +260,14 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
       .catch((err: unknown) => setError(message(err)))
   }, [id])
 
-  useCloseKeys(onClose)
+  const backToMenu = useCallback(() => setStep('menu'), [])
+  useCloseKeys(onClose, step === 'playlists' ? backToMenu : undefined, step === 'newPlaylist')
 
   useEffect(() => {
+    if (step !== 'menu') return
     const el = panel.current?.querySelector<HTMLElement>('[data-focusable]')
     if (el) focus(el)
-  }, [details])
+  }, [details, step])
 
   const hand = (what: 'page' | 'verify'): void => {
     if (!details) return
@@ -273,14 +284,28 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
       ]
     : undefined
 
+  if (step === 'newPlaylist' && details)
+    return <NewPlaylistKeyboard gameId={id} gameTitle={details.title} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
+
   return (
-    <GamePanel panel={panel} title={details?.title} cover={details?.cover} facts={facts} heading="Game settings" error={error}>
-      {details && (
-        <>
-          {row('Open in Steam', 'Its page in your library', () => hand('page'))}
-          {row('Verify files', 'Steam checks and repairs the install', () => hand('verify'))}
-        </>
-      )}
+    <GamePanel
+      panel={panel}
+      title={details?.title}
+      cover={details?.cover}
+      facts={facts}
+      heading={step === 'playlists' ? 'Playlists' : 'Game settings'}
+      error={error}
+    >
+      {details &&
+        (step === 'playlists' ? (
+          <PlaylistChoices gameId={id} gameTitle={details.title} onNew={() => setStep('newPlaylist')} />
+        ) : (
+          <>
+            {playlistsRow(playlists, () => setStep('playlists'))}
+            {row('Open in Steam', 'Its page in your library', () => hand('page'))}
+            {row('Verify files', 'Steam checks and repairs the install', () => hand('verify'))}
+          </>
+        ))}
     </GamePanel>
   )
 }
@@ -292,6 +317,7 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
   const [step, setStep] = useState<Step>('menu')
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
+  const playlists = usePlaylistCount(id, step)
 
   useEffect(() => {
     window.steamtv.game
@@ -302,11 +328,11 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
 
   // B goes back a step, then closes; Start closes from any step. The keyboard handles its own B.
   const backToMenu = useCallback(() => setStep('menu'), [])
-  useCloseKeys(onClose, step === 'emulator' ? backToMenu : undefined, step === 'rename')
+  useCloseKeys(onClose, step === 'emulator' || step === 'playlists' ? backToMenu : undefined, step === 'rename' || step === 'newPlaylist')
 
-  // The cursor starts on the first row, or on the emulator in use.
+  // The cursor starts on the first row, or on the emulator in use (Playlists places its own).
   useEffect(() => {
-    if (!options || step === 'rename') return
+    if (!options || step === 'rename' || step === 'newPlaylist' || step === 'playlists') return
     const el =
       (step === 'emulator' && panel.current?.querySelector<HTMLElement>('[aria-checked="true"]')) ||
       panel.current?.querySelector<HTMLElement>('[data-focusable]')
@@ -377,6 +403,9 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       />
     )
 
+  if (step === 'newPlaylist' && options)
+    return <NewPlaylistKeyboard gameId={id} gameTitle={options.title} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
+
   const current = options?.emulators.find((e) => e.id === options.emulator)?.name ?? options?.emulators[0]?.name
 
   return (
@@ -385,13 +414,15 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
       title={options?.title}
       cover={options?.cover}
       facts={options ? [...playFacts(options.playtime, options.lastPlayed), [drive, 'Size', size(options.files.bytes)]] : undefined}
-      heading={step === 'emulator' ? 'Choose emulator' : 'Game settings'}
+      heading={step === 'emulator' ? 'Choose emulator' : step === 'playlists' ? 'Playlists' : 'Game settings'}
       error={error}
     >
       {options && (
         <>
+        {step === 'playlists' && <PlaylistChoices gameId={id} gameTitle={options.title} onNew={() => setStep('newPlaylist')} />}
         {step === 'menu' && (
           <>
+            {playlistsRow(playlists, () => setStep('playlists'))}
             {row('Change name', options.renamed ? `Was ${options.originalTitle}` : options.title, () => setStep('rename'))}
             {row(
               'Change emulator',
