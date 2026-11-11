@@ -11,6 +11,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Added
 - Grid layouts: the selected game slides up a bar over the bottom of its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
 
+### Changed
+- The controls guide (Select) sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
+
 ### Fixed
 - vaporTV couldn't be opened again from Steam after it closed or crashed in Desktop Mode: a background helper stayed running, so Steam thought vaporTV still was.
 

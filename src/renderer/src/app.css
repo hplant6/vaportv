@@ -827,7 +827,7 @@ button {
 .controls-guide {
   position: absolute;
   left: 50%;
-  bottom: 48px;
+  bottom: 15px;
   z-index: 950;
   display: flex;
   align-items: center;
@@ -1109,8 +1109,9 @@ button {
 }
 
 /* The selected card's footer bar: below the card's bottom edge (clipped) until then, it
-   slides up over the bottom of the art, just after the card starts to grow. The art shows
-   faintly through it. */
+   slides up over the bottom of the art, just after the card starts to grow, and eases a
+   long way into place (an expo-style ease-out) so it glides rather than snaps. The art
+   shows faintly through it. */
 .wide-card-bar {
   position: absolute;
   z-index: 1;
@@ -1122,12 +1123,12 @@ button {
   /* --color-card-footer (#060408) at 89%. */
   background: rgba(6, 4, 8, 0.89);
   transform: translateY(100%);
-  transition: transform 160ms var(--ease-focus);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .wide-card:focus .wide-card-bar {
   transform: none;
-  transition: transform 340ms 90ms var(--ease-focus);
+  transition: transform 650ms 120ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Outer columns grow inward, as on Favorite Apps. */
