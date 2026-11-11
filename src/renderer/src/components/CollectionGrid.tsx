@@ -3,8 +3,8 @@ import { startLaunch } from '../launch'
 import { CardFooter } from './RecentCard'
 
 /** One collection as a grid of wide (header art) cards, four across. The selected card
-    slides the carousel cards' footer (logo, title, last played, time played) out from
-    under its art. */
+    slides the carousel cards' footer (logo, title, last played, time played) up over the
+    bottom of its art. */
 export function CollectionGrid({
   title,
   items,
@@ -53,8 +53,8 @@ export function CollectionGrid({
                   <span className="no-art-band">{item.title}</span>
                 </span>
               )}
+              <CardFooter item={item} logo={logos[item.id] ?? logos[item.platform]} className="wide-card-bar" />
             </span>
-            <CardFooter item={item} logo={logos[item.id] ?? logos[item.platform]} className="wide-card-bar" />
           </button>
         ))}
       </div>
