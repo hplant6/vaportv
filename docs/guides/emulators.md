@@ -81,7 +81,7 @@ Press **Start** on a console game for its options:
 
 - **Name:** rename it, if the file name reads badly.
 - **Emulator:** pick a different RetroArch core for it, where there's more than one.
-- **Artwork:** pick its cover from SteamGridDB, RetroArch's box art, or a web image search. **X** on a game does this too.
+- **Artwork:** pick its cover from SteamGridDB, RetroArch's box art, or a web image search.
 - **Delete:** remove it from the drive. Press A twice; it can't be undone.
 
 ## Covers

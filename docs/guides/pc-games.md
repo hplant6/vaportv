@@ -39,7 +39,7 @@ On the **Steam** tab:
 - **All games** lists them along with your Steam games.
 - Once you've played one, it's in **Recently played** too, and on Home.
 
-Press **Y** on a game to favourite it, and **Start** for its playtime, playlists, and **Open in Steam**.
+Press **Y** on a game to favourite it, **X** to add it to a playlist, and **Start** for its playtime, playlists, and **Open in Steam**.
 
 ## Covers
 

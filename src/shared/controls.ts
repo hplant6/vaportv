@@ -3,7 +3,7 @@
 
 import type { ControllerFamily } from './controllers'
 
-export type ControlAction = 'select' | 'back' | 'options' | 'favorite' | 'controlsGuide' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch' | 'nextSong'
+export type ControlAction = 'select' | 'back' | 'playlist' | 'favorite' | 'controlsGuide' | 'gameMenu' | 'previousTab' | 'nextTab' | 'volumeDown' | 'volumeUp' | 'voiceSearch' | 'nextSong'
 
 /** Action → standard-mapping button index. */
 export type Controls = Record<ControlAction, number>
@@ -12,7 +12,7 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string 
   { id: 'select', name: 'Select', detail: 'Open what’s highlighted' },
   { id: 'back', name: 'Back', detail: 'Close, or go back' },
   { id: 'favorite', name: 'Favorite', detail: 'Add or remove a favorite' },
-  { id: 'options', name: 'Artwork', detail: 'Fix a console game’s art' },
+  { id: 'playlist', name: 'Playlist', detail: 'Add a game to a playlist, or take it out' },
   { id: 'gameMenu', name: 'Game options', detail: 'Rename, emulator, art or delete' },
   { id: 'previousTab', name: 'Previous tab', detail: '' },
   { id: 'nextTab', name: 'Next tab', detail: '' },
@@ -26,7 +26,7 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string 
 export const DEFAULT_CONTROLS: Controls = {
   select: 0,
   back: 1,
-  options: 2,
+  playlist: 2,
   favorite: 3,
   controlsGuide: 8,
   gameMenu: 9,
@@ -56,12 +56,24 @@ export function buttonName(index: number, family: ControllerFamily = 'xbox'): st
   return (FAMILY_NAMES[family] ?? BUTTON_NAMES)[index] ?? `Button ${index}`
 }
 
+/** Actions since renamed or replaced: a button saved for the old one goes to the new. */
+const RENAMED: Record<string, ControlAction> = {
+  // X opened the Artwork window until it became the Playlist button (Artwork is in Game options).
+  options: 'playlist'
+}
+
 /** Saved choices over the defaults, ignoring anything unusable. */
 export function resolveControls(saved: Partial<Controls> | undefined): Controls {
   const controls = { ...DEFAULT_CONTROLS }
   const unsaved: ControlAction[] = []
+  const stored = (saved ?? {}) as Record<string, unknown>
+  const savedButton = (id: ControlAction): unknown => {
+    if (stored[id] !== undefined) return stored[id]
+    const old = Object.keys(RENAMED).find((name) => RENAMED[name] === id)
+    return old === undefined ? undefined : stored[old]
+  }
   for (const { id } of CONTROL_ACTIONS) {
-    const button = saved?.[id]
+    const button = savedButton(id)
     if (typeof button === 'number' && ASSIGNABLE_BUTTONS.includes(button)) controls[id] = button
     else unsaved.push(id)
   }

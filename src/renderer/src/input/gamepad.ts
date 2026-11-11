@@ -1,8 +1,8 @@
-import { activate, back, controlsGuide, favorite, gameMenu, move, options, switchTab, voiceSearch, type Direction } from './focus'
+import { activate, back, controlsGuide, favorite, gameMenu, move, playlist, switchTab, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { stepVolume } from './volume'
 import { skipTrack } from '../components/BackgroundMusic'
-import { ASSIGNABLE_BUTTONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
+import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 
 /** Settings fires this after the buttons change. */
 export const CONTROLS_CHANGED_EVENT = 'steamtv:controls-changed'
@@ -27,17 +27,30 @@ let capture: { onButton: (button: number | null) => void; until: number; release
 const CAPTURE_TIMEOUT_MS = 6000
 let held: Direction | null = null
 let nextRepeat = 0
-let confirmDown = false
-let backDown = false
-let favoriteDown = false
-let optionsDown = false
-let guideDown = false
-let gameMenuDown = false
-let voiceDown = false
-let nextSongDown = false
 let anyDown = false
-let previousTabDown = false
-let nextTabDown = false
+
+/**
+ * What each action does, once per press (it acts again only after being let go). A new
+ * hotkey is an action in shared/controls.ts plus a line here. Volume isn't here: it
+ * repeats while held (below).
+ */
+const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
+  select: activate,
+  back,
+  favorite,
+  playlist,
+  controlsGuide,
+  gameMenu,
+  voiceSearch,
+  nextSong: () => {
+    window.steamtv.logInput('next song (controller)')
+    skipTrack('music', 1, true)
+  },
+  previousTab: () => switchTab(-1),
+  nextTab: () => switchTab(1)
+}
+/** Actions whose buttons were held last time round, to tell a new press. */
+let actionsDown = new Set<ControlAction>()
 /** The trigger held for volume (-1 L2, 1 R2) and when it next repeats. */
 let volumeHeld: 1 | -1 | null = null
 let nextVolumeRepeat = 0
@@ -129,40 +142,20 @@ function poll(now: number): void {
   if (paused || now < settleUntil) return
 
   let direction: Direction | null = null
-  let confirm = false
-  let backPressed = false
-  let favoritePressed = false
-  let optionsPressed = false
-  let guidePressed = false
-  let gameMenuPressed = false
-  let voicePressed = false
-  let nextSongPressed = false
-  let previousTab = false
-  let nextTab = false
-  let volumeDown = false
-  let volumeUp = false
   if (capture) return pollCapture(now)
   offerButtons()
 
+  // Whether an action's button is held: the one place that knows how an action maps to buttons
+  // (so a combination, when there are some, is checked here).
   const down = (pad: Gamepad, action: ControlAction): boolean => !hooked.has(controls[action]) && !!pad.buttons[controls[action]]?.pressed
+  const pressed = new Set<ControlAction>()
   for (const pad of pads()) {
     direction ??= readDirection(pad)
-    confirm ||= down(pad, 'select')
-    backPressed ||= down(pad, 'back')
-    favoritePressed ||= down(pad, 'favorite')
-    optionsPressed ||= down(pad, 'options')
-    guidePressed ||= down(pad, 'controlsGuide')
-    gameMenuPressed ||= down(pad, 'gameMenu')
-    voicePressed ||= down(pad, 'voiceSearch')
-    nextSongPressed ||= down(pad, 'nextSong')
-    previousTab ||= down(pad, 'previousTab')
-    nextTab ||= down(pad, 'nextTab')
-    volumeDown ||= down(pad, 'volumeDown')
-    volumeUp ||= down(pad, 'volumeUp')
+    for (const { id } of CONTROL_ACTIONS) if (down(pad, id)) pressed.add(id)
   }
 
   if (waitForRelease) {
-    if (direction || confirm || backPressed || favoritePressed || optionsPressed || guidePressed || gameMenuPressed || voicePressed || nextSongPressed || previousTab || nextTab || volumeDown || volumeUp) return
+    if (direction || pressed.size) return
     waitForRelease = false
   }
 
@@ -189,32 +182,13 @@ function poll(now: number): void {
     nextRepeat = now + REPEAT_INTERVAL
   }
 
-  if (confirm && !confirmDown) activate()
-  confirmDown = confirm
-  if (backPressed && !backDown) back()
-  backDown = backPressed
-  if (favoritePressed && !favoriteDown) favorite()
-  favoriteDown = favoritePressed
-  if (optionsPressed && !optionsDown) options()
-  optionsDown = optionsPressed
-  if (guidePressed && !guideDown) controlsGuide()
-  guideDown = guidePressed
-  if (gameMenuPressed && !gameMenuDown) gameMenu()
-  gameMenuDown = gameMenuPressed
-  if (voicePressed && !voiceDown) voiceSearch()
-  voiceDown = voicePressed
-  if (nextSongPressed && !nextSongDown) {
-    window.steamtv.logInput('next song (controller)')
-    skipTrack('music', 1, true)
-  }
-  nextSongDown = nextSongPressed
-  if (previousTab && !previousTabDown) switchTab(-1)
-  previousTabDown = previousTab
-  if (nextTab && !nextTabDown) switchTab(1)
-  nextTabDown = nextTab
+  const wasDown = actionsDown
+  actionsDown = pressed
+  for (const { id } of CONTROL_ACTIONS) if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
 
   // Both triggers at once cancel out.
-  const volume = volumeUp === volumeDown ? null : volumeUp ? 1 : -1
+  const volumeUp = pressed.has('volumeUp')
+  const volume = volumeUp === pressed.has('volumeDown') ? null : volumeUp ? 1 : -1
   if (volume !== volumeHeld) {
     volumeHeld = volume
     if (volume) {

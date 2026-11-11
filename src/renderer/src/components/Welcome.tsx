@@ -87,7 +87,7 @@ function Tour({ onClose }: { onClose: () => void }) {
       body: (
         <ul className="welcome-list">
           <Row keys={key('favorite')}>Add it to Favorites, or take it off</Row>
-          <Row keys={key('options')}>Fix a console game’s cover art</Row>
+          <Row keys={key('playlist')}>Add it to a playlist, or take it out</Row>
           <Row keys={<>{key('volumeDown')}{key('volumeUp')}</>}>Volume down and up</Row>
           <Row keys={<><ButtonIcon button={8} family={family} /><ButtonIcon button={9} family={family} /></>}>
             Hold both while playing to close it and come back here

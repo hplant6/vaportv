@@ -47,7 +47,7 @@ export function ControlsGuide() {
     [icon(c.back), 'Back'],
     [[icon(c.previousTab), icon(c.nextTab)], 'Tabs'],
     [icon(c.favorite), 'Favorite'],
-    [icon(c.options), 'Artwork'],
+    [icon(c.playlist), 'Playlist'],
     [icon(c.gameMenu), 'Game options'],
     [[icon(c.volumeDown), icon(c.volumeUp)], 'Volume'],
     [icon(c.voiceSearch), 'Voice search']

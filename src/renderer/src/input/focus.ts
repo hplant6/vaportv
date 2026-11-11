@@ -236,14 +236,18 @@ export function openSettings(): void {
   window.dispatchEvent(new Event(SETTINGS_EVENT))
 }
 
-/** X on a controller, the X key on a keyboard: options for the focused card (its artwork). */
-export const OPTIONS_EVENT = 'steamtv:options'
+/** Opens the Artwork window for a card (Game options → Change artwork). ArtworkDialog listens. */
+export const ARTWORK_EVENT = 'steamtv:artwork'
 
-export function options(): void {
+/** X on a controller, the X key on a keyboard: the focused game's playlists. GameDialog listens. */
+export const PLAYLIST_EVENT = 'steamtv:playlist'
+
+export function playlist(): void {
   // Menus that hold the cursor stay put.
-  if (trap()) return
+  if (trap() || grabbed()) return
   const el = current()
-  if (el?.dataset.itemId) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: el }))
+  window.steamtv.logInput(`playlist ${el?.getAttribute('aria-label') ?? el?.dataset.itemId ?? 'nothing'}`)
+  if (el?.dataset.itemId || el?.dataset.appId) window.dispatchEvent(new CustomEvent(PLAYLIST_EVENT, { detail: el }))
 }
 
 /** Select (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */

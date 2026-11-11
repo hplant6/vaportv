@@ -5,7 +5,7 @@ import clock from '../assets/clock.svg'
 import drive from '../assets/drive.svg'
 import trophy from '../assets/trophy.svg'
 import program from '../assets/window.svg'
-import { FAVORITE_EVENT, focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import { ARTWORK_EVENT, FAVORITE_EVENT, focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, PLAYLIST_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
 import { NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
@@ -13,10 +13,11 @@ import { toast } from './Toast'
 
 // Start on a game or app: its cover and name, what's known of it (playtime, last play, size,
 // and a Steam game's achievements), beside its settings. A console game's: changing its name,
-// picking the emulator it opens in, replacing its art (the Artwork window X opens), or
-// deleting it from the drive (a second press confirms). A Steam game's hand it to Steam: its
-// page there, or checking its files. Both put the game in your playlists (rows on Home). An app's: showing it on Home, and updating its program.
-// B or Start closes it.
+// picking the emulator it opens in, replacing its art (the Artwork window), or deleting it
+// from the drive (a second press confirms). A Steam game's hand it to Steam: its page there,
+// or checking its files. Both put the game in your playlists (rows on Home). An app's: showing
+// it on Home, and updating its program. B or Start closes it.
+// X on a game opens it straight on Playlists, where B closes it rather than going back.
 
 const STEAM_GAME = /^steam:/
 /** Recents cards that are apps: one vaporTV opened itself, or a Steam shortcut (an app's, or a game's that isn't ours). */
@@ -137,17 +138,29 @@ function useCloseKeys(onClose: () => void, back?: () => void, off = false): void
   }, [onClose, back, off])
 }
 
+/** Where the panel opens: its menu (Start), or its Playlists (X). */
+type Start = 'menu' | 'playlists'
+
 export function GameDialog() {
-  const [item, setItem] = useState<{ id: string; card: HTMLElement; game?: boolean } | null>(null)
+  const [item, setItem] = useState<{ id: string; card: HTMLElement; start: Start; game?: boolean } | null>(null)
 
   useEffect(() => {
-    const open = (event: Event): void => {
+    const opener = (start: Start) => (event: Event) => {
       const card = (event as CustomEvent<HTMLElement>).detail
       const id = card.dataset.itemId ?? card.dataset.appId
-      if (id) setItem({ id, card })
+      if (!id) return
+      // Only games go in playlists; an app tile (Home, Apps) has no item id.
+      if (start === 'playlists' && !card.dataset.itemId) return toast('Only games go in playlists')
+      setItem({ id, card, start })
     }
-    window.addEventListener(GAME_MENU_EVENT, open)
-    return () => window.removeEventListener(GAME_MENU_EVENT, open)
+    const openMenu = opener('menu')
+    const openPlaylists = opener('playlists')
+    window.addEventListener(GAME_MENU_EVENT, openMenu)
+    window.addEventListener(PLAYLIST_EVENT, openPlaylists)
+    return () => {
+      window.removeEventListener(GAME_MENU_EVENT, openMenu)
+      window.removeEventListener(PLAYLIST_EVENT, openPlaylists)
+    }
   }, [])
 
   if (!item) return null
@@ -156,13 +169,13 @@ export function GameDialog() {
     if (item.card.isConnected) focus(item.card)
   }
   // Shortcuts that turn out to be games, not apps, get a Steam game's panel.
-  if (STEAM_GAME.test(item.id) || item.game) return <SteamGame id={item.id} onClose={close} />
+  if (STEAM_GAME.test(item.id) || item.game) return <SteamGame id={item.id} start={item.start} onClose={close} />
   if (item.card.dataset.appId || APP_CARD.test(item.id))
-    return <App id={item.id} onClose={close} onGame={() => setItem({ ...item, game: true })} />
-  return <Game id={item.id} card={item.card} onClose={close} />
+    return <App id={item.id} start={item.start} onClose={close} onGame={() => setItem({ ...item, game: true })} />
+  return <Game id={item.id} card={item.card} start={item.start} onClose={close} />
 }
 
-function App({ id, onClose, onGame }: { id: string; onClose: () => void; onGame: () => void }) {
+function App({ id, start, onClose, onGame }: { id: string; start: Start; onClose: () => void; onGame: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [details, setDetails] = useState<AppDetails | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -171,6 +184,10 @@ function App({ id, onClose, onGame }: { id: string; onClose: () => void; onGame:
     window.steamtv.game
       .app(id)
       .then((found) => {
+        if (found && start === 'playlists') {
+          toast('Only games go in playlists')
+          return onClose()
+        }
         if (found) return setDetails(found)
         // A Steam shortcut that isn't one of the apps: a game added to Steam (Heroic's, Lutris's...).
         if (id.startsWith('shortcut:')) return onGame()
@@ -249,11 +266,11 @@ function App({ id, onClose, onGame }: { id: string; onClose: () => void; onGame:
   )
 }
 
-function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
+function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [details, setDetails] = useState<SteamGameDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState<'menu' | 'playlists' | 'newPlaylist'>('menu')
+  const [step, setStep] = useState<'menu' | 'playlists' | 'newPlaylist'>(start)
   const playlists = usePlaylistCount(id, step)
 
   useEffect(() => {
@@ -264,7 +281,7 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
   }, [id])
 
   const backToMenu = useCallback(() => setStep('menu'), [])
-  useCloseKeys(onClose, step === 'playlists' ? backToMenu : undefined, step === 'newPlaylist')
+  useCloseKeys(onClose, step === 'playlists' && start === 'menu' ? backToMenu : undefined, step === 'newPlaylist')
 
   useEffect(() => {
     if (step !== 'menu') return
@@ -313,11 +330,11 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
   )
 }
 
-function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: () => void }) {
+function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; start: Start; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [options, setOptions] = useState<GameOptions | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [step, setStep] = useState<Step>('menu')
+  const [step, setStep] = useState<Step>(start)
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const playlists = usePlaylistCount(id, step)
@@ -331,7 +348,11 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
 
   // B goes back a step, then closes; Start closes from any step. The keyboard handles its own B.
   const backToMenu = useCallback(() => setStep('menu'), [])
-  useCloseKeys(onClose, step === 'emulator' || step === 'playlists' ? backToMenu : undefined, step === 'rename' || step === 'newPlaylist')
+  useCloseKeys(
+    onClose,
+    step === 'emulator' || (step === 'playlists' && start === 'menu') ? backToMenu : undefined,
+    step === 'rename' || step === 'newPlaylist'
+  )
 
   // The cursor starts on the first row, or on the emulator in use (Playlists places its own).
   useEffect(() => {
@@ -379,7 +400,7 @@ function Game({ id, card, onClose }: { id: string; card: HTMLElement; onClose: (
 
   const replaceArt = (): void => {
     onClose()
-    window.dispatchEvent(new CustomEvent(OPTIONS_EVENT, { detail: card }))
+    window.dispatchEvent(new CustomEvent(ARTWORK_EVENT, { detail: card }))
   }
 
   const remove = (): void => {

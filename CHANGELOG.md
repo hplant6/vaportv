@@ -12,6 +12,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Grid layouts: the selected game slides up a bar over the bottom of its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
 
 ### Changed
+- **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - The controls guide (Select) sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
 
 ### Fixed

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { focus, OPTIONS_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
+import { ARTWORK_EVENT, focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { TextRow } from './TextRow'
 import { toast } from './Toast'
 
@@ -43,8 +43,8 @@ export function ArtworkDialog() {
       if (STEAM_ART.test(id)) return toast("Steam games use Steam's own artwork")
       setItem({ id, card })
     }
-    window.addEventListener(OPTIONS_EVENT, open)
-    return () => window.removeEventListener(OPTIONS_EVENT, open)
+    window.addEventListener(ARTWORK_EVENT, open)
+    return () => window.removeEventListener(ARTWORK_EVENT, open)
   }, [])
 
   if (!item) return null
