@@ -252,6 +252,8 @@ export interface SteamGameDetails {
   bytes?: number
   /** Unlocked of all there are, where the game has achievements. */
   achievements?: { achieved: number; total: number }
+  /** A non-Steam game added to Steam (Heroic, Lutris...): Steam can open its page but not verify it. */
+  shortcut?: boolean
 }
 
 export interface LibraryTab {

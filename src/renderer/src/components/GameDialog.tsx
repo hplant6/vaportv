@@ -138,7 +138,7 @@ function useCloseKeys(onClose: () => void, back?: () => void, off = false): void
 }
 
 export function GameDialog() {
-  const [item, setItem] = useState<{ id: string; card: HTMLElement } | null>(null)
+  const [item, setItem] = useState<{ id: string; card: HTMLElement; game?: boolean } | null>(null)
 
   useEffect(() => {
     const open = (event: Event): void => {
@@ -155,12 +155,14 @@ export function GameDialog() {
     setItem(null)
     if (item.card.isConnected) focus(item.card)
   }
-  if (STEAM_GAME.test(item.id)) return <SteamGame id={item.id} onClose={close} />
-  if (item.card.dataset.appId || APP_CARD.test(item.id)) return <App id={item.id} onClose={close} />
+  // Shortcuts that turn out to be games, not apps, get a Steam game's panel.
+  if (STEAM_GAME.test(item.id) || item.game) return <SteamGame id={item.id} onClose={close} />
+  if (item.card.dataset.appId || APP_CARD.test(item.id))
+    return <App id={item.id} onClose={close} onGame={() => setItem({ ...item, game: true })} />
   return <Game id={item.id} card={item.card} onClose={close} />
 }
 
-function App({ id, onClose }: { id: string; onClose: () => void }) {
+function App({ id, onClose, onGame }: { id: string; onClose: () => void; onGame: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [details, setDetails] = useState<AppDetails | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -170,7 +172,8 @@ function App({ id, onClose }: { id: string; onClose: () => void }) {
       .app(id)
       .then((found) => {
         if (found) return setDetails(found)
-        // A Steam shortcut that isn't one of the apps: a game added to Steam, Steam's to look after.
+        // A Steam shortcut that isn't one of the apps: a game added to Steam (Heroic's, Lutris's...).
+        if (id.startsWith('shortcut:')) return onGame()
         toast('Steam looks after its own shortcuts')
         onClose()
       })
@@ -256,7 +259,7 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
   useEffect(() => {
     window.steamtv.game
       .steam(id)
-      .then((found) => (found ? setDetails(found) : setError('Steam doesn’t have this game installed.')))
+      .then((found) => (found ? setDetails(found) : setError(id.startsWith('shortcut:') ? 'This game isn’t in Steam any more.' : 'Steam doesn’t have this game installed.')))
       .catch((err: unknown) => setError(message(err)))
   }, [id])
 
@@ -303,7 +306,7 @@ function SteamGame({ id, onClose }: { id: string; onClose: () => void }) {
           <>
             {playlistsRow(playlists, () => setStep('playlists'))}
             {row('Open in Steam', 'Its page in your library', () => hand('page'))}
-            {row('Verify files', 'Steam checks and repairs the install', () => hand('verify'))}
+            {!details.shortcut && row('Verify files', 'Steam checks and repairs the install', () => hand('verify'))}
           </>
         ))}
     </GamePanel>

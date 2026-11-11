@@ -301,32 +301,42 @@ describe('collections', () => {
     const { layout, rows } = await loadSteamTab({ steamRoot: root }, [])
     expect(layout).toBe('rows')
     expect(rows.map((r) => [r.name, r.items.map((i) => i.title), r.notInstalled])).toEqual([
-      // Recently played first (installed games, newest first; Proton is a tool, not a game).
-      ['Recently played', ['Dead Island 2', 'Old Game'], 0],
+      // Recently played first (installed games and non-Steam shortcuts, newest first; Proton is a tool, not a game).
+      ['Recently played', ['Dead Island 2', 'The Witcher 3', 'Hades', 'Old Game'], 0],
+      // Non-Steam games (Heroic's, Lutris's...), played or not; streaming apps and launchers left out.
+      ['Non-Steam games', ['Hades', 'Never Played', 'The Witcher 3'], 0],
       // No Steam collections by default; every installed game last, A–Z.
-      ['All games', ['Dead Island 2', 'Old Game'], 0]
+      ['All games', ['Dead Island 2', 'Hades', 'Never Played', 'Old Game', 'The Witcher 3'], 0]
     ])
+    const witcher = rows[1].items.find((i) => i.title === 'The Witcher 3')
+    // Shortcut ids launch through Steam; art comes from the grid folder.
+    expect(witcher?.id).toBe('shortcut:444')
+    expect(witcher?.cover).toMatch(/444p\.png$/)
     const { rows: both } = await loadSteamTab({ steamRoot: root, steamCollections: ['favorite', 'uc-x'] }, [])
     expect(both.map((r) => [r.name, r.notInstalled])).toEqual([
       ['Recently played', 0],
       // Steam's own Favorites, renamed so it isn't mistaken for vaporTV's; app 99 isn't installed.
       ['Steam favorites', 1],
       ['Other', 0],
+      ['Non-Steam games', 0],
       ['All games', 0]
     ])
   })
 
   it('puts vaporTV favourites first on the Steam tab, in the order added, starred', async () => {
     const { root } = await fakeSteam()
-    const { rows } = await loadSteamTab({ steamRoot: root }, ['switch:x', 'steam:30', 'steam:99', 'steam:10'])
+    const { rows } = await loadSteamTab({ steamRoot: root }, ['switch:x', 'steam:30', 'steam:99', 'shortcut:444', 'steam:10'])
     const favorites = rows[0]
     expect(favorites.name).toBe('Favorites')
-    // Only installed Steam games; other tabs' favourites and uninstalled games are left out.
-    expect(favorites.items.map((i) => i.title)).toEqual(['Old Game', 'Dead Island 2'])
+    // Installed Steam games and non-Steam shortcuts; other tabs' favourites and uninstalled games are left out.
+    expect(favorites.items.map((i) => i.title)).toEqual(['Old Game', 'The Witcher 3', 'Dead Island 2'])
     const all = rows.find((r) => r.id === 'all')
     expect(all?.items.map((i) => [i.title, i.favorite])).toEqual([
       ['Dead Island 2', true],
-      ['Old Game', true]
+      ['Hades', false],
+      ['Never Played', false],
+      ['Old Game', true],
+      ['The Witcher 3', true]
     ])
   })
 })

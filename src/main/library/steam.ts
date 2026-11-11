@@ -263,6 +263,49 @@ export async function playedShortcuts(userDir: string): Promise<Played[]> {
   return played
 }
 
+export interface ShortcutGame {
+  /** The shortcut's 32-bit app id (unsigned, as shortcuts.vdf and the grid folder have it). */
+  appid: number
+  title: string
+  /** Unix seconds, or 0 if never played. */
+  lastPlayed: number
+  /** Total minutes played (Steam's count). */
+  playtime: number
+  /** Custom art from Steam's grid folder (Heroic and SteamGridDB-style tools write it there). */
+  art: Played['art']
+}
+
+/**
+ * Games added to Steam as non-Steam shortcuts (Heroic's GOG/Epic/Amazon games, Lutris,
+ * a Windows .exe), played or not: every shortcut but the streaming services and launchers.
+ */
+export async function shortcutGames(userDir: string): Promise<ShortcutGame[]> {
+  let vdf: VdfObject
+  try {
+    vdf = parseBinaryVdf(await readFile(join(userDir, 'config', 'shortcuts.vdf')))
+  } catch {
+    return []
+  }
+  const gridDir = join(userDir, 'config', 'grid')
+  const apps = await localApps(userDir)
+  const games: ShortcutGame[] = []
+  for (const entry of Object.values(childObject(vdf, 'shortcuts') ?? {})) {
+    if (typeof entry !== 'object') continue
+    const title = childString(entry, 'AppName') ?? ''
+    const exe = childString(entry, 'Exe') ?? ''
+    const appid = Number(childString(entry, 'appid'))
+    if (!title || !appid || LAUNCHERS.test(`${title} ${exe}`) || isServiceName(title)) continue
+    games.push({
+      appid,
+      title,
+      lastPlayed: Number(childString(entry, 'LastPlayTime')) || 0,
+      playtime: minutesPlayed(apps, String(appid | 0)),
+      art: gridArt(gridDir, String(appid))
+    })
+  }
+  return games
+}
+
 /**
  * A Steam game's hero (the wide, logo-free banner on its library page) and logo:
  * custom ones from the grid folder first, then Steam's library cache.

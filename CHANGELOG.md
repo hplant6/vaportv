@@ -6,6 +6,14 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## 0.14.0
+
+### Added
+- GOG, Epic and other PC games on the Steam tab: every game added to Steam from outside Steam (by the Heroic Games Launcher, Lutris, or by hand) is listed in a new Non-Steam games row, and in All games, Recently played, Favorites (Y) and your playlists. They open through Steam, so your controller set-up, the overlay and playtime work as for any Steam game. Streaming apps and your own app tiles stay on the Apps tab.
+- Covers for those games come from Steam, or from SteamGridDB when Steam has none (with a SteamGridDB key in Settings → Artwork).
+- Press Start on one of them for its playtime, last played, playlists and Open in Steam.
+- New guide, Settings → Help → Guides → GOG, Epic and other PC games: setting up Heroic so its games show up in vaporTV by themselves.
+
 ## 0.13.0
 
 ### Added

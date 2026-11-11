@@ -58,7 +58,7 @@ import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames }
 import { searchDuckDuckGo } from './library/duckduckgo'
 import { hasLibretroThumbnails, libretroCovers } from './library/libretroThumbnails'
 import { searchWebImages, webCover } from './library/webImages'
-import { adoptSteamFavorites, DEFAULT_STEAM_COLLECTIONS, loadSteamTab } from './library/steamTab'
+import { adoptSteamFavorites, DEFAULT_STEAM_COLLECTIONS, fillShortcutArt, loadSteamTab, shortcutItem, shortcutTabGames } from './library/steamTab'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
@@ -751,6 +751,7 @@ function fillArt(): void {
       }
       ;[fillSwitchArt, fillPs2Art, fillPs3Art, fillXboxArt, fillXbox360Art, fillGameCubeArt, fillWiiArt, fillDreamcastArt, fillSaturnArt, fillN64Art, fillNesArt, fillSnesArt, fillGenesisArt, fillSega32xArt, fillWiiUArt, fillPsxArt, fillPspArt, fillArcadeArt].forEach((fill) => fill(config, updated))
       fillEmulatedArt('services', config.steamGridDbKey, async () => serviceArtGames(), updated)
+      fillShortcutArt(config, updated)
     }
   )
 }
@@ -788,8 +789,17 @@ ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> 
 })
 // Start on a Steam game: what Steam's own files say of it.
 ipcMain.handle('game:steam', async (_event, id: string): Promise<SteamGameDetails | null> => {
-  const appid = /^steam:(\d+)$/.exec(id)?.[1]
   const config = await loadConfig()
+  // A non-Steam game added to Steam (Heroic's, Lutris's...): what shortcuts.vdf and the art say.
+  const shortcut = /^shortcut:(\d+)$/.exec(id)?.[1]
+  if (shortcut) {
+    const userDir = await activeUserDir(steamRoot(config))
+    const game = userDir && (await shortcutTabGames(config, userDir)).find((g) => g.appid === Number(shortcut))
+    if (!game) return null
+    const item = await shortcutItem(game, [])
+    return { title: game.title, cover: item.cover ?? item.wide, playtime: item.playtime, lastPlayed: item.lastPlayed, shortcut: true }
+  }
+  const appid = /^steam:(\d+)$/.exec(id)?.[1]
   const userDir = appid && (await activeUserDir(steamRoot(config)))
   const facts = userDir ? await steamGameFacts(steamRoot(config), userDir, appid) : null
   if (!facts) return null
@@ -853,8 +863,9 @@ ipcMain.handle('app:update', async (_event, id: string) => {
   return updateFlatpak(flatpak)
 })
 ipcMain.handle('game:openInSteam', (_event, id: string, what: 'page' | 'verify') => {
-  const appid = /^steam:(\d+)$/.exec(id)?.[1]
-  if (appid) openInSteam(appid, what)
+  const appid = /^(?:steam|shortcut):(\d+)$/.exec(id)?.[1]
+  // Steam can't verify a shortcut's files: only its page opens.
+  if (appid && (what === 'page' || id.startsWith('steam:'))) openInSteam(appid, what)
 })
 ipcMain.handle('game:rename', async (_event, id: string, name: string | null) => {
   const config = await loadConfig()
