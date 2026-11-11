@@ -14,6 +14,7 @@ import { createPlaylist, deletePlaylist, forgetInPlaylists, movePlaylist, readPl
 import { playlistRows } from './library/playlistItems'
 import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
+import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, stopListening } from './voice'
 import { makeBugReport } from './bugReport'
@@ -1020,3 +1021,6 @@ app.whenReady().then(async () => {
   }
 })
 app.on('window-all-closed', () => app.quit())
+// Its helpers go with it (see helpers.ts); 'exit' too, for a quit that skips will-quit.
+app.on('will-quit', stopHelpers)
+process.on('exit', stopHelpers)

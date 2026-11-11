@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { ownHelper } from './helpers'
 import { STEAMTV_APPID } from './hotkey'
 
@@ -10,6 +11,9 @@ import { STEAMTV_APPID } from './hotkey'
 // else has it. gamescope rewrites the property every frame, so only changes are passed on.
 
 const RESTART_MS = 5000
+/** Runs xprop so the kernel stops it if vaporTV dies without quitting (a crash, kill -9):
+    outside gamescope it never writes, so it would never find its pipe gone and exit. */
+const SETPRIV = '/usr/bin/setpriv'
 
 let child: ChildProcess | null = null
 
@@ -18,7 +22,9 @@ export function watchSteamFocus(onAway: (away: boolean) => void, log: (line: str
   if (process.platform !== 'linux' || STEAMTV_APPID === null || child) return
   let last: boolean | null = null
   let buffer = ''
-  const proc = spawn('xprop', ['-root', '-spy', 'GAMESCOPE_FOCUSED_APP'], {
+  const xprop = ['xprop', '-root', '-spy', 'GAMESCOPE_FOCUSED_APP']
+  const [command, ...args] = existsSync(SETPRIV) ? [SETPRIV, '--pdeathsig', 'TERM', '--', ...xprop] : xprop
+  const proc = spawn(command, args, {
     env: { ...process.env, DISPLAY: ':0' },
     stdio: ['ignore', 'pipe', 'ignore']
   })
