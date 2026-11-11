@@ -1079,25 +1079,71 @@ button {
 }
 
 .wide-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 426px;
   height: 199px;
   border-radius: var(--card-radius);
-  overflow: hidden;
-  background: var(--color-card-footer);
   box-shadow: var(--shadow-card);
+  /* Its own stacking context, so the bar can sit behind the art (z-index -1) without
+     dropping behind the page. */
+  isolation: isolate;
+  z-index: 0;
+  /* Stays on top until its bar has slid back in, so it doesn't retract under the next row. */
   transition:
     scale var(--dur-focus) var(--ease-focus),
-    box-shadow var(--dur-focus) var(--ease-focus);
+    box-shadow var(--dur-focus) var(--ease-focus),
+    z-index 0s 200ms;
+}
+
+.wide-card-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  background: var(--color-card-footer);
+  transition: border-radius var(--dur-focus) var(--ease-focus);
+}
+
+/* The selected card's footer bar: tucked behind the art until then, it slides down out
+   from under it, just after the card starts to grow. Its top runs under the art's
+   rounded corners, which square off as it opens so the two read as one card. */
+.wide-card-bar {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  top: calc(100% - var(--card-radius));
+  height: calc(var(--card-footer-h) + var(--card-radius));
+  padding: var(--card-radius) 10px 0;
+  gap: 8px;
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  transform: translateY(-100%);
+  transition: transform 160ms var(--ease-focus);
+}
+
+.wide-card:focus .wide-card-bar {
+  transform: none;
+  transition: transform 340ms 90ms var(--ease-focus);
+}
+
+.wide-card:focus .wide-card-art {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .wide-card:focus {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   scale: var(--focus-scale);
   box-shadow: var(--shadow-tile-focus);
+  transition:
+    scale var(--dur-focus) var(--ease-focus),
+    box-shadow var(--dur-focus) var(--ease-focus),
+    z-index 0s;
 }
 
 /* Outer columns grow inward, as on Favorite Apps. */

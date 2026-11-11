@@ -17,7 +17,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
           {data.recentsLayout === 'grid' && data.recents.length > 0 ? (
             // Grid: Recents grows downward, so Favorite Apps follows it down the page.
             <div className="home-flow">
-              <CollectionGrid title="Recents" items={data.recents} memoryKey="recents" hasDefault />
+              <CollectionGrid title="Recents" items={data.recents} logos={data.platformLogos} memoryKey="recents" hasDefault />
               <FavoriteApps data={data} variant="flow" />
               <Playlists data={data} />
             </div>

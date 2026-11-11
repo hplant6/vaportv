@@ -6,6 +6,11 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## Unreleased
+
+### Added
+- Grid layouts: the selected game slides out a bar under its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
+
 ## 0.14.0
 
 ### Added

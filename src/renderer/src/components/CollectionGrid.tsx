@@ -1,16 +1,21 @@
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
+import { CardFooter } from './RecentCard'
 
-/** One collection as a grid of wide (header art) cards, four across. */
+/** One collection as a grid of wide (header art) cards, four across. The selected card
+    slides the carousel cards' footer (logo, title, last played, time played) out from
+    under its art. */
 export function CollectionGrid({
   title,
   items,
+  logos,
   note,
   memoryKey,
   hasDefault
 }: {
   title: string
   items: RecentItem[]
+  logos: Record<string, string>
   note?: string | null
   memoryKey: string
   hasDefault: boolean
@@ -33,20 +38,23 @@ export function CollectionGrid({
             aria-label={item.title}
             onClick={() => startLaunch('recent', item.id, item.title, `Can't launch ${item.title}`)}
           >
-            {item.favorite && <span className="favorite-star" aria-label="Favourite">★</span>}
-            {item.wide ? (
-              <img src={item.wide} alt="" />
-            ) : item.cover ? (
-              // No wide art: the poster, centred over a blurred copy of itself.
-              <>
-                <img className="wide-card-backdrop" src={item.cover} alt="" />
-                <img className="wide-card-poster" src={item.cover} alt="" />
-              </>
-            ) : (
-              <span className="wide-card-title display">
-                <span className="no-art-band">{item.title}</span>
-              </span>
-            )}
+            <span className="wide-card-art">
+              {item.favorite && <span className="favorite-star" aria-label="Favourite">★</span>}
+              {item.wide ? (
+                <img src={item.wide} alt="" />
+              ) : item.cover ? (
+                // No wide art: the poster, centred over a blurred copy of itself.
+                <>
+                  <img className="wide-card-backdrop" src={item.cover} alt="" />
+                  <img className="wide-card-poster" src={item.cover} alt="" />
+                </>
+              ) : (
+                <span className="wide-card-title display">
+                  <span className="no-art-band">{item.title}</span>
+                </span>
+              )}
+            </span>
+            <CardFooter item={item} logo={logos[item.id] ?? logos[item.platform]} className="wide-card-bar" />
           </button>
         ))}
       </div>

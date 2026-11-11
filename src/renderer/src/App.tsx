@@ -453,7 +453,7 @@ export function App() {
       )}
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
       <FilesApp />
-      <SearchScreen apps={home?.allApps ?? []} />
+      <SearchScreen apps={home?.allApps ?? []} logos={home?.platformLogos ?? {}} />
       <LaunchOverlay />
       <SleepPrompt />
       <ArtworkDialog />

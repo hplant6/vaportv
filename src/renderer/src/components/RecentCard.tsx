@@ -48,22 +48,30 @@ export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
           </div>
         )}
       </div>
-      <div className="recent-footer">
-        <div className="recent-logo">{logo && <img src={logo} alt="" />}</div>
-        <div className="recent-text">
-          <div className="recent-title">{item.title}</div>
-          <div className="recent-date">
-            {item.lastPlayed ? formatDate(item.lastPlayed) : 'Unplayed'}
-            {item.playtime ? (
-              <>
-                {/* Total time played, after the date. */}
-                <span className="recent-playtime-icon" style={{ maskImage: `url("${clock}")` }} aria-label="Played for" />
-                {formatPlaytime(item.playtime)}
-              </>
-            ) : null}
-          </div>
+      <CardFooter item={item} logo={logo} />
+    </button>
+  )
+}
+
+/** A card's platform logo, title, last played date and time played (carousel cards; the
+    bar under a selected grid card). */
+export function CardFooter({ item, logo, className = '' }: { item: RecentItem; logo?: string; className?: string }) {
+  return (
+    <div className={className ? `recent-footer ${className}` : 'recent-footer'}>
+      <div className="recent-logo">{logo && <img src={logo} alt="" />}</div>
+      <div className="recent-text">
+        <div className="recent-title">{item.title}</div>
+        <div className="recent-date">
+          {item.lastPlayed ? formatDate(item.lastPlayed) : 'Unplayed'}
+          {item.playtime ? (
+            <>
+              {/* Total time played, after the date. */}
+              <span className="recent-playtime-icon" style={{ maskImage: `url("${clock}")` }} aria-label="Played for" />
+              {formatPlaytime(item.playtime)}
+            </>
+          ) : null}
         </div>
       </div>
-    </button>
+    </div>
   )
 }

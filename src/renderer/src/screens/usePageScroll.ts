@@ -45,10 +45,13 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
     // Cards and tiles grow by --focus-scale past their layout box. (Nav tabs don't,
     // but they sit where the page never scrolls.)
     const scale = Number(getComputedStyle(event.target).getPropertyValue('--focus-scale')) || 1
-    const height = event.target.offsetHeight * (1 + (scale - 1) / 2)
+    // A selected grid card's bar slides out below its layout box (CollectionGrid).
+    const bar = event.target.querySelector<HTMLElement>('.wide-card-bar')
+    const below = bar ? (bar.offsetTop + bar.offsetHeight - event.target.offsetHeight) * scale : 0
+    const height = event.target.offsetHeight * (1 + (scale - 1) / 2) + below
     if ((center || event.target.closest(GRIDS)) && ref.current) {
       // scrollHeight: a page fills the screen (inset 0), so its own height isn't its content's.
-      const end = start + ref.current.scrollHeight + BOTTOM_MARGIN
+      const end = start + ref.current.scrollHeight + BOTTOM_MARGIN + below
       const middle = top + height / 2 - viewportHeight / 2
       return setScrollY(Math.max(0, Math.min(middle, end - viewportHeight)))
     }

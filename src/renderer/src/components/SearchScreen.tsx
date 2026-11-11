@@ -75,7 +75,7 @@ const STATUS: Record<VoiceState['phase'], string> = {
 }
 
 /** Mounted once in App; shows the search screen while it's open. */
-export function SearchScreen({ apps }: { apps: AppItem[] }) {
+export function SearchScreen({ apps, logos }: { apps: AppItem[]; logos: Record<string, string> }) {
   const [from, setFrom] = useState<HTMLElement | null | undefined>(undefined)
   const [voice, setVoice] = useState<VoiceState | null>(null)
   const open = from !== undefined
@@ -110,10 +110,20 @@ export function SearchScreen({ apps }: { apps: AppItem[] }) {
     })
   }, [])
 
-  return open ? <Search apps={apps} voice={voice} onClose={close} /> : null
+  return open ? <Search apps={apps} logos={logos} voice={voice} onClose={close} /> : null
 }
 
-function Search({ apps, voice, onClose }: { apps: AppItem[]; voice: VoiceState | null; onClose: () => void }) {
+function Search({
+  apps,
+  logos,
+  voice,
+  onClose
+}: {
+  apps: AppItem[]
+  logos: Record<string, string>
+  voice: VoiceState | null
+  onClose: () => void
+}) {
   const root = useRef<HTMLDivElement>(null)
   const arrangement = useTabArrangement()
   const [games, setGames] = useState<RecentItem[] | null>(null)
@@ -218,7 +228,7 @@ function Search({ apps, voice, onClose }: { apps: AppItem[]; voice: VoiceState |
               </div>
             </section>
           )}
-          {gameResults.length > 0 && <CollectionGrid title="Games" items={gameResults.map((r) => r.thing)} memoryKey="search" hasDefault={false} />}
+          {gameResults.length > 0 && <CollectionGrid title="Games" items={gameResults.map((r) => r.thing)} logos={logos} memoryKey="search" hasDefault={false} />}
           {empty && <p className="empty-note">Nothing called “{query}”.</p>}
           {query && !games && <p className="empty-note">Looking through your games…</p>}
         </div>

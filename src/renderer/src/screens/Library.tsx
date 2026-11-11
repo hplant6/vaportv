@@ -91,6 +91,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
                   <CollectionGrid
                     title={titleWithCount(row)}
                     items={row.items}
+                    logos={logos}
                     memoryKey={`collection:${row.id}`}
                     hasDefault={row.id === firstFilled}
                     note={notInstalledNote(row.notInstalled) ?? row.hint}
