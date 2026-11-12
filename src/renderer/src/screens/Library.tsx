@@ -155,7 +155,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
         empty: 'Press X on a game to put it in this playlist.',
         ...(i === 0 ? { section: 'Playlists' } : {})
       })),
-      // Any other rows the tab has: Steam's collections chosen in Settings, and its non-Steam games.
+      // Any other rows the tab has: Steam's collections chosen in Settings and its non-Steam games; Arcade's systems.
       ...rows
         .filter((row) => !['all', 'recent', 'favorites'].includes(row.id))
         .map((row, i) => ({
@@ -163,7 +163,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           name: row.name,
           items: sorted(row.items),
           empty: 'No games here.',
-          ...(i === 0 ? { section: 'Collections' } : {})
+          ...(i === 0 ? { section: screen === 'arcade' ? 'Systems' : 'Collections' } : {})
         })),
       // From what ES-DE's scrapers found; none if it hasn't scraped this console.
       ...groups(genreGroups(all), 'Genres'),
@@ -185,6 +185,8 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
         <NavBar active={screen} onNavigate={onNavigate} />
         <SideBar
           tab={screen}
+          // Arcade's logo follows its systems: CPS2's on CPS2's list.
+          logo={screen === 'arcade' && current.id.startsWith('row:') ? `arcade-${current.id.slice('row:'.length)}` : undefined}
           title={label}
           lists={lists}
           all={all}

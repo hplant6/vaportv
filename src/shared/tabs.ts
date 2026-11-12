@@ -77,10 +77,7 @@ export function playlistPlacesLabel(places: PlaylistPlace[]): string {
     .join(', ')
 }
 
-/**
- * Tabs with a left bar (their lists: All games, Recents, Favorites, playlists...): the consoles
- * and Steam. Arcade's has its own lists (its systems), and comes later.
- */
+/** Tabs with a left bar (their lists: All games, Recents, Favorites, playlists...): every tab with games. */
 export function hasSideBar(tab: string): tab is LayoutTab {
-  return tab !== 'arcade' && (PLAYLIST_TABS as string[]).includes(tab)
+  return (PLAYLIST_TABS as string[]).includes(tab)
 }

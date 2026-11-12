@@ -1,12 +1,13 @@
 import { existsSync } from 'node:fs'
-import { readdir } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { arcadeRowName, type ArcadeRow } from '../../shared/arcade'
+import { ARCADE_LISTS, arcadeListHidden, arcadeListName, type ArcadeList } from '../../shared/arcade'
 import type { CollectionRow, LibraryTab } from '../../shared/types'
 import { recentsLayout, type Config } from '../config'
-import { readFavorites, readHistory } from '../history'
+import { readFavorites, readHistory, readPlaytime } from '../history'
 import { emulatedItem, emulatedTab, fillEmulatedArt, withNames, type EmulatedGame } from './emulated'
 import { romRoot } from './emudeck'
+import { gameFacts } from './esde'
 import { arcadeCoreFile, RETROARCH, type ArcadeCore as Core } from './emulators'
 
 // The Arcade tab gathers several boards' folders: each game is a MAME-style ROM set
@@ -15,7 +16,7 @@ import { arcadeCoreFile, RETROARCH, type ArcadeCore as Core } from './emulators'
 // favourites and chosen cores carry over) but have a tab of their own.
 
 export interface ArcadeSystem {
-  id: Exclude<ArcadeRow, 'recent' | 'favorites'> | 'neogeo'
+  id: 'atomiswave' | 'naomi' | 'naomi2' | 'cps' | 'neogeo' | 'arcade'
   name: string
   /** Folders under the ROM root (EmuDeck's names), and the core each one's sets are for. */
   folders: { dir: string; core: Core }[]
@@ -23,18 +24,18 @@ export interface ArcadeSystem {
 
 /** The tab's rows after Recently played and Favorites, in this order. */
 export const ARCADE_SYSTEMS: ArcadeSystem[] = [
-  { id: 'atomiswave', name: arcadeRowName('atomiswave'), folders: [{ dir: 'atomiswave', core: 'flycast' }] },
-  { id: 'naomi', name: arcadeRowName('naomi'), folders: [{ dir: 'naomi', core: 'flycast' }, { dir: 'naomigd', core: 'flycast' }] },
-  { id: 'naomi2', name: arcadeRowName('naomi2'), folders: [{ dir: 'naomi2', core: 'flycast' }] },
+  { id: 'atomiswave', name: 'Atomiswave', folders: [{ dir: 'atomiswave', core: 'flycast' }] },
+  { id: 'naomi', name: 'NAOMI', folders: [{ dir: 'naomi', core: 'flycast' }, { dir: 'naomigd', core: 'flycast' }] },
+  { id: 'naomi2', name: 'NAOMI 2', folders: [{ dir: 'naomi2', core: 'flycast' }] },
   {
     id: 'cps',
-    name: arcadeRowName('cps'),
+    name: 'CPS',
     folders: ['cps', 'cps1', 'cps2', 'cps3'].map((dir) => ({ dir, core: 'fbneo' as const }))
   },
   { id: 'neogeo', name: 'Neo Geo', folders: [{ dir: 'neogeo', core: 'fbneo' }] },
   {
     id: 'arcade',
-    name: arcadeRowName('arcade'),
+    name: 'MAME',
     folders: [
       { dir: 'arcade', core: 'mame' },
       { dir: 'mame', core: 'mame' },
@@ -65,15 +66,17 @@ interface Names {
   /** Set name → [description, year, parent set if a clone]. */
   games: Record<string, [string, string, string?]>
   skip: string[]
+  /** Capcom's sets by the CPS board they run on (MAME's driver for them). */
+  cps: Record<string, 1 | 2 | 3>
 }
 
-let names: { games: Names['games']; skip: Set<string> } | null = null
+let names: { games: Names['games']; skip: Set<string>; cps: Names['cps'] } | null = null
 
 async function arcadeNames(): Promise<NonNullable<typeof names>> {
   if (!names) {
     // 2 MB of names: read only when the Arcade tab or Recents needs them.
     const data = (await import('./arcade-names.json')).default as unknown as Names
-    names = { games: data.games, skip: new Set(data.skip) }
+    names = { games: data.games, skip: new Set(data.skip), cps: data.cps ?? {} }
   }
   return names
 }
@@ -89,6 +92,10 @@ export function arcadeTitle(description: string): string {
 export interface ArcadeGame extends EmulatedGame {
   system: ArcadeSystem['id']
   path: string
+  /** A Capcom set's CPS board (whatever folder it's in), for the bar's CPS1, CPS2 and CPS3. */
+  board?: 1 | 2 | 3
+  /** Its year, as MAME has it. */
+  year?: number
   /** The core it opens in: the one chosen for it, else its board's. */
   core: string
   defaultCore: Core
@@ -122,7 +129,7 @@ export function arcadeCoreChoices(config: Config, game: ArcadeGame): { id: strin
 const ROM_SET = /\.(zip|7z)$/i
 
 export async function arcadeGames(config: Config): Promise<ArcadeGame[]> {
-  const { games: known, skip } = await arcadeNames()
+  const { games: known, skip, cps } = await arcadeNames()
   const root = process.env.STEAMTV_ARCADE_ROMS ?? romRoot(config)
   const titles = config.arcadeTitles ?? {}
   const found: ArcadeGame[] = []
@@ -147,6 +154,9 @@ export async function arcadeGames(config: Config): Promise<ArcadeGame[]> {
           // The libretro thumbnails name arcade art after MAME's full name for the set.
           thumbnailNames: [description, ...(parent && known[parent] ? [known[parent][0]] : [])],
           system: system.id,
+          // A set MAME doesn't know in a CPS folder: its parent's board, else the folder's (cps2/), else CPS1's.
+          board: cps[set] ?? (parent ? cps[parent] : undefined) ?? (system.id === 'cps' ? ((Number(dir.slice(3)) || 1) as 1 | 2 | 3) : undefined),
+          year: Number(entry?.[1]) || undefined,
           path: join(root, dir, file),
           core: config.arcadeGameCores?.[`arcade:${dir}/${set}`] ?? core,
           defaultCore: core
@@ -182,29 +192,52 @@ export async function loadNeoGeoTab(config: Config): Promise<LibraryTab> {
   return emulatedTab(await neoGeoGames(config), config.neogeoLayout ?? 'rows', recentsLayout(config, 'neogeo'))
 }
 
+/** Which of the bar's system lists a set goes in: its CPS board's, if it's Capcom's, else its board's. */
+export function arcadeList(game: ArcadeGame): ArcadeList | null {
+  if (game.board) return `cps${game.board}`
+  return game.system === 'cps' || game.system === 'neogeo' ? null : game.system
+}
+
+/**
+ * The Arcade tab: Recently played and Favorites (when there are any), a list per system
+ * (Atomiswave, NAOMI, NAOMI 2, CPS1-3, MAME) bar those hidden in Settings, then every game A–Z.
+ */
 export async function loadArcadeTab(config: Config): Promise<LibraryTab> {
   const layout = config.arcadeLayout ?? 'rows'
   const recents = recentsLayout(config, 'arcade')
   const games = await arcadeTabGames(config)
   if (!games.length) return { layout, recentsLayout: recents, rows: [] }
-  const history = await readHistory()
-  const favorites = await readFavorites()
-  const items = await Promise.all(games.map((game) => emulatedItem(game, history[game.id], favorites.includes(game.id))))
+  const [history, favorites, playtime] = await Promise.all([readHistory(), readFavorites(), readPlaytime()])
+  // Genres from ES-DE, folder by folder (it keeps a gamelist per folder: arcade/, cps/, naomi/...); years from it, else MAME.
+  const byDir = new Map<string, ArcadeGame[]>()
+  for (const game of games) {
+    const dir = game.id.slice('arcade:'.length, game.id.lastIndexOf('/'))
+    byDir.set(dir, [...(byDir.get(dir) ?? []), game])
+  }
+  const facts = new Map([...(await Promise.all([...byDir].map(([dir, sets]) => gameFacts(dir, sets))))].flatMap((found) => [...found]))
+  const items = await Promise.all(
+    games.map(async (game) => ({
+      ...(await emulatedItem(game, history[game.id], favorites.includes(game.id), playtime[game.id])),
+      genre: facts.get(game.id)?.genre,
+      year: facts.get(game.id)?.year ?? game.year,
+      added: await stat(game.path).then((info) => info.mtimeMs, () => undefined)
+    }))
+  )
   const byId = new Map(items.map((item) => [item.id, item]))
-  // Carousels turned off in Settings are left out; their games still count elsewhere.
-  const hidden = new Set<string>(config.arcadeRowsHidden ?? [])
   const rows: CollectionRow[] = []
   const recent = items.filter((item) => history[item.id]).sort((a, b) => history[b.id] - history[a.id])
-  if (recent.length && !hidden.has('recent')) rows.push({ id: 'recent', name: arcadeRowName('recent'), items: recent, notInstalled: 0 })
+  if (recent.length) rows.push({ id: 'recent', name: 'Recently played', items: recent, notInstalled: 0 })
   const favorite = favorites.map((id) => byId.get(id)).filter((item) => item !== undefined)
-  if (favorite.length && !hidden.has('favorites')) {
-    rows.push({ id: 'favorites', name: arcadeRowName('favorites'), items: favorite, notInstalled: 0 })
+  if (favorite.length) rows.push({ id: 'favorites', name: 'Favorites', items: favorite, notInstalled: 0 })
+  // Systems hidden in Settings are left out; their games still count in All games, Genres and Years.
+  const hidden = config.arcadeRowsHidden ?? []
+  const lists = games.map(arcadeList)
+  for (const { id } of ARCADE_LISTS) {
+    if (arcadeListHidden(hidden, id)) continue
+    const listed = items.filter((_, i) => lists[i] === id)
+    if (listed.length) rows.push({ id, name: arcadeListName(id), items: listed, notInstalled: 0 })
   }
-  for (const system of ARCADE_SYSTEMS) {
-    if (system.id === 'neogeo' || hidden.has(system.id)) continue
-    const systemItems = items.filter((_, i) => games[i].system === system.id)
-    if (systemItems.length) rows.push({ id: system.id, name: system.name, items: systemItems, notInstalled: 0, hint: 'Y to favourite' })
-  }
+  rows.push({ id: 'all', name: 'All games', items, notInstalled: 0, hint: 'Y to favourite' })
   return { layout, recentsLayout: recents, rows }
 }
 

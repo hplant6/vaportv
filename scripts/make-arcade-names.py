@@ -1,6 +1,7 @@
 """Builds src/main/library/arcade-names.json from a MAME -listxml (the mameNNNNlx.zip
-on MAME's GitHub releases): every coin-op machine's title, year and parent set, and
-the BIOS and device sets to leave out of the Arcade tab.
+on MAME's GitHub releases): every coin-op machine's title, year and parent set, the
+BIOS and device sets to leave out of the Arcade tab, and which CPS board each of
+Capcom's CPS1, CPS2 and CPS3 sets runs on (its MAME driver), for the tab's CPS lists.
 
     python3 scripts/make-arcade-names.py mame0289lx.zip
 """
@@ -15,6 +16,8 @@ source = zipfile.ZipFile(sys.argv[1])
 xml_name = source.namelist()[0]
 games = {}
 skip = []
+cps = {}
+CPS_DRIVERS = {'capcom/cps1.cpp': 1, 'capcom/cps2.cpp': 2, 'capcom/cps3.cpp': 3}
 with source.open(xml_name) as f:
     for _, el in ET.iterparse(f, events=('end',)):
         if el.tag != 'machine':
@@ -30,8 +33,11 @@ with source.open(xml_name) as f:
                 if a.get('cloneof'):
                     entry.append(a['cloneof'])
                 games[a['name']] = entry
+                board = CPS_DRIVERS.get(a.get('sourcefile', ''))
+                if board:
+                    cps[a['name']] = board
         el.clear()
 
 with open(OUT, 'w') as out:
-    json.dump({'source': xml_name, 'games': games, 'skip': sorted(skip)}, out, separators=(',', ':'), ensure_ascii=False, sort_keys=True)
-print(f'{xml_name}: {len(games)} games, {len(skip)} BIOS/device sets -> {OUT}')
+    json.dump({'source': xml_name, 'games': games, 'skip': sorted(skip), 'cps': cps}, out, separators=(',', ':'), ensure_ascii=False, sort_keys=True)
+print(f'{xml_name}: {len(games)} games, {len(skip)} BIOS/device sets, {len(cps)} CPS sets -> {OUT}')

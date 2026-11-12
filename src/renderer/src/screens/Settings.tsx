@@ -5,7 +5,7 @@ import { AddMusicRow } from '../components/AddMusic'
 import { AddBackdropRow } from '../components/AddBackdrop'
 import { RemoveBackdropRow } from '../components/RemoveBackdrop'
 import { BACKDROP_CHANGED_EVENT } from '../background/SeaBackground'
-import { ARCADE_ROWS, type ArcadeRow } from '../../../shared/arcade'
+import { ARCADE_LISTS, arcadeListHidden, toggleArcadeList, type ArcadeList } from '../../../shared/arcade'
 import { ControlsSettings } from '../components/ControlsSettings'
 import { GeneralSettings } from '../components/GeneralSettings'
 import { HelpSettings } from '../components/HelpSettings'
@@ -563,11 +563,9 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setSleepOnControllerOff(on).then(() => window.dispatchEvent(new Event(SLEEP_SETTING_EVENT)))
   }
 
-  const toggleArcadeRow = (id: ArcadeRow): void => {
+  const toggleArcadeRow = (id: ArcadeList): void => {
     if (!settings) return
-    const hidden = settings.arcadeRowsHidden.includes(id)
-      ? settings.arcadeRowsHidden.filter((row) => row !== id)
-      : [...settings.arcadeRowsHidden, id]
+    const hidden = toggleArcadeList(settings.arcadeRowsHidden, id)
     setSettings({ ...settings, arcadeRowsHidden: hidden })
     window.steamtv.setArcadeRowsHidden(hidden)
   }
@@ -948,15 +946,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
-          <h3 className="settings-heading display">Arcade tab carousels</h3>
-          <p className="settings-help">Which rows the Arcade tab shows.</p>
+          <h3 className="settings-heading display">Arcade tab systems</h3>
+          <p className="settings-help">Which systems the Arcade tab lists on its left. A system switched off still has its games in All games, Genres and Years.</p>
           <div className="setting-list" data-focus-memory="settings-arcade-rows">
             {settings &&
-              ARCADE_ROWS.map((row) => (
+              ARCADE_LISTS.map((row) => (
                 <ToggleRow
                   key={row.id}
                   label={row.name}
-                  on={!settings.arcadeRowsHidden.includes(row.id)}
+                  on={!arcadeListHidden(settings.arcadeRowsHidden, row.id)}
                   onToggle={() => toggleArcadeRow(row.id)}
                 />
               ))}
@@ -1000,7 +998,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings && (
               <ChoiceRow
                 label="Consoles"
-                detail="Apps and Arcade show theirs in 3D · Steam’s and the consoles’ tabs, and Settings, show Home’s backdrop"
+                detail="Apps shows a pile of VHS tapes in 3D · the other tabs and Settings show Home’s backdrop"
                 selected={settings.consoleBackdrops}
                 onSelect={chooseConsoles}
               />
@@ -1178,7 +1176,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         <div className="settings-group">
           <h3 className="settings-heading display">Spinning consoles</h3>
           <p className="settings-help">
-            Each console’s tab (and Steam’s, a Steam Deck) shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
+            Each console’s tab (Steam’s a Steam Deck, Arcade’s an arcade stick) shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
             console’s logo.
           </p>
           <div className="setting-list" data-focus-memory="settings-spinning-consoles">
@@ -1195,7 +1193,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">Apps shows a pile of VHS tapes and Arcade an arcade stick when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
+          <p className="settings-help">Apps shows a pile of VHS tapes when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

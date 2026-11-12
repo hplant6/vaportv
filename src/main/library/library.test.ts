@@ -736,7 +736,16 @@ describe('arcade', () => {
 
       // Carousels turned off are left out of the tab; Neo Geo sets are on their own tab, not here.
       const tab = await loadArcadeTab({ arcadeRowsHidden: ['cps'] } as Config)
-      expect(tab.rows.map((row) => row.id)).toEqual(['naomi', 'arcade'])
+      expect(tab.rows.map((row) => row.id)).toEqual(['naomi', 'arcade', 'all'])
+      // Capcom's sets split by board, whatever folder: Street Fighter II on CPS1, Alpha 3 on CPS2.
+      expect([byId['arcade:cps/sf2ua'].board, byId['arcade:cps2/sfa3'].board, byId['arcade:arcade/720'].board]).toEqual([1, 2, undefined])
+      const split = await loadArcadeTab({ arcadeRowsHidden: ['cps2'] } as Config)
+      expect(split.rows.map((row) => [row.id, row.items.length])).toEqual([
+        ['naomi', 1],
+        ['cps1', 1],
+        ['arcade', 3],
+        ['all', 6]
+      ])
       const neoGeo = await loadNeoGeoTab({} as Config)
       expect(neoGeo.rows.map((row) => row.id)).toEqual(['all'])
       expect(neoGeo.rows[0].items.map((item) => item.id)).toEqual(['arcade:neogeo/mslug'])

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { formatTotalPlaytime, libraryStats } from './libraryStats'
 import { hasSideBar } from './tabs'
+import { arcadeListHidden, toggleArcadeList } from './arcade'
 
 describe('left bar', () => {
-  it('goes on the consoles’ tabs and Steam’s, not yet Arcade’s', () => {
+  it('goes on every tab with games', () => {
     expect(hasSideBar('switch')).toBe(true)
     expect(hasSideBar('neogeo')).toBe(true)
     expect(hasSideBar('steam')).toBe(true)
-    expect(hasSideBar('arcade')).toBe(false)
+    expect(hasSideBar('arcade')).toBe(true)
     expect(hasSideBar('home')).toBe(false)
     expect(hasSideBar('apps')).toBe(false)
   })
@@ -25,5 +26,13 @@ describe('left bar', () => {
     expect(formatTotalPlaytime(2000 * 60)).toBe('2K hours')
     expect(formatTotalPlaytime(2140 * 60)).toBe('2.1K hours')
     expect(formatTotalPlaytime(12400 * 60)).toBe('12K hours')
+  })
+})
+
+describe('arcade systems', () => {
+  it('reads an old CPS switch as all three boards, and splits it when one is turned back on', () => {
+    expect(['cps1', 'cps2', 'cps3', 'naomi'].map((id) => arcadeListHidden(['cps'], id as never))).toEqual([true, true, true, false])
+    expect(toggleArcadeList(['cps', 'recent'], 'cps2')).toEqual(['cps1', 'cps3'])
+    expect(toggleArcadeList([], 'naomi2')).toEqual(['naomi2'])
   })
 })

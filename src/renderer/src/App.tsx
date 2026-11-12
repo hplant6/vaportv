@@ -92,7 +92,7 @@ export function App() {
   const homeBackdropRef = useRef(homeBackdrop)
   homeBackdropRef.current = homeBackdrop
   const backdropUnavailable = useCallback(() => (screenRef.current === 'home' && homeBackdropRef.current ? setHomeBackdrop('sea') : setBackdrop('sea')), [])
-  // Apps and Arcade have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows
+  // Apps has its own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows
   // the usual one there too. A console's tab shows its console in its left bar instead (ConsoleSpin), over Home's backdrop.
   const [productsDown, setProductsDown] = useState<string[]>([])
   const product = !consolesOn || productsDown.includes(screen) || hasSideBar(screen) ? undefined : PRODUCTS[screen]

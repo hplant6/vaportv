@@ -33,6 +33,7 @@ export const SIDE_GRID_CARDS = '.side-grid [data-focusable]'
 
 export function SideBar({
   tab,
+  logo,
   title,
   lists,
   all,
@@ -44,6 +45,8 @@ export function SideBar({
 }: {
   /** The tab's id, for its console's logo. */
   tab: string
+  /** Another logo to show instead, while it's there (an arcade system's, on its list). */
+  logo?: string
   /** The console's name: under its logo for screen readers, or shown if it has none. */
   title: string
   lists: SideList[]
@@ -58,6 +61,7 @@ export function SideBar({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const stats = libraryStats(all)
+  const logoUrl = (logo && LOGOS[logo]) || LOGOS[tab]
   const current = lists.find((list) => list.id === selected)
 
   // Keeps the focused list in view when there are more than fit (many playlists).
@@ -71,7 +75,7 @@ export function SideBar({
   return (
     // One column for up and down: Sort and the lists (the grid beside it is another).
     <aside className="side-bar" aria-hidden={!open} data-nav-scope="">
-      <h1 className="side-bar-title display">{LOGOS[tab] ? <img className="side-bar-logo" src={LOGOS[tab]} alt={title} /> : title}</h1>
+      <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
       {open && <ConsoleSpin tab={tab} />}
       <dl className="side-bar-stats">

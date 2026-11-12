@@ -53,7 +53,7 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 | | |
 |---|---|
 | ![The Arcade tab: Recently played and Atomiswave games over an arcade stick lit in neon](docs/screenshots/arcade.jpg) | ![Settings: categories on the left, the Home backdrop choices on the right](docs/screenshots/settings.jpg) |
-| **Arcade:** Atomiswave, NAOMI, CPS and MAME sets, named and with cover art, over its console backdrop | **Settings:** everything from the controller, in two columns |
+| **Arcade:** Atomiswave, NAOMI, CPS and MAME sets, named and with cover art | **Settings:** everything from the controller, in two columns |
 | ![Home over the Gradient Drift backdrop](docs/screenshots/home-drift.jpg) | ![The welcome tour's button guide](docs/screenshots/welcome.jpg) |
 | **Home**, here over the Gradient Drift backdrop | **A welcome tour** on the first start, showing the buttons |
 | ![Game options for Detroit: Become Human: its cover, playtime, last played and size, with Open in Steam and Verify files](docs/screenshots/game-options.jpg) | ![The Consoles screensaver: a PS3 lit in neon, with the time and date in the corner](docs/screenshots/screensaver-consoles.jpg) |
@@ -61,7 +61,7 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 
 ### Consoles in 3D
 
-Each console's tab shows that console turning slowly at the top of its list on the left (the Steam tab, a Steam Deck). The Consoles screensaver shows them full screen on a mirror floor, as below, and so do the Apps and Arcade tabs.
+Each console's tab shows that console turning slowly at the top of its list on the left (the Steam tab a Steam Deck, Arcade an arcade stick). The Consoles screensaver shows them full screen on a mirror floor, as below, and the Apps tab its pile of VHS tapes.
 
 | ![Steam Deck](docs/screenshots/console-steam.jpg) | ![Switch](docs/screenshots/console-switch.jpg) | ![PS3](docs/screenshots/console-ps3.jpg) | ![Xbox](docs/screenshots/console-xbox.jpg) | ![PS2](docs/screenshots/console-ps2.jpg) |
 |:--:|:--:|:--:|:--:|:--:|
@@ -85,7 +85,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 - **Home:** Recents (Steam games, emulated games and apps, by when you last played) and Favorite Apps, as carousels or grids
 - **Steam:** your Steam collections, including dynamic ones, and recently played
 - **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Neo Geo, each opening its games in the right emulator; a tab only shows when its emulator and games are there. Cards show the icon of the emulator a game opens in
-- **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS and MAME sets, named from MAME's list, each in RetroArch with the right core (and a choice of core per game)
+- **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS1, CPS2, CPS3 and MAME sets, named from MAME's list (and Capcom's sorted by board from it), each in RetroArch with the right core (and a choice of core per game)
 - **Apps:** streaming services and media apps, with setup for anything missing, and **Files**, for browsing your folders, USB drives and SD cards, and copying games onto the box. **Netflix** works with a controller or a TV remote through vaporTV's own extension, with its pop-ups and scrollbars out of the way
 - **The top bar:** up to eleven tabs, with the rest in a second row that opens when you press down from it; **Settings → Tabs** puts each tab where you want it, or switches it off
 
@@ -100,7 +100,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 - Pick any game's art by hand: SteamGridDB, RetroArch's box art, or a web image search (with a free [Brave Search API](https://brave.com/search/api/) key, added in **Settings → Artwork**)
 
 **Backdrops**
-- **Consoles in 3D:** each console's tab (and Steam's, a Steam Deck) shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). Apps shows a pile of VHS tapes and Arcade an arcade stick full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
+- **Consoles in 3D:** each console's tab (Steam's a Steam Deck, Arcade's an arcade stick) shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). Apps shows a pile of VHS tapes full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
 - **Eight live backdrops**: Sea and Forest (both following the time of day), Rain, City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
 - **Home backdrop and Tabs backdrop**, chosen apart: the tabs show their consoles, or any backdrop instead, on every tab
 
