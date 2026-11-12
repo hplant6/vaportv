@@ -79,6 +79,8 @@ function Tour({ onClose }: { onClose: () => void }) {
           <Row keys={key('select')}>Open what’s highlighted</Row>
           <Row keys={key('back')}>Go back</Row>
           <Row keys={<>{key('previousTab')}{key('nextTab')}</>}>Switch tabs</Row>
+          <Row keys={key('sideBar')}>Show or hide a tab’s list of games</Row>
+          <Row keys={<>Hold {key('controlsGuide')}</>}>What each button does</Row>
         </ul>
       )
     },

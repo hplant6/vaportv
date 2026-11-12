@@ -1,8 +1,8 @@
-import { activate, back, controlsGuide, favorite, gameMenu, move, playlist, switchTab, voiceSearch, type Direction } from './focus'
+import { activate, back, controlsGuide, favorite, gameMenu, move, playlist, sideBar, switchTab, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { stepVolume } from './volume'
 import { skipTrack } from '../components/BackgroundMusic'
-import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
+import { actionsOn, ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, HOLD_MS, isHold, type ControlAction, type Controls } from '../../../shared/controls'
 
 /** Settings fires this after the buttons change. */
 export const CONTROLS_CHANGED_EVENT = 'steamtv:controls-changed'
@@ -30,15 +30,16 @@ let nextRepeat = 0
 let anyDown = false
 
 /**
- * What each action does, once per press (it acts again only after being let go). A new
- * hotkey is an action in shared/controls.ts plus a line here. Volume isn't here: it
- * repeats while held (below).
+ * What each action does, once per press (it acts again only after being let go), or once
+ * held for HOLD_MS for a hold action. A new hotkey is an action in shared/controls.ts plus
+ * a line here. Volume isn't here: it repeats while held (below).
  */
 const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
   select: activate,
   back,
   favorite,
   playlist,
+  sideBar,
   controlsGuide,
   gameMenu,
   voiceSearch,
@@ -51,6 +52,11 @@ const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
 }
 /** Actions whose buttons were held last time round, to tell a new press. */
 let actionsDown = new Set<ControlAction>()
+/**
+ * Hold actions whose button is down: when it went down, or null once the hold has acted.
+ * Its button's press action waits for the release, and is dropped if the hold acted.
+ */
+const holding = new Map<ControlAction, number | null>()
 /** The trigger held for volume (-1 L2, 1 R2) and when it next repeats. */
 let volumeHeld: 1 | -1 | null = null
 let nextVolumeRepeat = 0
@@ -157,6 +163,9 @@ function poll(now: number): void {
   if (waitForRelease) {
     if (direction || pressed.size) return
     waitForRelease = false
+    // What was down before doesn't count as let go now.
+    actionsDown = new Set()
+    holding.clear()
   }
 
   // Any button at all counts as activity; one that wakes the screensaver does nothing else.
@@ -184,7 +193,23 @@ function poll(now: number): void {
 
   const wasDown = actionsDown
   actionsDown = pressed
-  for (const { id } of CONTROL_ACTIONS) if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
+  for (const { id } of CONTROL_ACTIONS) {
+    if (isHold(id)) {
+      // Held long enough: the hold acts. Let go sooner: the button's press action does.
+      if (pressed.has(id) && !wasDown.has(id)) holding.set(id, now)
+      const since = holding.get(id)
+      if (pressed.has(id) && since != null && now - since >= HOLD_MS) {
+        holding.set(id, null)
+        ON_PRESS[id]?.()
+      } else if (!pressed.has(id) && wasDown.has(id)) {
+        holding.delete(id)
+        const press = actionsOn(controls, controls[id]).press
+        if (since != null && press) ON_PRESS[press]?.()
+      }
+    } else if (pressed.has(id) && !wasDown.has(id) && !actionsOn(controls, controls[id]).hold) {
+      ON_PRESS[id]?.()
+    }
+  }
 
   // Both triggers at once cancel out.
   const volumeUp = pressed.has('volumeUp')

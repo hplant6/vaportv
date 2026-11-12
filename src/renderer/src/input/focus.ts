@@ -253,6 +253,15 @@ export function playlist(): void {
 /** Select (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
 export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 
+/** Select (tapped) on a controller, L on a keyboard: shows or hides the tab's left bar. */
+export const SIDE_BAR_EVENT = 'steamtv:side-bar'
+
+export function sideBar(): void {
+  if (trap() || grabbed()) return
+  window.steamtv.logInput('side bar')
+  window.dispatchEvent(new Event(SIDE_BAR_EVENT))
+}
+
 export function controlsGuide(): void {
   window.steamtv.logInput('controls guide')
   window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))

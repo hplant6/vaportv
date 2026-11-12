@@ -14,7 +14,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Changed
 - **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
-- The controls guide (Select) sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
+- **Select** now shows or hides a tab's list of games (the left bar) when tapped. **Hold** Select for the button guide. In Settings → Controller, an action can be a hold on a button that also has a tap, and Left bar and Show the buttons can each be moved to another button.
+- The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
 
 ### Fixed
 - vaporTV couldn't be opened again from Steam after it closed or crashed in Desktop Mode: a background helper stayed running, so Steam thought vaporTV still was.

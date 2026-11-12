@@ -127,7 +127,8 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 | Y | Add to Favorites, or take off |
 | X | Add a game to a playlist, or take it out |
 | Start | Game options: rename, emulator, art or delete (on an app: its details) |
-| Select | Show what each button does, along the bottom |
+| Select | Show or hide a tab's list of games (the left bar) |
+| Select (hold) | Show what each button does, along the bottom |
 | R3 | Voice search |
 | L3 | Next song |
 | L2 / R2 | Volume down / up |

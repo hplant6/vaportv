@@ -1,4 +1,4 @@
-import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, switchTab, type Direction } from './focus'
+import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, type Direction } from './focus'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { noteInput } from './idle'
 
@@ -85,6 +85,9 @@ export function startKeyboard(): void {
     } else if (event.key === 'h' || event.key === 'H') {
       event.preventDefault()
       if (!event.repeat) controlsGuide()
+    } else if (event.key === 'l' || event.key === 'L') {
+      event.preventDefault()
+      if (!event.repeat) sideBar()
     } else if (event.key === 'g' || event.key === 'G') {
       event.preventDefault()
       if (!event.repeat) gameMenu()
