@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
-import '@fontsource/space-grotesk/400.css'
-import '@fontsource/space-grotesk/700.css'
+import '@fontsource/bricolage-grotesque/400.css'
+import '@fontsource/bricolage-grotesque/800.css'
 import './tokens.css'
 import './app.css'
 import { App } from './App'

@@ -17,11 +17,11 @@
     "deploy": "scripts/deploy.sh"
   },
   "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.3.0",
     "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@dgreenheck/ez-tree": "^1.1.0",
-    "@fontsource/space-grotesk": "^5.3.0",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
     "@react-three/postprocessing": "3.2.0",
