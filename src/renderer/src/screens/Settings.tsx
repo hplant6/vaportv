@@ -673,6 +673,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setTunnelColors(colors).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
   }
 
+  const toggleSpinningConsoles = (): void => {
+    if (!settings) return
+    const on = !settings.spinningConsoles
+    setSettings({ ...settings, spinningConsoles: on })
+    window.steamtv.setSpinningConsoles(on).then(() => window.dispatchEvent(new Event(BACKDROP_CHANGED_EVENT)))
+  }
+
   const chooseConsoleBackdropQuality = (quality: SettingsData['consoleBackdropQuality']): void => {
     if (!settings || settings.consoleBackdropQuality === quality) return
     setSettings({ ...settings, consoleBackdropQuality: quality })
@@ -993,7 +1000,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings && (
               <ChoiceRow
                 label="Consoles"
-                detail="Each tab shows its console in 3D · Settings shows Home's backdrop"
+                detail="Steam, Apps and Arcade show theirs in 3D · consoles’ tabs and Settings show Home’s backdrop"
                 selected={settings.consoleBackdrops}
                 onSelect={chooseConsoles}
               />
@@ -1169,8 +1176,26 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         )}
 
         <div className="settings-group">
+          <h3 className="settings-heading display">Spinning consoles</h3>
+          <p className="settings-help">
+            Each console’s tab shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
+            console’s logo.
+          </p>
+          <div className="setting-list" data-focus-memory="settings-spinning-consoles">
+            {settings && (
+              <ToggleRow
+                label="Spinning consoles"
+                detail={settings.spinningConsoles ? 'On' : 'Off: logos only'}
+                on={settings.spinningConsoles}
+                onToggle={toggleSpinningConsoles}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, Arcade an arcade stick, and the PlayStation, PS2, PS3, PSP, Switch, Wii, Wii U, N64, NES, SNES, Genesis, 32X, Neo Geo, Xbox, Xbox 360, GameCube, Saturn and Dreamcast tabs show their console when Tabs backdrop is set to Consoles (the Consoles screensaver shows them too). How sharp they're drawn:</p>
+          <p className="settings-help">The Steam tab shows a Steam Deck, Apps a pile of VHS tapes and Arcade an arcade stick when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

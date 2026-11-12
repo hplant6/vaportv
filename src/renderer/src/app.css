@@ -3446,7 +3446,27 @@ button {
   object-position: left center;
 }
 
+/* The console turning under its logo, faded in once drawn. */
+.side-bar-model {
+  flex: none;
+  display: block;
+  width: 356px;
+  height: 200px;
+  margin: -8px 0;
+  opacity: 0;
+  transition: opacity 900ms ease-in-out;
+}
+
+.side-bar-model.ready {
+  opacity: 1;
+}
+
 .side-bar-title {
+  /* The same height whatever the logo's shape, so the console and totals sit at the same place on every tab. */
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 104px;
   margin: 0;
   font-size: var(--text-display);
   line-height: 1.1;
@@ -3506,6 +3526,23 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+/* A soft shade behind the bar, so its list reads over a bright backdrop (the sea at noon). */
+.side-layout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 720px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.45) 55%, transparent);
+  pointer-events: none;
+  transition: opacity var(--dur-focus) var(--ease-focus);
+}
+
+.side-layout.closed::before {
+  opacity: 0;
 }
 
 /* Beside the bar, or the full width without it. */

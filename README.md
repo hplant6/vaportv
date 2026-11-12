@@ -59,9 +59,9 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 | ![Game options for Detroit: Become Human: its cover, playtime, last played and size, with Open in Steam and Verify files](docs/screenshots/game-options.jpg) | ![The Consoles screensaver: a PS3 lit in neon, with the time and date in the corner](docs/screenshots/screensaver-consoles.jpg) |
 | **Game options** (Start on any game): its cover, playtime and size. Steam games open in Steam or verify their files; console games can be renamed, moved to another emulator, given new art, or deleted | **The Consoles screensaver:** each of your consoles in turn, with the clock where you want it |
 
-### Console backdrops
+### Consoles in 3D
 
-Each console's tab shows that console, slowly turning on a mirror floor.
+Each console's tab shows that console turning slowly at the top of its list on the left. The Consoles screensaver shows them full screen on a mirror floor, as below, and so do the Steam, Apps and Arcade tabs.
 
 | ![Steam Deck](docs/screenshots/console-steam.jpg) | ![Switch](docs/screenshots/console-switch.jpg) | ![PS3](docs/screenshots/console-ps3.jpg) | ![Xbox](docs/screenshots/console-xbox.jpg) | ![PS2](docs/screenshots/console-ps2.jpg) |
 |:--:|:--:|:--:|:--:|:--:|
@@ -100,7 +100,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 - Pick any game's art by hand: SteamGridDB, RetroArch's box art, or a web image search (with a free [Brave Search API](https://brave.com/search/api/) key, added in **Settings → Artwork**)
 
 **Backdrops**
-- **Console backdrops:** each console's tab shows that console, black and lit in neon on a mirror floor, the camera slowly swinging round it like a product shot, its brightest edges glowing. The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, and Arcade an arcade stick. **Settings → Backdrop → Console backdrops** trades sharpness for less work on the GPU
+- **Consoles in 3D:** each console's tab shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). The Steam tab shows a Steam Deck, Apps a pile of VHS tapes, and Arcade an arcade stick full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
 - **Eight live backdrops**: Sea and Forest (both following the time of day), Rain, City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
 - **Home backdrop and Tabs backdrop**, chosen apart: the tabs show their consoles, or any backdrop instead, on every tab
 

@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { formatTotalPlaytime, libraryStats } from '../../../shared/libraryStats'
 import type { RecentItem } from '../../../shared/types'
+import { ConsoleSpin } from '../background/ConsoleSpin'
 import { focus } from '../input/focus'
 
 /** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id. */
@@ -11,7 +12,7 @@ const LOGOS = Object.fromEntries(
   ])
 )
 
-// A console tab's left bar: the console's logo (or name), its totals, and its lists (All games,
+// A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, and its lists (All games,
 // Recents, Favorites, then the playlists set to show on this tab). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
@@ -62,6 +63,8 @@ export function SideBar({
   return (
     <aside className="side-bar" aria-hidden={!open}>
       <h1 className="side-bar-title display">{LOGOS[tab] ? <img className="side-bar-logo" src={LOGOS[tab]} alt={title} /> : title}</h1>
+      {/* Hidden, the bar doesn't draw it. */}
+      {open && <ConsoleSpin tab={tab} />}
       <dl className="side-bar-stats">
         <dt>Total games:</dt>
         <dd>{stats.games.toLocaleString()}</dd>

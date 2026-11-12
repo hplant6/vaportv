@@ -11,9 +11,11 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Added
 - Grid layouts: the selected game slides up a bar over the bottom of its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
 - A list down the left of every console's tab: the console's logo, how many games you have, how many you haven't played and how long you've played, then All games, Recents, Favorites and that console's playlists. The games of the list you're on fill the rest of the screen as one grid, so a big library is a few presses away. Tap **Select** to hide the list and give the games the whole screen; each tab remembers whether it's shown and which list you were on.
+- Each console's tab shows the console itself turning slowly under its logo, in the same neon as before. On a slower machine, **Settings → Backdrop → Spinning consoles** turns them off and leaves just the logo.
 - Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
 
 ### Changed
+- Consoles' tabs no longer fill the screen with their console: it's in the list on the left now, and the tab shows Home's backdrop behind it. Steam, Apps and Arcade keep theirs, and the Consoles screensaver still shows every console full screen.
 - **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - **Select** now shows or hides a tab's list of games (the left bar) when tapped. **Hold** Select for the button guide. In Settings → Controller, an action can be a hold on a button that also has a tap, and Left bar and Show the buttons can each be moved to another button.
 - The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.

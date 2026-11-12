@@ -199,6 +199,8 @@ export interface Config {
   consoleBackdropQuality?: ConsoleBackdropQuality
   /** Tabs backdrop → Consoles: each console tab shows its console in 3D (default on). Off, every tab shows `backdrop`. */
   consoleBackdrops?: boolean
+  /** A console tab's left bar shows its console turning slowly (default on); off, just its logo, for slower machines. */
+  spinningConsoles?: boolean
   /** Where background music is read from (default ~/Music). */
   musicFolder?: string
   /** steamgriddb.com API key, for emulated games' art. Set from Settings. */

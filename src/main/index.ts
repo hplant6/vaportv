@@ -625,6 +625,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     tunnelColors: config.tunnelColors ?? 'nebula',
     consoleBackdropQuality: config.consoleBackdropQuality ?? 'high',
     consoleBackdrops: config.consoleBackdrops ?? true,
+    spinningConsoles: config.spinningConsoles ?? true,
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
@@ -695,6 +696,7 @@ ipcMain.handle('settings:driftPreset', (_event, name: string) => saveConfig({ dr
 ipcMain.handle('settings:tunnelColors', (_event, colors: 'nebula' | 'starlight' | 'ice' | 'ember') => saveConfig({ tunnelColors: colors }))
 ipcMain.handle('settings:consoleBackdropQuality', (_event, quality: ConsoleBackdropQuality) => saveConfig({ consoleBackdropQuality: quality }))
 ipcMain.handle('settings:consoleBackdrops', (_event, on: boolean) => saveConfig({ consoleBackdrops: on }))
+ipcMain.handle('settings:spinningConsoles', (_event, on: boolean) => saveConfig({ spinningConsoles: on }))
 ipcMain.handle('settings:driftDirection', (_event, direction: 'vertical' | 'horizontal') => saveConfig({ driftDirection: direction }))
 ipcMain.handle('backdrop:get', async () => {
   const config = await loadConfig()

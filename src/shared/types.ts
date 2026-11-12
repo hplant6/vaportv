@@ -401,6 +401,8 @@ export interface Settings {
   consoleBackdropQuality: ConsoleBackdropQuality
   /** Tabs backdrop → Consoles: console tabs show their console in 3D; other screens show Home's backdrop. */
   consoleBackdrops: boolean
+  /** A console tab's left bar shows its console turning slowly; off, just its logo. */
+  spinningConsoles: boolean
   /** Where music is read from, for the hint in Settings. */
   musicFolder: string
   /** Switching the controller off puts the box to sleep (while vaporTV is on screen). */
@@ -828,6 +830,7 @@ export interface SteamTvApi {
   setTunnelColors(colors: 'nebula' | 'starlight' | 'ice' | 'ember'): Promise<void>
   setConsoleBackdropQuality(quality: ConsoleBackdropQuality): Promise<void>
   setConsoleBackdrops(on: boolean): Promise<void>
+  setSpinningConsoles(on: boolean): Promise<void>
   setBackdropTime(time: BackdropTime): Promise<void>
   /** The background track to play (null for none) and its volume. */
   getMusic(): Promise<Record<MusicKind, MusicLayer>>

@@ -41,6 +41,7 @@ import { Settings } from './screens/Settings'
 import { Library } from './screens/Library'
 import { STAGE_W, stageHeight } from './stage'
 import { setCurrentScreen } from './currentScreen'
+import { hasSideBar } from '../../shared/tabs'
 
 /** Recents also reload whenever the window regains focus, e.g. on returning from a game. */
 const HOME_REFRESH = 5 * 60 * 1000
@@ -91,9 +92,10 @@ export function App() {
   const homeBackdropRef = useRef(homeBackdrop)
   homeBackdropRef.current = homeBackdrop
   const backdropUnavailable = useCallback(() => (screenRef.current === 'home' && homeBackdropRef.current ? setHomeBackdrop('sea') : setBackdrop('sea')), [])
-  // Some consoles' tabs have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows the usual one there too.
+  // Steam, Apps and Arcade have their own backdrop (PRODUCTS); one that can't run (or whose model isn't in this build) shows
+  // the usual one there too. A console's tab shows its console in its left bar instead (ConsoleSpin), over Home's backdrop.
   const [productsDown, setProductsDown] = useState<string[]>([])
-  const product = !consolesOn || productsDown.includes(screen) ? undefined : PRODUCTS[screen]
+  const product = !consolesOn || productsDown.includes(screen) || hasSideBar(screen) ? undefined : PRODUCTS[screen]
   const productUnavailable = useCallback(() => setProductsDown((down) => [...down, screenRef.current]), [])
 
   useEffect(() => {

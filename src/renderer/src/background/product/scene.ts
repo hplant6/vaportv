@@ -78,7 +78,7 @@ const RIG: [THREE.Color, number, [number, number, number], number, number, boole
  * light keeps its size as seen from the console, so lights it the same; RectAreaLights light
  * nothing but the console (the floor is a mirror).
  */
-function addRig(scene: THREE.Scene, scale: number, target: THREE.Vector3, white: number): void {
+export function addRig(scene: THREE.Scene, scale: number, target: THREE.Vector3, white: number): void {
   for (const [colour, intensity, [x, y, z], width, height, isWhite] of RIG) {
     const light = new THREE.RectAreaLight(colour, intensity * (isWhite ? white : 1), width * scale, height * scale)
     light.position.set(x, y, z).multiplyScalar(scale)
@@ -91,7 +91,7 @@ function addRig(scene: THREE.Scene, scale: number, target: THREE.Vector3, white:
  * What the console's gloss reflects: a dark room with a strip of each colour either side
  * and a pale one behind, so its top shades from magenta to cyan as the camera swings.
  */
-function environment(renderer: THREE.WebGLRenderer): THREE.Texture {
+export function environment(renderer: THREE.WebGLRenderer): THREE.Texture {
   const room = new THREE.Scene()
   room.background = new THREE.Color(0x000000)
   const strip = (colour: THREE.Color, x: number, y: number, z: number, w: number, h: number): void => {
@@ -158,7 +158,7 @@ async function loadModel(url: string): Promise<ArrayBuffer> {
 }
 
 /** The console, its base centred on the origin. Returns its size. */
-async function buildConsole(scene: THREE.Scene, product: Product): Promise<THREE.Vector3> {
+export async function buildConsole(scene: THREE.Object3D, product: Product): Promise<THREE.Vector3> {
   const gltf = await new GLTFLoader().parseAsync(await loadModel(product.model), '')
   const model = gltf.scene
   const box = new THREE.Box3().setFromObject(model)
