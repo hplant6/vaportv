@@ -271,7 +271,8 @@ function SideGrid({ backTo, children }: { backTo?: string; children: ReactNode }
   const scroll = usePageScroll()
   return (
     <div className="page-scroll" {...scroll}>
-      <div className="side-grid" {...(backTo ? { 'data-back-focus': backTo } : {})} data-nav-scope="">
+      {/* Left from the first column (or B) goes to the list in the bar, level with the card or not. */}
+      <div className="side-grid" {...(backTo ? { 'data-back-focus': backTo, 'data-nav-left-out': backTo } : {})} data-nav-scope="">
         {children}
       </div>
     </div>

@@ -156,6 +156,20 @@ export function move(direction: Direction, source: InputSource): void {
       ? (vertical(rect, candidates.filter((el) => scope.contains(el)), sign) ??
         vertical(rect, candidates.filter((el) => !el.closest('[data-nav-scope]')), sign))
       : vertical(rect, candidates, sign)
+  // A container can also name where a direction goes once nothing in it lies that way
+  // (data-nav-left-out): left from a grid's first column into the bar beside it, at the
+  // list it shows, wherever the card sits up or down.
+  const outKey = `${key}Out` as const
+  const edge = !named ? from.parentElement?.closest<HTMLElement>(`[data-nav-${direction}-out]`) : null
+  if (edge && (direction === 'left' || direction === 'right')) {
+    const inside = horizontal(rect, candidates.filter((el) => edge.contains(el)), direction === 'right' ? 1 : -1)
+    const out = inside ? null : namedTarget(edge.dataset[outKey] ?? '', rect, direction)
+    if (out) {
+      focus(out)
+      play('move')
+      return
+    }
+  }
   let target =
     (named ? namedTarget(named, rect, direction) : null) ??
     (direction === 'left' || direction === 'right'
