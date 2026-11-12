@@ -8,7 +8,8 @@ import { launchUrl, shortcutGameId } from '../launch'
 import { collectionGames, isSupported, readCollections } from './collections'
 import { loadRecents, pickRecent, toRecentItem } from './recents'
 import { loadSteamTab } from './steamTab'
-import { withMoved, withNew, withToggled } from '../playlists'
+import { placesOf, withMoved, withNew, withShowOn, withToggled } from '../playlists'
+import { newPlaylistPlace, playlistPlacesLabel } from '../../shared/tabs'
 import { scanDreamcast } from './dreamcast'
 import { dreamcastContent } from './dreamcastTab'
 import { parseEmuDeckSettings, shortcutAppId } from './emudeck'
@@ -343,8 +344,8 @@ describe('collections', () => {
 
 describe('game playlists', () => {
   it('makes, fills, empties and orders playlists', () => {
-    let lists = withNew([], 'Couch co-op', 'a', 'steam:10')
-    lists = withNew(lists, 'Racing', 'b')
+    let lists = withNew([], 'Couch co-op', 'a', ['home'], 'steam:10')
+    lists = withNew(lists, 'Racing', 'b', ['home'])
     expect(lists.map((p) => [p.name, p.items])).toEqual([
       ['Couch co-op', ['steam:10']],
       ['Racing', []]
@@ -363,6 +364,28 @@ describe('game playlists', () => {
     expect(withMoved(lists, 'b', 'up').map((p) => p.id)).toEqual(['b', 'a'])
     expect(withMoved(lists, 'b', 'down').map((p) => p.id)).toEqual(['a', 'b'])
     expect(withMoved(lists, 'a', 'up').map((p) => p.id)).toEqual(['a', 'b'])
+  })
+
+  it('shows each playlist on Home, a tab, or both', () => {
+    // Made before there was a choice: Home.
+    expect(placesOf({ id: 'old', name: 'Old', items: [] })).toEqual(['home'])
+    let lists = withNew([], 'Mario', 'a', ['switch'])
+    expect(placesOf(lists[0])).toEqual(['switch'])
+    lists = withShowOn(lists, 'a', ['switch', 'home', 'switch'])
+    expect(placesOf(lists[0])).toEqual(['switch', 'home'])
+    // Never nowhere.
+    expect(withShowOn(lists, 'a', [])).toBe(lists)
+    expect(placesOf(withNew([], 'X', 'b', [])[0])).toEqual(['home'])
+    expect(playlistPlacesLabel(['switch', 'home'])).toBe('Home, Switch')
+  })
+
+  it('makes a new playlist for the console tab it was made on, else Home', () => {
+    expect(newPlaylistPlace('switch')).toBe('switch')
+    expect(newPlaylistPlace('arcade')).toBe('arcade')
+    expect(newPlaylistPlace('steam')).toBe('home')
+    expect(newPlaylistPlace('home')).toBe('home')
+    expect(newPlaylistPlace('apps')).toBe('home')
+    expect(newPlaylistPlace('settings')).toBe('home')
   })
 })
 

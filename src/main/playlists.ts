@@ -1,12 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import type { GamePlaylist } from '../shared/types'
+import type { GamePlaylist, PlaylistPlace } from '../shared/types'
 
 // Game playlists: your own lists of games from any console and Steam (as ES-DE's custom
-// collections), each a row on Home. Kept in the order made (or as moved in Settings),
-// games in the order added. Games are kept by id, so a game on a drive that isn't
-// plugged in stays in its playlist and comes back with the drive.
+// collections). Each shows as a row on Home, in a tab's left bar, or both, as set in Settings
+// → Home. Kept in the order made (or as moved in Settings), games in the order added. Games
+// are kept by id, so a game on a drive that isn't plugged in stays in its playlist and
+// comes back with the drive.
 
 const FILE = join(homedir(), '.local', 'share', 'steamtv', 'playlists.json')
 
@@ -34,10 +35,23 @@ function change<T>(edit: (playlists: GamePlaylist[]) => { next: GamePlaylist[]; 
   return run
 }
 
+/** Where it shows: as saved, or Home for one made before there was a choice. */
+export function placesOf(playlist: GamePlaylist): PlaylistPlace[] {
+  return playlist.showOn?.length ? playlist.showOn : ['home']
+}
+
+export const showsOn = (playlist: GamePlaylist, place: PlaylistPlace): boolean => placesOf(playlist).includes(place)
+
 // The edits themselves, kept apart from the file for tests.
 
-export function withNew(playlists: GamePlaylist[], name: string, id: string, item?: string): GamePlaylist[] {
-  return [...playlists, { id, name, items: item ? [item] : [] }]
+export function withNew(playlists: GamePlaylist[], name: string, id: string, showOn: PlaylistPlace[], item?: string): GamePlaylist[] {
+  return [...playlists, { id, name, items: item ? [item] : [], showOn: showOn.length ? [...new Set(showOn)] : ['home'] }]
+}
+
+/** Where it shows; left as it was if `showOn` is empty, so it always shows somewhere. */
+export function withShowOn(playlists: GamePlaylist[], playlist: string, showOn: PlaylistPlace[]): GamePlaylist[] {
+  if (!showOn.length) return playlists
+  return playlists.map((p) => (p.id === playlist ? { ...p, showOn: [...new Set(showOn)] } : p))
 }
 
 /** Puts the game in the playlist, or takes it out; `on` is whether it's in it now. */
@@ -61,9 +75,13 @@ export function withMoved(playlists: GamePlaylist[], playlist: string, direction
   return next
 }
 
-export function createPlaylist(name: string, item?: string): Promise<string> {
+export function createPlaylist(name: string, showOn: PlaylistPlace[], item?: string): Promise<string> {
   const id = `gp${Date.now().toString(36)}`
-  return change((playlists) => ({ next: withNew(playlists, name, id, item), result: id }))
+  return change((playlists) => ({ next: withNew(playlists, name, id, showOn, item), result: id }))
+}
+
+export function setPlaylistShowOn(playlist: string, showOn: PlaylistPlace[]): Promise<void> {
+  return change((playlists) => ({ next: withShowOn(playlists, playlist, showOn), result: undefined }))
 }
 
 export function togglePlaylistItem(playlist: string, item: string): Promise<boolean> {

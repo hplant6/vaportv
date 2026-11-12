@@ -54,11 +54,16 @@ export interface HomeData {
   playlists: PlaylistRow[]
 }
 
+/** Where a game playlist shows: as a row on Home, or in a tab's left bar (a console's, Steam's, Arcade's). */
+export type PlaylistPlace = 'home' | LayoutTab
+
 /** A game playlist as stored: games from any console or Steam, by id, in the order added. */
 export interface GamePlaylist {
   id: string
   name: string
   items: string[]
+  /** Where it shows, in no set order; missing (playlists made before there was a choice) is Home only. */
+  showOn?: PlaylistPlace[]
 }
 
 /** A game playlist with its games as cards (the ones vaporTV can find now). */
@@ -66,6 +71,8 @@ export interface PlaylistRow {
   id: string
   name: string
   items: RecentItem[]
+  /** Where it shows (never empty). */
+  showOn: PlaylistPlace[]
 }
 
 /** A playlist as the game menu lists it: whether this game is in it. */
@@ -74,6 +81,8 @@ export interface PlaylistChoice {
   name: string
   count: number
   has: boolean
+  /** Where it shows (never empty). */
+  showOn: PlaylistPlace[]
 }
 
 export type TemperatureUnit = 'auto' | 'fahrenheit' | 'celsius'
@@ -660,14 +669,16 @@ export interface SteamTvApi {
     reset(id: string): Promise<void>
   }
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
-  /** Game playlists (your own lists of games, rows on Home). */
+  /** Game playlists (your own lists of games, on Home or a tab's left bar). */
   gamePlaylists: {
     /** Every playlist, its games as cards, for Settings. */
     list(): Promise<PlaylistRow[]>
     /** Every playlist, and whether this game is in it, for its game menu. */
     forGame(id: string): Promise<PlaylistChoice[]>
-    /** A new playlist, with this game in it if one is given; resolves with its id. */
-    create(name: string, gameId?: string): Promise<string>
+    /** A new playlist showing on `showOn`, with this game in it if one is given; resolves with its id. */
+    create(name: string, showOn: PlaylistPlace[], gameId?: string): Promise<string>
+    /** Where it shows; ignored if empty (a playlist always shows somewhere). */
+    setShowOn(playlist: string, showOn: PlaylistPlace[]): Promise<void>
     /** Puts the game in the playlist or takes it out; whether it's in it now. */
     toggle(playlist: string, gameId: string): Promise<boolean>
     rename(playlist: string, name: string): Promise<void>

@@ -1,4 +1,4 @@
-import type { HideableTab, TabArrangement } from './types'
+import type { HideableTab, LayoutTab, PlaylistPlace, TabArrangement } from './types'
 
 // The top bar's tabs, their labels and default order, and how many the bar holds. Past
 // eleven names, the rest go in a second row under it, which Down from the bar opens.
@@ -57,4 +57,22 @@ export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<H
   }
   more.unshift(...bar.splice(room))
   return { bar, more: more.slice(0, MORE_TABS) }
+}
+
+/** The tabs a game playlist can show on besides Home: every tab with games (all but Apps). */
+export const PLAYLIST_TABS = TAB_LIST.flatMap(({ id }) => (id === 'home' || id === 'apps' ? [] : [id as LayoutTab]))
+
+/**
+ * Where a playlist made on `screen` shows to begin with: a console tab's own bar (Arcade's
+ * too), or Home when made from Home, Steam, Apps or Settings.
+ */
+export function newPlaylistPlace(screen: string): PlaylistPlace {
+  return screen !== 'steam' && (PLAYLIST_TABS as string[]).includes(screen) ? (screen as LayoutTab) : 'home'
+}
+
+/** e.g. "Home, Switch", in the bar's order. */
+export function playlistPlacesLabel(places: PlaylistPlace[]): string {
+  return TAB_LIST.filter(({ id }) => (places as string[]).includes(id))
+    .map(({ label }) => label)
+    .join(', ')
 }

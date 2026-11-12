@@ -40,6 +40,7 @@ import { Home } from './screens/Home'
 import { Settings } from './screens/Settings'
 import { Library } from './screens/Library'
 import { STAGE_W, stageHeight } from './stage'
+import { setCurrentScreen } from './currentScreen'
 
 /** Recents also reload whenever the window regains focus, e.g. on returning from a game. */
 const HOME_REFRESH = 5 * 60 * 1000
@@ -71,6 +72,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const screenRef = useRef(screen)
   screenRef.current = screen
+  setCurrentScreen(screen)
   const [webgl, setWebgl] = useState(true)
   const disableWebgl = useCallback(() => setWebgl(false), [])
   // Null until the setting loads, so the sea doesn't flash up before another backdrop.

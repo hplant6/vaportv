@@ -1,6 +1,7 @@
 import type { GamePlaylist, PlaylistRow, RecentItem } from '../../shared/types'
 import type { Config } from '../config'
 import { readFavorites, readHistory, readPlaytime } from '../history'
+import { placesOf } from '../playlists'
 import { emulatedItem } from './emulated'
 import { emulatedGames, steamRoot } from './recents'
 import { activeUserDir, steamGames } from './steam'
@@ -12,7 +13,7 @@ import { shortcutId, shortcutItem, shortcutTabGames, steamId, steamItem } from '
  */
 export async function playlistRows(config: Config, playlists: GamePlaylist[]): Promise<PlaylistRow[]> {
   const wanted = new Set(playlists.flatMap((p) => p.items))
-  if (!wanted.size) return playlists.map((p) => ({ id: p.id, name: p.name, items: [] }))
+  if (!wanted.size) return playlists.map((p) => ({ id: p.id, name: p.name, items: [], showOn: placesOf(p) }))
   const favorites = await readFavorites()
   const cards = new Map<string, Promise<RecentItem>>()
 
@@ -38,7 +39,8 @@ export async function playlistRows(config: Config, playlists: GamePlaylist[]): P
     playlists.map(async (p) => ({
       id: p.id,
       name: p.name,
-      items: await Promise.all(p.items.flatMap((id) => cards.get(id) ?? []))
+      items: await Promise.all(p.items.flatMap((id) => cards.get(id) ?? [])),
+      showOn: placesOf(p)
     }))
   )
 }

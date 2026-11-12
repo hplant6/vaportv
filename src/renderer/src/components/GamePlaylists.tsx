@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PlaylistChoice, PlaylistRow } from '../../../shared/types'
+import { newPlaylistPlace, PLAYLIST_TABS, playlistPlacesLabel, TAB_LIST } from '../../../shared/tabs'
+import type { PlaylistChoice, PlaylistPlace, PlaylistRow } from '../../../shared/types'
+import { useTabArrangement } from '../availableTabs'
+import { currentScreen } from '../currentScreen'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { HOME_CHANGED_EVENT } from '../screens/Settings'
 import { ActionRow, OverStage } from './GooglePhotos'
@@ -7,9 +10,10 @@ import { OnScreenKeyboard } from './Keyboard'
 import { toast } from './Toast'
 import { ToggleRow } from './ToggleRow'
 
-// Game playlists: your own lists of games from any console and Steam, each a row on Home
-// (as ES-DE's custom collections). A game's menu (Start) puts it in or takes it out of
-// them, or starts a new one with it; Settings → Home names, orders and deletes them.
+// Game playlists: your own lists of games from any console and Steam (as ES-DE's custom
+// collections), each a row on Home, a list in a tab's left bar, or both. A game's menu (Start,
+// or X) puts it in or takes it out of them, or starts a new one with it, for the tab it was
+// opened on; Settings → Home names, orders and deletes them, and picks where each shows.
 
 const games = (n: number): string => `${n} ${n === 1 ? 'game' : 'games'}`
 
@@ -18,8 +22,18 @@ const homeChanged = (): void => {
   window.dispatchEvent(new Event(HOME_CHANGED_EVENT))
 }
 
-/** A new playlist's name, on vaporTV's keyboard; with `gameId`, that game goes in it. `made`: whether one was made. */
+/** Where a playlist shows, for a toast: "on Home", "on the Switch tab". */
+function onPlace(place: PlaylistPlace): string {
+  return place === 'home' ? 'on Home' : `on the ${playlistPlacesLabel([place])} tab`
+}
+
+/**
+ * A new playlist's name, on vaporTV's keyboard; with `gameId`, that game goes in it. It shows
+ * on the console tab it's made from (that tab's left bar), or Home from anywhere else.
+ * `made`: whether one was made.
+ */
 export function NewPlaylistKeyboard({ gameId, gameTitle, onDone }: { gameId?: string; gameTitle?: string; onDone: (made: boolean) => void }) {
+  const [place] = useState(() => newPlaylistPlace(currentScreen()))
   return (
     <OnScreenKeyboard
       title="New playlist"
@@ -29,9 +43,9 @@ export function NewPlaylistKeyboard({ gameId, gameTitle, onDone }: { gameId?: st
         const name = text.trim()
         if (!name) return onDone(false)
         window.steamtv.gamePlaylists
-          .create(name, gameId)
+          .create(name, [place], gameId)
           .then(() => {
-            toast(gameTitle ? `Made ${name} with ${gameTitle} in it` : `Made ${name}`)
+            toast(gameTitle ? `Made ${name} ${onPlace(place)}, with ${gameTitle} in it` : `Made ${name} ${onPlace(place)}`)
             homeChanged()
             onDone(true)
           })
@@ -72,7 +86,13 @@ export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; 
   return (
     <>
       {choices.map((choice) => (
-        <ToggleRow key={choice.id} label={choice.name} detail={games(choice.count)} on={choice.has} onToggle={() => toggle(choice)} />
+        <ToggleRow
+          key={choice.id}
+          label={choice.name}
+          detail={`${games(choice.count)} · ${playlistPlacesLabel(choice.showOn)}`}
+          on={choice.has}
+          onToggle={() => toggle(choice)}
+        />
       ))}
       <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onNew}>
         <span className="setting-name display">New playlist</span>
@@ -115,11 +135,12 @@ export function GamePlaylistsSettings() {
     <div className="settings-group">
       <h3 className="settings-heading display">Game playlists</h3>
       <p className="settings-help">
-        Your own lists of games from any console and Steam, each a row on Home. Press Start on a game and choose Playlists to put it in one.
+        Your own lists of games from any console and Steam, each a row on Home, a list on a console’s tab, or both. Press X on a game to put it in
+        one.
       </p>
       <div className="setting-list" data-focus-memory="settings-game-playlists">
         {playlists?.map((p) => (
-          <ActionRow key={p.id} label={p.name} detail={`Edit · ${games(p.items.length)}`} onSelect={() => open(p.id)} />
+          <ActionRow key={p.id} label={p.name} detail={`${games(p.items.length)} · ${playlistPlacesLabel(p.showOn)}`} onSelect={() => open(p.id)} />
         ))}
         <ActionRow label="New playlist" detail="Name it here, then add games from their menus" onSelect={() => open(null)} />
       </div>
@@ -147,7 +168,7 @@ export function GamePlaylistsSettings() {
   )
 }
 
-/** One playlist: its name, its place on Home, its games (switch one off to take it out), and Delete. */
+/** One playlist: its name, where it shows, its place in the order, its games (switch one off to take it out), and Delete. */
 function GamePlaylistDialog({
   playlist,
   index,
@@ -169,6 +190,10 @@ function GamePlaylistDialog({
   const [shown] = useState(playlist.items)
   const inIt = new Set(playlist.items.map((i) => i.id))
   const api = window.steamtv.gamePlaylists
+  // Home and the tabs that show (a tab switched off, or with no games, isn't offered unless it's already chosen).
+  const arrangement = useTabArrangement()
+  const showing = new Set<string>([...arrangement.bar, ...arrangement.more, ...playlist.showOn])
+  const places: PlaylistPlace[] = ['home', ...PLAYLIST_TABS.filter((tab) => showing.has(tab))]
 
   useEffect(() => {
     if (naming) return
@@ -225,7 +250,15 @@ function GamePlaylistDialog({
 
   const move = (direction: 'up' | 'down'): void => {
     api.move(playlist.id, direction).then(onChanged)
-    toast(direction === 'up' ? `${playlist.name} moved up on Home` : `${playlist.name} moved down on Home`)
+    toast(direction === 'up' ? `${playlist.name} moved up` : `${playlist.name} moved down`)
+  }
+
+  const toggleShowOn = (place: PlaylistPlace): void => {
+    const on = !playlist.showOn.includes(place)
+    const next = on ? [...playlist.showOn, place] : playlist.showOn.filter((p) => p !== place)
+    if (!next.length) return toast('It has to show somewhere: switch another on first')
+    api.setShowOn(playlist.id, next).then(onChanged)
+    toast(on ? `${playlist.name} shows ${onPlace(place)}` : `${playlist.name} is off ${place === 'home' ? 'Home' : `the ${playlistPlacesLabel([place])} tab`}`)
   }
 
   const remove = (): void => {
@@ -243,9 +276,20 @@ function GamePlaylistDialog({
         <h2 className="section-label display">{playlist.name}</h2>
         <div className="artwork-list" ref={list}>
           {action('Name', 'Change what it’s called', () => setNaming(true))}
-          {total > 1 && action('Move up', `Row ${index + 1} of ${total} on Home`, () => (index > 0 ? move('up') : toast('It’s already the first row')))}
-          {total > 1 &&
-            action('Move down', `Row ${index + 1} of ${total} on Home`, () => (index < total - 1 ? move('down') : toast('It’s already the last row')))}
+          {total > 1 && action('Move up', `${index + 1} of ${total} playlists`, () => (index > 0 ? move('up') : toast('It’s already first')))}
+          {total > 1 && action('Move down', `${index + 1} of ${total} playlists`, () => (index < total - 1 ? move('down') : toast('It’s already last')))}
+          <h3 className="settings-heading display">Show on</h3>
+          {places.map((place) => (
+            <ToggleRow
+              key={place}
+              label={TAB_LIST.find((tab) => tab.id === place)?.label ?? place}
+              detail={place === 'home' ? 'A row on Home' : 'In the tab’s list'}
+              on={playlist.showOn.includes(place)}
+              onToggle={() => toggleShowOn(place)}
+              onFocus={reveal}
+            />
+          ))}
+          <h3 className="settings-heading display">Games</h3>
           {shown.length === 0 && <p className="settings-help">No games yet. Press Start on a game, then Playlists.</p>}
           {shown.map((item) => (
             <ToggleRow
