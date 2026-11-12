@@ -120,6 +120,7 @@ const api: SteamTvApi = {
   },
   gamePlaylists: {
     list: () => ipcRenderer.invoke('gamePlaylists:list'),
+    forTab: (tab) => ipcRenderer.invoke('gamePlaylists:forTab', tab),
     forGame: (id) => ipcRenderer.invoke('gamePlaylists:forGame', id),
     create: (name, showOn, gameId) => ipcRenderer.invoke('gamePlaylists:create', name, showOn, gameId),
     setShowOn: (playlist, showOn) => ipcRenderer.invoke('gamePlaylists:showOn', playlist, showOn),

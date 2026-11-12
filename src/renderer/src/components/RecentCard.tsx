@@ -6,7 +6,7 @@ interface Props {
   item: RecentItem
   logo?: string
   isDefault: boolean
-  onFocus: () => void
+  onFocus?: () => void
 }
 
 function formatDate(iso: string): string {

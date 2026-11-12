@@ -782,6 +782,9 @@ ipcMain.handle('xbox360-tab:get', async () => {
 })
 // Select on a console game: its name, emulator and deleting it (art has its own window).
 ipcMain.handle('gamePlaylists:list', async () => playlistRows(await loadConfig(), await readPlaylists()))
+ipcMain.handle('gamePlaylists:forTab', async (_event, tab: LayoutTab) =>
+  playlistRows(await loadConfig(), (await readPlaylists()).filter((p) => showsOn(p, tab)))
+)
 ipcMain.handle('gamePlaylists:forGame', async (_event, id: string): Promise<PlaylistChoice[]> =>
   (await readPlaylists()).map((p) => ({ id: p.id, name: p.name, count: p.items.length, has: p.items.includes(id), showOn: placesOf(p) }))
 )

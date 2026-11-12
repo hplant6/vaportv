@@ -673,6 +673,8 @@ export interface SteamTvApi {
   gamePlaylists: {
     /** Every playlist, its games as cards, for Settings. */
     list(): Promise<PlaylistRow[]>
+    /** The playlists set to show on `tab`, their games as cards, for its left bar. */
+    forTab(tab: LayoutTab): Promise<PlaylistRow[]>
     /** Every playlist, and whether this game is in it, for its game menu. */
     forGame(id: string): Promise<PlaylistChoice[]>
     /** A new playlist showing on `showOn`, with this game in it if one is given; resolves with its id. */

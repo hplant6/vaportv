@@ -1912,7 +1912,9 @@ button {
 
 /* The category on show, and the one the cursor is on: gold on an amber tint. */
 .settings-category.active,
-.settings-category:focus {
+.settings-category:focus,
+.side-bar-item.active,
+.side-bar-item:focus {
   color: var(--color-accent);
   background: var(--color-focus-tint);
 }
@@ -3404,4 +3406,134 @@ button {
 .guide-side-hint {
   font-size: var(--text-small);
   opacity: 0.7;
+}
+
+/* ── Left bar (console tabs; SideBar.tsx) ──
+   The console's name and totals over its lists; the grid of the list on show fills the rest.
+   Select hides it (.closed): it slides out left and the grid takes the full width. */
+.side-bar {
+  position: absolute;
+  left: 80px;
+  top: 118px;
+  bottom: 40px;
+  z-index: 1;
+  width: 356px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    opacity var(--dur-focus) var(--ease-focus),
+    visibility 0s;
+}
+
+.side-layout.closed .side-bar {
+  transform: translateX(-60px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    opacity var(--dur-focus) var(--ease-focus),
+    visibility 0s var(--dur-focus);
+}
+
+.side-bar-title {
+  margin: 0;
+  font-size: var(--text-display);
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+/* The totals: labels in a column, figures beside them, on the modals' warm glass. */
+.side-bar-stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 18px;
+  padding: 22px 24px;
+  border-radius: 12px;
+  background: rgba(53, 41, 31, 0.5);
+  font-size: var(--text-body);
+  letter-spacing: 0.04em;
+}
+
+.side-bar-stats dt {
+  font-weight: 700;
+}
+
+.side-bar-stats dt,
+.side-bar-stats dd {
+  white-space: nowrap;
+}
+
+.side-bar-stats dd {
+  margin: 0;
+}
+
+.side-bar-lists {
+  flex: 1;
+  min-height: 0;
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow: hidden;
+}
+
+.side-bar-item {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 55px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+/* Beside the bar, or the full width without it. */
+.side-grid {
+  position: absolute;
+  left: 548px;
+  right: 36px;
+  top: 118px;
+  padding-bottom: 45px;
+}
+
+.side-layout.closed .side-grid {
+  left: 36px;
+}
+
+.side-grid .collection-grid {
+  width: auto;
+}
+
+.side-grid .wide-grid {
+  grid-template-columns: repeat(auto-fill, 426px);
+  column-gap: 24px;
+}
+
+/* Beside the bar, four portrait cards fill the width a little larger than the carousels'
+   (same shape); without it, they're the carousels' size, six across. */
+.side-layout:not(.closed) .poster-grid {
+  --card-w: 298px;
+  --card-art-h: 409.86px;
+}
+
+/* The carousels' portrait cards, as many across as fit. */
+.poster-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--card-w));
+  justify-content: space-between;
+  column-gap: 36px;
+  row-gap: 72px;
 }

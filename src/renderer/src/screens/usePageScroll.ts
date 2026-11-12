@@ -6,7 +6,7 @@ import { stageHeight } from '../stage'
 /** Space kept below the focused element, matching the Figma frame's bottom margin. */
 const BOTTOM_MARGIN = 45
 /** Grids keep the selected card's row near the middle of the screen, as `center` does. */
-const GRIDS = '.wide-grid, .favorites-grid'
+const GRIDS = '.wide-grid, .favorites-grid, .poster-grid'
 
 /**
  * Scrolls a page taller than the screen so the focused element stays in view, and with a

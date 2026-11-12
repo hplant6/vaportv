@@ -1,6 +1,6 @@
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
-import { CardFooter } from './RecentCard'
+import { CardFooter, RecentCard } from './RecentCard'
 
 /** One collection as a grid of wide (header art) cards, four across. The selected card
     slides the carousel cards' footer (logo, title, last played, time played) up over the
@@ -56,6 +56,32 @@ export function CollectionGrid({
               <CardFooter item={item} logo={logos[item.id] ?? logos[item.platform]} className="wide-card-bar" />
             </span>
           </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** One collection as a grid of the carousels' portrait cards, as many across as fit (a tab with a left bar, laid out as rows). */
+export function PosterGrid({
+  title,
+  items,
+  logos,
+  memoryKey,
+  hasDefault
+}: {
+  title: string
+  items: RecentItem[]
+  logos: Record<string, string>
+  memoryKey: string
+  hasDefault: boolean
+}) {
+  return (
+    <section className="collection-grid">
+      <h2 className="section-label display">{title}</h2>
+      <div className="poster-grid" data-focus-memory={memoryKey}>
+        {items.map((item, index) => (
+          <RecentCard key={item.id} item={item} logo={logos[item.id] ?? logos[item.platform]} isDefault={hasDefault && index === 0} />
         ))}
       </div>
     </section>
