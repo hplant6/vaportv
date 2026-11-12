@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Grid layouts: the selected game slides up a bar over the bottom of its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
-- A list down the left of every console's tab: the console's name, how many games you have, how many you haven't played and how long you've played, then All games, Recents, Favorites and that console's playlists. The games of the list you're on fill the rest of the screen as one grid, so a big library is a few presses away. Tap **Select** to hide the list and give the games the whole screen; each tab remembers whether it's shown and which list you were on.
+- A list down the left of every console's tab: the console's logo, how many games you have, how many you haven't played and how long you've played, then All games, Recents, Favorites and that console's playlists. The games of the list you're on fill the rest of the screen as one grid, so a big library is a few presses away. Tap **Select** to hide the list and give the games the whole screen; each tab remembers whether it's shown and which list you were on.
 - Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
 
 ### Changed

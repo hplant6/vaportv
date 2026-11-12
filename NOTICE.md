@@ -11,6 +11,7 @@ either version 3 of the License, or (at your option) any later version. See
 
 | What | Where | Author | Licence |
 |---|---|---|---|
+| Console logos (each console tab's left bar) | `src/renderer/src/assets/logos/` | From the media of the Alpha theme for ES-DE | Trademarks of their owners, used only to name each console |
 | "Puddle in rain" (Rain backdrop) | `src/renderer/src/background/rain/` | Faraz Shaikh | GPL-3.0 |
 | EZ-Tree (Forest backdrop: tree generation, bark and leaf textures; via npm `@dgreenheck/ez-tree`) and its demo's grass, flowers, ground textures and wind/ground shaders, reworked for instancing | `src/renderer/src/background/forest/`, `src/renderer/public/backdrops/forest/` | Daniel Greenheck | MIT (`forest/LICENSE`) |
 | "Gradient Drift" (Gradient Drift backdrop: shaders, presets, circle motion) | `src/renderer/src/background/drift/`, `DriftBackground.tsx` | Liam Egan (codepen.io/shubniggurath), ported from WebGL via wtc-gl to plain WebGL2 | MIT (CodePen public pen) |

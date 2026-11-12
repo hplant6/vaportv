@@ -3437,6 +3437,15 @@ button {
     visibility 0s var(--dur-focus);
 }
 
+/* The logo fills the bar's width, left-aligned, no taller than the mock-up's Switch logo. */
+.side-bar-logo {
+  display: block;
+  max-width: 100%;
+  max-height: 104px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .side-bar-title {
   margin: 0;
   font-size: var(--text-display);

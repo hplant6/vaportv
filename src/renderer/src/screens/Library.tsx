@@ -156,7 +156,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     return (
       <div className={`page side-layout${open ? '' : ' closed'}`}>
         <NavBar active={screen} onNavigate={onNavigate} />
-        <SideBar title={label} lists={lists} all={rowItems('all')} selected={current.id} open={open} onSelect={select} />
+        <SideBar tab={screen} title={label} lists={lists} all={rowItems('all')} selected={current.id} open={open} onSelect={select} />
         <div className="page-viewport">
           {/* Keyed by list, so a new list starts at its top. */}
           {/* B goes back to the list in the bar, or (bar hidden) Home as on any tab. */}

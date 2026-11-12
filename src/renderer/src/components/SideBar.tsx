@@ -3,7 +3,15 @@ import { formatTotalPlaytime, libraryStats } from '../../../shared/libraryStats'
 import type { RecentItem } from '../../../shared/types'
 import { focus } from '../input/focus'
 
-// A console tab's left bar: the console's name, its totals, and its lists (All games,
+/** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id. */
+const LOGOS = Object.fromEntries(
+  Object.entries(import.meta.glob<string>('../assets/logos/*.svg', { query: '?url', import: 'default', eager: true })).map(([path, url]) => [
+    path.slice(path.lastIndexOf('/') + 1, -'.svg'.length),
+    url
+  ])
+)
+
+// A console tab's left bar: the console's logo (or name), its totals, and its lists (All games,
 // Recents, Favorites, then the playlists set to show on this tab). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
@@ -20,6 +28,7 @@ export interface SideList {
 export const SIDE_GRID_CARDS = '.side-grid [data-focusable]'
 
 export function SideBar({
+  tab,
   title,
   lists,
   all,
@@ -27,6 +36,9 @@ export function SideBar({
   open,
   onSelect
 }: {
+  /** The tab's id, for its console's logo. */
+  tab: string
+  /** The console's name: under its logo for screen readers, or shown if it has none. */
   title: string
   lists: SideList[]
   /** Every game on the tab, for the totals. */
@@ -49,7 +61,7 @@ export function SideBar({
 
   return (
     <aside className="side-bar" aria-hidden={!open}>
-      <h1 className="side-bar-title display">{title}</h1>
+      <h1 className="side-bar-title display">{LOGOS[tab] ? <img className="side-bar-logo" src={LOGOS[tab]} alt={title} /> : title}</h1>
       <dl className="side-bar-stats">
         <dt>Total games:</dt>
         <dd>{stats.games.toLocaleString()}</dd>
