@@ -3510,6 +3510,22 @@ button {
   overflow: hidden;
 }
 
+/* Under the totals, apart from the lists below it. */
+.side-bar-sort {
+  width: 270px;
+}
+
+/* Over a section of the lists (Playlists, Genres, Years): small, dimmer, not selectable. */
+.side-bar-heading {
+  flex: none;
+  margin: 14px 0 2px;
+  padding: 0 24px;
+  font-size: var(--text-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .side-bar-item {
   flex: none;
   display: flex;

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { genreGroups, nextSort, sortItems, yearGroups, type LibrarySort } from '../../../shared/librarySort'
 import { hasSideBar, TAB_LIST } from '../../../shared/tabs'
 import type { CollectionRow, LibraryTab, PlaylistRow } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
@@ -32,16 +33,17 @@ function notInstalledNote(count: number): string | null {
   return count ? `${count} more not installed` : null
 }
 
-// What the left bar remembers per tab (this TV only): whether it's hidden, and the list
-// last shown. Losing it (a cleared profile) just means the bar's open on All games.
+// What the left bar remembers per tab (this TV only): whether it's hidden, the list last
+// shown, and the sort. Losing it (a cleared profile) just means the bar's open on All games A–Z.
 const STORE = 'vaportv.sideBar'
 
-function remembered(): { hidden: string[]; lists: Record<string, string> } {
+function remembered(): { hidden: string[]; lists: Record<string, string>; sorts: Record<string, LibrarySort> } {
+  const record = (value: unknown) => (value && typeof value === 'object' ? (value as Record<string, never>) : {})
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}')
-    return { hidden: Array.isArray(saved.hidden) ? saved.hidden : [], lists: saved.lists && typeof saved.lists === 'object' ? saved.lists : {} }
+    return { hidden: Array.isArray(saved.hidden) ? saved.hidden : [], lists: record(saved.lists), sorts: record(saved.sorts) }
   } catch {
-    return { hidden: [], lists: {} }
+    return { hidden: [], lists: {}, sorts: {} }
   }
 }
 
@@ -67,6 +69,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const [open, setOpen] = useState(() => !remembered().hidden.includes(screen))
   const [selected, setSelected] = useState(() => remembered().lists[screen] ?? 'all')
+  const [sort, setSort] = useState<LibrarySort>(() => remembered().sorts[screen] ?? 'title')
 
   // Loaded on opening, again when art arrives, and on coming back from a game (so what
   // was just played shows under Recently played straight away, as on Home). The bar's
@@ -136,11 +139,25 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
 
   if (bar && rows?.length) {
     const rowItems = (id: string) => rows.find((row) => row.id === id)?.items ?? []
+    const all = rowItems('all')
+    // Every list in the sort chosen, but Recents: that's in the order played, by definition.
+    const sorted = (items: typeof all) => sortItems(items, sort)
+    const groups = (found: ReturnType<typeof genreGroups>, section: string): SideList[] =>
+      found.map((group, i) => ({ ...group, items: sorted(group.items), empty: '', ...(i === 0 ? { section } : {}) }))
     const lists: SideList[] = [
-      { id: 'all', name: 'All games', items: rowItems('all'), empty: 'No games here.' },
+      { id: 'all', name: 'All games', items: sorted(all), empty: 'No games here.' },
       { id: 'recent', name: 'Recents', items: rowItems('recent'), empty: 'Games you play show up here.' },
-      { id: 'favorites', name: 'Favorites', items: rowItems('favorites'), empty: 'Press Y on a game to make it a favorite.' },
-      ...playlists.map((p) => ({ id: `playlist:${p.id}`, name: p.name, items: p.items, empty: 'Press X on a game to put it in this playlist.' }))
+      { id: 'favorites', name: 'Favorites', items: sorted(rowItems('favorites')), empty: 'Press Y on a game to make it a favorite.' },
+      ...playlists.map((p, i) => ({
+        id: `playlist:${p.id}`,
+        name: p.name,
+        items: sorted(p.items),
+        empty: 'Press X on a game to put it in this playlist.',
+        ...(i === 0 ? { section: 'Playlists' } : {})
+      })),
+      // From what ES-DE's scrapers found; none if it hasn't scraped this console.
+      ...groups(genreGroups(all), 'Genres'),
+      ...groups(yearGroups(all), 'Years')
     ]
     const current = lists.find((list) => list.id === selected) ?? lists[0]
     const label = TAB_LIST.find((t) => t.id === screen)?.label ?? screen
@@ -156,7 +173,23 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     return (
       <div className={`page side-layout${open ? '' : ' closed'}`}>
         <NavBar active={screen} onNavigate={onNavigate} />
-        <SideBar tab={screen} title={label} lists={lists} all={rowItems('all')} selected={current.id} open={open} onSelect={select} />
+        <SideBar
+          tab={screen}
+          title={label}
+          lists={lists}
+          all={all}
+          selected={current.id}
+          open={open}
+          sort={sort}
+          onSort={() => {
+            const next = nextSort(sort)
+            setSort(next)
+            remember((saved) => {
+              saved.sorts[screen] = next
+            })
+          }}
+          onSelect={select}
+        />
         <div className="page-viewport">
           {/* Keyed by list, so a new list starts at its top. */}
           {/* B goes back to the list in the bar, or (bar hidden) Home as on any tab. */}

@@ -14,7 +14,7 @@ export async function loadSwitchGames(config: Config): Promise<SwitchGame[]> {
 
 function asEmulated(game: SwitchGame): EmulatedGame {
   // Art is cached by Switch title id when known, else by folder.
-  return { id: game.id, title: game.title, platform: 'switch', artKey: `switch:${game.titleId ?? game.id}` }
+  return { id: game.id, path: game.path, title: game.title, platform: 'switch', artKey: `switch:${game.titleId ?? game.id}` }
 }
 
 export async function switchGames(config: Config): Promise<EmulatedGame[]> {

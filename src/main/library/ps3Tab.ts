@@ -28,7 +28,7 @@ export async function loadPs3Games(config: Config): Promise<Ps3Game[]> {
 }
 
 function asEmulated(game: Ps3Game): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'ps3', artKey: `ps3:${game.titleId}`, localWide: game.icon }
+  return { id: game.id, path: game.path, title: game.title, platform: 'ps3', artKey: `ps3:${game.titleId}`, localWide: game.icon }
 }
 
 export async function ps3Games(config: Config): Promise<EmulatedGame[]> {

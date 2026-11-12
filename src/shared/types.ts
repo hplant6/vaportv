@@ -16,6 +16,10 @@ export interface RecentItem {
   wide?: string
   /** Marked as a favourite in steamtv (shows a star). */
   favorite?: boolean
+  /** A console tab's games, for its left bar: main genre and release year (from ES-DE's scraped data), and when its file was added (ms). */
+  genre?: string
+  year?: number
+  added?: number
 }
 
 export interface AppItem {

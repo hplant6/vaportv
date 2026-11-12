@@ -16,7 +16,7 @@ export async function loadNesGames(config: Config): Promise<NesGame[]> {
 }
 
 function asEmulated(game: NesGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'nes', artKey: `nes:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'nes', artKey: `nes:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function nesGames(config: Config): Promise<EmulatedGame[]> {

@@ -1382,3 +1382,22 @@ describe('psx and psp', () => {
     expect((await scanPsp(root)).map((g) => g.title)).toEqual(['Bomberman Land', 'Daxter'])
   })
 })
+
+describe('ES-DE game facts', () => {
+  it('reads genres and years, and matches games by file or title', async () => {
+    const { parseGamelist, matchKey } = await import('./esde')
+    const entries = parseGamelist(`<?xml version="1.0"?><gameList>
+      <game><path>./Aero the Acro-Bat 2 (USA).zip</path><name>Aero the Acro-Bat 2</name><releasedate>19940101T000000</releasedate><genre>Platform / Run &amp; Jump</genre></game>
+      <game><path>./ABZU/ABZU [0100C1300BBC6000][v0][BASE].nsp</path><name>ABZÛ</name><releasedate>20210428T000000</releasedate><genre>Adventure</genre></game>
+      <game><path>./Nothing.zip</path><name>Nothing</name></game>
+    </gameList>`)
+    expect(entries.map((e) => [e.name, e.genre, e.year])).toEqual([
+      ['Aero the Acro-Bat 2', 'Platform', 1994],
+      ['ABZÛ', 'Adventure', 2021],
+      ['Nothing', undefined, undefined]
+    ])
+    expect(matchKey('Aero the Acro-Bat 2 (USA).sfc')).toBe(matchKey('Aero the Acro-Bat 2 (USA).zip'))
+    expect(matchKey('ABZU [0100C1300BBC6000][v0][BASE].nsp')).toBe('abzu')
+    expect(matchKey('Batman： Arkham City™.desktop')).toBe(matchKey('Batman Arkham City'))
+  })
+})

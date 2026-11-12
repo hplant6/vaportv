@@ -16,7 +16,7 @@ export async function loadN64Games(config: Config): Promise<N64Game[]> {
 }
 
 function asEmulated(game: N64Game): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'n64', artKey: `n64:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'n64', artKey: `n64:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function n64Games(config: Config): Promise<EmulatedGame[]> {

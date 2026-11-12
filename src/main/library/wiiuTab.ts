@@ -15,7 +15,7 @@ export async function loadWiiUGames(config: Config): Promise<WiiUGame[]> {
 }
 
 function asEmulated(game: WiiUGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'wiiu', artKey: `wiiu:${game.title}`, thumbnailNames: [game.title] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'wiiu', artKey: `wiiu:${game.title}`, thumbnailNames: [game.title] }
 }
 
 export async function wiiUGames(config: Config): Promise<EmulatedGame[]> {

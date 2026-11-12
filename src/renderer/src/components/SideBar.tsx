@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { formatTotalPlaytime, libraryStats } from '../../../shared/libraryStats'
+import { LIBRARY_SORTS, type LibrarySort } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
 import { focus } from '../input/focus'
@@ -12,8 +13,8 @@ const LOGOS = Object.fromEntries(
   ])
 )
 
-// A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, and its lists (All games,
-// Recents, Favorites, then the playlists set to show on this tab). The grid beside it shows
+// A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, Sort, and its lists (All
+// games, Recents, Favorites, the playlists set to show on this tab, then its Genres and Years). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
 
@@ -23,6 +24,8 @@ export interface SideList {
   name: string
   items: RecentItem[]
   empty: string
+  /** The first of a section (Genres, Years): its heading goes above it. */
+  section?: string
 }
 
 /** Where the cursor goes from the bar into the grid (the card last on, else the first). */
@@ -35,6 +38,8 @@ export function SideBar({
   all,
   selected,
   open,
+  sort,
+  onSort,
   onSelect
 }: {
   /** The tab's id, for its console's logo. */
@@ -46,6 +51,9 @@ export function SideBar({
   all: RecentItem[]
   selected: string
   open: boolean
+  sort: LibrarySort
+  /** A on Sort: the next order. */
+  onSort: () => void
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -61,7 +69,8 @@ export function SideBar({
   }
 
   return (
-    <aside className="side-bar" aria-hidden={!open}>
+    // One column for up and down: Sort and the lists (the grid beside it is another).
+    <aside className="side-bar" aria-hidden={!open} data-nav-scope="">
       <h1 className="side-bar-title display">{LOGOS[tab] ? <img className="side-bar-logo" src={LOGOS[tab]} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
       {open && <ConsoleSpin tab={tab} />}
@@ -73,8 +82,23 @@ export function SideBar({
         <dt>Total playtime:</dt>
         <dd>{formatTotalPlaytime(stats.playtime)}</dd>
       </dl>
-      <div className="side-bar-lists" ref={box} data-focus-memory="side-bar" data-nav-scope="">
-        {lists.map((list) => (
+      <button
+        className="side-bar-item side-bar-sort display"
+        tabIndex={-1}
+        {...(open ? { 'data-focusable': '' } : {})}
+        data-select-sound="move"
+        data-nav-right={SIDE_GRID_CARDS}
+        onClick={onSort}
+      >
+        Sort: {LIBRARY_SORTS.find((s) => s.id === sort)?.name}
+      </button>
+      <div className="side-bar-lists" ref={box} data-focus-memory="side-bar">
+        {lists.map((list) => [
+          list.section && (
+            <h3 key={`${list.id}-section`} className="side-bar-heading display">
+              {list.section}
+            </h3>
+          ),
           <button
             key={list.id}
             id={sideListId(list.id)}
@@ -96,7 +120,7 @@ export function SideBar({
           >
             {list.name}
           </button>
-        ))}
+        ])}
       </div>
     </aside>
   )

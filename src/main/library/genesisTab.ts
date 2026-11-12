@@ -16,7 +16,7 @@ export async function loadGenesisGames(config: Config): Promise<GenesisGame[]> {
 }
 
 function asEmulated(game: GenesisGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'genesis', artKey: `genesis:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'genesis', artKey: `genesis:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function genesisGames(config: Config): Promise<EmulatedGame[]> {

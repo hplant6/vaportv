@@ -16,7 +16,7 @@ export async function loadSnesGames(config: Config): Promise<SnesGame[]> {
 }
 
 function asEmulated(game: SnesGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'snes', artKey: `snes:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'snes', artKey: `snes:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function snesGames(config: Config): Promise<EmulatedGame[]> {

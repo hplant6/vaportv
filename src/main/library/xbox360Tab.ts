@@ -20,7 +20,7 @@ export async function loadXbox360Games(config: Config): Promise<Xbox360Game[]> {
 }
 
 function asEmulated(game: Xbox360Game): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'xbox360', artKey: `xbox360:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'xbox360', artKey: `xbox360:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function xbox360Games(config: Config): Promise<EmulatedGame[]> {

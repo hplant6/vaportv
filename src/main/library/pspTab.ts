@@ -16,7 +16,7 @@ export async function loadPspGames(config: Config): Promise<PspGame[]> {
 }
 
 function asEmulated(game: PspGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'psp', artKey: `psp:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'psp', artKey: `psp:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function pspGames(config: Config): Promise<EmulatedGame[]> {

@@ -16,7 +16,7 @@ export async function loadPs2Games(config: Config): Promise<Ps2Game[]> {
 }
 
 function asEmulated(game: Ps2Game): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'ps2', artKey: `ps2:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'ps2', artKey: `ps2:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function ps2Games(config: Config): Promise<EmulatedGame[]> {

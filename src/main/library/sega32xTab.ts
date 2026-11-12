@@ -16,7 +16,7 @@ export async function loadSega32xGames(config: Config): Promise<Sega32xGame[]> {
 }
 
 function asEmulated(game: Sega32xGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'sega32x', artKey: `sega32x:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'sega32x', artKey: `sega32x:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function sega32xGames(config: Config): Promise<EmulatedGame[]> {

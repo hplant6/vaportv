@@ -16,7 +16,7 @@ export async function loadGameCubeGames(config: Config): Promise<GameCubeGame[]>
 }
 
 function asEmulated(game: GameCubeGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'gamecube', artKey: `gamecube:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'gamecube', artKey: `gamecube:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function gamecubeGames(config: Config): Promise<EmulatedGame[]> {

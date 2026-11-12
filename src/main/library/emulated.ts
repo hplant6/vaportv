@@ -1,8 +1,10 @@
 import { existsSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
 import type { LibraryTab, RecentItem, SteamLayout } from '../../shared/types'
 import type { Config } from '../config'
 import { minutes, readFavorites, readHistory, readPlaytime } from '../history'
 import { artUrl } from './art'
+import { gameFacts } from './esde'
 import { isoDate } from './dates'
 import type { Played } from './steam'
 import { hasLibretroThumbnails, libretroCover } from './libretroThumbnails'
@@ -27,6 +29,8 @@ export interface EmulatedGame {
   localWide?: string
   /** SteamGridDB art to fetch, when more than a game's (an app's icon too). */
   artKinds?: ArtKind[]
+  /** Its file (or folder): when it was added, for the left bar's sort. */
+  path?: string
 }
 
 /** Games with the names they were given in Select's game options, A–Z again. Art stays keyed by the old name. */
@@ -64,7 +68,15 @@ export async function emulatedTab(games: EmulatedGame[], layout: SteamLayout, re
   const history = await readHistory()
   const favorites = await readFavorites()
   const playtime = await readPlaytime()
-  const items = await Promise.all(games.map((game) => emulatedItem(game, history[game.id], favorites.includes(game.id), playtime[game.id])))
+  // For the left bar's Genres, Years and sort: what ES-DE knows of each, and when its file arrived.
+  const facts = await gameFacts(games[0].platform, games)
+  const items = await Promise.all(
+    games.map(async (game) => ({
+      ...(await emulatedItem(game, history[game.id], favorites.includes(game.id), playtime[game.id])),
+      ...facts.get(game.id),
+      added: game.path ? await stat(game.path).then((info) => info.mtimeMs, () => undefined) : undefined
+    }))
+  )
   const byId = new Map(items.map((item) => [item.id, item]))
   const favorite = favorites.map((id) => byId.get(id)).filter((item) => item !== undefined)
   const recent = items.filter((item) => history[item.id]).sort((a, b) => history[b.id] - history[a.id])

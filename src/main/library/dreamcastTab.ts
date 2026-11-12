@@ -16,7 +16,7 @@ export async function loadDreamcastGames(config: Config): Promise<DreamcastGame[
 }
 
 function asEmulated(game: DreamcastGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'dreamcast', artKey: `dreamcast:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'dreamcast', artKey: `dreamcast:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function dreamcastGames(config: Config): Promise<EmulatedGame[]> {

@@ -16,7 +16,7 @@ export async function loadPsxGames(config: Config): Promise<PsxGame[]> {
 }
 
 function asEmulated(game: PsxGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'psx', artKey: `psx:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'psx', artKey: `psx:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function psxGames(config: Config): Promise<EmulatedGame[]> {

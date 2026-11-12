@@ -16,7 +16,7 @@ export async function loadSaturnGames(config: Config): Promise<SaturnGame[]> {
 }
 
 function asEmulated(game: SaturnGame): EmulatedGame {
-  return { id: game.id, title: game.title, platform: 'saturn', artKey: `saturn:${game.title}`, thumbnailNames: [dumpName(game)] }
+  return { id: game.id, path: game.path, title: game.title, platform: 'saturn', artKey: `saturn:${game.title}`, thumbnailNames: [dumpName(game)] }
 }
 
 export async function saturnGames(config: Config): Promise<EmulatedGame[]> {
