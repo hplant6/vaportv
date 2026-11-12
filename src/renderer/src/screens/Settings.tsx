@@ -1000,7 +1000,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings && (
               <ChoiceRow
                 label="Consoles"
-                detail="Steam, Apps and Arcade show theirs in 3D · consoles’ tabs and Settings show Home’s backdrop"
+                detail="Apps and Arcade show theirs in 3D · Steam’s and the consoles’ tabs, and Settings, show Home’s backdrop"
                 selected={settings.consoleBackdrops}
                 onSelect={chooseConsoles}
               />
@@ -1178,7 +1178,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         <div className="settings-group">
           <h3 className="settings-heading display">Spinning consoles</h3>
           <p className="settings-help">
-            Each console’s tab shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
+            Each console’s tab (and Steam’s, a Steam Deck) shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
             console’s logo.
           </p>
           <div className="setting-list" data-focus-memory="settings-spinning-consoles">
@@ -1195,7 +1195,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">The Steam tab shows a Steam Deck, Apps a pile of VHS tapes and Arcade an arcade stick when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
+          <p className="settings-help">Apps shows a pile of VHS tapes and Arcade an arcade stick when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

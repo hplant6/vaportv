@@ -3,10 +3,10 @@ import { formatTotalPlaytime, libraryStats } from './libraryStats'
 import { hasSideBar } from './tabs'
 
 describe('left bar', () => {
-  it('goes on the consoles’ tabs, not yet Steam’s or Arcade’s', () => {
+  it('goes on the consoles’ tabs and Steam’s, not yet Arcade’s', () => {
     expect(hasSideBar('switch')).toBe(true)
     expect(hasSideBar('neogeo')).toBe(true)
-    expect(hasSideBar('steam')).toBe(false)
+    expect(hasSideBar('steam')).toBe(true)
     expect(hasSideBar('arcade')).toBe(false)
     expect(hasSideBar('home')).toBe(false)
     expect(hasSideBar('apps')).toBe(false)

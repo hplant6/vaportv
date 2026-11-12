@@ -70,7 +70,8 @@ import { ART_CACHE, chooseArt, gameCovers, resetArt, savePortrait, searchGames }
 import { searchDuckDuckGo } from './library/duckduckgo'
 import { hasLibretroThumbnails, libretroCovers } from './library/libretroThumbnails'
 import { searchWebImages, webCover } from './library/webImages'
-import { adoptSteamFavorites, DEFAULT_STEAM_COLLECTIONS, fillShortcutArt, loadSteamTab, shortcutItem, shortcutTabGames } from './library/steamTab'
+import { adoptSteamFavorites, DEFAULT_STEAM_COLLECTIONS, fillShortcutArt, loadSteamTab, shortcutItem, shortcutTabGames, steamAppIds } from './library/steamTab'
+import { fillStoreFacts } from './library/steamStore'
 import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
@@ -642,7 +643,10 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
 })
 ipcMain.handle('steam-tab:get', async () => {
   await adoptSteamFavorites(await loadConfig()).catch(() => {})
-  return loadSteamTab(await loadConfig())
+  const config = await loadConfig()
+  // Genres and years for its left bar, asked of Steam's store a game at a time; the tab reloads as they arrive.
+  steamAppIds(config).then((ids) => fillStoreFacts(ids, () => win?.webContents.send('art:updated')))
+  return loadSteamTab(config)
 })
 ipcMain.handle('settings:steamCollections', (_event, ids: string[]) => saveConfig({ steamCollections: ids }))
 ipcMain.handle('settings:tabLayout', (_event, tab: LayoutTab, layout: SteamLayout) =>

@@ -14,7 +14,7 @@ const LOGOS = Object.fromEntries(
 )
 
 // A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, Sort, and its lists (All
-// games, Recents, Favorites, the playlists set to show on this tab, then its Genres and Years). The grid beside it shows
+// games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, then its Genres and Years). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
 

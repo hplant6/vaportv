@@ -46,16 +46,17 @@ async function libraryFolders(steamRoot: string): Promise<string[]> {
   return [...folders]
 }
 
-/** Installed games by app id, with their names, from every library folder. */
-async function installedGames(steamRoot: string): Promise<Map<string, string>> {
-  const games = new Map<string, string>()
+/** Installed games by app id, with their names and install folders, from every library folder. */
+async function installedGames(steamRoot: string): Promise<Map<string, { name: string; dir?: string }>> {
+  const games = new Map<string, { name: string; dir?: string }>()
   for (const folder of await libraryFolders(steamRoot)) {
     for (const file of await readdir(folder).catch(() => [])) {
       const match = /^appmanifest_(\d+)\.acf$/.exec(file)
       if (!match) continue
       const manifest = parseTextVdf(await readFile(join(folder, file), 'utf8').catch(() => ''))
       const name = childString(manifest, 'AppState', 'name')
-      if (name && !TOOLS.test(name)) games.set(match[1], name)
+      const installDir = childString(manifest, 'AppState', 'installdir')
+      if (name && !TOOLS.test(name)) games.set(match[1], { name, dir: installDir ? join(folder, 'common', installDir) : undefined })
     }
   }
   return games
@@ -94,6 +95,8 @@ export interface SteamGame {
   lastPlayed: number
   /** Total minutes played (Steam's count). */
   playtime: number
+  /** Where it's installed: when that folder was made is when it was added, for the left bar's sort. */
+  installDir?: string
 }
 
 /** Steam's per-app records for this user (last played, minutes played), by app id. */
@@ -112,10 +115,10 @@ function minutesPlayed(apps: VdfObject, id: string): number {
 export async function steamGames(steamRoot: string, userDir: string): Promise<SteamGame[]> {
   const apps = await localApps(userDir)
   const games: SteamGame[] = []
-  for (const [appid, title] of await installedGames(steamRoot)) {
+  for (const [appid, { name: title, dir }] of await installedGames(steamRoot)) {
     const entry = apps[appid]
     const lastPlayed = Number(typeof entry === 'object' ? childString(entry, 'LastPlayed') : undefined) || 0
-    games.push({ appid, title, lastPlayed, playtime: minutesPlayed(apps, appid) })
+    games.push({ appid, title, lastPlayed, playtime: minutesPlayed(apps, appid), installDir: dir })
   }
   return games
 }

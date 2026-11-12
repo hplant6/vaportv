@@ -1,4 +1,5 @@
-import type { LibraryTab, RecentItem } from '../../shared/types'
+import { stat } from 'node:fs/promises'
+import type { CollectionRow, LibraryTab, RecentItem } from '../../shared/types'
 import { addFavorites, readFavorites } from '../history'
 import { recentsLayout, saveConfig, type Config } from '../config'
 import { customAppFor } from '../customApps'
@@ -8,6 +9,7 @@ import { isoDate } from './dates'
 import { steamRoot } from './recents'
 import { activeUserDir, shortcutGames, steamGameArt, steamGames, type ShortcutGame, type SteamGame } from './steam'
 import { cachedArt, fetchArt } from './steamgriddb'
+import { storeFacts } from './steamStore'
 
 /** Steam's own collections shown by default: none, vaporTV's Favorites row takes the place of Steam's. */
 export const DEFAULT_STEAM_COLLECTIONS: string[] = []
@@ -150,5 +152,26 @@ export async function loadSteamTab(config: Config, favorites?: string[]): Promis
   const allRow = all.length
     ? [{ id: 'all', name: 'All games', notInstalled: 0, hint: 'Y to favourite', items: await cards(all) }]
     : []
-  return { layout, recentsLayout: recents, rows: [...favoriteRow, ...recentRow, ...collectionRows, ...nonSteamRow, ...allRow] }
+  const rows: CollectionRow[] = [...favoriteRow, ...recentRow, ...collectionRows, ...nonSteamRow, ...allRow]
+  // For the left bar's Genres, Years and sort: what Steam's store said of each (steamStore.ts fills it in the
+  // background), and when its install folder was made.
+  const facts = await storeFacts(games.map((game) => game.appid))
+  const added = new Map(
+    await Promise.all(
+      games.map(async (game) => {
+        const info = game.installDir ? await stat(game.installDir).catch(() => null) : null
+        return [steamId(game.appid), info ? info.birthtimeMs || info.mtimeMs : undefined] as const
+      })
+    )
+  )
+  const withFacts = (item: RecentItem): RecentItem =>
+    item.id.startsWith('steam:') ? { ...item, ...facts.get(item.id.slice('steam:'.length)), added: added.get(item.id) } : item
+  return { layout, recentsLayout: recents, rows: rows.map((row) => ({ ...row, items: row.items.map(withFacts) })) }
+}
+
+/** The installed Steam games' app ids, for steamStore.ts to fill in. */
+export async function steamAppIds(config: Config): Promise<string[]> {
+  const root = steamRoot(config)
+  const userDir = await activeUserDir(root)
+  return userDir ? (await steamGames(root, userDir)).map((game) => game.appid) : []
 }

@@ -155,6 +155,16 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
         empty: 'Press X on a game to put it in this playlist.',
         ...(i === 0 ? { section: 'Playlists' } : {})
       })),
+      // Any other rows the tab has: Steam's collections chosen in Settings, and its non-Steam games.
+      ...rows
+        .filter((row) => !['all', 'recent', 'favorites'].includes(row.id))
+        .map((row, i) => ({
+          id: `row:${row.id}`,
+          name: row.name,
+          items: sorted(row.items),
+          empty: 'No games here.',
+          ...(i === 0 ? { section: 'Collections' } : {})
+        })),
       // From what ES-DE's scrapers found; none if it hasn't scraped this console.
       ...groups(genreGroups(all), 'Genres'),
       ...groups(yearGroups(all), 'Years')

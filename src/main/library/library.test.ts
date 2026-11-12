@@ -1401,3 +1401,15 @@ describe('ES-DE game facts', () => {
     expect(matchKey('Batman： Arkham City™.desktop')).toBe(matchKey('Batman Arkham City'))
   })
 })
+
+describe('Steam store facts', () => {
+  it('takes the first real genre and the release year', async () => {
+    const { parseAppDetails } = await import('./steamStore')
+    const body = (genres: string[], date: string) => ({ '10': { success: true, data: { genres: genres.map((description) => ({ description })), release_date: { date } } } })
+    expect(parseAppDetails('10', body(['Indie', 'Action', 'RPG'], 'Apr 18, 2011'))).toEqual({ genre: 'Action', year: 2011 })
+    expect(parseAppDetails('10', body(['RPG'], '24 Feb, 2022'))).toEqual({ genre: 'Role-Playing', year: 2022 })
+    // Only "not really genres": the first of them, rather than nothing.
+    expect(parseAppDetails('10', body(['Free to Play'], 'Coming soon'))).toEqual({ genre: 'Free to Play', year: undefined })
+    expect(parseAppDetails('10', { '10': { success: false } })).toEqual({})
+  })
+})
