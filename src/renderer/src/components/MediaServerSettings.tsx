@@ -6,7 +6,7 @@ import { HOME_CHANGED_EVENT } from '../screens/Settings'
 import { OnScreenKeyboard } from './Keyboard'
 import { toast } from './Toast'
 
-// Settings → Home → Continue watching: the media servers signed in to (each with Sign out),
+// Settings → General → Connect your media library: the media servers signed in to (each with Sign out),
 // then Add a server: the Emby and Jellyfin servers found on the network (or an address typed
 // in); choosing one asks for the user's name, then password, on vaporTV's keyboard. Only the
 // access token the server gives back is kept. Continue watching merges them all.
@@ -112,10 +112,10 @@ export function MediaServerSettings() {
 
   return (
     <div className="settings-group">
-      <h3 className="settings-heading display">Continue watching</h3>
+      <h3 className="settings-heading display">Connect your media library</h3>
       <p className="settings-help">
-        Films and episodes you’re part way through on your Emby or Jellyfin servers, all in one row on Home. Pick one and it plays here,
-        from where you left off.
+        Sign in to your Emby or Jellyfin server to watch your films and shows in vaporTV. They get their own Media tab, and what you’re
+        part way through shows on Home under Continue watching, ready to pick up where you left off.
       </p>
       <div className="setting-list" data-focus-memory="settings-media-servers">
         {accounts?.map((account) => (

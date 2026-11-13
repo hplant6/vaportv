@@ -60,11 +60,15 @@ export function TabsSettings() {
     window.steamtv.tabs.get().then(({ bar, more, off }) => setPlaces({ bar, more, off }))
   }, [])
 
-  // A tab moving into another place is a new row there: keep the cursor on it.
+  // A tab moving into another place is a new row there: keep the cursor on it. Moving within
+  // its place it keeps the cursor but not its spot, so the pane is told to follow it (it scrolls
+  // to what takes focus): without that, a tab carried up a long list went off the screen.
   useLayoutEffect(() => {
     if (!grab) return
     const row = document.querySelector<HTMLElement>(`.tab-row[data-tab-id="${grab.id}"]`)
-    if (row && document.activeElement !== row) focus(row)
+    if (!row) return
+    if (document.activeElement !== row) focus(row)
+    else row.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
   }, [grab, places])
 
   const save = useCallback((next: Places) => {

@@ -4,6 +4,7 @@ import { OverStage } from './GooglePhotos'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { OPEN_UPDATE_EVENT } from './UpdateDialog'
 import { PLAY_INTRO_EVENT } from './Intro'
+import { MediaServerSettings } from './MediaServerSettings'
 
 const UNITS: { id: TemperatureUnit; name: string; detail?: string }[] = [
   { id: 'auto', name: 'Automatic', detail: 'By country' },
@@ -82,6 +83,7 @@ export function GeneralSettings() {
 
   return (
     <>
+      <MediaServerSettings />
       <div className="settings-group">
         <h3 className="settings-heading display">Weather</h3>
         <div className="setting-list" data-focus-memory="settings-weather">
