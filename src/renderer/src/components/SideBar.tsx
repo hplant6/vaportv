@@ -29,7 +29,7 @@ export interface SideList {
 }
 
 /** How long the bar takes to slide in or out (app.css: .side-bar's transition). */
-export const SLIDE_MS = 450
+export const SLIDE_MS = 675
 
 /** Where the cursor goes from the bar into the grid (the card last on, else the first). */
 export const SIDE_GRID_CARDS = '.side-grid [data-focusable]'

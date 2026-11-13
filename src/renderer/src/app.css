@@ -3418,7 +3418,7 @@ button {
   flex-direction: column;
   gap: 24px;
   /* Slower than the cursor's moves (SLIDE_MS in SideBar.tsx: the console stays as long). */
-  --slide: 450ms;
+  --slide: 675ms;
   transition:
     transform var(--slide) var(--ease-focus),
     opacity var(--slide) var(--ease-focus),
@@ -3690,9 +3690,9 @@ button {
   transition: background-color var(--dur-focus) var(--ease-focus);
 }
 
-/* The design's selected option: another 15% of amber. */
+/* The selected option: 35% amber (the design's 15%, 20 points stronger). */
 .side-bar-sort-option:focus {
-  background: rgba(238, 150, 13, 0.15);
+  background: rgba(238, 150, 13, 0.35);
 }
 
 /* The design's type: Bricolage Grotesque ExtraBold, each word capitalised. */
