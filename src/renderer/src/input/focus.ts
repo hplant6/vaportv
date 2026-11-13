@@ -137,6 +137,14 @@ export function move(direction: Direction, source: InputSource): void {
   }
 
   const from = current()
+  // The cursor lost (what it was on went away): back into the open menu or keyboard if there is
+  // one, not out to the screen behind it (which could close it).
+  const open = trap()
+  if (!from && open) {
+    const first = open.querySelector<HTMLElement>(FOCUSABLE)
+    if (first) focus(first)
+    return
+  }
   if (!from) return focusDefault()
 
   const candidates = [...(trap() ?? document).querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el !== from)

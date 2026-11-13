@@ -37,6 +37,8 @@ const LEAVE_MS = 200
 
 /** Steam's keyboard shortcuts, by standard-mapping button: these are the controller's own buttons, whatever Settings assigns them. */
 const BUTTON = { delete: 2, space: 3, shift: 6, symbols: 7, enter: 9 } as const
+/** Keys whose label changes as they're pressed: each label, the one key it is. */
+const SAME_KEY: Record<string, string> = { Show: 'reveal', Hide: 'reveal', '⇧': 'shift', '⇧ On': 'shift', '?123': 'symbols', ABC: 'symbols' }
 
 export function OnScreenKeyboard({
   title,
@@ -133,10 +135,14 @@ export function OnScreenKeyboard({
 
   const upper = shift && !symbols
   const type = (k: string): void => setText((t) => t + (upper ? k.toUpperCase() : k))
-  /** A key; `button` is its controller shortcut, shown beside its label as Steam's keyboard does. */
+  /**
+   * A key; `button` is its controller shortcut, shown beside its label as Steam's keyboard does.
+   * Known by what it is, not its label: a key whose label changes as it's pressed (Show to
+   * Hide, ⇧ to ⇧ On, ?123 to ABC) stays the same key, so the cursor stays on it.
+   */
   const key = (label: string, onPress: () => void, units = 1, extra = '', props: Record<string, string> = {}, button?: number) => (
     <button
-      key={label}
+      key={props['data-key'] ?? SAME_KEY[label] ?? label}
       className={`osk-key${extra}`}
       style={{ flexGrow: units }}
       tabIndex={-1}
