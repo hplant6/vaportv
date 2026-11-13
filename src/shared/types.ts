@@ -93,6 +93,26 @@ export interface MediaItem {
   rating?: number
 }
 
+/** A library on a media server (Movies, TV Shows…), as the Media tab's bar lists it. */
+export interface MediaLibrary {
+  /** The account it's on. */
+  source: string
+  id: string
+  /** As the server names it; with several servers, its server's name after it. */
+  name: string
+  /** The server's kind of library: movies, tvshows, homevideos… (none: mixed). */
+  type?: string
+}
+
+/** Sort's orders on the Media tab. */
+export type MediaSort = 'name' | 'added' | 'released' | 'played' | 'rating'
+
+/** A page of a library: its titles from `start`, and how many there are in all. */
+export interface MediaPage {
+  items: MediaItem[]
+  total: number
+}
+
 /** The Media tab's top lists, from every server, merged. */
 export interface MediaLists {
   continueWatching: MediaItem[]
@@ -777,6 +797,10 @@ export interface SteamTvApi {
     resume(): Promise<MediaItem[]>
     /** The Media tab's top lists; a server that fails just drops out. */
     lists(): Promise<MediaLists>
+    /** Every server's libraries of films and shows (not music, books, photos or live TV). */
+    libraries(): Promise<MediaLibrary[]>
+    /** A page of a library, sorted and (unwatched) filtered by the server. */
+    libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage>
     playback(source: string, itemId: string, choice?: MediaChoice): Promise<MediaPlayback>
     report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { MediaItem, MediaLists } from '../../../shared/types'
+import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
+import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort } from '../../../shared/types'
 import { MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
 import { MediaPoster } from '../components/MediaPoster'
 import { NavBar, type Screen } from '../components/NavBar'
@@ -10,12 +10,18 @@ import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
 // The Media tab: the console tabs' left bar and grid, filled from every media server signed in
 // to (Emby, Jellyfin). Its top lists come first: Continue watching and Next up as wide stills,
-// Recently added and Favorites as posters. A plays a film or episode from where it was left,
-// in vaporTV's player; a show opens its seasons. The bar turns the pile of VHS tapes Apps shows.
+// Recently added and Favorites as posters; then each server's libraries, a page at a time as
+// the cursor nears the end, sorted and filtered by the server. A plays a film or episode from
+// where it was left, in vaporTV's player; a show opens its seasons. The bar turns the pile of
+// VHS tapes Apps shows.
 
 const SCREEN = 'media'
+/** A library's titles come this many at a time; the next page is asked for two rows (of four) from the end. */
+const PAGE = 60
+const NEAR_END = 8
+const UNWATCHED = 'unwatched'
 
-/** Sort's orders here (Favorites, and the libraries to come); the other top lists keep their own. */
+/** Sort's orders here (Favorites and the libraries); Continue watching, Next up and Recently added keep their own. */
 export const MEDIA_SORTS: { id: MediaSort; name: string }[] = [
   { id: 'name', name: 'Name' },
   { id: 'added', name: 'Date added' },
@@ -23,7 +29,6 @@ export const MEDIA_SORTS: { id: MediaSort; name: string }[] = [
   { id: 'played', name: 'Last played' },
   { id: 'rating', name: 'Rating' }
 ]
-export type MediaSort = 'name' | 'added' | 'released' | 'played' | 'rating'
 
 const byName = (a: MediaItem, b: MediaItem): number => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true })
 /** Biggest or newest first; those without one after, by name. */
@@ -45,13 +50,19 @@ const COMPARE: Record<MediaSort, (a: MediaItem, b: MediaItem) => number> = {
 interface MediaList extends SideList<MediaItem> {
   /** Stills (part-watched, next episodes) or posters. */
   wide: boolean
+  /** A library: its pages come as the cursor nears the end. */
+  library?: MediaLibrary
 }
+
+const libraryListId = (lib: MediaLibrary): string => `lib:${lib.source}:${lib.id}`
 
 export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [lists, setLists] = useState<MediaLists | null>(null)
+  const [libraries, setLibraries] = useState<MediaLibrary[]>([])
   const open = useSideBarOpen(SCREEN)
   const [selected, setSelected] = useState(() => remembered().lists[SCREEN] ?? 'continue')
   const [sort, setSort] = useState<MediaSort>(() => (remembered().sorts[SCREEN] as MediaSort | undefined) ?? 'name')
+  const [unwatched, setUnwatched] = useState(() => (remembered().filters[SCREEN] ?? []).includes(UNWATCHED))
 
   // Asked on opening, on coming back to vaporTV, after watching something, and after a sign-in.
   useEffect(() => {
@@ -61,27 +72,86 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         .then(setLists)
         .catch(() => setLists({ continueWatching: [], nextUp: [], recentlyAdded: [], favorites: [] }))
     }
+    const loadLibraries = (): void => {
+      window.steamtv.media
+        .libraries()
+        .then(setLibraries)
+        .catch(() => setLibraries([]))
+    }
     load()
+    loadLibraries()
+    const signedIn = (): void => {
+      load()
+      loadLibraries()
+    }
     window.addEventListener('focus', load)
     window.addEventListener(MEDIA_WATCHED_EVENT, load)
-    window.addEventListener(HOME_CHANGED_EVENT, load)
+    window.addEventListener(HOME_CHANGED_EVENT, signedIn)
     return () => {
       window.removeEventListener('focus', load)
       window.removeEventListener(MEDIA_WATCHED_EVENT, load)
-      window.removeEventListener(HOME_CHANGED_EVENT, load)
+      window.removeEventListener(HOME_CHANGED_EVENT, signedIn)
     }
   }, [])
+
+  // Each library's pages so far, for the sort and filter they were asked with; the first of each
+  // is asked for at once, for the counts in the bar.
+  const [pages, setPages] = useState<Record<string, MediaPage>>({})
+  const asking = useRef(new Set<string>())
+  const view = `${sort}:${unwatched ? 'unwatched' : 'all'}`
+  const pageKey = (lib: MediaLibrary): string => `${libraryListId(lib)}:${view}`
+  const loadPage = useCallback(
+    (lib: MediaLibrary, start: number): void => {
+      const key = `${libraryListId(lib)}:${view}`
+      const ask = `${key}@${start}`
+      if (asking.current.has(ask)) return
+      asking.current.add(ask)
+      window.steamtv.media
+        .libraryPage({ source: lib.source, id: lib.id, type: lib.type }, sort, unwatched, start, PAGE)
+        .then((page) =>
+          setPages((prev) => ({
+            ...prev,
+            [key]: { items: start === 0 ? page.items : [...(prev[key]?.items ?? []), ...page.items], total: page.total }
+          }))
+        )
+        .catch(() => asking.current.delete(ask))
+    },
+    [sort, unwatched, view]
+  )
+  useEffect(() => {
+    for (const lib of libraries) if (!pages[pageKey(lib)]) loadPage(lib, 0)
+  }, [libraries, loadPage])
 
   const loaded = lists !== null
   useEffect(() => {
     if (loaded) focusContentDefault()
   }, [loaded])
 
+  const finished = (items: MediaItem[]): MediaItem[] => (unwatched ? items.filter((i) => !i.watched) : items)
   const all: MediaList[] = [
     { id: 'continue', name: 'Continue watching', items: lists?.continueWatching ?? [], wide: true, empty: 'Films and episodes you’re part way through show up here.' },
     { id: 'nextup', name: 'Next up', items: lists?.nextUp ?? [], wide: true, empty: 'The next episode of each show you’re watching shows up here.' },
     { id: 'recent', name: 'Recently added', items: lists?.recentlyAdded ?? [], wide: false, empty: 'Nothing new on your servers yet.' },
-    { id: 'favorites', name: 'Favorites', items: [...(lists?.favorites ?? [])].sort(COMPARE[sort]), wide: false, empty: 'Films and shows you mark as favorites show up here.' }
+    {
+      id: 'favorites',
+      name: 'Favorites',
+      items: finished([...(lists?.favorites ?? [])]).sort(COMPARE[sort]),
+      wide: false,
+      empty: unwatched ? 'You’ve watched all your favorites.' : 'Films and shows you mark as favorites show up here.'
+    },
+    ...libraries.map((lib, i) => {
+      const page = pages[pageKey(lib)]
+      return {
+        id: libraryListId(lib),
+        name: lib.name,
+        items: page?.items ?? [],
+        count: page?.total,
+        wide: false,
+        library: lib,
+        empty: !page ? 'Loading…' : unwatched ? 'You’ve watched everything here.' : 'Nothing in this library yet.',
+        ...(i === 0 ? { section: 'Libraries' } : {})
+      }
+    })
   ]
   const current = all.find((list) => list.id === selected) ?? all[0]
   const select = (id: string): void => {
@@ -91,7 +161,16 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       saved.lists[SCREEN] = id
     })
   }
-  const title = `${open ? '' : 'Media · '}${current.name} (${current.items.length})`
+  const count = current.count ?? current.items.length
+  const title = `${open ? '' : 'Media · '}${current.name} (${count.toLocaleString()})`
+
+  // Near the end of what's loaded of a library: the next page.
+  const onGridFocus = (event: FocusEvent<HTMLDivElement>): void => {
+    const lib = current.library
+    const index = Number((event.target as HTMLElement).dataset.index)
+    if (!lib || Number.isNaN(index)) return
+    if (index >= current.items.length - NEAR_END && current.items.length < count) loadPage(lib, current.items.length)
+  }
 
   return (
     <div className={`page side-layout${open ? '' : ' closed'}`}>
@@ -104,6 +183,15 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         open={open}
         sort={sort}
         sorts={MEDIA_SORTS}
+        switches={[{ id: UNWATCHED, name: 'Show unwatched only', on: unwatched }]}
+        onSwitch={() => {
+          setUnwatched((was) => {
+            remember((saved) => {
+              saved.filters[SCREEN] = was ? [] : [UNWATCHED]
+            })
+            return !was
+          })
+        }}
         onSort={(next) => {
           setSort(next as MediaSort)
           remember((saved) => {
@@ -128,9 +216,9 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
                 ))}
               </div>
             ) : (
-              <div className="poster-grid" data-focus-memory={`media:${current.id}`}>
+              <div className="poster-grid" data-focus-memory={`media:${current.id}:${view}`} onFocus={onGridFocus}>
                 {current.items.map((item, index) => (
-                  <MediaPoster key={`${item.source}:${item.id}`} item={item} isDefault={index === 0} />
+                  <MediaPoster key={`${item.source}:${item.id}`} item={item} index={index} isDefault={index === 0} />
                 ))}
               </div>
             )}

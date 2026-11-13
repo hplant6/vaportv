@@ -3982,3 +3982,35 @@ button {
 .media-poster .watch-progress {
   z-index: 1;
 }
+
+/* A switch under Sort in the left bar (Media's Show unwatched only): its name, and the
+   Settings switch beside it, on the bar's amber when the cursor's on it. */
+.side-bar-switch {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 356px;
+  height: 48px;
+  margin-top: -12px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--color-text);
+  background: transparent;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar-switch:focus {
+  background: rgba(238, 150, 13, 0.4);
+}
+
+.side-bar-switch.on .toggle {
+  background: var(--color-accent);
+}
+
+.side-bar-switch.on .toggle-knob {
+  transform: translateX(30px);
+}

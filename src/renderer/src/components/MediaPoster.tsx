@@ -11,7 +11,7 @@ export const MEDIA_SHOW_EVENT = 'steamtv:media-show'
  * count, a gold line when part-watched, and its name and year in the footer. A plays a film or
  * episode from where it was left; a show opens its seasons.
  */
-export function MediaPoster({ item, isDefault }: { item: MediaItem; isDefault?: boolean }) {
+export function MediaPoster({ item, index, isDefault }: { item: MediaItem; index?: number; isDefault?: boolean }) {
   const open = (): void => {
     if (item.kind === 'series') {
       if (!window.dispatchEvent(new CustomEvent(MEDIA_SHOW_EVENT, { detail: { source: item.source, id: item.id, title: item.title }, cancelable: true })))
@@ -29,13 +29,15 @@ export function MediaPoster({ item, isDefault }: { item: MediaItem; isDefault?: 
       data-focusable=""
       data-select-sound="move"
       data-item-id={item.id}
+      data-index={index}
       {...(isDefault ? { 'data-focus-default': '' } : {})}
       aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}${item.watched ? ', watched' : ''}`}
       onClick={open}
     >
       <div className="recent-art">
         {item.cover ? (
-          <img src={item.cover} alt="" />
+          // Lazy: a library's grid can run to thousands; the server's pictures come as they near the screen.
+          <img src={item.cover} alt="" loading="lazy" />
         ) : item.wide ? (
           <>
             <img className="recent-art-backdrop" src={item.wide} alt="" />

@@ -44,6 +44,8 @@ export function SideBar({
   open,
   sort,
   sorts = LIBRARY_SORTS,
+  switches = [],
+  onSwitch,
   onSort,
   onSelect
 }: {
@@ -59,6 +61,9 @@ export function SideBar({
   sort: string
   /** Sort's orders (default: the games'). */
   sorts?: { id: string; name: string }[]
+  /** Switches under Sort (Media's Show unwatched only): A turns one on or off. */
+  switches?: { id: string; name: string; on: boolean }[]
+  onSwitch?: (id: string) => void
   /** An order picked from Sort's drop-down. */
   onSort: (sort: string) => void
   onSelect: (id: string) => void
@@ -124,6 +129,24 @@ export function SideBar({
           />
         )}
       </div>
+      {switches.map((s) => (
+        <button
+          key={s.id}
+          className={`side-bar-switch${s.on ? ' on' : ''}`}
+          role="switch"
+          aria-checked={s.on}
+          tabIndex={-1}
+          {...(open ? { 'data-focusable': '' } : {})}
+          data-select-sound="move"
+          data-nav-right={SIDE_GRID_CARDS}
+          onClick={() => onSwitch?.(s.id)}
+        >
+          <span className="side-bar-switch-name">{s.name}</span>
+          <span className="toggle" aria-hidden="true">
+            <span className="toggle-knob" />
+          </span>
+        </button>
+      ))}
       <div className="side-bar-lists" ref={box} data-focus-memory="side-bar">
         {lists.map((list) => [
           list.section && (

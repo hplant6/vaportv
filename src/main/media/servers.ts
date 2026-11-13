@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
-import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLists, MediaPlayback, MediaServer } from '../../shared/types'
+import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
@@ -133,6 +133,30 @@ export async function lists(): Promise<MediaLists> {
     recentlyAdded: recentlyAdded.flat().sort(newestFirst('added')),
     favorites: favorites.flat().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true }))
   }
+}
+
+/**
+ * Every server's libraries, each server's in its own order, servers in the order signed in to.
+ * With more than one server, each name says which it's on ("Movies · LargeBox").
+ */
+export async function libraries(): Promise<MediaLibrary[]> {
+  const all = await accounts()
+  const id = await device()
+  const results = await Promise.allSettled(all.map((a) => mediaBrowser.libraries(a, id, version())))
+  const several = all.length > 1
+  return results.flatMap((r, i) =>
+    r.status === 'fulfilled'
+      ? r.value.map((lib) => ({ source: all.at(i)!.key, id: lib.id, type: lib.type, name: several ? `${lib.name} · ${all.at(i)!.serverName ?? 'server'}` : lib.name }))
+      : []
+  )
+}
+
+/** A page of one library, from its own server. */
+export async function libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage> {
+  const a = await account(library.source)
+  // Its type picks what the grid lists (films, or shows rather than every episode).
+  const page = await mediaBrowser.libraryPage(a, base(a), library, sort, unwatched, start, limit, await device(), version())
+  return { items: page.items.map((item) => ({ ...item, source: library.source })), total: page.total }
 }
 
 export async function playback(source: string, itemId: string, choice: MediaChoice = {}): Promise<MediaPlayback> {

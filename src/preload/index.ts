@@ -127,6 +127,8 @@ const api: SteamTvApi = {
     signOut: (key) => ipcRenderer.invoke('media:signOut', key),
     resume: () => ipcRenderer.invoke('media:resume'),
     lists: () => ipcRenderer.invoke('media:lists'),
+    libraries: () => ipcRenderer.invoke('media:libraries'),
+    libraryPage: (library, sort, unwatched, start, limit) => ipcRenderer.invoke('media:libraryPage', library, sort, unwatched, start, limit),
     playback: (source, itemId, choice) => ipcRenderer.invoke('media:playback', source, itemId, choice),
     report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('media:report', event, playback, positionSeconds, paused)
   },

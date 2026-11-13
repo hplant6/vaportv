@@ -1,5 +1,5 @@
 import { createSocket } from 'node:dgram'
-import type { MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer } from '../../shared/types'
+import type { MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer, MediaSort } from '../../shared/types'
 import type { MediaAccount } from '../config'
 
 // Emby and Jellyfin: one API ("MediaBrowser"), as Jellyfin began as a copy of Emby. vaporTV finds
@@ -232,6 +232,60 @@ export function latest(account: MediaAccount, base: string, device: string, vers
 export function favorites(account: MediaAccount, base: string, device: string, version: string, limit = 300): Promise<Omit<MediaItem, 'source'>[]> {
   const path = account.kind === 'jellyfin' ? `/Items?userId=${account.userId}` : `/Users/${account.userId}/Items`
   return list(account, base, path, { Recursive: 'true', Filters: 'IsFavorite', IncludeItemTypes: 'Movie,Series,Episode', SortBy: 'SortName', Limit: String(limit) }, device, version)
+}
+
+/** Libraries of films and shows; music, books, photos, live TV and the like aren't for this tab. */
+const WATCHABLE = new Set(['movies', 'tvshows', 'homevideos', 'musicvideos', 'mixed', ''])
+
+/** The user's libraries of films and shows, in the server's order. */
+export async function libraries(account: MediaAccount, device: string, version: string): Promise<{ id: string; name: string; type?: string }[]> {
+  const path = account.kind === 'jellyfin' ? `/UserViews?userId=${account.userId}` : `/Users/${account.userId}/Views`
+  const reply = await request<{ Items: { Id: string; Name: string; CollectionType?: string }[] }>(`${account.url}${prefix(account.kind)}${path}`, {
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+  return reply.Items.filter((v) => WATCHABLE.has(v.CollectionType ?? '')).map((v) => ({ id: v.Id, name: v.Name, type: v.CollectionType }))
+}
+
+/** What a library's grid lists: films, shows (not their episodes), or the videos in a home videos one. */
+const TYPES: Record<string, string> = { movies: 'Movie', tvshows: 'Series', homevideos: 'Video,Movie', musicvideos: 'MusicVideo' }
+
+/** Sort's orders as the server sorts: newest, biggest or latest first but by name. */
+export const SORT_BY: Record<MediaSort, { SortBy: string; SortOrder: string }> = {
+  name: { SortBy: 'SortName', SortOrder: 'Ascending' },
+  added: { SortBy: 'DateCreated,SortName', SortOrder: 'Descending' },
+  released: { SortBy: 'PremiereDate,ProductionYear,SortName', SortOrder: 'Descending' },
+  played: { SortBy: 'DatePlayed,SortName', SortOrder: 'Descending' },
+  rating: { SortBy: 'CommunityRating,SortName', SortOrder: 'Descending' }
+}
+
+/** A page of a library: its titles from `start` in `sort`'s order (only those not finished, with `unwatched`), and the total. */
+export async function libraryPage(
+  account: MediaAccount,
+  base: string,
+  library: { id: string; type?: string },
+  sort: MediaSort,
+  unwatched: boolean,
+  start: number,
+  limit: number,
+  device: string,
+  version: string
+): Promise<{ items: Omit<MediaItem, 'source'>[]; total: number }> {
+  const path = account.kind === 'jellyfin' ? `/Items?userId=${account.userId}` : `/Users/${account.userId}/Items`
+  const params = new URLSearchParams({
+    ...LIST_FIELDS,
+    ParentId: library.id,
+    Recursive: 'true',
+    IncludeItemTypes: TYPES[library.type ?? ''] ?? 'Movie,Series,Video',
+    ...SORT_BY[sort],
+    StartIndex: String(start),
+    Limit: String(limit),
+    EnableTotalRecordCount: 'true',
+    ...(unwatched ? { Filters: 'IsUnplayed' } : {})
+  })
+  const reply = await request<{ Items: Item[]; TotalRecordCount?: number }>(`${account.url}${prefix(account.kind)}${path}${path.includes('?') ? '&' : '?'}${params}`, {
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+  return { items: reply.Items.map((item) => card(item, base)), total: reply.TotalRecordCount ?? start + reply.Items.length }
 }
 
 /**

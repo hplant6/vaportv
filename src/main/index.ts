@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, MediaChoice, MediaPlayback, MediaServer, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import * as media from './media/servers'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
@@ -811,6 +811,10 @@ ipcMain.handle('media:signOut', async (_event, key: string) => {
 })
 ipcMain.handle('media:resume', () => media.resume())
 ipcMain.handle('media:lists', () => media.lists())
+ipcMain.handle('media:libraries', () => media.libraries())
+ipcMain.handle('media:libraryPage', (_event, library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number) =>
+  media.libraryPage(library, sort, unwatched, start, limit)
+)
 ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice) => media.playback(source, itemId, choice))
 ipcMain.handle('media:report', (_event, kind: 'start' | 'progress' | 'stop', playback: MediaPlayback, position: number, paused: boolean) =>
   media.report(kind, playback, position, paused).catch((err) => logInput(`media: report ${kind} failed: ${err}`))
