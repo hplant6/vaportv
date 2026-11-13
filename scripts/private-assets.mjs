@@ -1,6 +1,6 @@
 // Puts licensed assets that can't be in the public repo into the app being built: today,
 // Marvin Visions Big Bold (Atelier Triay), licensed to Henry for vaporTV, for headings,
-// tabs and the clock; and the console models some tabs' backdrops show (background/products.ts). They're kept
+// tabs and the clock; the console models some tabs' backdrops show (background/products.ts), and the handhelds' screens. They're kept
 // outside the repo, in ~/.config/vaportv (the font cut down to Latin characters, as WOFF2),
 // and copied to src/renderer/public/private/, which git ignores. Without them (anyone
 // else's build) vaporTV uses its free fonts, and those tabs the usual backdrop.
@@ -40,7 +40,11 @@ const ASSETS = [
   { from: 'models/xbox.glb', to: 'xbox.vtm', name: 'Xbox model' },
   { from: 'models/arcade.glb', to: 'arcade.vtm', name: 'Arcade stick model' },
   { from: 'models/neogeo.glb', to: 'neogeo.vtm', name: 'Neo Geo model' },
-  { from: 'models/apps.glb', to: 'apps.vtm', name: 'VHS tapes model' }
+  { from: 'models/apps.glb', to: 'apps.vtm', name: 'VHS tapes model' },
+  // What the handhelds' screens show (their home screens), laid on the models' screens.
+  { from: 'screens/psp.jpg', to: 'screen-psp.jpg', name: 'PSP screen' },
+  { from: 'screens/steamdeck.jpg', to: 'screen-steamdeck.jpg', name: 'Steam Deck screen' },
+  { from: 'screens/switch.jpg', to: 'screen-switch.jpg', name: 'Switch screen' }
 ]
 
 const KEY_FILE = join(SOURCE, 'model-key')

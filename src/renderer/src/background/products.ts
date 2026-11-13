@@ -22,10 +22,26 @@ export interface Product {
   exposure?: number
   /** False to leave out the glow round its brightest light (on by default at High and Medium quality). */
   bloom?: boolean
+  /** A handheld's screen showing its home screen (an image laid flat across the model's screen, lit). */
+  screen?: Screen
   /** A handheld: in the left bar's turning view (spin.ts), stood up this many degrees so its screen faces the camera, not the ceiling. */
   spinTilt?: number
   /** Fixes for what glTF couldn't carry over from Blender, by material. */
   fix?: (material: MeshStandardMaterial) => void
+}
+
+/**
+ * What goes on a handheld's screen. The image (from scripts/private-assets.mjs: they're the
+ * makers' own home screens, so not in the repo) covers the parts with `material` (in the node
+ * named `node`, if given), mapped flat across their widest two directions and cropped to fit;
+ * `flipX`/`flipY` turn it the right way round where the model's axes run the other way.
+ */
+export interface Screen {
+  image: string
+  material: string
+  node?: string
+  flipX?: boolean
+  flipY?: boolean
 }
 
 const GENESIS: Product = {
@@ -50,7 +66,8 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.
     zoom: 1.1,
     shiftDown: 0.05,
-    spinTilt: 45
+    spinTilt: 45,
+    screen: { image: 'private/screen-steamdeck.jpg', material: 'M_Screen', flipX: true }
   },
   ps3: {
     model: 'private/ps3-slim.vtm',
@@ -65,6 +82,8 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     zoom: 1.25,
     white: 0.6,
     spinTilt: 45,
+    // The display's material is on the Joy-Cons too (their rail strips); only the console's own.
+    screen: { image: 'private/screen-switch.jpg', material: 'ns_display', node: 'ns_main_body', flipY: true },
     // The button labels' bump came out as a normal map, which shades them wrong.
     fix: (material) => {
       if (material.name.startsWith('ns_alpha_')) material.normalMap = null
@@ -149,6 +168,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   psp: {
     model: 'private/psp.vtm',
     spinTilt: 45,
+    screen: { image: 'private/screen-psp.jpg', material: 'Screen', flipY: true },
     // Its roughness maps are fingerprints and smudges, which read as haze on the screen and blotches on the
     // shell: one even gloss instead (the body keeps its metalness map, which glTF packs in the same texture).
     fix: (material) => {

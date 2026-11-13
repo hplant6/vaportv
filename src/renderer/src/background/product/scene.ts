@@ -9,7 +9,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
 import type { ConsoleBackdropQuality } from '../../../../shared/types'
-import type { Product } from '../products'
+import type { Product, Screen } from '../products'
 
 // A console's backdrop: the console in black on a black mirror floor, lit at its edges by a
 // magenta tube on one side and a cyan one on the other, the camera slowly swinging round it
@@ -170,8 +170,66 @@ export async function buildConsole(scene: THREE.Object3D, product: Product): Pro
       if (m.isMesh) for (const material of [m.material].flat()) product.fix!(material as THREE.MeshStandardMaterial)
     })
   }
+  if (product.screen) await showScreen(model, product.screen).catch((err) => console.error(`steamtv: ${product.screen?.image}:`, err))
   scene.add(model)
   return box.getSize(new THREE.Vector3())
+}
+
+/**
+ * Lays `screen`'s image across a handheld's screen: the model's own screens are plain black
+ * with no usable texture coordinates, so they're made here, flat across the screen's widest
+ * two directions, the image cropped to its shape (centred, as CSS's cover). It glows a little,
+ * as a lit screen does, and keeps a glossy finish for the lights' reflections.
+ */
+async function showScreen(model: THREE.Object3D, screen: Screen): Promise<void> {
+  const texture = await new THREE.TextureLoader().loadAsync(screen.image)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+  const parts: THREE.Mesh[] = []
+  model.traverse((o) => {
+    const mesh = o as THREE.Mesh
+    if (!mesh.isMesh || [mesh.material].flat()[0]?.name !== screen.material) return
+    // Three splits a glTF mesh into a child per material: the node's name is on it or its parent.
+    if (screen.node && mesh.name !== screen.node && mesh.parent?.name !== screen.node) return
+    parts.push(mesh)
+  })
+  for (const mesh of parts) {
+    const geometry = mesh.geometry
+    geometry.computeBoundingBox()
+    const box = geometry.boundingBox!
+    const size = box.getSize(new THREE.Vector3())
+    // Across the screen, then up it: its two longest sides.
+    const [u, v] = ([0, 1, 2] as const).slice().sort((a, b) => size.getComponent(b) - size.getComponent(a))
+    const position = geometry.getAttribute('position')
+    const uv = new Float32Array(position.count * 2)
+    for (let i = 0; i < position.count; i++) {
+      const x = (position.getComponent(i, u) - box.min.getComponent(u)) / size.getComponent(u)
+      const y = (position.getComponent(i, v) - box.min.getComponent(v)) / size.getComponent(v)
+      uv[i * 2] = screen.flipX ? 1 - x : x
+      uv[i * 2 + 1] = screen.flipY ? 1 - y : y
+    }
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+    // Cropped to the screen's shape: wider than it, its sides go; taller, its top and bottom.
+    const map = texture.clone()
+    const screenAspect = size.getComponent(u) / size.getComponent(v)
+    const imageAspect = texture.image.width / texture.image.height
+    if (imageAspect > screenAspect) {
+      map.repeat.set(screenAspect / imageAspect, 1)
+      map.offset.set((1 - map.repeat.x) / 2, 0)
+    } else {
+      map.repeat.set(1, imageAspect / screenAspect)
+      map.offset.set(0, (1 - map.repeat.y) / 2)
+    }
+    mesh.material = new THREE.MeshStandardMaterial({
+      name: screen.material,
+      color: 0x000000,
+      emissive: 0xffffff,
+      emissiveMap: map,
+      emissiveIntensity: 0.9,
+      roughness: 0.12,
+      metalness: 0
+    })
+  }
 }
 
 /** Starts `product`'s backdrop on `canvas` at `quality`; onReady once its first frame is drawn. Returns a stop function. */
