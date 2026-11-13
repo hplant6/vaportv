@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
 import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort } from '../../../shared/types'
 import { MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
-import { MediaPoster } from '../components/MediaPoster'
+import { MEDIA_SHOW_EVENT, MediaPoster } from '../components/MediaPoster'
+import { MediaShowPage } from '../components/MediaShowPage'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
-import { focusContentDefault } from '../input/focus'
+import { focus, focusContentDefault } from '../input/focus'
 import { HOME_CHANGED_EVENT } from './Settings'
 import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
@@ -127,6 +128,25 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (loaded) focusContentDefault()
   }, [loaded])
 
+  // A on a show: its page opens over the tab; B brings the cursor back to the show's card.
+  const [showing, setShowing] = useState<{ source: string; id: string; title: string } | null>(null)
+  useEffect(() => {
+    const open = (event: Event): void => {
+      event.preventDefault()
+      setShowing((event as CustomEvent<{ source: string; id: string; title: string }>).detail)
+    }
+    window.addEventListener(MEDIA_SHOW_EVENT, open)
+    return () => window.removeEventListener(MEDIA_SHOW_EVENT, open)
+  }, [])
+  const closeShow = useCallback(() => {
+    const was = showing
+    setShowing(null)
+    setTimeout(() => {
+      const card = was && document.querySelector<HTMLElement>(`.side-grid [data-item-id="${was.id}"]`)
+      if (card) focus(card)
+    })
+  }, [showing])
+
   const finished = (items: MediaItem[]): MediaItem[] => (unwatched ? items.filter((i) => !i.watched) : items)
   const all: MediaList[] = [
     { id: 'continue', name: 'Continue watching', items: lists?.continueWatching ?? [], wide: true, empty: 'Films and episodes you’re part way through show up here.' },
@@ -225,6 +245,7 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </section>
         </SideGrid>
       </div>
+      {showing && <MediaShowPage source={showing.source} id={showing.id} title={showing.title} onBack={closeShow} />}
     </div>
   )
 }

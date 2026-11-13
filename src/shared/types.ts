@@ -91,6 +91,25 @@ export interface MediaItem {
   added?: string
   released?: string
   rating?: number
+  /** An episode's own name and number, its season, and its length (the show page lists them). */
+  episodeName?: string
+  episodeNumber?: number
+  seasonId?: string
+  runtimeMinutes?: number
+}
+
+/** A show's page: what it is, its seasons, and the episode to watch next. */
+export interface MediaShow {
+  source: string
+  id: string
+  title: string
+  /** "2016–2022", or the year it began. */
+  years?: string
+  overview?: string
+  backdrop?: string
+  seasons: { id: string; name: string; unwatched?: number }[]
+  /** The next episode not yet watched (the season it's in opens first, the cursor on it). */
+  next?: MediaItem
 }
 
 /** A library on a media server (Movies, TV Shows…), as the Media tab's bar lists it. */
@@ -799,6 +818,10 @@ export interface SteamTvApi {
     lists(): Promise<MediaLists>
     /** Every server's libraries of films and shows (not music, books, photos or live TV). */
     libraries(): Promise<MediaLibrary[]>
+    /** A show's page: details, seasons, the next episode. */
+    show(source: string, seriesId: string): Promise<MediaShow>
+    /** One season's episodes, in order. */
+    episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]>
     /** A page of a library, sorted and (unwatched) filtered by the server. */
     libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage>
     playback(source: string, itemId: string, choice?: MediaChoice): Promise<MediaPlayback>

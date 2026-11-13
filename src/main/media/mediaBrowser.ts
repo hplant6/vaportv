@@ -1,5 +1,5 @@
 import { createSocket } from 'node:dgram'
-import type { MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer, MediaSort } from '../../shared/types'
+import type { MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import type { MediaAccount } from '../config'
 
 // Emby and Jellyfin: one API ("MediaBrowser"), as Jellyfin began as a copy of Emby. vaporTV finds
@@ -131,6 +131,10 @@ interface Item {
   ParentBackdropImageTags?: string[]
   DateCreated?: string
   PremiereDate?: string
+  EndDate?: string
+  Status?: string
+  Overview?: string
+  SeasonId?: string
   CommunityRating?: number
   UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string; Played?: boolean; UnplayedItemCount?: number }
 }
@@ -173,7 +177,10 @@ export function card(item: Item, base: string): Omit<MediaItem, 'source'> {
     unwatched: item.Type === 'Series' ? item.UserData?.UnplayedItemCount : undefined,
     added: item.DateCreated,
     released: item.PremiereDate,
-    rating: item.CommunityRating
+    rating: item.CommunityRating,
+    ...(episode
+      ? { episodeName: item.Name, episodeNumber: item.IndexNumber, seasonId: item.SeasonId, runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS / 60) : undefined }
+      : {})
   }
 }
 
@@ -232,6 +239,38 @@ export function latest(account: MediaAccount, base: string, device: string, vers
 export function favorites(account: MediaAccount, base: string, device: string, version: string, limit = 300): Promise<Omit<MediaItem, 'source'>[]> {
   const path = account.kind === 'jellyfin' ? `/Items?userId=${account.userId}` : `/Users/${account.userId}/Items`
   return list(account, base, path, { Recursive: 'true', Filters: 'IsFavorite', IncludeItemTypes: 'Movie,Series,Episode', SortBy: 'SortName', Limit: String(limit) }, device, version)
+}
+
+/** A show's page: its details (from the show), its seasons, and the next episode to watch. */
+export async function show(account: MediaAccount, base: string, seriesId: string, device: string, version: string): Promise<Omit<MediaShow, 'source'>> {
+  const root = `${account.url}${prefix(account.kind)}`
+  const headers = authHeaders(account.kind, device, version, account.token)
+  const fields = new URLSearchParams({ ...LIST_FIELDS, Fields: `${LIST_FIELDS.Fields},Overview,EndDate,Status` })
+  const itemPath = userItem(account, seriesId)
+  const [series, seasons, next] = await Promise.all([
+    request<Item>(`${root}${itemPath}${itemPath.includes('?') ? '&' : '?'}${fields}`, { headers }),
+    request<{ Items: Item[] }>(`${root}/Shows/${seriesId}/Seasons?UserId=${account.userId}&${new URLSearchParams(LIST_FIELDS)}`, { headers }),
+    list(account, base, '/Shows/NextUp', { UserId: account.userId, SeriesId: seriesId, Limit: '1' }, device, version).catch(() => [])
+  ])
+  const began = series.ProductionYear
+  const ended = series.EndDate ? Number(series.EndDate.slice(0, 4)) : undefined
+  const backdrop = series.BackdropImageTags?.[0]
+    ? `${base}/Items/${series.Id}/Images/Backdrop?maxWidth=1920&tag=${series.BackdropImageTags[0]}&quality=85`
+    : undefined
+  return {
+    id: series.Id,
+    title: series.Name,
+    years: began ? (series.Status === 'Continuing' ? `${began}–` : ended && ended !== began ? `${began}–${ended}` : String(began)) : undefined,
+    overview: series.Overview,
+    backdrop,
+    seasons: seasons.Items.map((s) => ({ id: s.Id, name: s.Name, unwatched: s.UserData?.UnplayedItemCount })),
+    next: next.at(0) && { ...next.at(0)!, source: '' }
+  }
+}
+
+/** One season's episodes, in order. */
+export function episodes(account: MediaAccount, base: string, seriesId: string, seasonId: string, device: string, version: string): Promise<Omit<MediaItem, 'source'>[]> {
+  return list(account, base, `/Shows/${seriesId}/Episodes`, { UserId: account.userId, SeasonId: seasonId, Fields: `${LIST_FIELDS.Fields},Overview` }, device, version)
 }
 
 /** Libraries of films and shows; music, books, photos, live TV and the like aren't for this tab. */

@@ -812,6 +812,8 @@ ipcMain.handle('media:signOut', async (_event, key: string) => {
 ipcMain.handle('media:resume', () => media.resume())
 ipcMain.handle('media:lists', () => media.lists())
 ipcMain.handle('media:libraries', () => media.libraries())
+ipcMain.handle('media:show', (_event, source: string, seriesId: string) => media.show(source, seriesId))
+ipcMain.handle('media:episodes', (_event, source: string, seriesId: string, seasonId: string) => media.episodes(source, seriesId, seasonId))
 ipcMain.handle('media:libraryPage', (_event, library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number) =>
   media.libraryPage(library, sort, unwatched, start, limit)
 )

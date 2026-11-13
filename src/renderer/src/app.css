@@ -4014,3 +4014,113 @@ button {
 .side-bar-switch.on .toggle-knob {
   transform: translateX(30px);
 }
+
+/* A show's page on the Media tab (MediaShowPage.tsx): over the whole tab, its backdrop faded
+   into the dark at the top; the name, years and summary; the seasons as a row of tabs (the one
+   showing in amber); the season's episodes as wide stills, four across. */
+.media-show {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #0b0809;
+}
+
+.media-show-backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 760px;
+  object-fit: cover;
+  opacity: 0.45;
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent);
+}
+
+.media-show .page-viewport {
+  mask-image: none;
+}
+
+.media-show-content {
+  position: relative;
+  padding: 120px 36px 60px;
+}
+
+.media-show-title {
+  margin: 0;
+  font-size: 72px;
+  line-height: 1.05;
+}
+
+.media-show-meta {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.media-show-overview {
+  max-width: 1100px;
+  margin: 18px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  opacity: 0.85;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.media-seasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 40px 0 28px;
+}
+
+.media-season {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 26px;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--color-text);
+  background: rgba(190, 147, 111, 0.16);
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+.media-season.active {
+  color: var(--color-accent);
+  background: rgba(238, 150, 13, 0.18);
+}
+
+.media-season:focus {
+  color: #fff;
+  background: rgba(238, 150, 13, 0.45);
+}
+
+.media-season-count {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  font-size: var(--text-small);
+  color: #fff;
+  background: rgba(6, 4, 8, 0.6);
+}
+
+.media-episodes {
+  grid-template-columns: repeat(4, 426px);
+  column-gap: 24px;
+  row-gap: 36px;
+}

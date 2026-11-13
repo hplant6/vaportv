@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
-import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaSort } from '../../shared/types'
+import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
@@ -157,6 +157,18 @@ export async function libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 
   // Its type picks what the grid lists (films, or shows rather than every episode).
   const page = await mediaBrowser.libraryPage(a, base(a), library, sort, unwatched, start, limit, await device(), version())
   return { items: page.items.map((item) => ({ ...item, source: library.source })), total: page.total }
+}
+
+/** A show's page, from its own server. */
+export async function show(source: string, seriesId: string): Promise<MediaShow> {
+  const a = await account(source)
+  const page = await mediaBrowser.show(a, base(a), seriesId, await device(), version())
+  return { ...page, source, next: page.next && { ...page.next, source } }
+}
+
+export async function episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]> {
+  const a = await account(source)
+  return (await mediaBrowser.episodes(a, base(a), seriesId, seasonId, await device(), version())).map((item) => ({ ...item, source }))
 }
 
 export async function playback(source: string, itemId: string, choice: MediaChoice = {}): Promise<MediaPlayback> {

@@ -16,8 +16,8 @@ export function MediaPoster({ item, index, isDefault }: { item: MediaItem; index
     if (item.kind === 'series') {
       if (!window.dispatchEvent(new CustomEvent(MEDIA_SHOW_EVENT, { detail: { source: item.source, id: item.id, title: item.title }, cancelable: true })))
         return
-      // Nothing took it (seasons aren't in yet).
-      toast(`Opening shows comes in the next update`)
+      // Nothing took it: not on the Media tab.
+      toast(`Open ${item.title} from the Media tab`)
       return
     }
     window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))

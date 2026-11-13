@@ -201,8 +201,10 @@ export const BACK_EVENT = 'steamtv:back'
 export const TRAP_CLOSE_EVENT = 'steamtv:close-trap'
 
 /** An open menu that keeps the cursor inside it until closed. */
-function trap(): HTMLElement | null {
-  return document.querySelector<HTMLElement>('[data-focus-trap]')
+export function trap(): HTMLElement | null {
+  // The topmost when one opens over another (the player over a show's page): the last drawn.
+  const all = document.querySelectorAll<HTMLElement>('[data-focus-trap]')
+  return all.length ? all[all.length - 1] : null
 }
 
 /** While an element marked data-grabbed is picked up, directions arrive as this (detail: the Direction). */
