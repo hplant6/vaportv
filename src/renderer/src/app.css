@@ -1104,7 +1104,7 @@ button {
 }
 
 /* The selected card's footer bar: below the card's bottom edge (clipped) until then, it
-   slides up over the bottom of the art a second after the card's selected (passing over it,
+   slides up over the bottom of the art 0.75s after the card's selected (passing over it,
    it stays out of the way), and eases a
    long way into place (an expo-style ease-out) so it glides rather than snaps. The art
    shows faintly through it. */
@@ -1124,7 +1124,7 @@ button {
 
 .wide-card:focus .wide-card-bar {
   transform: none;
-  transition: transform 650ms 1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Outer columns grow inward, as on Favorite Apps. */
@@ -3417,9 +3417,11 @@ button {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  /* Slower than the cursor's moves (SLIDE_MS in SideBar.tsx: the console stays as long). */
+  --slide: 450ms;
   transition:
-    transform var(--dur-focus) var(--ease-focus),
-    opacity var(--dur-focus) var(--ease-focus),
+    transform var(--slide) var(--ease-focus),
+    opacity var(--slide) var(--ease-focus),
     visibility 0s;
 }
 
@@ -3428,18 +3430,18 @@ button {
   opacity: 0;
   visibility: hidden;
   transition:
-    transform var(--dur-focus) var(--ease-focus),
-    opacity var(--dur-focus) var(--ease-focus),
-    visibility 0s var(--dur-focus);
+    transform var(--slide) var(--ease-focus),
+    opacity var(--slide) var(--ease-focus),
+    visibility 0s var(--slide);
 }
 
-/* The logo fills the bar's width, left-aligned, no taller than the mock-up's Switch logo. */
+/* The logo, centred in the bar: 80% of the bar's width at most, and of the mock-up's Switch logo's height. */
 .side-bar-logo {
   display: block;
-  max-width: 100%;
-  max-height: 104px;
+  max-width: 80%;
+  max-height: 83px;
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
 }
 
 /* The console turning under its logo, faded in once drawn. */
@@ -3462,6 +3464,7 @@ button {
   flex: none;
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 104px;
   margin: 0;
   font-size: var(--text-display);
