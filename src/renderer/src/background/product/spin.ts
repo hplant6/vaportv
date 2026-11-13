@@ -43,9 +43,21 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
 
   let ready = false
   let stopped = false
-  buildConsole(turntable, product)
-    .then((size) => {
+  // What it stands in: tilted back for a handheld, so its screen faces the camera as it turns.
+  const stand = new THREE.Group()
+  turntable.add(stand)
+  buildConsole(stand, product)
+    .then((flat) => {
       if (stopped) return
+      let size = flat
+      if (product.spinTilt) {
+        stand.rotation.x = THREE.MathUtils.degToRad(product.spinTilt)
+        // Back on the floor and in the middle, tilted: the box it fills now.
+        const box = new THREE.Box3().setFromObject(stand)
+        const centre = box.getCenter(new THREE.Vector3())
+        stand.position.set(-centre.x, -box.min.y, -centre.z)
+        size = box.getSize(new THREE.Vector3())
+      }
       const target = new THREE.Vector3(0, size.y / 2, 0)
       // Far enough off that it fits however it's turned. Across, the widest it gets is its footprint's diagonal;
       // up and down, its height (seen a little from above) plus that diagonal foreshortened by looking down at it.

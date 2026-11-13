@@ -22,6 +22,8 @@ export interface Product {
   exposure?: number
   /** False to leave out the glow round its brightest light (on by default at High and Medium quality). */
   bloom?: boolean
+  /** A handheld: in the left bar's turning view (spin.ts), stood up this many degrees so its screen faces the camera, not the ceiling. */
+  spinTilt?: number
   /** Fixes for what glTF couldn't carry over from Blender, by material. */
   fix?: (material: MeshStandardMaterial) => void
 }
@@ -47,7 +49,8 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     model: 'private/steamdeck.vtm',
     // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.
     zoom: 1.1,
-    shiftDown: 0.05
+    shiftDown: 0.05,
+    spinTilt: 45
   },
   ps3: {
     model: 'private/ps3-slim.vtm',
@@ -61,6 +64,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     model: 'private/switch.vtm',
     zoom: 1.25,
     white: 0.6,
+    spinTilt: 45,
     // The button labels' bump came out as a normal map, which shades them wrong.
     fix: (material) => {
       if (material.name.startsWith('ns_alpha_')) material.normalMap = null
@@ -144,6 +148,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   },
   psp: {
     model: 'private/psp.vtm',
+    spinTilt: 45,
     // Its roughness maps are fingerprints and smudges, which read as haze on the screen and blotches on the
     // shell: one even gloss instead (the body keeps its metalness map, which glTF packs in the same texture).
     fix: (material) => {
