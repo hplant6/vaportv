@@ -1,3 +1,4 @@
+import { byKeys } from '../media/servers'
 import type { GamePlaylist, PlaylistRow, RecentItem } from '../../shared/types'
 import type { Config } from '../config'
 import { readFavorites, readHistory, readPlaytime } from '../history'
@@ -29,11 +30,16 @@ export async function playlistRows(config: Config, playlists: GamePlaylist[]): P
       if (wanted.has(shortcutId(game.appid))) cards.set(shortcutId(game.appid), shortcutItem(game, favorites))
     }
   }
-  if ([...wanted].some((id) => !fromSteam(id))) {
+  if ([...wanted].some((id) => !fromSteam(id) && !id.startsWith('media:'))) {
     const [history, playtime] = await Promise.all([readHistory(), readPlaytime()])
     for (const game of await emulatedGames(config)) {
       if (wanted.has(game.id)) cards.set(game.id, emulatedItem(game, history[game.id], favorites.includes(game.id), playtime[game.id]))
     }
+  }
+  // Films, shows and episodes: as cards that play (or open) as they do on the Media tab.
+  const media = await byKeys([...wanted].filter((id) => id.startsWith('media:')))
+  for (const [key, item] of media) {
+    cards.set(key, Promise.resolve({ id: key, title: item.title, platform: 'media', cover: item.cover, wide: item.wide, lastPlayed: item.lastPlayed, media: item }))
   }
   return Promise.all(
     playlists.map(async (p) => ({

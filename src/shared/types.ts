@@ -20,6 +20,8 @@ export interface RecentItem {
   genre?: string
   year?: number
   added?: number
+  /** A film, show or episode from a media server (in a playlist): drawn and played as one, not as a game. */
+  media?: MediaItem
 }
 
 export interface AppItem {

@@ -1,3 +1,4 @@
+import { WatchCard } from './ContinueWatching'
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
 import { CardFooter, RecentCard } from './RecentCard'
@@ -27,7 +28,11 @@ export function CollectionGrid({
         {note && <span className="row-note">{note}</span>}
       </h2>
       <div className="wide-grid" data-focus-memory={memoryKey}>
-        {items.map((item, index) => (
+        {items.map((item, index) =>
+          // A film, show or episode in a playlist: its own wide card, which plays it.
+          item.media ? (
+            <WatchCard key={item.id} item={item.media} isDefault={hasDefault && index === 0} />
+          ) : (
           <button
             key={item.id}
             className="wide-card"
@@ -56,7 +61,8 @@ export function CollectionGrid({
               <CardFooter item={item} logo={logos[item.id] ?? logos[item.platform]} className="wide-card-bar" />
             </span>
           </button>
-        ))}
+          )
+        )}
       </div>
     </section>
   )

@@ -1,3 +1,4 @@
+import { MediaPoster } from './MediaPoster'
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
 import clock from '../assets/clock.svg'
@@ -22,6 +23,8 @@ export function formatPlaytime(minutes: number): string {
 }
 
 export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
+  // A film, show or episode in a playlist: its own card, which plays (or opens) it.
+  if (item.media) return <MediaPoster item={item.media} isDefault={isDefault} onFocus={onFocus} />
   return (
     <button
       className="recent-card"

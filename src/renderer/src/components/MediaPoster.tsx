@@ -11,7 +11,7 @@ export const MEDIA_SHOW_EVENT = 'steamtv:media-show'
  * count, a gold line when part-watched, and its name and year in the footer. A plays a film or
  * episode from where it was left; a show opens its seasons.
  */
-export function MediaPoster({ item, index, isDefault }: { item: MediaItem; index?: number; isDefault?: boolean }) {
+export function MediaPoster({ item, index, isDefault, onFocus }: { item: MediaItem; index?: number; isDefault?: boolean; onFocus?: () => void }) {
   const open = (): void => {
     if (item.kind === 'series') {
       if (!window.dispatchEvent(new CustomEvent(MEDIA_SHOW_EVENT, { detail: { source: item.source, id: item.id, title: item.title }, cancelable: true })))
@@ -34,6 +34,7 @@ export function MediaPoster({ item, index, isDefault }: { item: MediaItem; index
       {...(isDefault ? { 'data-focus-default': '' } : {})}
       aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}${item.watched ? ', watched' : ''}`}
       onClick={open}
+      onFocus={onFocus}
     >
       <div className="recent-art">
         {item.favorite && (

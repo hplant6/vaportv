@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MediaItem } from '../../../shared/types'
+import { mediaKey } from '../../../shared/mediaKey'
+import type { MediaItem, PlaylistPlace } from '../../../shared/types'
 import calendar from '../assets/calendar.svg'
 import clock from '../assets/clock.svg'
 import trophy from '../assets/trophy.svg'
-import { focus, MEDIA_DETAILS_EVENT, MEDIA_FAVORITE_EVENT } from '../input/focus'
+import { focus, MEDIA_DETAILS_EVENT, MEDIA_FAVORITE_EVENT, MEDIA_PLAYLIST_EVENT } from '../input/focus'
 import { play } from '../input/sounds'
 import { MEDIA_CHANGED_EVENT, MEDIA_PLAY_EVENT } from './ContinueWatching'
 import { GamePanel, row, useCloseKeys, type Fact } from './GameDialog'
+import { NewPlaylistButtons, NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
 import { MEDIA_SHOW_EVENT } from './MediaPoster'
 import { toast } from './Toast'
 
@@ -49,21 +51,25 @@ const cardOf = (el: HTMLElement): Card | null =>
 
 /** Mounted once (App): the details on Start, and Y's favourite, for any media card. */
 export function MediaDetailsHost() {
-  const [open, setOpen] = useState<{ card: HTMLElement; source: string; id: string } | null>(null)
+  const [open, setOpen] = useState<{ card: HTMLElement; source: string; id: string; start: Step } | null>(null)
   useEffect(() => {
-    const details = (event: Event): void => {
+    const opener = (start: Step) => (event: Event): void => {
       const el = (event as CustomEvent<HTMLElement>).detail
       const card = cardOf(el)
-      if (card) setOpen({ card: el, source: card.source, id: card.id })
+      if (card) setOpen({ card: el, source: card.source, id: card.id, start })
     }
+    const details = opener('menu')
+    const playlists = opener('playlists')
     const favorite = (event: Event): void => {
       const card = cardOf((event as CustomEvent<HTMLElement>).detail)
       if (card) void toggleFavorite(card.source, card.id, card.title, card.favorite)
     }
     window.addEventListener(MEDIA_DETAILS_EVENT, details)
+    window.addEventListener(MEDIA_PLAYLIST_EVENT, playlists)
     window.addEventListener(MEDIA_FAVORITE_EVENT, favorite)
     return () => {
       window.removeEventListener(MEDIA_DETAILS_EVENT, details)
+      window.removeEventListener(MEDIA_PLAYLIST_EVENT, playlists)
       window.removeEventListener(MEDIA_FAVORITE_EVENT, favorite)
     }
   }, [])
@@ -73,6 +79,7 @@ export function MediaDetailsHost() {
       key={`${open.source}:${open.id}`}
       source={open.source}
       id={open.id}
+      start={open.start}
       onClose={() => {
         const card = open.card
         setOpen(null)
@@ -85,10 +92,20 @@ export function MediaDetailsHost() {
   )
 }
 
-function MediaDetails({ source, id, onClose }: { source: string; id: string; onClose: () => void }) {
+/** The panel's steps: its details (Start), its playlists (X, or Playlists in the details), naming a new one. */
+type Step = 'menu' | 'playlists' | 'newPlaylist'
+
+function MediaDetails({ source, id, start, onClose }: { source: string; id: string; start: Step; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [item, setItem] = useState<MediaItem | null>(null)
-  useCloseKeys(onClose)
+  const [step, setStep] = useState<Step>(start)
+  const [newPlace, setNewPlace] = useState<PlaylistPlace>('home')
+  // How a playlist keeps it, beside the games.
+  const key = mediaKey(source, id)
+  const inPlaylists = usePlaylistCount(key, step)
+  // B on Playlists goes back to the details when it came from them; opened with X, it closes.
+  const backToMenu = useCallback(() => setStep('menu'), [])
+  useCloseKeys(onClose, step === 'playlists' && start === 'menu' ? backToMenu : undefined, step === 'newPlaylist')
 
   useEffect(() => {
     window.steamtv.media
@@ -100,12 +117,13 @@ function MediaDetails({ source, id, onClose }: { source: string; id: string; onC
       })
   }, [source, id, onClose])
 
-  // The cursor on its first choice once it's in.
+  // The cursor on its first choice once it's in, and back on the menu (Playlists puts it on its own).
   const loaded = item !== null
   useEffect(() => {
+    if (step !== 'menu') return
     const first = loaded && panel.current?.querySelector<HTMLElement>('.game-settings [data-focusable]')
     if (first) focus(first)
-  }, [loaded])
+  }, [loaded, step])
 
   const playIt = useCallback(
     (fromStart: boolean) => {
@@ -116,6 +134,29 @@ function MediaDetails({ source, id, onClose }: { source: string; id: string; onC
   )
 
   if (!item) return <GamePanel panel={panel} title="Loading…" heading="Details" />
+  if (step === 'newPlaylist')
+    return <NewPlaylistKeyboard gameId={key} gameTitle={item.title} place={newPlace} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
+  if (step === 'playlists')
+    return (
+      <GamePanel
+        panel={panel}
+        title={item.title}
+        cover={item.cover ?? item.wide}
+        wide={!item.cover}
+        heading="Playlists"
+        footer={
+          <NewPlaylistButtons
+            gameId={key}
+            onNew={(place) => {
+              setNewPlace(place)
+              setStep('newPlaylist')
+            }}
+          />
+        }
+      >
+        <PlaylistChoices gameId={key} gameTitle={item.title} />
+      </GamePanel>
+    )
 
   const show = item.kind === 'series'
   const year = item.released?.slice(0, 4) || (/^\d{4}$/.test(item.subtitle) ? item.subtitle : '')
@@ -173,6 +214,11 @@ function MediaDetails({ source, id, onClose }: { source: string; id: string; onC
         () => void markWatched()
       )}
       {row(item.favorite ? 'Remove from favorites' : 'Add to favorites', 'Y on it does this too', () => void favorite())}
+      {row(
+        'Playlists',
+        inPlaylists === null ? '' : inPlaylists ? `In ${inPlaylists === 1 ? '1 playlist' : `${inPlaylists} playlists`}` : 'Add it to one · X on it does this too',
+        () => setStep('playlists')
+      )}
     </GamePanel>
   )
 }

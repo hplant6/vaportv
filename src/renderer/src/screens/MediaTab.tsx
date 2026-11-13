@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
-import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort } from '../../../shared/types'
+import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort, PlaylistRow } from '../../../shared/types'
 import { MEDIA_CHANGED_EVENT, MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
 import { MEDIA_SHOW_EVENT, MediaPoster } from '../components/MediaPoster'
 import { MediaShowPage } from '../components/MediaShowPage'
@@ -60,6 +60,8 @@ const libraryListId = (lib: MediaLibrary): string => `lib:${lib.source}:${lib.id
 export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [lists, setLists] = useState<MediaLists | null>(null)
   const [libraries, setLibraries] = useState<MediaLibrary[]>([])
+  // Playlists set to show here (Settings → Home → a playlist → Show on), their films and episodes.
+  const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
   const open = useSideBarOpen(SCREEN)
   const [selected, setSelected] = useState(() => remembered().lists[SCREEN] ?? 'continue')
   const [sort, setSort] = useState<MediaSort>(() => (remembered().sorts[SCREEN] as MediaSort | undefined) ?? 'name')
@@ -73,6 +75,12 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         .then(setLists)
         .catch(() => setLists({ continueWatching: [], nextUp: [], recentlyAdded: [], favorites: [] }))
     }
+    const loadPlaylists = (): void => {
+      window.steamtv.gamePlaylists
+        .forTab('media')
+        .then(setPlaylists)
+        .catch(() => setPlaylists([]))
+    }
     const loadLibraries = (): void => {
       window.steamtv.media
         .libraries()
@@ -81,9 +89,12 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
     }
     load()
     loadLibraries()
+    loadPlaylists()
+    // A sign-in, or a playlist changed (X on a film, Settings): the lot again.
     const signedIn = (): void => {
       load()
       loadLibraries()
+      loadPlaylists()
     }
     window.addEventListener('focus', load)
     window.addEventListener(MEDIA_WATCHED_EVENT, load)
@@ -173,6 +184,15 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       wide: false,
       empty: unwatched ? 'You’ve watched all your favorites.' : 'Films and shows you mark as favorites show up here.'
     },
+    ...playlists.map((p, i) => ({
+      id: `playlist:${p.id}`,
+      name: p.name,
+      // Its films, shows and episodes in the order you put them (a game in it shows on Home, not here).
+      items: p.items.flatMap((item) => (item.media ? [item.media] : [])),
+      wide: false,
+      empty: 'Press X on a film, show or episode to put it in this playlist.',
+      ...(i === 0 ? { section: 'Playlists' } : {})
+    })),
     ...libraries.map((lib, i) => {
       const page = pages[pageKey(lib)]
       return {

@@ -267,9 +267,15 @@ export const ARTWORK_EVENT = 'steamtv:artwork'
 export const PLAYLIST_EVENT = 'steamtv:playlist'
 
 export function playlist(): void {
-  // Menus that hold the cursor stay put.
-  if (trap() || grabbed()) return
   const el = current()
+  // A film, show or episode: its playlists, on a tab or over a show's page (itself a trap).
+  const open = trap()
+  if (el?.dataset.mediaSource && (!open || open.classList.contains('media-show')) && !grabbed()) {
+    window.dispatchEvent(new CustomEvent(MEDIA_PLAYLIST_EVENT, { detail: el }))
+    return
+  }
+  // Menus that hold the cursor stay put.
+  if (open || grabbed()) return
   window.steamtv.logInput(`playlist ${el?.getAttribute('aria-label') ?? el?.dataset.itemId ?? 'nothing'}`)
   if (el?.dataset.itemId || el?.dataset.appId) window.dispatchEvent(new CustomEvent(PLAYLIST_EVENT, { detail: el }))
 }
@@ -308,6 +314,8 @@ export const GAME_MENU_CLOSE_EVENT = 'steamtv:game-menu-close'
 export const MEDIA_DETAILS_EVENT = 'steamtv:media-details'
 /** Y on one: favourite on its server, or not. MediaDetails listens; detail is the card. */
 export const MEDIA_FAVORITE_EVENT = 'steamtv:media-favorite'
+/** X on one: its playlists. MediaDetails listens; detail is the card. */
+export const MEDIA_PLAYLIST_EVENT = 'steamtv:media-playlist'
 
 export function gameMenu(): void {
   const open = trap()

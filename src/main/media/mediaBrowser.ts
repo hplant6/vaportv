@@ -273,6 +273,13 @@ export async function show(account: MediaAccount, base: string, seriesId: string
   }
 }
 
+/** Several items at once, by id (a playlist's): those the server still has, in no set order. */
+export async function byIds(account: MediaAccount, base: string, ids: string[], device: string, version: string): Promise<Omit<MediaItem, 'source'>[]> {
+  if (!ids.length) return []
+  const path = account.kind === 'jellyfin' ? `/Items?userId=${account.userId}` : `/Users/${account.userId}/Items`
+  return list(account, base, path, { Ids: ids.join(','), EnableTotalRecordCount: 'false' }, device, version)
+}
+
 /** One item with its summary, genres and ratings, for the details panel. */
 export async function details(account: MediaAccount, base: string, id: string, device: string, version: string): Promise<Omit<MediaItem, 'source'>> {
   const itemPath = userItem(account, id)

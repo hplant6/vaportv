@@ -3,6 +3,7 @@ import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
 import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
+import { mediaKey, parseMediaKey } from '../../shared/mediaKey'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
 // today, through mediaBrowser.ts; Plex would be another module beside it), their part-watched
@@ -164,6 +165,30 @@ export async function show(source: string, seriesId: string): Promise<MediaShow>
   const a = await account(source)
   const page = await mediaBrowser.show(a, base(a), seriesId, await device(), version())
   return { ...page, source, next: page.next && { ...page.next, source } }
+}
+
+/**
+ * Playlists' films, shows and episodes (media:<account>:<item>), by that key: each server asked
+ * once for its own. One that's off, or an item it no longer has, is just missing.
+ */
+export async function byKeys(keys: string[]): Promise<Map<string, MediaItem>> {
+  const bySource = new Map<string, string[]>()
+  for (const key of keys) {
+    const at = parseMediaKey(key)
+    if (at) bySource.set(at.source, [...(bySource.get(at.source) ?? []), at.id])
+  }
+  const all = await accounts()
+  const id = await device()
+  const found = new Map<string, MediaItem>()
+  await Promise.all(
+    [...bySource].map(async ([source, ids]) => {
+      const a = all.find((x) => x.key === source)
+      if (!a) return
+      const items = await mediaBrowser.byIds(a, base(a), ids, id, version()).catch(() => [])
+      for (const item of items) found.set(mediaKey(source, item.id), { ...item, source })
+    })
+  )
+  return found
 }
 
 export async function details(source: string, id: string): Promise<MediaItem> {

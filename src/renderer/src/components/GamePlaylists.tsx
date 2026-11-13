@@ -15,7 +15,8 @@ import { ToggleRow } from './ToggleRow'
 // or X) puts it in or takes it out of them, or starts a new one with it, for the tab it was
 // opened on; Settings → Home names, orders and deletes them, and picks where each shows.
 
-const games = (n: number): string => `${n} ${n === 1 ? 'game' : 'games'}`
+/** "1 title", "5 titles": games, films, shows and episodes alike (a playlist can hold any of them). */
+const games = (n: number): string => `${n} ${n === 1 ? 'title' : 'titles'}`
 
 /** Home redraws its playlist rows. */
 const homeChanged = (): void => {
