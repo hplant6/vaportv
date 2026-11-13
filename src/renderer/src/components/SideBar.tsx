@@ -28,6 +28,9 @@ export interface SideList {
   section?: string
 }
 
+/** How long the bar takes to slide in or out (app.css: .side-bar's transition). */
+export const SLIDE_MS = 280
+
 /** Where the cursor goes from the bar into the grid (the card last on, else the first). */
 export const SIDE_GRID_CARDS = '.side-grid [data-focusable]'
 
@@ -64,6 +67,13 @@ export function SideBar({
   const logoUrl = (logo && LOGOS[logo]) || LOGOS[tab]
   const current = lists.find((list) => list.id === selected)
   const [sorting, setSorting] = useState(false)
+  // The console stays while the bar slides out (and its space with it), then stops.
+  const [spinning, setSpinning] = useState(open)
+  useEffect(() => {
+    if (open) return setSpinning(true)
+    const timer = setTimeout(() => setSpinning(false), SLIDE_MS)
+    return () => clearTimeout(timer)
+  }, [open])
 
   // Hidden (Select), the bar takes its drop-down with it.
   useEffect(() => {
@@ -83,7 +93,7 @@ export function SideBar({
     <aside className="side-bar" aria-hidden={!open} data-nav-scope="">
       <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
-      {open && <ConsoleSpin tab={tab} />}
+      {spinning && <ConsoleSpin tab={tab} />}
       <dl className="side-bar-stats">
         <dt>Total games:</dt>
         <dd>{stats.games.toLocaleString()}</dd>

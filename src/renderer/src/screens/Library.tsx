@@ -1,11 +1,12 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { sortItems, type LibrarySort } from '../../../shared/librarySort'
 import { hasSideBar, TAB_LIST } from '../../../shared/tabs'
 import type { CollectionRow, LibraryTab, PlaylistRow } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
 import { CollectionGrid, PosterGrid } from '../components/CollectionGrid'
 import { NavBar, type Screen } from '../components/NavBar'
-import { SIDE_GRID_CARDS, SideBar, sideListId, type SideList } from '../components/SideBar'
+import { SIDE_GRID_CARDS, SideBar, sideListId, SLIDE_MS, type SideList } from '../components/SideBar'
+import { flip, snapshot, type Snapshot } from '../flip'
 import { toast } from '../components/Toast'
 import { FAVORITE_EVENT, focus, focusContentDefault, SIDE_BAR_EVENT } from '../input/focus'
 import { play } from '../input/sounds'
@@ -108,9 +109,17 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   }, [onFavorite, load])
 
   // Select (tapped): hides the bar, or brings it back. The cursor leaves it first if it's there.
+  // The grid's cards glide to their new places (more across without the bar, larger beside it).
+  const moving = useRef<Snapshot | null>(null)
+  useLayoutEffect(() => {
+    if (!moving.current) return
+    flip(moving.current, SLIDE_MS + 120, 'cubic-bezier(0.2, 0.8, 0.2, 1)')
+    moving.current = null
+  }, [open])
   useEffect(() => {
     if (!bar) return
     const toggle = (): void => {
+      moving.current = snapshot('.side-grid [data-focusable], .side-grid .section-label')
       const inBar = !!document.activeElement?.closest('.side-bar')
       setOpen((was) => {
         remember((saved) => {
