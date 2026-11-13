@@ -715,6 +715,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   const chooseLayout = (tab: LayoutTab, layout: SteamLayout): void => {
+    // Media has no rows-or-grid choice: it's always its bar and grid.
+    if (tab === 'media') return
     const field = `${tab}Layout` as const
     if (!settings || settings[field] === layout) return
     setSettings({ ...settings, [field]: layout })

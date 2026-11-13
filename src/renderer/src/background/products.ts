@@ -70,6 +70,14 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     shiftDown: -0.04,
     bloom: false
   },
+  // The Media tab's bar turns the same pile of tapes.
+  media: {
+    // A pile of VHS tapes: it sits low, so in closer and lifted a little. Bloom blurs the sleeves' bright art.
+    model: 'private/apps.vtm',
+    zoom: 1.12,
+    shiftDown: -0.04,
+    bloom: false
+  },
   steam: {
     model: 'private/steamdeck.vtm',
     // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.

@@ -244,6 +244,8 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
   // A console tab needs its emulator as well as games.
   const tabs = {
     steam: hasSteam(config),
+    // Media: once a media server's signed in to (no asking the server: that's for the tab itself).
+    media: (await media.accounts(config)).length > 0,
     switch: sw && emulatorInstalled(config, 'switch'),
     ps2: ps2 && emulatorInstalled(config, 'ps2'),
     ps3: ps3 && emulatorInstalled(config, 'ps3'),
@@ -796,9 +798,19 @@ ipcMain.handle('gamePlaylists:list', async () => playlistRows(await loadConfig()
 ipcMain.handle('media:accounts', () => media.listAccounts())
 ipcMain.handle('media:discover', () => media.discover())
 ipcMain.handle('media:check', (_event, address: string) => media.checkServer(address))
-ipcMain.handle('media:signIn', (_event, server: MediaServer, user: string, password: string) => media.signIn(server, user, password))
-ipcMain.handle('media:signOut', (_event, key: string) => media.signOut(key))
+// Signing in to the first server, or out of the last, brings the Media tab or takes it away.
+ipcMain.handle('media:signIn', async (_event, server: MediaServer, user: string, password: string) => {
+  const accounts = await media.signIn(server, user, password)
+  tabsCache = null
+  return accounts
+})
+ipcMain.handle('media:signOut', async (_event, key: string) => {
+  const accounts = await media.signOut(key)
+  tabsCache = null
+  return accounts
+})
 ipcMain.handle('media:resume', () => media.resume())
+ipcMain.handle('media:lists', () => media.lists())
 ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice) => media.playback(source, itemId, choice))
 ipcMain.handle('media:report', (_event, kind: 'start' | 'progress' | 'stop', playback: MediaPlayback, position: number, paused: boolean) =>
   media.report(kind, playback, position, paused).catch((err) => logInput(`media: report ${kind} failed: ${err}`))

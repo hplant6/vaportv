@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { LIBRARY_SORTS, type LibrarySort } from '../../../shared/librarySort'
+import { LIBRARY_SORTS } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
@@ -17,11 +17,13 @@ const LOGOS = Object.fromEntries(
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. L2 hides the bar, and the grid takes the whole width.
 
-/** One of the bar's lists, and what its grid says when it has no games. */
-export interface SideList {
+/** One of the bar's lists (of games by default; Media's of films and shows), and what its grid says when it has none. */
+export interface SideList<T = RecentItem> {
   id: string
   name: string
-  items: RecentItem[]
+  items: T[]
+  /** How many there are, when the list loads a page at a time (a big library); else items.length. */
+  count?: number
   empty: string
   /** The first of a section (Playlists, Systems): its heading goes above it. */
   section?: string
@@ -41,6 +43,7 @@ export function SideBar({
   selected,
   open,
   sort,
+  sorts = LIBRARY_SORTS,
   onSort,
   onSelect
 }: {
@@ -50,12 +53,14 @@ export function SideBar({
   logo?: string
   /** The console's name: under its logo for screen readers, or shown if it has none. */
   title: string
-  lists: SideList[]
+  lists: SideList<unknown>[]
   selected: string
   open: boolean
-  sort: LibrarySort
+  sort: string
+  /** Sort's orders (default: the games'). */
+  sorts?: { id: string; name: string }[]
   /** An order picked from Sort's drop-down. */
-  onSort: (sort: LibrarySort) => void
+  onSort: (sort: string) => void
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -104,12 +109,13 @@ export function SideBar({
           aria-expanded={sorting}
           onClick={() => setSorting(true)}
         >
-          Sort by: {LIBRARY_SORTS.find((s) => s.id === sort)?.name}
+          Sort by: {sorts.find((s) => s.id === sort)?.name}
           <span className="side-bar-sort-arrow" aria-hidden="true" />
         </button>
         {sorting && (
           <SortMenu
             sort={sort}
+            sorts={sorts}
             onPick={(next) => {
               setSorting(false)
               if (next !== sort) onSort(next)
@@ -144,7 +150,7 @@ export function SideBar({
               if (first) focus(first)
             }}
           >
-            {list.name} ({list.items.length.toLocaleString()})
+            {list.name} ({(list.count ?? list.items.length).toLocaleString()})
           </button>
         ])}
       </div>
@@ -156,7 +162,7 @@ export function SideBar({
  * Sort's drop-down: the orders, opening on the one in use. Up and down and A inside it; B
  * closes it. Either way the cursor goes back to Sort.
  */
-function SortMenu({ sort, onPick, onClose }: { sort: LibrarySort; onPick: (sort: LibrarySort) => void; onClose: () => void }) {
+function SortMenu({ sort, sorts, onPick, onClose }: { sort: string; sorts: { id: string; name: string }[]; onPick: (sort: string) => void; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null)
   const back = (): void => {
     const button = document.getElementById('side-bar-sort')
@@ -176,7 +182,7 @@ function SortMenu({ sort, onPick, onClose }: { sort: LibrarySort; onPick: (sort:
 
   return (
     <div className="side-bar-sort-menu" role="menu" ref={menu} data-focus-trap="">
-      {LIBRARY_SORTS.map((s) => (
+      {sorts.map((s) => (
         <button
           key={s.id}
           className="side-bar-sort-option display"

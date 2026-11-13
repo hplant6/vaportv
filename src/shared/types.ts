@@ -81,6 +81,24 @@ export interface MediaItem {
   progress: number
   remainingMinutes?: number
   lastPlayed?: string
+  /** A film plays, an episode plays, a show opens its seasons. */
+  kind: 'movie' | 'episode' | 'series' | 'video'
+  /** Watched all the way (a show: every episode). */
+  watched?: boolean
+  /** A show's episodes not yet watched. */
+  unwatched?: number
+  /** When it came to the server (ISO), its release (ISO), and its community rating. */
+  added?: string
+  released?: string
+  rating?: number
+}
+
+/** The Media tab's top lists, from every server, merged. */
+export interface MediaLists {
+  continueWatching: MediaItem[]
+  nextUp: MediaItem[]
+  recentlyAdded: MediaItem[]
+  favorites: MediaItem[]
 }
 
 /** Audio and subtitle tracks picked (subtitle -1: none); unset, the server's defaults. */
@@ -267,7 +285,7 @@ export interface CollectionRow {
 export type SteamLayout = 'rows' | 'grid'
 
 /** Library tabs with their own layout setting. */
-export type LayoutTab = 'steam' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
+export type LayoutTab = 'steam' | 'media' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
 /** Where the tabs go, in order: the top bar (after Home) and More's row. */
@@ -757,6 +775,8 @@ export interface SteamTvApi {
     signOut(key: string): Promise<MediaAccountInfo[]>
     /** Continue watching from every server, newest first: empty when signed in to none; throws if every one failed. */
     resume(): Promise<MediaItem[]>
+    /** The Media tab's top lists; a server that fails just drops out. */
+    lists(): Promise<MediaLists>
     playback(source: string, itemId: string, choice?: MediaChoice): Promise<MediaPlayback>
     report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }

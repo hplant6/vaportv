@@ -17,6 +17,7 @@ import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { MediaPlayerHost } from './components/MediaPlayer'
+import { MediaTab } from './screens/MediaTab'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { RepairDialog } from './components/RepairDialog'
@@ -263,6 +264,7 @@ export function App() {
         />
       )}
       {screen === 'apps' && home && <Apps apps={home.allApps} onNavigate={setScreen} />}
+      {screen === 'media' && <MediaTab onNavigate={setScreen} />}
       {screen === 'switch' && home && (
         <Library
           screen="switch"

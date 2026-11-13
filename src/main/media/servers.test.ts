@@ -10,7 +10,7 @@ vi.mock('../config', () => ({
 }))
 
 const { accounts, merged } = await import('./servers')
-const item = (source: string, id: string, lastPlayed?: string) => ({ source, id, title: id, subtitle: '', progress: 0.5, lastPlayed })
+const item = (source: string, id: string, lastPlayed?: string) => ({ source, id, title: id, subtitle: '', progress: 0.5, lastPlayed, kind: 'movie' as const })
 
 describe('media servers', () => {
   it('merges every server into one row, newest first, undated last', () => {

@@ -64,39 +64,53 @@ export function ContinueWatching() {
         {...drag.handlers}
       >
         {items.map((item, index) => (
-          <button
-            key={`${item.source}:${item.id}`}
-            className="wide-card watch-card"
-            tabIndex={-1}
-            data-focusable=""
-            data-select-sound="move"
-            aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
-            onFocus={() => reveal(index)}
-            onClick={() => window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))}
-          >
-            <span className="wide-card-art">
-              {item.wide ? (
-                <img src={item.wide} alt="" />
-              ) : item.cover ? (
-                <>
-                  <img className="wide-card-backdrop" src={item.cover} alt="" />
-                  <img className="wide-card-poster" src={item.cover} alt="" />
-                </>
-              ) : null}
-              <span className="watch-card-info">
-                <span className="watch-card-title">{item.title}</span>
-                <span className="watch-card-detail">
-                  {[item.subtitle, item.remainingMinutes !== undefined && `${remaining(item.remainingMinutes)} left`].filter(Boolean).join(' · ')}
-                </span>
-              </span>
-              <span className="watch-progress">
-                <span className="watch-progress-fill" style={{ width: `${Math.round(item.progress * 100)}%` }} />
-              </span>
-            </span>
-          </button>
+          <WatchCard key={`${item.source}:${item.id}`} item={item} onFocus={() => reveal(index)} />
         ))}
       </div>
     </section>
+  )
+}
+
+/**
+ * A film or episode as a wide card: its still, the name and how much is left over a fade at
+ * the bottom, and a gold line for how far in. A plays it (MediaPlayer). Home's Continue watching
+ * and the Media tab's wide lists.
+ */
+export function WatchCard({ item, isDefault, onFocus }: { item: MediaItem; isDefault?: boolean; onFocus?: () => void }) {
+  return (
+    <button
+      className="wide-card watch-card"
+      tabIndex={-1}
+      data-focusable=""
+      data-select-sound="move"
+      data-item-id={item.id}
+      {...(isDefault ? { 'data-focus-default': '' } : {})}
+      aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
+      onFocus={onFocus}
+      onClick={() => window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))}
+    >
+      <span className="wide-card-art">
+        {item.wide ? (
+          <img src={item.wide} alt="" />
+        ) : item.cover ? (
+          <>
+            <img className="wide-card-backdrop" src={item.cover} alt="" />
+            <img className="wide-card-poster" src={item.cover} alt="" />
+          </>
+        ) : null}
+        <span className="watch-card-info">
+          <span className="watch-card-title">{item.title}</span>
+          <span className="watch-card-detail">
+            {[item.subtitle, item.remainingMinutes !== undefined && `${remaining(item.remainingMinutes)} left`].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+        {item.progress > 0 && (
+          <span className="watch-progress">
+            <span className="watch-progress-fill" style={{ width: `${Math.round(item.progress * 100)}%` }} />
+          </span>
+        )}
+      </span>
+    </button>
   )
 }
 

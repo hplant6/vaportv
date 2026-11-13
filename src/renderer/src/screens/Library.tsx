@@ -1,16 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { sortItems, type LibrarySort } from '../../../shared/librarySort'
 import { hasSideBar, TAB_LIST } from '../../../shared/tabs'
 import type { CollectionRow, LibraryTab, PlaylistRow } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
 import { CollectionGrid, PosterGrid } from '../components/CollectionGrid'
 import { NavBar, type Screen } from '../components/NavBar'
-import { SIDE_GRID_CARDS, SideBar, sideListId, SLIDE_MS, type SideList } from '../components/SideBar'
-import { flip, snapshot, type Snapshot } from '../flip'
+import { SideBar, sideListId, type SideList } from '../components/SideBar'
 import { toast } from '../components/Toast'
-import { FAVORITE_EVENT, focus, focusContentDefault, SIDE_BAR_EVENT } from '../input/focus'
+import { FAVORITE_EVENT, focusContentDefault } from '../input/focus'
 import { play } from '../input/sounds'
 import { HOME_CHANGED_EVENT } from './Settings'
+import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 import { usePageScroll } from './usePageScroll'
 
 interface Props {
@@ -34,30 +34,6 @@ function notInstalledNote(count: number): string | null {
   return count ? `${count} more not installed` : null
 }
 
-// What the left bar remembers per tab (this TV only): whether it's hidden, the list last
-// shown, and the sort. Losing it (a cleared profile) just means the bar's open on All games A–Z.
-const STORE = 'vaportv.sideBar'
-
-function remembered(): { hidden: string[]; lists: Record<string, string>; sorts: Record<string, LibrarySort> } {
-  const record = (value: unknown) => (value && typeof value === 'object' ? (value as Record<string, never>) : {})
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}')
-    return { hidden: Array.isArray(saved.hidden) ? saved.hidden : [], lists: record(saved.lists), sorts: record(saved.sorts) }
-  } catch {
-    return { hidden: [], lists: {}, sorts: {} }
-  }
-}
-
-function remember(edit: (saved: ReturnType<typeof remembered>) => void): void {
-  try {
-    const saved = remembered()
-    edit(saved)
-    localStorage.setItem(STORE, JSON.stringify(saved))
-  } catch {
-    // Not kept; the bar works the same this time.
-  }
-}
-
 /**
  * A library tab (Steam, Switch): a section per collection, laid out as rows or a
  * grid per the Settings choice. A console's tab has a left bar instead (SideBar): its lists,
@@ -68,9 +44,9 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   const [tab, setTab] = useState<LibraryTab | null>(null)
   const bar = hasSideBar(screen)
   const [playlists, setPlaylists] = useState<PlaylistRow[]>([])
-  const [open, setOpen] = useState(() => !remembered().hidden.includes(screen))
+  const open = useSideBarOpen(screen, bar)
   const [selected, setSelected] = useState(() => remembered().lists[screen] ?? 'all')
-  const [sort, setSort] = useState<LibrarySort>(() => remembered().sorts[screen] ?? 'title')
+  const [sort, setSort] = useState<LibrarySort>(() => (remembered().sorts[screen] as LibrarySort | undefined) ?? 'title')
 
   // Loaded on opening, again when art arrives, and on coming back from a game (so what
   // was just played shows under Recently played straight away, as on Home). The bar's
@@ -107,36 +83,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     window.addEventListener(FAVORITE_EVENT, handler)
     return () => window.removeEventListener(FAVORITE_EVENT, handler)
   }, [onFavorite, load])
-
-  // L2: hides the bar, or brings it back. The cursor leaves it first if it's there.
-  // The grid's cards glide to their new places (more across without the bar, larger beside it).
-  const moving = useRef<Snapshot | null>(null)
-  useLayoutEffect(() => {
-    if (!moving.current) return
-    flip(moving.current, SLIDE_MS + 120, 'cubic-bezier(0.2, 0.8, 0.2, 1)')
-    moving.current = null
-  }, [open])
-  useEffect(() => {
-    if (!bar) return
-    const toggle = (): void => {
-      moving.current = snapshot('.side-grid [data-focusable], .side-grid .section-label')
-      const inBar = !!document.activeElement?.closest('.side-bar')
-      setOpen((was) => {
-        remember((saved) => {
-          saved.hidden = saved.hidden.filter((t) => t !== screen)
-          if (was) saved.hidden.push(screen)
-        })
-        return !was
-      })
-      play('move')
-      if (inBar) {
-        const card = document.querySelector<HTMLElement>(SIDE_GRID_CARDS)
-        if (card) focus(card)
-      }
-    }
-    window.addEventListener(SIDE_BAR_EVENT, toggle)
-    return () => window.removeEventListener(SIDE_BAR_EVENT, toggle)
-  }, [bar, screen])
 
   // On first load only; art reloads keep focus where it is.
   const loaded = tab !== null
@@ -198,7 +144,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           open={open}
           sort={sort}
           onSort={(next) => {
-            setSort(next)
+            setSort(next as LibrarySort)
             remember((saved) => {
               saved.sorts[screen] = next
             })
@@ -264,19 +210,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
             ))}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-/** The bar's list as a grid, scrolling on its own under the fixed bar. B goes back to its list in the bar. */
-function SideGrid({ backTo, children }: { backTo?: string; children: ReactNode }) {
-  const scroll = usePageScroll()
-  return (
-    <div className="page-scroll" {...scroll}>
-      {/* Left from the first column (or B) goes to the list in the bar, level with the card or not. */}
-      <div className="side-grid" {...(backTo ? { 'data-back-focus': backTo, 'data-nav-left-out': backTo } : {})} data-nav-scope="">
-        {children}
       </div>
     </div>
   )

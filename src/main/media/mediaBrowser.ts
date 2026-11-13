@@ -129,8 +129,13 @@ interface Item {
   ParentThumbImageTag?: string
   ParentBackdropItemId?: string
   ParentBackdropImageTags?: string[]
-  UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string }
+  DateCreated?: string
+  PremiereDate?: string
+  CommunityRating?: number
+  UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string; Played?: boolean; UnplayedItemCount?: number }
 }
+
+const KINDS: Record<string, MediaItem['kind']> = { Movie: 'movie', Episode: 'episode', Series: 'series' }
 
 /**
  * What Continue watching shows of an item: its name (an episode's show, "S2 · E5 · Name"), art
@@ -150,7 +155,7 @@ export function card(item: Item, base: string): Omit<MediaItem, 'source'> {
     undefined
   // A poster: the film's, or the show's.
   const cover =
-    (!episode && item.ImageTags?.Primary && image(item.Id, 'Primary', item.ImageTags.Primary, 480)) ||
+    (!episode && item.ImageTags?.Primary && image(item.Id, 'Primary', item.ImageTags.Primary, 400)) ||
     (episode && item.SeriesId && item.SeriesPrimaryImageTag && image(item.SeriesId, 'Primary', item.SeriesPrimaryImageTag, 480)) ||
     undefined
   const numbered = episode && item.IndexNumber !== undefined
@@ -161,8 +166,14 @@ export function card(item: Item, base: string): Omit<MediaItem, 'source'> {
     wide,
     cover,
     progress: item.RunTimeTicks ? Math.min(1, position / item.RunTimeTicks) : (item.UserData?.PlayedPercentage ?? 0) / 100,
-    remainingMinutes: item.RunTimeTicks ? Math.max(1, Math.round((item.RunTimeTicks - position) / TICKS / 60)) : undefined,
-    lastPlayed: item.UserData?.LastPlayedDate
+    remainingMinutes: item.RunTimeTicks && position ? Math.max(1, Math.round((item.RunTimeTicks - position) / TICKS / 60)) : undefined,
+    lastPlayed: item.UserData?.LastPlayedDate,
+    kind: KINDS[item.Type] ?? 'video',
+    watched: item.UserData?.Played || undefined,
+    unwatched: item.Type === 'Series' ? item.UserData?.UnplayedItemCount : undefined,
+    added: item.DateCreated,
+    released: item.PremiereDate,
+    rating: item.CommunityRating
   }
 }
 
@@ -189,6 +200,38 @@ export async function resume(account: MediaAccount, base: string, device: string
     headers: authHeaders(account.kind, device, version, account.token)
   })
   return reply.Items.map((item) => card(item, base))
+}
+
+const LIST_FIELDS = {
+  Fields: 'ProductionYear,DateCreated,PremiereDate,CommunityRating,BasicSyncInfo',
+  ImageTypeLimit: '1',
+  EnableImageTypes: 'Primary,Backdrop,Thumb'
+}
+
+/** One list's items from the server: `path` (with its own query, if any) plus `query`. */
+async function list(account: MediaAccount, base: string, path: string, query: Record<string, string>, device: string, version: string): Promise<Omit<MediaItem, 'source'>[]> {
+  const params = new URLSearchParams({ ...LIST_FIELDS, ...query })
+  const reply = await request<{ Items: Item[] } | Item[]>(`${account.url}${prefix(account.kind)}${path}${path.includes('?') ? '&' : '?'}${params}`, {
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+  return (Array.isArray(reply) ? reply : reply.Items).map((item) => card(item, base))
+}
+
+/** Each show's next unwatched episode, the shows watched most lately first. */
+export function nextUp(account: MediaAccount, base: string, device: string, version: string, limit = 40): Promise<Omit<MediaItem, 'source'>[]> {
+  return list(account, base, '/Shows/NextUp', { UserId: account.userId, Limit: String(limit) }, device, version)
+}
+
+/** The newest films and shows (a show's new episodes as the show), newest first. */
+export function latest(account: MediaAccount, base: string, device: string, version: string, limit = 40): Promise<Omit<MediaItem, 'source'>[]> {
+  const path = account.kind === 'jellyfin' ? `/Items/Latest?userId=${account.userId}` : `/Users/${account.userId}/Items/Latest`
+  return list(account, base, path, { Limit: String(limit), IncludeItemTypes: 'Movie,Series,Episode' }, device, version)
+}
+
+/** Films, shows and episodes marked favourite, by name. */
+export function favorites(account: MediaAccount, base: string, device: string, version: string, limit = 300): Promise<Omit<MediaItem, 'source'>[]> {
+  const path = account.kind === 'jellyfin' ? `/Items?userId=${account.userId}` : `/Users/${account.userId}/Items`
+  return list(account, base, path, { Recursive: 'true', Filters: 'IsFavorite', IncludeItemTypes: 'Movie,Series,Episode', SortBy: 'SortName', Limit: String(limit) }, device, version)
 }
 
 /**

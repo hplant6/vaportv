@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
-import type { MediaAccountInfo, MediaChoice, MediaItem, MediaPlayback, MediaServer } from '../../shared/types'
+import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLists, MediaPlayback, MediaServer } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
@@ -106,6 +106,33 @@ export async function resume(limit = 20): Promise<MediaItem[]> {
   const got = results.filter((r): r is PromiseFulfilledResult<MediaItem[]> => r.status === 'fulfilled').map((r) => r.value)
   if (all.length && !got.length) throw (results[0] as PromiseRejectedResult).reason
   return merged(got).slice(0, limit)
+}
+
+/** Each server's part of a list (marked with its account), those that failed left out. */
+async function fromEvery(get: (a: MediaAccount, base: string, device: string, version: string) => Promise<Omit<MediaItem, 'source'>[]>): Promise<MediaItem[][]> {
+  const all = await accounts()
+  const id = await device()
+  const results = await Promise.allSettled(all.map(async (a) => (await get(a, base(a), id, version())).map((item) => ({ ...item, source: a.key }))))
+  return results.filter((r): r is PromiseFulfilledResult<MediaItem[]> => r.status === 'fulfilled').map((r) => r.value)
+}
+
+const newestFirst = (key: 'lastPlayed' | 'added') => (a: MediaItem, b: MediaItem): number => (b[key] ?? '').localeCompare(a[key] ?? '')
+
+/** The Media tab's top lists, every server's merged: what's watched most lately or newest first, Favorites by name. */
+export async function lists(): Promise<MediaLists> {
+  const [continueWatching, nextUp, recentlyAdded, favorites] = await Promise.all([
+    fromEvery((a, b, d, v) => mediaBrowser.resume(a, b, d, v, 40)),
+    fromEvery(mediaBrowser.nextUp),
+    fromEvery(mediaBrowser.latest),
+    fromEvery(mediaBrowser.favorites)
+  ])
+  return {
+    continueWatching: merged(continueWatching),
+    // Each server already orders its own by the shows watched most lately.
+    nextUp: nextUp.flat(),
+    recentlyAdded: recentlyAdded.flat().sort(newestFirst('added')),
+    favorites: favorites.flat().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true }))
+  }
 }
 
 export async function playback(source: string, itemId: string, choice: MediaChoice = {}): Promise<MediaPlayback> {

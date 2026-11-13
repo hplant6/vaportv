@@ -10,6 +10,7 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'steam', label: 'Steam' },
   { id: 'apps', label: 'Apps' },
+  { id: 'media', label: 'Media' },
   { id: 'switch', label: 'Switch' },
   { id: 'ps3', label: 'PS3' },
   { id: 'xbox', label: 'Xbox' },
@@ -33,8 +34,8 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
 
 /** Names the bar holds, Home included. */
 export const BAR_TABS = 11
-/** Names the second row holds. */
-export const MORE_TABS = 11
+/** Names the second row holds (twelve since Media joined, so every console still fits). */
+export const MORE_TABS = 12
 
 /**
  * Where the tabs that show go: those with something in them and not switched off. With a

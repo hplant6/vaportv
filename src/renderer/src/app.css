@@ -3953,3 +3953,32 @@ button {
   color: #fff;
   background: rgba(0, 0, 0, 0.62);
 }
+
+/* The Media tab's posters (MediaPoster.tsx): a tick once watched, or a show's unwatched count,
+   in the top corner; the gold line along the foot when part-watched. */
+.media-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 700;
+  color: #fff;
+  background: rgba(6, 4, 8, 0.78);
+}
+
+.media-watched {
+  color: var(--color-accent);
+}
+
+.media-poster .watch-progress {
+  z-index: 1;
+}

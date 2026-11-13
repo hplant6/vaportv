@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { MediaAccountInfo, MediaKind, MediaServer } from '../../../shared/types'
+import { refreshTabs } from '../availableTabs'
 import { focus } from '../input/focus'
 import { HOME_CHANGED_EVENT } from '../screens/Settings'
 import { OnScreenKeyboard } from './Keyboard'
@@ -39,6 +40,8 @@ export function MediaServerSettings() {
   const changed = (next: MediaAccountInfo[]): void => {
     setAccounts(next)
     window.dispatchEvent(new Event(HOME_CHANGED_EVENT))
+    // The Media tab comes with the first server and goes with the last.
+    refreshTabs()
   }
 
   const signIn = (server: MediaServer, user: string, password: string): void => {
