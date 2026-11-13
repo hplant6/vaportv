@@ -7,14 +7,14 @@ as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Ch
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 
-## Unreleased
+## 0.15.0
 
 ### Added
 - Grid layouts: the selected game slides up a bar over the bottom of its art with its icon, title, when you last played it and how long you've played, as on the carousel cards.
 - A list down the left of every console's tab: the console's logo, then All games, Recents, Favorites and that console's playlists, each with how many games it has. The games of the list you're on fill the rest of the screen as one grid, so a big library is a few presses away. Press **L2** to hide the list and give the games the whole screen; each tab remembers whether it's shown and which list you were on.
 - The Arcade tab has the list down the left too, with its systems under **Systems**: Atomiswave, NAOMI, NAOMI 2, CPS1, CPS2, CPS3 and MAME. Capcom's games are now split by the board they ran on, worked out from MAME's own records whatever folder they're in. The logo at the top follows the system you're on (Capcom Play System II on CPS2's list), under a turning Taito Egret 29 cabinet, the Taito logo on its screen. **Settings → Consoles → Arcade tab systems** hides a system from the list; if you'd switched off the old CPS row, all three CPS lists start off hidden.
 - The Steam tab has the list down the left too: a Steam Deck turning under the Steam logo, Sort by, All games, Recents, Favorites, then under Playlists your own, the Steam collections you chose in Settings and your non-Steam games.
-- **Sort by** in each console's list, under the number of games: press A to open it and pick Name, Last played, Most played or Date added (Recents keeps the order you played them). Each tab remembers its choice.
+- **Sort by** in each console's list, under its console: press A to open it and pick Name, Last played, Most played or Date added (Recents keeps the order you played them). Each tab remembers its choice.
 - Each console's tab shows the console itself turning slowly under its logo, in the same neon as before. The handhelds (Switch, PSP, Steam Deck) stand up so their screens face you, lit with their own home screens. On a slower machine, **Settings → Backdrop → Spinning consoles** turns them off and leaves just the logo.
 - Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab or the Steam tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
 
@@ -24,8 +24,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - **X** on a game now opens its playlists, each with an **Add** button (it says **Added** once the game's in; press it again to take it out); B closes them. Below them, **New Home playlist** makes one for Home, which can mix games from any system, and **New <console> playlist** one for the game's own tab, for that console's games only. A tab's playlists aren't offered for another console's games. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - New button layout: **L2** shows or hides a tab's list of games (the left bar), **R2** shows what each button does, and **Select** opens Settings. The triggers no longer change the volume (a remote's or keyboard's volume keys still do). If you'd moved buttons in Settings → Controller, yours are kept, and the new actions take free buttons.
 - Click both sticks in to turn vaporTV's sound off: the music and ambience, and anything playing in Files. Do it again to bring the music back. Clicking one stick still skips the song (left) or starts voice search (right), as you let go.
-- R2's button guide shows every button now, in two lines, Select + Start and both sticks included; so does Settings → Controller, at the end of its list.
-- The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
+- R2's button guide sits lower, near the bottom of the screen, and shows every button now, in two lines, Select + Start and both sticks included; so does Settings → Controller, at the end of its list.
 
 ### Fixed
 - Holding Select + Start closes non-Steam games again (GOG and other games added to Steam). Newer Steam launches vaporTV through a helper that the shortcut mistook for something vaporTV had opened: it closed that instead, and Steam took vaporTV down with it, leaving the game running.
