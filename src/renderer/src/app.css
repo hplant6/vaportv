@@ -3407,9 +3407,10 @@ button {
 /* ── Left bar (console tabs; SideBar.tsx) ──
    The console's name and totals over its lists; the grid of the list on show fills the rest.
    Select hides it (.closed): it slides out left and the grid takes the full width. */
+/* Its left edge in line with the top bar's corner (the weather or date), 36px in. */
 .side-bar {
   position: absolute;
-  left: 80px;
+  left: 36px;
   top: 118px;
   bottom: 40px;
   z-index: 1;
@@ -3546,7 +3547,7 @@ button {
   content: '';
   position: absolute;
   z-index: -1;
-  left: -179px;
+  left: -135px;
   right: -43px;
   top: -16px;
   bottom: -26px;
@@ -3576,7 +3577,7 @@ button {
 .side-grid {
   pointer-events: auto;
   position: absolute;
-  left: 548px;
+  left: 504px;
   right: 36px;
   top: 118px;
   padding-bottom: 45px;
