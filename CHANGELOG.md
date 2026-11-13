@@ -6,8 +6,6 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
-### Fixed
-- Holding Select + Start closes non-Steam games again (GOG and other games added to Steam). Newer Steam launches vaporTV through a helper that the shortcut mistook for something vaporTV had opened: it closed that instead, and Steam took vaporTV down with it, leaving the game running.
 
 ## Unreleased
 
@@ -30,6 +28,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
 
 ### Fixed
+- Holding Select + Start closes non-Steam games again (GOG and other games added to Steam). Newer Steam launches vaporTV through a helper that the shortcut mistook for something vaporTV had opened: it closed that instead, and Steam took vaporTV down with it, leaving the game running.
 - vaporTV couldn't be opened again from Steam after it closed or crashed in Desktop Mode: a background helper stayed running, so Steam thought vaporTV still was.
 
 ## 0.14.0
