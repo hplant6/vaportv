@@ -132,6 +132,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 | Select | Settings |
 | R3 | Voice search |
 | L3 | Next song |
+| L3 + R3 (both sticks in) | Sound off, or back on |
 | Select + Start (hold) | Close the game or app and return to vaporTV |
 
 All but the D-pad and Select + Start can be moved to other buttons in **Settings → Controller**.

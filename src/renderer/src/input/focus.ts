@@ -281,6 +281,14 @@ export function controlsGuide(): void {
   window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))
 }
 
+/** Both sticks clicked in at once: vaporTV's sound off, or back on. BackgroundMusic listens. */
+export const SOUND_OFF_EVENT = 'steamtv:sound-off'
+
+export function toggleSound(): void {
+  window.steamtv.logInput('sound off/on')
+  window.dispatchEvent(new Event(SOUND_OFF_EVENT))
+}
+
 /** Start on a controller, G on a keyboard: the focused game's or app's details and settings. */
 export const GAME_MENU_EVENT = 'steamtv:game-menu'
 /** The same again while they're open: closes them. */

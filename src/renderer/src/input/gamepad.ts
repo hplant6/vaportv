@@ -1,4 +1,4 @@
-import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, voiceSearch, type Direction } from './focus'
+import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, toggleSound, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { skipTrack } from '../components/BackgroundMusic'
 import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
@@ -49,6 +49,16 @@ const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
   previousTab: () => switchTab(-1),
   nextTab: () => switchTab(1)
 }
+/**
+ * Both sticks clicked in at once turn the sound off or on (whatever actions the sticks have
+ * alone). So an action on a stick happens when it's let go, not pressed, and not at all if
+ * the other stick went in meanwhile.
+ */
+const STICKS = [10, 11]
+/** Stick actions pressed and waiting for their release. */
+const stickWaiting = new Set<ControlAction>()
+/** Both sticks went in, and haven't both come out yet. */
+let sticksTogether = false
 /** Actions whose buttons were held last time round, to tell a new press. */
 let actionsDown = new Set<ControlAction>()
 // After a pause, and at startup, ignore the pad until everything is released, so
@@ -155,6 +165,8 @@ function poll(now: number): void {
     waitForRelease = false
     // What was down before doesn't count as let go now.
     actionsDown = new Set()
+    stickWaiting.clear()
+    sticksTogether = false
   }
 
   // Any button at all counts as activity; one that wakes the screensaver does nothing else.
@@ -182,7 +194,23 @@ function poll(now: number): void {
 
   const wasDown = actionsDown
   actionsDown = pressed
-  for (const { id } of CONTROL_ACTIONS) if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
+  const stickDown = (pad: Gamepad, button: number): boolean => !hooked.has(button) && !!pad.buttons[button]?.pressed
+  if (!sticksTogether && pads().some((pad) => STICKS.every((b) => stickDown(pad, b)))) {
+    sticksTogether = true
+    stickWaiting.clear()
+    toggleSound()
+  } else if (sticksTogether && !pads().some((pad) => STICKS.some((b) => stickDown(pad, b)))) {
+    sticksTogether = false
+  }
+  for (const { id } of CONTROL_ACTIONS) {
+    if (!STICKS.includes(controls[id])) {
+      if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
+    } else if (pressed.has(id) && !wasDown.has(id)) {
+      if (!sticksTogether) stickWaiting.add(id)
+    } else if (!pressed.has(id) && stickWaiting.delete(id)) {
+      ON_PRESS[id]?.()
+    }
+  }
 }
 
 /**

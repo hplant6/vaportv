@@ -82,6 +82,7 @@ function Tour({ onClose }: { onClose: () => void }) {
           <Row keys={key('sideBar')}>Show or hide a tab’s list of games</Row>
           <Row keys={key('controlsGuide')}>What each button does</Row>
           <Row keys={key('settings')}>Settings</Row>
+          <Row keys={<><ButtonIcon button={10} family={family} /><ButtonIcon button={11} family={family} /></>}>Click both sticks in to turn the sound off or on</Row>
         </ul>
       )
     },

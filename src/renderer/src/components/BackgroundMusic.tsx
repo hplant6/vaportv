@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MusicKind } from '../../../shared/types'
 import { introDone } from './Intro'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { SOUND_OFF_EVENT } from '../input/focus'
 import { toast } from './Toast'
 
 /** Settings fires this after changing a track or volume. */
@@ -61,8 +62,30 @@ const SKIP_FADE_MS = 250
 /** Held (a preview, Files playing, voice search listening): out quickly, so it's quiet at once. */
 const HOLD_FADE_MS = 300
 
+/**
+ * Both sticks clicked in turn vaporTV's sound off: the music and ambience fade out, and
+ * whatever else is playing (a song or video in Files, a preview) stops. Again, and the
+ * music and ambience come back. Until then, nothing starts them (coming back from a game).
+ */
+let soundOff = false
+
+function toggleSoundOff(): void {
+  soundOff = !soundOff
+  if (soundOff) {
+    // Everything with its own sound; a backdrop's video is muted, and stays playing.
+    for (const media of document.querySelectorAll<HTMLMediaElement>('audio, video')) if (!media.muted) media.pause()
+  }
+  toast(soundOff ? 'Sound off. Click both sticks again to turn it back on' : 'Sound on')
+  window.dispatchEvent(new Event(SOUND_TOGGLED_EVENT))
+}
+const SOUND_TOGGLED_EVENT = 'steamtv:sound-toggled'
+
 /** Background sound: the music chosen in Settings, with the ambience under it. */
 export function BackgroundMusic() {
+  useEffect(() => {
+    window.addEventListener(SOUND_OFF_EVENT, toggleSoundOff)
+    return () => window.removeEventListener(SOUND_OFF_EVENT, toggleSoundOff)
+  }, [])
   return (
     <>
       <Layer kind="music" />
@@ -116,7 +139,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     let introOver = false
     let held = false
     const start = (): void => {
-      if (!introOver || held || !el.src || !document.hasFocus()) return
+      if (!introOver || held || soundOff || !el.src || !document.hasFocus()) return
       el.play().then(() => fadeTo(target.current)).catch(() => {})
     }
     introDone.then(() => {
@@ -199,6 +222,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     }
 
     const onBlur = (): void => fadeTo(0, () => el.pause())
+    const onSoundToggled = (): void => (soundOff ? fadeTo(0, () => el.pause(), HOLD_FADE_MS) : start())
     const onHold = (event: Event): void => {
       held = (event as CustomEvent<boolean>).detail
       if (held) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
@@ -213,8 +237,10 @@ function Layer({ kind }: { kind: MusicKind }) {
     window.addEventListener('focus', start)
     window.addEventListener('blur', onBlur)
     window.addEventListener(MUSIC_HOLD_EVENT, onHold)
+    window.addEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
     return () => {
       window.removeEventListener(MUSIC_HOLD_EVENT, onHold)
+      window.removeEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
       clearInterval(fade)
       el.removeEventListener('ended', onEnded)
       el.removeEventListener('play', onPlay)

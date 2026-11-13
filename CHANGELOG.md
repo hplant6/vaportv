@@ -22,6 +22,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Consoles' tabs (and Steam's and Arcade's) no longer fill the screen with their console: it's in the list on the left now, and the tab shows Home's backdrop behind it. Apps keeps its VHS tapes, and the Consoles screensaver still shows every console full screen.
 - **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - New button layout: **L2** shows or hides a tab's list of games (the left bar), **R2** shows what each button does, and **Select** opens Settings. The triggers no longer change the volume (a remote's or keyboard's volume keys still do). If you'd moved buttons in Settings → Controller, yours are kept, and the new actions take free buttons.
+- Click both sticks in to turn vaporTV's sound off: the music and ambience, and anything playing in Files. Do it again to bring the music back. Clicking one stick still skips the song (left) or starts voice search (right), as you let go.
+- R2's button guide shows every button now, in two lines.
 - The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
 
 ### Fixed
