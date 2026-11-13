@@ -382,7 +382,7 @@ describe('game playlists', () => {
   it('makes a new playlist for the console tab it was made on, else Home', () => {
     expect(newPlaylistPlace('switch')).toBe('switch')
     expect(newPlaylistPlace('arcade')).toBe('arcade')
-    expect(newPlaylistPlace('steam')).toBe('home')
+    expect(newPlaylistPlace('steam')).toBe('steam')
     expect(newPlaylistPlace('home')).toBe('home')
     expect(newPlaylistPlace('apps')).toBe('home')
     expect(newPlaylistPlace('settings')).toBe('home')

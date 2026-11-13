@@ -63,11 +63,11 @@ export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<H
 export const PLAYLIST_TABS = TAB_LIST.flatMap(({ id }) => (id === 'home' || id === 'apps' ? [] : [id as LayoutTab]))
 
 /**
- * Where a playlist made on `screen` shows to begin with: a console tab's own bar (Arcade's
- * too), or Home when made from Home, Steam, Apps or Settings.
+ * Where a playlist made on `screen` shows to begin with: the left bar of the tab it was made
+ * on (a console's, Arcade's or Steam's), or Home when made from Home, Apps or Settings.
  */
 export function newPlaylistPlace(screen: string): PlaylistPlace {
-  return screen !== 'steam' && (PLAYLIST_TABS as string[]).includes(screen) ? (screen as LayoutTab) : 'home'
+  return (PLAYLIST_TABS as string[]).includes(screen) ? (screen as LayoutTab) : 'home'
 }
 
 /** e.g. "Home, Switch", in the bar's order. */

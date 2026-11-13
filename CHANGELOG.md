@@ -16,7 +16,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - The Steam tab has the list down the left too: a Steam Deck turning under the Steam logo, how many games you have, Sort by, All games, Recents, Favorites, then under Playlists your own, the Steam collections you chose in Settings and your non-Steam games.
 - **Sort by** in each console's list, under the number of games: press A to open it and pick Name, Last played, Most played or Date added (Recents keeps the order you played them). Each tab remembers its choice.
 - Each console's tab shows the console itself turning slowly under its logo, in the same neon as before. On a slower machine, **Settings → Backdrop → Spinning consoles** turns them off and leaves just the logo.
-- Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
+- Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab or the Steam tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
 
 ### Changed
 - The Rain backdrop is gone: City Rain replaced it, and is lighter on the GPU. If you had Rain chosen, you get City Rain.
