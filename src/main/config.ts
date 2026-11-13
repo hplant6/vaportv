@@ -3,7 +3,20 @@ import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+
+/** A media server signed in to (media/servers.ts). */
+export interface MediaAccount {
+  /** Short and address-safe: steamtv-media://<key>/… reaches it. */
+  key: string
+  kind: MediaKind
+  url: string
+  serverId: string
+  serverName?: string
+  userId: string
+  userName: string
+  token: string
+}
 
 export interface Config {
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
@@ -207,9 +220,12 @@ export interface Config {
   steamGridDbKey?: string
   /** Brave Search API key, for the Artwork window's web image search. */
   braveSearchKey?: string
-  /** Emby, for Home's Continue watching: the server and the user signed in (their access token, never the password). */
+  /** Media servers signed in to, for Home's Continue watching (their access tokens, never passwords). */
+  mediaServers?: MediaAccount[]
+  /** vaporTV's id as a device on them, made the first time it talks to one. */
+  mediaDeviceId?: string
+  /** The one Emby sign-in from before there could be several: moved into mediaServers when first read. */
   emby?: { url: string; serverName?: string; userId: string; userName: string; token: string }
-  /** vaporTV's id as an Emby device, made the first time it talks to Emby. */
   embyDeviceId?: string
   /** Steam's data folder. Defaults to ~/.local/share/Steam (or $STEAMTV_STEAM_ROOT). */
   steamRoot?: string

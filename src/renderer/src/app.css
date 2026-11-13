@@ -3817,7 +3817,7 @@ button {
 }
 
 /* ── Continue watching (Home; ContinueWatching.tsx) ──
-   Emby's part-watched films and episodes as 16:9 wide cards: the name and how much is left
+   Part-watched films and episodes from the media servers as 16:9 wide cards: the name and how much is left
    over a fade at the bottom, and a gold line for how far in. */
 .watch-card {
   flex: none;
@@ -3875,8 +3875,8 @@ button {
   background: var(--color-accent);
 }
 
-/* The Emby player (EmbyPlayer.tsx): full screen over everything, the Files viewer's bar on it. */
-.emby-player {
+/* The media player (MediaPlayer.tsx): full screen over everything, the Files viewer's bar on it. */
+.media-player {
   position: absolute;
   inset: 0;
   z-index: 1500;
@@ -3884,14 +3884,14 @@ button {
 }
 
 /* Its picture while the stream starts. */
-.emby-player-poster {
+.media-player-poster {
   object-fit: cover;
   opacity: 0.5;
 }
 
-/* Audio & subtitles (Down while an Emby video plays): a column of each over the video's right
+/* Audio & subtitles (Down while a media server's video plays): a column of each over the video's right
    side, on the modals' glass; the ones playing ticked in gold. */
-.emby-tracks {
+.media-tracks {
   position: absolute;
   right: 72px;
   bottom: 240px;
@@ -3905,7 +3905,7 @@ button {
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
 }
 
-.emby-tracks-column {
+.media-tracks-column {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3916,16 +3916,16 @@ button {
   scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08);
 }
 
-.emby-tracks .settings-heading {
+.media-tracks .settings-heading {
   margin: 0 0 8px;
   padding: 0 24px;
 }
 
-.emby-track {
+.media-track {
   min-height: 64px;
 }
 
-.emby-track .setting-name {
+.media-track .setting-name {
   font-family: var(--font-body);
   font-weight: 700;
   overflow: hidden;
@@ -3933,20 +3933,20 @@ button {
   white-space: nowrap;
 }
 
-.emby-track-check {
+.media-track-check {
   margin-left: auto;
   color: var(--color-accent);
   font-size: var(--text-label);
 }
 
-.emby-track:focus,
-.emby-track:focus .emby-track-check {
+.media-track:focus,
+.media-track:focus .media-track-check {
   background: rgba(238, 150, 13, 0.4);
   color: #fff;
 }
 
 /* Text subtitles, sized for across the room. */
-.emby-player video::cue {
+.media-player video::cue {
   font-family: var(--font-body);
   font-size: 46px;
   line-height: 1.3;

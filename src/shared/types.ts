@@ -44,17 +44,30 @@ export interface AppState {
   program?: string
 }
 
-/** An Emby server found on the network, or at an address typed in. */
-export interface EmbyServer {
+/** Which kind of media server: they share Continue watching and the player. */
+export type MediaKind = 'emby' | 'jellyfin'
+
+/** A media server found on the network, or at an address typed in. */
+export interface MediaServer {
+  kind: MediaKind
   url: string
   id: string
   name: string
 }
 
-export type EmbyStatus = { signedIn: false } | { signedIn: true; serverName?: string; userName: string; url: string }
+/** A server signed in to, as Settings lists it. */
+export interface MediaAccountInfo {
+  key: string
+  kind: MediaKind
+  serverName: string
+  userName: string
+  url: string
+}
 
 /** A film or episode in Continue watching. */
-export interface EmbyItem {
+export interface MediaItem {
+  /** The account it's from (MediaAccountInfo.key). */
+  source: string
   id: string
   /** The film, or the episode's show. */
   title: string
@@ -70,14 +83,22 @@ export interface EmbyItem {
   lastPlayed?: string
 }
 
-/** How to play an Emby item, and what to tell Emby about it. */
-export interface EmbyPlayback {
+/** Audio and subtitle tracks picked (subtitle -1: none); unset, the server's defaults. */
+export interface MediaChoice {
+  audio?: number
+  subtitle?: number
+}
+
+/** How to play a media server's item, and what to tell the server about it. */
+export interface MediaPlayback {
+  /** The account it's from. */
+  source: string
   itemId: string
   mediaSourceId: string
   playSessionId: string
   method: 'DirectPlay' | 'Transcode'
   url: string
-  /** An HLS playlist (Emby converting it), played through hls.js; otherwise the file itself. */
+  /** An HLS playlist (the server converting it), played through hls.js; otherwise the file itself. */
   hls: boolean
   title: string
   subtitle: string
@@ -725,19 +746,19 @@ export interface SteamTvApi {
   }
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
   /** Game playlists (your own lists of games, on Home or a tab's left bar). */
-  emby: {
-    status(): Promise<EmbyStatus>
-    /** Servers answering on the network. */
-    discover(): Promise<EmbyServer[]>
+  media: {
+    /** The servers signed in to. */
+    accounts(): Promise<MediaAccountInfo[]>
+    /** Emby and Jellyfin servers answering on the network. */
+    discover(): Promise<MediaServer[]>
     /** The server at a typed address; throws if none answers. */
-    check(address: string): Promise<EmbyServer>
-    signIn(server: EmbyServer, user: string, password: string): Promise<EmbyStatus>
-    signOut(): Promise<void>
-    /** Continue watching: empty when signed out; throws if the server can't be reached. */
-    resume(): Promise<EmbyItem[]>
-    /** `choice` picks the audio and subtitle tracks (subtitle -1: none); unset, Emby's defaults. */
-    playback(itemId: string, choice?: { audio?: number; subtitle?: number }): Promise<EmbyPlayback>
-    report(event: 'start' | 'progress' | 'stop', playback: EmbyPlayback, positionSeconds: number, paused: boolean): Promise<void>
+    check(address: string): Promise<MediaServer>
+    signIn(server: MediaServer, user: string, password: string): Promise<MediaAccountInfo[]>
+    signOut(key: string): Promise<MediaAccountInfo[]>
+    /** Continue watching from every server, newest first: empty when signed in to none; throws if every one failed. */
+    resume(): Promise<MediaItem[]>
+    playback(source: string, itemId: string, choice?: MediaChoice): Promise<MediaPlayback>
+    report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }
   gamePlaylists: {
     /** Every playlist, its games as cards, for Settings. */

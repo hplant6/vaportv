@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import type { EmbyItem } from '../../../shared/types'
+import type { MediaItem } from '../../../shared/types'
 import { useDrag } from '../input/drag'
 import { useScrollTilt } from '../scrollTilt'
 import { HOME_CHANGED_EVENT } from '../screens/Settings'
 
-// Home's Continue watching: the films and episodes the Emby user has part-watched, newest
-// first, as wide cards with how far in they are. A plays one in vaporTV's own player
-// (EmbyPlayer), from where it was left. Not there at all until Emby's signed in to in
-// Settings, nor while the server can't be reached or nothing's part-watched.
+// Home's Continue watching: the films and episodes part-watched on every media server signed
+// in to (Emby, Jellyfin), merged newest first, as wide cards with how far in they are. A plays
+// one in vaporTV's own player (MediaPlayer), from where it was left. Not there at all until a
+// server's signed in to in Settings, nor while none can be reached or nothing's part-watched.
 
-/** EmbyPlayer listens: detail is the item's id. */
-export const EMBY_PLAY_EVENT = 'steamtv:emby-play'
-/** The player closed: the row asks Emby again (what was just watched moves to the front). */
-export const EMBY_WATCHED_EVENT = 'steamtv:emby-watched'
+/** MediaPlayer listens: detail is { source, id } (the account and the item). */
+export const MEDIA_PLAY_EVENT = 'steamtv:media-play'
+/** The player closed: the row asks again (what was just watched moves to the front). */
+export const MEDIA_WATCHED_EVENT = 'steamtv:media-watched'
 
 const CARD_W = 426
 const CARD_GAP = 36
@@ -20,7 +20,7 @@ const FOCUS_SCALE = 1.2
 const VIEWPORT_W = 1848
 
 export function ContinueWatching() {
-  const [items, setItems] = useState<EmbyItem[]>([])
+  const [items, setItems] = useState<MediaItem[]>([])
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
   const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - VIEWPORT_W))
@@ -29,18 +29,18 @@ export function ContinueWatching() {
   // Asked on opening Home, coming back to vaporTV, after watching, and after signing in or out.
   useEffect(() => {
     const load = (): void => {
-      window.steamtv.emby
+      window.steamtv.media
         .resume()
         .then(setItems)
         .catch(() => setItems([]))
     }
     load()
     window.addEventListener('focus', load)
-    window.addEventListener(EMBY_WATCHED_EVENT, load)
+    window.addEventListener(MEDIA_WATCHED_EVENT, load)
     window.addEventListener(HOME_CHANGED_EVENT, load)
     return () => {
       window.removeEventListener('focus', load)
-      window.removeEventListener(EMBY_WATCHED_EVENT, load)
+      window.removeEventListener(MEDIA_WATCHED_EVENT, load)
       window.removeEventListener(HOME_CHANGED_EVENT, load)
     }
   }, [])
@@ -65,14 +65,14 @@ export function ContinueWatching() {
       >
         {items.map((item, index) => (
           <button
-            key={item.id}
+            key={`${item.source}:${item.id}`}
             className="wide-card watch-card"
             tabIndex={-1}
             data-focusable=""
             data-select-sound="move"
             aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
             onFocus={() => reveal(index)}
-            onClick={() => window.dispatchEvent(new CustomEvent(EMBY_PLAY_EVENT, { detail: item.id }))}
+            onClick={() => window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))}
           >
             <span className="wide-card-art">
               {item.wide ? (

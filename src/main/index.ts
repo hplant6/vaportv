@@ -7,9 +7,9 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { resolveControls, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, EmbyPlayback, EmbyServer, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, MediaChoice, MediaPlayback, MediaServer, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
-import { checkEmbyServer, discoverEmby, EMBY_SCHEME, handleEmbyScheme, embyPlayback, embyReport, embyResume, embySignIn, embySignOut, embyStatus } from './emby'
+import * as media from './media/servers'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
 import {
   createPlaylist,
@@ -178,7 +178,7 @@ function createWindow(): void {
   win = window
 }
 
-registerArtScheme([EMBY_SCHEME])
+registerArtScheme([media.MEDIA_SCHEME])
 
 // Recents come from the Steam install; without one (a dev PC with no snapshot)
 // the hand-made fixture stands in. Favorite Apps are still the fixture's.
@@ -792,16 +792,16 @@ ipcMain.handle('xbox360-tab:get', async () => {
 })
 // Select on a console game: its name, emulator and deleting it (art has its own window).
 ipcMain.handle('gamePlaylists:list', async () => playlistRows(await loadConfig(), await readPlaylists()))
-// Emby (Home's Continue watching, and its player).
-ipcMain.handle('emby:status', () => embyStatus())
-ipcMain.handle('emby:discover', () => discoverEmby())
-ipcMain.handle('emby:check', (_event, address: string) => checkEmbyServer(address))
-ipcMain.handle('emby:signIn', (_event, server: EmbyServer, user: string, password: string) => embySignIn(server, user, password))
-ipcMain.handle('emby:signOut', () => embySignOut())
-ipcMain.handle('emby:resume', () => embyResume())
-ipcMain.handle('emby:playback', (_event, itemId: string, choice?: { audio?: number; subtitle?: number }) => embyPlayback(itemId, choice))
-ipcMain.handle('emby:report', (_event, kind: 'start' | 'progress' | 'stop', playback: EmbyPlayback, position: number, paused: boolean) =>
-  embyReport(kind, playback, position, paused).catch((err) => logInput(`emby: report ${kind} failed: ${err}`))
+// Media servers (Home's Continue watching, and its player).
+ipcMain.handle('media:accounts', () => media.listAccounts())
+ipcMain.handle('media:discover', () => media.discover())
+ipcMain.handle('media:check', (_event, address: string) => media.checkServer(address))
+ipcMain.handle('media:signIn', (_event, server: MediaServer, user: string, password: string) => media.signIn(server, user, password))
+ipcMain.handle('media:signOut', (_event, key: string) => media.signOut(key))
+ipcMain.handle('media:resume', () => media.resume())
+ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice) => media.playback(source, itemId, choice))
+ipcMain.handle('media:report', (_event, kind: 'start' | 'progress' | 'stop', playback: MediaPlayback, position: number, paused: boolean) =>
+  media.report(kind, playback, position, paused).catch((err) => logInput(`media: report ${kind} failed: ${err}`))
 )
 ipcMain.handle('gamePlaylists:forTab', async (_event, tab: LayoutTab) =>
   playlistRows(await loadConfig(), (await readPlaylists()).filter((p) => showsOn(p, tab)))
@@ -1000,7 +1000,7 @@ app.whenReady().then(async () => {
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
   handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, ...screensaverFolders(config)], wasOpened)
-  handleEmbyScheme()
+  media.handleMediaScheme()
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()
   createWindow()

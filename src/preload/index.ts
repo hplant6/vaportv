@@ -119,15 +119,15 @@ const api: SteamTvApi = {
     libretro: (id, query) => ipcRenderer.invoke('art:libretro', id, query),
     chooseWeb: (id, url, thumb) => ipcRenderer.invoke('art:chooseWeb', id, url, thumb)
   },
-  emby: {
-    status: () => ipcRenderer.invoke('emby:status'),
-    discover: () => ipcRenderer.invoke('emby:discover'),
-    check: (address) => ipcRenderer.invoke('emby:check', address),
-    signIn: (server, user, password) => ipcRenderer.invoke('emby:signIn', server, user, password),
-    signOut: () => ipcRenderer.invoke('emby:signOut'),
-    resume: () => ipcRenderer.invoke('emby:resume'),
-    playback: (itemId, choice) => ipcRenderer.invoke('emby:playback', itemId, choice),
-    report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('emby:report', event, playback, positionSeconds, paused)
+  media: {
+    accounts: () => ipcRenderer.invoke('media:accounts'),
+    discover: () => ipcRenderer.invoke('media:discover'),
+    check: (address) => ipcRenderer.invoke('media:check', address),
+    signIn: (server, user, password) => ipcRenderer.invoke('media:signIn', server, user, password),
+    signOut: (key) => ipcRenderer.invoke('media:signOut', key),
+    resume: () => ipcRenderer.invoke('media:resume'),
+    playback: (source, itemId, choice) => ipcRenderer.invoke('media:playback', source, itemId, choice),
+    report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('media:report', event, playback, positionSeconds, paused)
   },
   gamePlaylists: {
     list: () => ipcRenderer.invoke('gamePlaylists:list'),

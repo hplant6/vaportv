@@ -16,7 +16,7 @@ import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
-import { EmbyPlayerHost } from './components/EmbyPlayer'
+import { MediaPlayerHost } from './components/MediaPlayer'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { RepairDialog } from './components/RepairDialog'
@@ -468,7 +468,7 @@ export function App() {
       <Welcome />
       <Screensaver />
       <BackgroundMusic />
-      <EmbyPlayerHost />
+      <MediaPlayerHost />
       <Intro />
       <VolumeOsd />
       <Toast />
