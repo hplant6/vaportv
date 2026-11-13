@@ -11,6 +11,7 @@ import backPs5 from '../assets/buttons/back_PS5.svg'
 import backSwitch from '../assets/buttons/back_switch.svg'
 import backXbox from '../assets/buttons/back_XBOX.svg'
 import dpad from '../assets/buttons/dpad_all.svg'
+import dpadLeftRight from '../assets/buttons/dpad_leftright.svg'
 import l1 from '../assets/buttons/l.svg'
 import l2 from '../assets/buttons/lt.svg'
 import r1 from '../assets/buttons/r.svg'
@@ -97,10 +98,11 @@ export function ButtonIcon({ button, family }: { button: number; family: Control
   )
 }
 
-export function DpadIcon() {
+/** The D-pad; `leftRight` marks just its left and right (the player's scrub; from the Alpha theme for ES-DE). */
+export function DpadIcon({ leftRight = false }: { leftRight?: boolean }) {
   return (
-    <span className="control-icon" title="D-pad">
-      <img src={dpad} alt="D-pad" />
+    <span className="control-icon" title={leftRight ? 'D-pad left and right' : 'D-pad'}>
+      <img src={leftRight ? dpadLeftRight : dpad} alt={leftRight ? 'D-pad left and right' : 'D-pad'} />
     </span>
   )
 }

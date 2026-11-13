@@ -12,6 +12,7 @@ either version 3 of the License, or (at your option) any later version. See
 | What | Where | Author | Licence |
 |---|---|---|---|
 | Console logos (each console tab's left bar) | `src/renderer/src/assets/logos/` | From the media of the Alpha theme for ES-DE | Trademarks of their owners, used only to name each console |
+| D-pad left and right icon (the video player's Scrub hint) | `src/renderer/src/assets/buttons/dpad_leftright.svg` | From the help icons of the Alpha theme for ES-DE | As the theme's own |
 | EZ-Tree (Forest backdrop: tree generation, bark and leaf textures; via npm `@dgreenheck/ez-tree`) and its demo's grass, flowers, ground textures and wind/ground shaders, reworked for instancing | `src/renderer/src/background/forest/`, `src/renderer/public/backdrops/forest/` | Daniel Greenheck | MIT (`forest/LICENSE`) |
 | "Gradient Drift" (Gradient Drift backdrop: shaders, presets, circle motion) | `src/renderer/src/background/drift/`, `DriftBackground.tsx` | Liam Egan (codepen.io/shubniggurath), ported from WebGL via wtc-gl to plain WebGL2 | MIT (CodePen public pen) |
 | "GLSL Sample027" (Chromatic Waves backdrop), with itshenry.me's tuning | `src/renderer/src/background/WavesBackground.tsx` | Web_yuki1027 (CodePen) | MIT (CodePen public pen) |

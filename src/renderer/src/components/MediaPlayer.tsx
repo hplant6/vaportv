@@ -380,7 +380,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
               <ButtonIcon button={controls.select} family={family} /> {paused ? 'Play' : 'Pause'}
             </span>
             <span className="files-hint">
-              <DpadIcon /> Scrub
+              <DpadIcon leftRight /> Scrub
             </span>
             <span className="files-hint">
               <ButtonIcon button={controls.sideBar} family={family} />
