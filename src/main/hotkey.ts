@@ -221,6 +221,8 @@ export interface HotkeyOptions {
   onClosing: (name: string | undefined) => void
   /** ...and now it's gone. */
   onClosed: () => void
+  /** The combo held with vaporTV itself in front (nothing else to close): it closes its own video, if one's playing. */
+  onOwnInFront?: () => void
   log: Log
 }
 
@@ -257,7 +259,8 @@ async function closeForeground(options: HotkeyOptions): Promise<void> {
     await closeWithAnimation(options, emulator, options.nameFor('emulator'), EMULATOR_GRACE_MS)
   } else {
     const appid = await appOnScreen()
-    if (appid === STEAMTV_APPID) return
+    // vaporTV itself in front: it may have something of its own to close (a video playing).
+    if (appid === STEAMTV_APPID) return options.onOwnInFront?.()
     if (appid === null || appid === STEAM_UI_APPID) {
       // Nothing to close; Steam's own UI is over steamtv.
       log(`hotkey: bringing steamtv forward (on screen: ${appid})`)

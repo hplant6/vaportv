@@ -69,6 +69,9 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   const [loading, setLoading] = useState(true)
   // Where a scrub has the marker (seconds), until it settles and jumps there.
   const [scrub, setScrub] = useState<number | null>(null)
+  // A trigger's skip, said under the spinner for a moment: seconds back (negative) or on, added up while pressed again.
+  const [skipped, setSkipped] = useState<{ by: number; key: number } | null>(null)
+  const skipTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const scrubbing = useRef<{ to: number; at: number; streak: number; timer?: ReturnType<typeof setTimeout> }>({ to: 0, at: 0, streak: 0 })
   // Audio & subtitles: the tracks picked (unset: the server's defaults), the menu, and where to pick up after a change.
   const [choice, setChoice] = useState<MediaChoice>({})
@@ -195,6 +198,9 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     onClose()
   }, [report, onClose])
 
+  // Select + Start (held), as over a game: stops it.
+  useEffect(() => window.steamtv.onCloseCombo(stop), [stop])
+
   // B closes Audio & subtitles, or stops; the music waits and the screensaver stays off while it's open.
   useEffect(() => {
     const onBack = (): void => {
@@ -258,8 +264,13 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
       showBar()
       const el = video.current
       if (!el) return
+      const by = (event as CustomEvent<number>).detail
       const length = el.duration || playback?.durationSeconds || 0
-      el.currentTime = Math.max(0, Math.min(Math.max(0, length - 1), el.currentTime + (event as CustomEvent<number>).detail))
+      el.currentTime = Math.max(0, Math.min(Math.max(0, length - 1), el.currentTime + by))
+      // Pressed again the same way soon after: one total ("Fast-forwarding 30 seconds").
+      setSkipped((was) => ({ by: was && Math.sign(was.by) === Math.sign(by) ? was.by + by : by, key: (was?.key ?? 0) + 1 }))
+      clearTimeout(skipTimer.current)
+      skipTimer.current = setTimeout(() => setSkipped(null), 1400)
     }
     const onTracks = (): void => {
       if (!hasTracks) return toast('This has no other audio or subtitles')
@@ -357,9 +368,14 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
             />
           )}
         </video>
-        {loading && (
-          <div className="media-loading" aria-label="Loading">
-            <Spinner />
+        {(loading || skipped) && (
+          <div className="media-loading" aria-live="polite">
+            <div className="media-loading-spin">{loading && <Spinner />}</div>
+            {skipped && (
+              <p key={skipped.key} className="media-skip display">
+                {skipped.by < 0 ? 'Rewinding' : 'Fast-forwarding'} {Math.abs(skipped.by)} seconds
+              </p>
+            )}
           </div>
         )}
         <div className="files-viewer-bar">
@@ -370,8 +386,17 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
           <div className="files-viewer-line">
             {/* Scrubbing, the marker and its time go where it'll jump to. */}
             <span className={`files-viewer-time${scrub !== null ? ' media-scrub-time' : ''}`}>{clock(scrub ?? time.at)}</span>
-            <span className={`files-progress${scrub !== null ? ' media-scrubbing' : ''}`}>
-              <span className="files-progress-fill" style={{ width: `${length ? ((scrub ?? time.at) / length) * 100 : 0}%` }} />
+            {/* Where it's at: the fill and a playhead; scrubbing, a gold marker where it'll jump to, and the stretch between. */}
+            <span className={`files-progress media-progress${scrub !== null ? ' media-scrubbing' : ''}`}>
+              <span className="files-progress-fill" style={{ width: `${length ? (time.at / length) * 100 : 0}%` }} />
+              {scrub !== null && length > 0 && (
+                <span
+                  className="media-scrub-span"
+                  style={{ left: `${(Math.min(scrub, time.at) / length) * 100}%`, width: `${(Math.abs(scrub - time.at) / length) * 100}%` }}
+                />
+              )}
+              <span className="media-playhead" style={{ left: `${length ? (time.at / length) * 100 : 0}%` }} />
+              {scrub !== null && length > 0 && <span className="media-scrub-head" style={{ left: `${(scrub / length) * 100}%` }} />}
             </span>
             <span className="files-viewer-time">{clock(length)}</span>
           </div>

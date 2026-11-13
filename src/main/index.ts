@@ -1039,6 +1039,7 @@ app.whenReady().then(async () => {
       isGame: launchedIsGame,
       onClosing: (name) => send('closing', { active: true, name }),
       onClosed: () => send('closing', { active: false }),
+      onOwnInFront: () => send('hotkey:in-app'),
       log: logInput
     })
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).

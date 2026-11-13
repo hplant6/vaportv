@@ -934,6 +934,8 @@ export interface SteamTvApi {
   /** Adds or removes a Switch game from Favorites; resolves with whether it's now a favourite. */
   toggleFavorite(id: string): Promise<boolean>
   /** Calls back when new art has been downloaded; returns an unsubscribe. */
+  /** Select + Start held with vaporTV in front (the media player closes its video on it). */
+  onCloseCombo(callback: () => void): () => void
   onArtUpdated(callback: () => void): () => void
   /** Listens once (for a search unless said); what happens comes through onVoice. */
   startVoice(purpose?: VoicePurpose): void

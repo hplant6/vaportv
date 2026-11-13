@@ -237,6 +237,11 @@ const api: SteamTvApi = {
     ipcRenderer.on('steam-focus', listener)
     return () => ipcRenderer.removeListener('steam-focus', listener)
   },
+  onCloseCombo: (callback) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('hotkey:in-app', listener)
+    return () => ipcRenderer.removeListener('hotkey:in-app', listener)
+  },
   onArtUpdated: (callback) => {
     const listener = (): void => callback()
     ipcRenderer.on('art:updated', listener)

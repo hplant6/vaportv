@@ -1591,6 +1591,7 @@ button {
   gap: 12px;
   width: 100%;
   max-height: 560px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -3889,13 +3890,13 @@ button {
   opacity: 0.5;
 }
 
-/* Audio & subtitles (Down while a media server's video plays): a column of each over the video's right
-   side, on the modals' glass; the ones playing ticked in gold. */
+/* Audio & subtitles (Y while a media server's video plays): a column of each in the video's lower
+   right corner, on the modals' glass; the ones playing ticked in gold. Long names are cut, never scrolled sideways. */
 .media-tracks {
   position: absolute;
-  right: 72px;
-  bottom: 240px;
-  z-index: 2;
+  right: 48px;
+  bottom: 48px;
+  z-index: 3;
   display: flex;
   gap: 24px;
   padding: 28px;
@@ -4153,14 +4154,82 @@ button {
   color: var(--color-accent);
 }
 
-/* The media player loading or buffering: the launch overlay's figure eight, in the middle. */
+/* The media player loading or buffering: the launch overlay's figure eight, in the middle; a
+   trigger's skip said under it ("Rewinding 10 seconds"), its place kept with no spinner. */
 .media-loading {
   position: absolute;
   inset: 0;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  pointer-events: none;
+}
+
+.media-loading-spin {
   display: grid;
   place-items: center;
-  pointer-events: none;
+  height: 80px;
+}
+
+.media-skip {
+  margin: 0;
+  padding: 12px 28px;
+  border-radius: 28px;
+  font-size: 36px;
+  letter-spacing: 0.04em;
+  background: rgba(6, 4, 8, 0.6);
+  animation: media-skip-in 160ms ease-out;
+}
+
+@keyframes media-skip-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* The player's bar: where it's at, with a white playhead; scrubbing, a gold marker where it'll
+   jump to, and the stretch between in gold. */
+.files-progress.media-progress {
+  position: relative;
+  overflow: visible;
+}
+
+.media-progress .files-progress-fill {
+  border-radius: inherit;
+}
+
+.media-playhead,
+.media-scrub-head {
+  position: absolute;
+  top: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.media-playhead {
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.media-scrub-head {
+  width: 26px;
+  height: 26px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(6, 4, 8, 0.55);
+}
+
+.media-scrub-span {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(238, 150, 13, 0.45);
 }
 
 /* Scrubbing: the bar thickens and its time turns gold, at where it'll jump to. */
