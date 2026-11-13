@@ -2,20 +2,31 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type Hls from 'hls.js'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import type { MediaChoice, MediaPlayback } from '../../../shared/types'
-import { focus, OWN_DIRECTION_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
+import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { MEDIA_PLAY_EVENT, MEDIA_WATCHED_EVENT } from './ContinueWatching'
+import { Spinner } from './LaunchOverlay'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
 import { toast } from './Toast'
 
 // Plays a film or episode from a media server (Emby, Jellyfin) full screen, from where it was
 // left: straight from the file when Chromium can, or as HLS the server converts (hls.js). A pauses, left and right skip
-// back 10 seconds and on 30, Down opens Audio & subtitles, B stops. The server hears where it's
+// D-pad left and right scrub along the bar, the triggers skip back or on 10 seconds, Y opens
+// Audio & subtitles, B stops. The figure eight spins while it loads or buffers. The server hears where it's
 // got to as it plays, and where it stopped, so Continue watching (and its own apps) pick up there.
 
-const BACK_S = 10
-const ON_S = 30
+/** The triggers (L2 / R2 by default) skip this far; it comes with PLAYER_SKIP_EVENT. */
+const SKIP_S = 10
+/**
+ * D-pad left and right scrub: each press moves a marker along the bar (this share of the
+ * video, at least SCRUB_MIN_S), faster the longer it's held, and it jumps there once the
+ * presses stop for SCRUB_SETTLE_MS (each jump has the server convert from there, so not per press).
+ */
+const SCRUB_SHARE = 1 / 120
+const SCRUB_MIN_S = 10
+const SCRUB_FASTEST = 4
+const SCRUB_SETTLE_MS = 700
 const BAR_MS = 3500
 const REPORT_MS = 10_000
 
@@ -54,6 +65,11 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   const family = useControllerFamily()
   const started = useRef(false)
   const [playing, setPlaying] = useState(false)
+  // Loading or buffering (from opening until it plays, and while it catches up after a jump).
+  const [loading, setLoading] = useState(true)
+  // Where a scrub has the marker (seconds), until it settles and jumps there.
+  const [scrub, setScrub] = useState<number | null>(null)
+  const scrubbing = useRef<{ to: number; at: number; streak: number; timer?: ReturnType<typeof setTimeout> }>({ to: 0, at: 0, streak: 0 })
   // Audio & subtitles: the tracks picked (unset: the server's defaults), the menu, and where to pick up after a change.
   const [choice, setChoice] = useState<MediaChoice>({})
   const [menu, setMenu] = useState(false)
@@ -205,22 +221,59 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     return () => window.removeEventListener('blur', onBlur)
   }, [])
 
+  // D-pad left/right: scrub. Up and down just show the bar.
   useEffect(() => {
     const onDirection = (event: Event): void => {
       const direction = (event as CustomEvent<Direction>).detail
       showBar()
-      // Down: Audio & subtitles (the cursor moves in it, so it isn't sent here while open).
-      if (direction === 'down' && hasTracks) {
-        setMenu(true)
-        return
-      }
       const el = video.current
       if (!el || (direction !== 'left' && direction !== 'right')) return
       const length = el.duration || playback?.durationSeconds || 0
-      el.currentTime = Math.max(0, Math.min(length - 1, el.currentTime + (direction === 'right' ? ON_S : -BACK_S)))
+      const s = scrubbing.current
+      const now = performance.now()
+      // Held (the presses repeat), each step bigger, up to SCRUB_FASTEST times.
+      s.streak = now - s.at < 400 ? s.streak + 1 : 0
+      s.at = now
+      const from = s.timer ? s.to : el.currentTime
+      const step = Math.max(SCRUB_MIN_S, length * SCRUB_SHARE) * Math.min(SCRUB_FASTEST, 1 + s.streak * 0.25)
+      s.to = Math.max(0, Math.min(Math.max(0, length - 1), from + (direction === 'right' ? step : -step)))
+      setScrub(s.to)
+      clearTimeout(s.timer)
+      s.timer = setTimeout(() => {
+        s.timer = undefined
+        if (video.current) video.current.currentTime = s.to
+        setScrub(null)
+      }, SCRUB_SETTLE_MS)
     }
     window.addEventListener(OWN_DIRECTION_EVENT, onDirection)
-    return () => window.removeEventListener(OWN_DIRECTION_EVENT, onDirection)
+    return () => {
+      window.removeEventListener(OWN_DIRECTION_EVENT, onDirection)
+      clearTimeout(scrubbing.current.timer)
+    }
+  }, [showBar, playback])
+
+  // The triggers: back or on 10 seconds. Y: Audio & subtitles (again, closed).
+  useEffect(() => {
+    const onSkip = (event: Event): void => {
+      showBar()
+      const el = video.current
+      if (!el) return
+      const length = el.duration || playback?.durationSeconds || 0
+      el.currentTime = Math.max(0, Math.min(Math.max(0, length - 1), el.currentTime + (event as CustomEvent<number>).detail))
+    }
+    const onTracks = (): void => {
+      if (!hasTracks) return toast('This has no other audio or subtitles')
+      setMenu((open) => {
+        if (open) setTimeout(() => self.current && focus(self.current))
+        return !open
+      })
+    }
+    window.addEventListener(PLAYER_SKIP_EVENT, onSkip)
+    window.addEventListener(PLAYER_TRACKS_EVENT, onTracks)
+    return () => {
+      window.removeEventListener(PLAYER_SKIP_EVENT, onSkip)
+      window.removeEventListener(PLAYER_TRACKS_EVENT, onTracks)
+    }
   }, [showBar, playback, hasTracks])
 
   // Opening the menu puts the cursor on the audio track playing (or the first thing in it).
@@ -267,7 +320,11 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
           ref={video}
           className="files-viewer-media"
           playsInline
+          onWaiting={() => setLoading(true)}
+          onSeeking={() => setLoading(true)}
+          onCanPlay={() => setLoading(false)}
           onPlaying={() => {
+            setLoading(false)
             if (!started.current) {
               started.current = true
               setPlaying(true)
@@ -300,15 +357,21 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
             />
           )}
         </video>
+        {loading && (
+          <div className="media-loading" aria-label="Loading">
+            <Spinner />
+          </div>
+        )}
         <div className="files-viewer-bar">
           <div className="files-viewer-line">
             <span className="files-viewer-name display">{playback?.title ?? 'Loading…'}</span>
             <span className="files-viewer-count">{playback?.subtitle}</span>
           </div>
           <div className="files-viewer-line">
-            <span className="files-viewer-time">{clock(time.at)}</span>
-            <span className="files-progress">
-              <span className="files-progress-fill" style={{ width: `${length ? (time.at / length) * 100 : 0}%` }} />
+            {/* Scrubbing, the marker and its time go where it'll jump to. */}
+            <span className={`files-viewer-time${scrub !== null ? ' media-scrub-time' : ''}`}>{clock(scrub ?? time.at)}</span>
+            <span className={`files-progress${scrub !== null ? ' media-scrubbing' : ''}`}>
+              <span className="files-progress-fill" style={{ width: `${length ? ((scrub ?? time.at) / length) * 100 : 0}%` }} />
             </span>
             <span className="files-viewer-time">{clock(length)}</span>
           </div>
@@ -317,11 +380,15 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
               <ButtonIcon button={controls.select} family={family} /> {paused ? 'Play' : 'Pause'}
             </span>
             <span className="files-hint">
-              <DpadIcon /> Back {BACK_S} s / on {ON_S} s
+              <DpadIcon /> Scrub
+            </span>
+            <span className="files-hint">
+              <ButtonIcon button={controls.sideBar} family={family} />
+              <ButtonIcon button={controls.controlsGuide} family={family} /> {SKIP_S} s back / on
             </span>
             {hasTracks && (
               <span className="files-hint">
-                <DpadIcon /> Down: audio &amp; subtitles
+                <ButtonIcon button={controls.favorite} family={family} /> Audio &amp; subtitles
               </span>
             )}
             <span className="files-hint">

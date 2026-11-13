@@ -4152,3 +4152,25 @@ button {
   font-weight: 700;
   color: var(--color-accent);
 }
+
+/* The media player loading or buffering: the launch overlay's figure eight, in the middle. */
+.media-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+/* Scrubbing: the bar thickens and its time turns gold, at where it'll jump to. */
+.files-progress.media-scrubbing {
+  height: 12px;
+  border-radius: 6px;
+  transition: height 120ms ease-out;
+}
+
+.media-scrub-time {
+  color: var(--color-accent);
+  font-weight: 700;
+}

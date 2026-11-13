@@ -23,7 +23,8 @@ function position(angle: number): { x: number; y: number } {
   return { x: -RADIUS + RADIUS * Math.cos(radians), y: RADIUS * Math.sin(radians) }
 }
 
-function Spinner() {
+/** The figure eight of dots: launching, closing, and a video loading (MediaPlayer). */
+export function Spinner() {
   const dots = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {

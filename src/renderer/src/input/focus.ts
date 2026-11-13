@@ -286,13 +286,30 @@ export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 /** L2 (by default), L on a keyboard: shows or hides the tab’s left bar. */
 export const SIDE_BAR_EVENT = 'steamtv:side-bar'
 
+/**
+ * While a film or episode plays (the media player), the left-bar and button-guide buttons (L2
+ * and R2 by default) skip back or on 10 seconds instead: detail is the seconds. MediaPlayer listens.
+ */
+export const PLAYER_SKIP_EVENT = 'steamtv:player-skip'
+/** While one plays, the favourite button (Y) opens Audio & subtitles. MediaPlayer listens. */
+export const PLAYER_TRACKS_EVENT = 'steamtv:player-tracks'
+const inPlayer = (): boolean => !!trap()?.classList.contains('media-player')
+
 export function sideBar(): void {
+  if (inPlayer()) {
+    window.dispatchEvent(new CustomEvent(PLAYER_SKIP_EVENT, { detail: -10 }))
+    return
+  }
   if (trap() || grabbed()) return
   window.steamtv.logInput('side bar')
   window.dispatchEvent(new Event(SIDE_BAR_EVENT))
 }
 
 export function controlsGuide(): void {
+  if (inPlayer()) {
+    window.dispatchEvent(new CustomEvent(PLAYER_SKIP_EVENT, { detail: 10 }))
+    return
+  }
   window.steamtv.logInput('controls guide')
   window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))
 }
@@ -347,7 +364,8 @@ export const FAVORITE_EVENT = 'steamtv:favorite'
 export function favorite(): void {
   const el = current()
   window.steamtv.logInput(`favorite ${el?.getAttribute('aria-label') ?? el?.dataset.itemId ?? 'nothing'}`)
-  if (el?.dataset.mediaSource) window.dispatchEvent(new CustomEvent(MEDIA_FAVORITE_EVENT, { detail: el }))
+  if (inPlayer()) window.dispatchEvent(new Event(PLAYER_TRACKS_EVENT))
+  else if (el?.dataset.mediaSource) window.dispatchEvent(new CustomEvent(MEDIA_FAVORITE_EVENT, { detail: el }))
   else if (el) window.dispatchEvent(new CustomEvent(FAVORITE_EVENT, { detail: el }))
 }
 
