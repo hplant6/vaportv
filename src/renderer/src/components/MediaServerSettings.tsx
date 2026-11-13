@@ -66,7 +66,9 @@ export function MediaServerSettings() {
 
   if (step.kind === 'address')
     return (
+      // Each step its own keyboard (key): one reused would keep the last one's text and closing state.
       <OnScreenKeyboard
+        key="address"
         title="Add a server"
         prompt="Its address, e.g. 192.168.1.38 (port 8096 unless you say otherwise)"
         onDone={(text) => {
@@ -85,6 +87,7 @@ export function MediaServerSettings() {
   if (step.kind === 'user')
     return (
       <OnScreenKeyboard
+        key="user"
         title={`Sign in to ${step.server.name}`}
         prompt={`Your ${KIND_NAMES[step.server.kind]} user name`}
         onDone={(user) => (user.trim() ? setStep({ kind: 'password', server: step.server, user: user.trim() }) : cancel())}
@@ -94,6 +97,7 @@ export function MediaServerSettings() {
   if (step.kind === 'password')
     return (
       <OnScreenKeyboard
+        key="password"
         title={`Sign in to ${step.server.name}`}
         prompt={`${step.user}’s password (leave it empty if there isn’t one)`}
         secret
