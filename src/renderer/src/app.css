@@ -3534,21 +3534,20 @@ button {
   transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
 }
 
-/* A soft shade behind the bar, so its list reads over a bright backdrop (the sea at noon). */
-.side-layout::before {
+/* The bar's panel, as Settings' sidebar: it runs off the left edge, so only its right
+   corners show, from just under the top bar to near the bottom of the screen. It slides out
+   with the bar. */
+.side-bar::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 720px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.45) 55%, transparent);
+  z-index: -1;
+  left: -179px;
+  right: -43px;
+  top: -16px;
+  bottom: -26px;
+  border-radius: 18px;
+  background: var(--color-panel);
   pointer-events: none;
-  transition: opacity var(--dur-focus) var(--ease-focus);
-}
-
-.side-layout.closed::before {
-  opacity: 0;
 }
 
 /* Beside the bar, or the full width without it. */

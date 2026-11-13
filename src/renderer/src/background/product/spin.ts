@@ -16,8 +16,24 @@ const TURN_SECONDS = 24
 const ELEVATION = THREE.MathUtils.degToRad(18)
 const FOV = 26
 /** Room left round the console as it turns (1: touching the edges at its widest). */
-const MARGIN = 1.08
+const MARGIN = 1.1
 const FPS = 30
+
+/**
+ * Whether all of a console that turns within `radius` of its middle, `height` tall, shows inside
+ * the frame with MARGIN to spare: the rims of the cylinder it sweeps, top and bottom.
+ */
+function fits(camera: THREE.PerspectiveCamera, radius: number, height: number): boolean {
+  const point = new THREE.Vector3()
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2
+    for (const y of [0, height]) {
+      point.set(Math.cos(a) * radius, y, Math.sin(a) * radius).project(camera)
+      if (Math.abs(point.x) * MARGIN > 1 || Math.abs(point.y) * MARGIN > 1) return false
+    }
+  }
+  return true
+}
 
 /** Starts `product` turning on `canvas` (sized by CSS); onReady once its first frame is drawn. Returns a stop function. */
 export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: () => void, onError: (err: unknown) => void): () => void {
@@ -66,8 +82,16 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
       const halfV = THREE.MathUtils.degToRad(FOV / 2)
       const halfH = Math.atan(Math.tan(halfV) * camera.aspect)
       const distance = MARGIN * Math.max(across / Math.tan(halfH), tall / Math.tan(halfV))
-      camera.position.copy(target).add(new THREE.Vector3().setFromSphericalCoords(distance, Math.PI / 2 - ELEVATION, 0))
-      camera.lookAt(target)
+      const place = (d: number): void => {
+        camera.position.copy(target).add(new THREE.Vector3().setFromSphericalCoords(d, Math.PI / 2 - ELEVATION, 0))
+        camera.lookAt(target)
+        camera.updateMatrixWorld()
+      }
+      // That's as seen from far off. Up close, the edge nearest the camera looms larger and lower
+      // (it was cut off at the bottom), so back off until every point it can turn through fits.
+      let fit = distance
+      place(fit)
+      for (let tries = 0; tries < 40 && !fits(camera, across, size.y); tries++) place((fit *= 1.04))
       addRig(scene, Math.max(size.x, size.z) / 0.29, target, product.white ?? 1)
       return renderer.compileAsync(scene, camera).then(() => {
         if (!stopped) ready = true
