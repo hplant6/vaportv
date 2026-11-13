@@ -59,7 +59,7 @@ export function NewPlaylistKeyboard({ gameId, gameTitle, onDone }: { gameId?: st
   )
 }
 
-/** The game menu's Playlists step: a switch per playlist, then New playlist. */
+/** The game menu's Playlists step: a row per playlist with Add (Added once the game's in it; pressed again, it comes out), then New playlist. */
 export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; gameTitle: string; onNew: () => void }) {
   const [choices, setChoices] = useState<PlaylistChoice[] | null>(null)
 
@@ -86,13 +86,21 @@ export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; 
   return (
     <>
       {choices.map((choice) => (
-        <ToggleRow
+        <button
           key={choice.id}
-          label={choice.name}
-          detail={`${games(choice.count)} · ${playlistPlacesLabel(choice.showOn)}`}
-          on={choice.has}
-          onToggle={() => toggle(choice)}
-        />
+          className="setting-row playlist-choice"
+          tabIndex={-1}
+          aria-label={`${choice.has ? 'Remove from' : 'Add to'} ${choice.name}`}
+          data-focusable=""
+          data-select-sound="move"
+          onClick={() => toggle(choice)}
+        >
+          <span className="setting-name display">{choice.name}</span>
+          <span className="setting-detail">{`${games(choice.count)} · ${playlistPlacesLabel(choice.showOn)}`}</span>
+          <span className={`playlist-action display${choice.has ? ' added' : ''}`} aria-hidden="true">
+            {choice.has ? 'Added ✓' : 'Add'}
+          </span>
+        </button>
       ))}
       <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onNew}>
         <span className="setting-name display">New playlist</span>

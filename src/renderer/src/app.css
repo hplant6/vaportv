@@ -132,6 +132,7 @@ button {
 .setting-name.display,
 .settings-category.display,
 .dialog-button.display,
+.playlist-action.display,
 .search-type.display,
 .files-action.display,
 .files-paste-label.display,
@@ -3727,4 +3728,39 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* A game's Playlists (Start → Playlists): each playlist's Add as a button at the row's end,
+   Added once the game's in it (gold). A on the row presses it; on Added, it takes it out. */
+.playlist-choice .setting-detail {
+  margin-left: auto;
+}
+
+.playlist-action {
+  flex: none;
+  min-width: 132px;
+  margin-left: 24px;
+  padding: 10px 28px;
+  border-radius: 19px;
+  font-size: var(--text-label);
+  text-align: center;
+  color: #fff;
+  background: rgba(190, 147, 111, 0.16);
+  transition: background-color var(--dur-focus) var(--ease-focus), color var(--dur-focus) var(--ease-focus);
+}
+
+.playlist-action.added {
+  color: var(--color-accent);
+  background: rgba(238, 150, 13, 0.15);
+}
+
+/* On the selected row, Add stands out: white on the amber. Added stays gold. */
+.playlist-choice:focus .playlist-action {
+  color: #1a120c;
+  background: #fff;
+}
+
+.playlist-choice:focus .playlist-action.added {
+  color: var(--color-accent);
+  background: rgba(0, 0, 0, 0.35);
 }
