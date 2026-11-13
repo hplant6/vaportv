@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatTotalPlaytime, libraryStats } from '../../../shared/libraryStats'
+import { libraryStats } from '../../../shared/libraryStats'
 import { LIBRARY_SORTS, type LibrarySort } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
@@ -87,10 +87,6 @@ export function SideBar({
       <dl className="side-bar-stats">
         <dt>Total games:</dt>
         <dd>{stats.games.toLocaleString()}</dd>
-        <dt>Total unplayed:</dt>
-        <dd>{stats.unplayed.toLocaleString()}</dd>
-        <dt>Total playtime:</dt>
-        <dd>{formatTotalPlaytime(stats.playtime)}</dd>
       </dl>
       <div className="side-bar-sort">
         <button

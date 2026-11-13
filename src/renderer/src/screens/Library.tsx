@@ -153,7 +153,8 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
         empty: 'Press X on a game to put it in this playlist.',
         ...(i === 0 ? { section: 'Playlists' } : {})
       })),
-      // Any other rows the tab has: Steam's collections chosen in Settings and its non-Steam games; Arcade's systems.
+      // Any other rows the tab has: Steam's collections chosen in Settings and its non-Steam games (under
+      // Playlists, after the ones made here); Arcade's systems.
       ...rows
         .filter((row) => !['all', 'recent', 'favorites'].includes(row.id))
         .map((row, i) => ({
@@ -161,7 +162,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           name: row.name,
           items: sorted(row.items),
           empty: 'No games here.',
-          ...(i === 0 ? { section: screen === 'arcade' ? 'Systems' : 'Collections' } : {})
+          ...(i === 0 && (screen === 'arcade' || !playlists.length) ? { section: screen === 'arcade' ? 'Systems' : 'Playlists' } : {})
         }))
     ]
     const current = lists.find((list) => list.id === selected) ?? lists[0]
