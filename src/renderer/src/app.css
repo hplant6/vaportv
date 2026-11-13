@@ -3471,6 +3471,13 @@ button {
   transition: opacity 900ms ease-in-out;
 }
 
+/* A tall, thin console (the arcade cabinet): drawn taller, over the empty space above and
+   below its slot (the logo's spare room, the gap to Sort), so nothing under it moves. */
+.side-bar-model.tall {
+  height: 248px;
+  margin: -32px 0;
+}
+
 .side-bar-model.ready {
   opacity: 1;
 }

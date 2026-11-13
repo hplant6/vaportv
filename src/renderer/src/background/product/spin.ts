@@ -12,24 +12,24 @@ import { addRig, buildConsole, environment } from './scene'
 
 /** One turn every this many seconds. */
 const TURN_SECONDS = 24
-/** How far above the console the camera looks down. */
-const ELEVATION = THREE.MathUtils.degToRad(18)
+/** How far above the console the camera looks down (a product's spin.elevation instead, if it has one). */
+const ELEVATION = 18
 const FOV = 26
-/** Room left round the console as it turns (1: touching the edges at its widest). */
+/** Room left round the console as it turns (1: touching the edges at its widest); a product's spin.margin instead. */
 const MARGIN = 1.1
 const FPS = 30
 
 /**
  * Whether all of a console that turns within `radius` of its middle, `height` tall, shows inside
- * the frame with MARGIN to spare: the rims of the cylinder it sweeps, top and bottom.
+ * the frame with `margin` to spare: the rims of the cylinder it sweeps, top and bottom.
  */
-function fits(camera: THREE.PerspectiveCamera, radius: number, height: number): boolean {
+function fits(camera: THREE.PerspectiveCamera, radius: number, height: number, margin: number): boolean {
   const point = new THREE.Vector3()
   for (let i = 0; i < 24; i++) {
     const a = (i / 24) * Math.PI * 2
     for (const y of [0, height]) {
       point.set(Math.cos(a) * radius, y, Math.sin(a) * radius).project(camera)
-      if (Math.abs(point.x) * MARGIN > 1 || Math.abs(point.y) * MARGIN > 1) return false
+      if (Math.abs(point.x) * margin > 1 || Math.abs(point.y) * margin > 1) return false
     }
   }
   return true
@@ -37,6 +37,8 @@ function fits(camera: THREE.PerspectiveCamera, radius: number, height: number): 
 
 /** Starts `product` turning on `canvas` (sized by CSS); onReady once its first frame is drawn. Returns a stop function. */
 export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: () => void, onError: (err: unknown) => void): () => void {
+  const elevation = THREE.MathUtils.degToRad(product.spin?.elevation ?? ELEVATION)
+  const margin = product.spin?.margin ?? MARGIN
   const width = canvas.clientWidth
   const height = canvas.clientHeight
   // The stage is scaled to the screen: draw at the screen's pixels, but never more than one per stage pixel.
@@ -78,12 +80,12 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
       // Far enough off that it fits however it's turned. Across, the widest it gets is its footprint's diagonal;
       // up and down, its height (seen a little from above) plus that diagonal foreshortened by looking down at it.
       const across = Math.hypot(size.x, size.z) / 2
-      const tall = (size.y / 2) * Math.cos(ELEVATION) + across * Math.sin(ELEVATION)
+      const tall = (size.y / 2) * Math.cos(elevation) + across * Math.sin(elevation)
       const halfV = THREE.MathUtils.degToRad(FOV / 2)
       const halfH = Math.atan(Math.tan(halfV) * camera.aspect)
-      const distance = MARGIN * Math.max(across / Math.tan(halfH), tall / Math.tan(halfV))
+      const distance = margin * Math.max(across / Math.tan(halfH), tall / Math.tan(halfV))
       const place = (d: number): void => {
-        camera.position.copy(target).add(new THREE.Vector3().setFromSphericalCoords(d, Math.PI / 2 - ELEVATION, 0))
+        camera.position.copy(target).add(new THREE.Vector3().setFromSphericalCoords(d, Math.PI / 2 - elevation, 0))
         camera.lookAt(target)
         camera.updateMatrixWorld()
       }
@@ -91,7 +93,7 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
       // (it was cut off at the bottom), so back off until every point it can turn through fits.
       let fit = distance
       place(fit)
-      for (let tries = 0; tries < 40 && !fits(camera, across, size.y); tries++) place((fit *= 1.04))
+      for (let tries = 0; tries < 40 && !fits(camera, across, size.y, margin); tries++) place((fit *= 1.04))
       addRig(scene, Math.max(size.x, size.z) / 0.29, target, product.white ?? 1)
       return renderer.compileAsync(scene, camera).then(() => {
         if (!stopped) ready = true

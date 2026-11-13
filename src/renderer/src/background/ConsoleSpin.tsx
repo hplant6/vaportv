@@ -50,5 +50,5 @@ export function ConsoleSpin({ tab }: { tab: string }) {
 
   // Still reading the setting: its space is kept, so the lists under it don't jump down when it's read.
   if (!product || on === false || failed) return null
-  return <canvas className={`side-bar-model${ready ? ' ready' : ''}`} ref={canvas} aria-hidden="true" />
+  return <canvas className={`side-bar-model${product.spin?.tall ? ' tall' : ''}${ready ? ' ready' : ''}`} ref={canvas} aria-hidden="true" />
 }

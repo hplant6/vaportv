@@ -24,6 +24,12 @@ export interface Product {
   bloom?: boolean
   /** A handheld's screen showing its home screen (an image laid flat across the model's screen, lit). */
   screen?: Screen
+  /**
+   * The left bar's turning view (spin.ts), for a console that comes out small in it (a tall,
+   * thin arcade cabinet): the camera this many degrees above it (default 18), the room left
+   * round it (default 1.1), and `tall` to draw it over the empty space above and below its slot.
+   */
+  spin?: { elevation?: number; margin?: number; tall?: boolean }
   /** A handheld: in the left bar's turning view (spin.ts), stood up this many degrees so its screen faces the camera, not the ceiling. */
   spinTilt?: number
   /** Fixes for what glTF couldn't carry over from Blender, by material. */
@@ -132,7 +138,9 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   arcade: {
     // A Taito Egret 29 cabinet (the stool left out), the Taito logo on its CRT (1.12:1).
     model: 'private/arcade.vtm',
-    screen: { image: 'private/screen-arcade.jpg', material: 'Egret29_Screen.001', modelUv: true }
+    screen: { image: 'private/screen-arcade.jpg', material: 'Egret29_Screen.001', modelUv: true },
+    // Tall and thin, so its height sets its size: seen more face-on, closer, in a taller view.
+    spin: { elevation: 6, margin: 1.03, tall: true }
   },
   neogeo: {
     // The Neo Geo AES: black, with its gold logo.
