@@ -1104,7 +1104,8 @@ button {
 }
 
 /* The selected card's footer bar: below the card's bottom edge (clipped) until then, it
-   slides up over the bottom of the art, just after the card starts to grow, and eases a
+   slides up over the bottom of the art a second after the card's selected (passing over it,
+   it stays out of the way), and eases a
    long way into place (an expo-style ease-out) so it glides rather than snaps. The art
    shows faintly through it. */
 .wide-card-bar {
@@ -1123,7 +1124,7 @@ button {
 
 .wide-card:focus .wide-card-bar {
   transform: none;
-  transition: transform 650ms 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 650ms 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Outer columns grow inward, as on Favorite Apps. */
@@ -3557,8 +3558,20 @@ button {
   background: rgba(16, 12, 9, 0.72);
 }
 
+/* The games over the bar, so a selected card in the first column grows over it rather than
+   under. The screen-wide layers they're in let the cursor and taps through to the bar. */
+.side-layout .page-viewport {
+  z-index: 2;
+}
+
+.side-layout .page-viewport,
+.side-layout .page-scroll {
+  pointer-events: none;
+}
+
 /* Beside the bar, or the full width without it. */
 .side-grid {
+  pointer-events: auto;
   position: absolute;
   left: 548px;
   right: 36px;
