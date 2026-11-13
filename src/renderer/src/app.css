@@ -3554,7 +3554,7 @@ button {
 }
 
 .side-bar:focus-within::before {
-  background: rgba(16, 12, 9, 0.88);
+  background: rgba(16, 12, 9, 0.72);
 }
 
 /* Beside the bar, or the full width without it. */

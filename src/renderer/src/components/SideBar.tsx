@@ -13,7 +13,7 @@ const LOGOS = Object.fromEntries(
   ])
 )
 
-// A console tab's left bar: the console's logo (or name), how many games it has, the console turning slowly, Sort (a drop-down), and its
+// A console tab's left bar: the console's logo (or name), the console turning slowly, how many games it has, Sort (a drop-down), and its
 // lists (All games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, Arcade's systems). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
@@ -82,12 +82,12 @@ export function SideBar({
     // One column for up and down: Sort and the lists (the grid beside it is another).
     <aside className="side-bar" aria-hidden={!open} data-nav-scope="">
       <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
+      {/* Hidden, the bar doesn't draw it. */}
+      {open && <ConsoleSpin tab={tab} />}
       <dl className="side-bar-stats">
         <dt>Total games:</dt>
         <dd>{stats.games.toLocaleString()}</dd>
       </dl>
-      {/* Hidden, the bar doesn't draw it. */}
-      {open && <ConsoleSpin tab={tab} />}
       <div className="side-bar-sort">
         <button
           id="side-bar-sort"
