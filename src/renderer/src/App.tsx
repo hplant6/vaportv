@@ -10,7 +10,6 @@ import { ProductBackground } from './background/ProductBackground'
 import { PRODUCTS } from './background/products'
 import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
-import { RainBackground } from './background/RainBackground'
 import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackground'
 import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, keepCursorInBar, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
 import { play } from './input/sounds'
@@ -227,7 +226,7 @@ export function App() {
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }
 
   return (
-    <div className={`stage${shownBackdrop === 'rain' && webgl ? ' backdrop-rain' : ''}`} style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
+    <div className="stage" style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
       {product && webgl ? (
         <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />
       ) : shownBackdrop === 'custom' && custom ? (
@@ -235,8 +234,6 @@ export function App() {
         <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
       ) : !webgl ? (
         <div className="stage-bg" style={fallback} />
-      ) : shownBackdrop === 'rain' ? (
-        <RainBackground onUnavailable={backdropUnavailable} />
       ) : shownBackdrop === 'cityrain' ? (
         <CityRainBackground onUnavailable={backdropUnavailable} />
       ) : shownBackdrop === 'forest' ? (

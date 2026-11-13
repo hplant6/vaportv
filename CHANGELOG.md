@@ -18,6 +18,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Playlists can show on Home, on a console's tab, or both: pick where in Settings → Home → the playlist → Show on. One made from a console's tab (X → New playlist) shows on that tab; one made anywhere else shows on Home, and the ones you already have stay on Home.
 
 ### Changed
+- The Rain backdrop is gone: City Rain replaced it, and is lighter on the GPU. If you had Rain chosen, you get City Rain.
 - Consoles' tabs (and Steam's and Arcade's) no longer fill the screen with their console: it's in the list on the left now, and the tab shows Home's backdrop behind it. Apps keeps its VHS tapes, and the Consoles screensaver still shows every console full screen.
 - **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - **Select** now shows or hides a tab's list of games (the left bar) when tapped. **Hold** Select for the button guide. In Settings → Controller, an action can be a hold on a button that also has a tap, and Left bar and Show the buttons can each be moved to another button.

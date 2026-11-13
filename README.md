@@ -15,7 +15,7 @@
   <a href="#controller">Controller</a>
 </p>
 
-![vaporTV's Home screen: Recents and Favorite Apps over the Rain backdrop](docs/screenshots/home.jpg)
+![vaporTV's Home screen: Recents and Favorite Apps over a backdrop](docs/screenshots/home.jpg)
 
 > **Status: early.** vaporTV runs daily on its author's living-room box. Expect rough edges, and please [report them](https://github.com/hplant6/vaportv/issues): **Settings → Help → Report a problem** fills in the details for you.
 
@@ -75,9 +75,9 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 
 ### Backdrops
 
-| ![Sea](docs/screenshots/backdrop-sea.jpg) | ![Rain](docs/screenshots/backdrop-rain.jpg) | ![Gradient Drift](docs/screenshots/backdrop-drift.jpg) | ![Chromatic Waves](docs/screenshots/backdrop-waves.jpg) | ![Star Tunnel](docs/screenshots/backdrop-tunnel.jpg) |
+| ![Sea](docs/screenshots/backdrop-sea.jpg) | ![City Rain](docs/screenshots/backdrop-cityrain.jpg) | ![Gradient Drift](docs/screenshots/backdrop-drift.jpg) | ![Chromatic Waves](docs/screenshots/backdrop-waves.jpg) | ![Star Tunnel](docs/screenshots/backdrop-tunnel.jpg) |
 |:--:|:--:|:--:|:--:|:--:|
-| **Sea**, following the time of day | **Rain** on a puddle | **Gradient Drift**, seven palettes | **Chromatic Waves** | **Star Tunnel**, four colourings |
+| **Sea**, following the time of day | **City Rain**, a wet street at night | **Gradient Drift**, seven palettes | **Chromatic Waves** | **Star Tunnel**, four colourings |
 
 ## Features
 
@@ -101,7 +101,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 
 **Backdrops**
 - **Consoles in 3D:** each console's tab (Steam's a Steam Deck, Arcade's an arcade stick) shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). Apps shows a pile of VHS tapes full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
-- **Eight live backdrops**: Sea and Forest (both following the time of day), Rain, City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
+- **Seven live backdrops**: Sea and Forest (both following the time of day), City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
 - **Home backdrop and Tabs backdrop**, chosen apart: the tabs show their consoles, or any backdrop instead, on every tab
 
 **Sound and screensaver**

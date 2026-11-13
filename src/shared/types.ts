@@ -337,7 +337,7 @@ export type BackdropTime = 'auto' | 'dawn' | 'day' | 'sunset' | 'night'
 export type ConsoleBackdropQuality = 'high' | 'medium' | 'low'
 
 /** Which animated backdrop is drawn behind every screen. */
-export type BackdropStyle = 'sea' | 'rain' | 'cityrain' | 'forest' | 'aurora' | 'drift' | 'waves' | 'tunnel' | 'custom'
+export type BackdropStyle = 'sea' | 'cityrain' | 'forest' | 'aurora' | 'drift' | 'waves' | 'tunnel' | 'custom'
 
 /** One of your own backdrops: a picture or video in ~/Pictures/vaporTV Backdrops. */
 export interface CustomBackdrop {

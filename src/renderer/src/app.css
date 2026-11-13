@@ -84,11 +84,6 @@ button {
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.25) 30%, rgba(0, 0, 0, 0.2) 100%);
 }
 
-/* The rain scene is dark already: just enough at the top for the clock and nav. */
-.stage.backdrop-rain .stage-scrim {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%);
-}
-
 .page {
   position: absolute;
   inset: 0;

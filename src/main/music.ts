@@ -29,7 +29,7 @@ const KIND_FOLDER: Record<MusicKind, string> = { music: 'Music', ambience: 'Ambi
  * saved in config; `url` is relative to the page.
  */
 const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
-  // From the rain backdrop's demo (github.com/Faraz-Portfolio/demo-2023-rain-puddle), light-rain-109591.
+  // From Faraz Shaikh's rain demo (github.com/Faraz-Portfolio/demo-2023-rain-puddle), light-rain-109591.
   { file: 'builtin:rain', name: 'Rain (built in)', url: 'music/rain.mp3', kind: 'ambience' },
   // CC0, from freesound.org (credited in NOTICE.md): kkenny101 #852484, SamsterBirdies #578524, maarten91 #468449.
   { file: 'builtin:crickets', name: 'Crickets (built in)', url: 'music/crickets.ogg', kind: 'ambience' },

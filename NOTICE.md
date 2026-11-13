@@ -12,16 +12,13 @@ either version 3 of the License, or (at your option) any later version. See
 | What | Where | Author | Licence |
 |---|---|---|---|
 | Console logos (each console tab's left bar) | `src/renderer/src/assets/logos/` | From the media of the Alpha theme for ES-DE | Trademarks of their owners, used only to name each console |
-| "Puddle in rain" (Rain backdrop) | `src/renderer/src/background/rain/` | Faraz Shaikh | GPL-3.0 |
 | EZ-Tree (Forest backdrop: tree generation, bark and leaf textures; via npm `@dgreenheck/ez-tree`) and its demo's grass, flowers, ground textures and wind/ground shaders, reworked for instancing | `src/renderer/src/background/forest/`, `src/renderer/public/backdrops/forest/` | Daniel Greenheck | MIT (`forest/LICENSE`) |
 | "Gradient Drift" (Gradient Drift backdrop: shaders, presets, circle motion) | `src/renderer/src/background/drift/`, `DriftBackground.tsx` | Liam Egan (codepen.io/shubniggurath), ported from WebGL via wtc-gl to plain WebGL2 | MIT (CodePen public pen) |
 | "GLSL Sample027" (Chromatic Waves backdrop), with itshenry.me's tuning | `src/renderer/src/background/WavesBackground.tsx` | Web_yuki1027 (CodePen) | MIT (CodePen public pen) |
 | Glitch (the glitch on the Settings logo), redone with SVG mask layers and clip-path bands instead of text and clip | `src/renderer/src/components/GlitchLogo.tsx`, `app.css` (`.glitch-*`) | leon9208 (CodePen, pen dWOvxw) | MIT (CodePen public pen) |
 | "Star Tunnel" (Star Tunnel backdrop), with itshenry.me's tuning | `src/renderer/src/background/StarTunnelBackground.tsx` | alphardex (CodePen, pen XWZKzjE) | MIT (CodePen public pen) |
-| Asphalt textures (`road/`) and HDR sky (`shanghai_bund_2k.hdr`), also used by City Rain | `src/renderer/public/backdrops/rain/` | Poly Haven, via the rain demo | CC0 |
-| Litter decal (`debris/`) | `src/renderer/public/backdrops/rain/debris/` | vaporTV, drawn by `scripts/make-debris-decal.mjs` (replaced the demo's Megascans decal) | GPL-3.0, as vaporTV |
-| Rain splash flipbook (`Splash.png`) | `src/renderer/public/backdrops/rain/` | Faraz Shaikh (rain demo) | GPL-3.0 |
-| Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via the rain demo | Pixabay Content License (use within an app) |
+| Asphalt textures (`road/`) and HDR sky (`shanghai_bund_2k.hdr`) (City Rain backdrop) | `src/renderer/public/backdrops/rain/` | Poly Haven, via Faraz Shaikh's "Puddle in rain" demo | CC0 |
+| Rain sound (`rain.mp3`, light-rain-109591) | `src/renderer/public/music/` | Pixabay, via Faraz Shaikh's "Puddle in rain" demo | Pixabay Content License (use within an app) |
 | Crickets (`crickets.ogg`): "Layered Cricket Ambience (Seamless Loop)", freesound.org/s/852484 | `src/renderer/public/music/` | kkenny101 (re-encoded to Opus) | CC0 |
 | Ocean waves (`ocean-waves.ogg`): "Calm ocean waves", freesound.org/s/578524 | `src/renderer/public/music/` | SamsterBirdies (re-encoded to Opus) | CC0 |
 | Birdsong (`birdsong.ogg`): "Binaural Birds LOOP 1", freesound.org/s/468449 | `src/renderer/public/music/` | maarten91 (re-encoded to Opus) | CC0 |

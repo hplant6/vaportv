@@ -202,9 +202,13 @@ function customBackdropFile(config: Config, items: CustomBackdrop[]): string | n
   return (items.find((b) => b.file === config.backdropFile) ?? items[0]).file
 }
 
-/** The chosen backdrop, or the sea if it's one that's since been removed (Particles, Desert Dunes, or all of your own). */
-async function backdropChoice(config: Config, wanted = config.backdrop): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
-  const offered: BackdropStyle[] = ['sea', 'rain', 'cityrain', 'forest', 'aurora', 'drift', 'waves', 'tunnel']
+/**
+ * The chosen backdrop, or the sea if it's one that's since been removed (Particles, Desert
+ * Dunes, or all of your own). Rain, also removed, became City Rain, which replaced it.
+ */
+async function backdropChoice(config: Config, chosen = config.backdrop): Promise<{ style: BackdropStyle; custom: Awaited<ReturnType<typeof customChoice>> }> {
+  const wanted = (chosen as string) === 'rain' ? 'cityrain' : chosen
+  const offered: BackdropStyle[] = ['sea', 'cityrain', 'forest', 'aurora', 'drift', 'waves', 'tunnel']
   if (wanted === 'custom') {
     const custom = await customChoice(config)
     return custom ? { style: 'custom', custom } : { style: 'sea', custom: null }
