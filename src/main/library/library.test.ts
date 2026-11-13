@@ -9,7 +9,7 @@ import { collectionGames, isSupported, readCollections } from './collections'
 import { loadRecents, pickRecent, toRecentItem } from './recents'
 import { loadSteamTab } from './steamTab'
 import { placesOf, withMoved, withNew, withShowOn, withToggled } from '../playlists'
-import { newPlaylistPlace, playlistPlacesLabel } from '../../shared/tabs'
+import { gameTab, newPlaylistPlace, playlistPlacesLabel, playlistTakes } from '../../shared/tabs'
 import { scanDreamcast } from './dreamcast'
 import { dreamcastContent } from './dreamcastTab'
 import { parseEmuDeckSettings, shortcutAppId } from './emudeck'
@@ -383,6 +383,19 @@ describe('game playlists', () => {
     expect(newPlaylistPlace('switch')).toBe('switch')
     expect(newPlaylistPlace('arcade')).toBe('arcade')
     expect(newPlaylistPlace('steam')).toBe('steam')
+  })
+
+  it('knows the tab a game is on, for its playlists', () => {
+    expect(gameTab('snes:Chrono Trigger.sfc')).toBe('snes')
+    expect(gameTab('steam:422510')).toBe('steam')
+    expect(gameTab('shortcut:2829431797')).toBe('steam')
+    expect(gameTab('arcade:neogeo/mslug')).toBe('neogeo')
+    expect(gameTab('arcade:cps2/sfa3')).toBe('arcade')
+    expect(gameTab('service:netflix')).toBeNull()
+    expect(playlistTakes(['home'], 'snes')).toBe(true)
+    expect(playlistTakes(['snes'], 'snes')).toBe(true)
+    expect(playlistTakes(['switch'], 'snes')).toBe(false)
+    expect(playlistTakes(['switch'], null)).toBe(false)
     expect(newPlaylistPlace('home')).toBe('home')
     expect(newPlaylistPlace('apps')).toBe('home')
     expect(newPlaylistPlace('settings')).toBe('home')

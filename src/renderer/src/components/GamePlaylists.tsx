@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { newPlaylistPlace, PLAYLIST_TABS, playlistPlacesLabel, TAB_LIST } from '../../../shared/tabs'
+import { gameTab, newPlaylistPlace, PLAYLIST_TABS, playlistPlacesLabel, playlistTakes, TAB_LIST } from '../../../shared/tabs'
 import type { PlaylistChoice, PlaylistPlace, PlaylistRow } from '../../../shared/types'
 import { useTabArrangement } from '../availableTabs'
 import { currentScreen } from '../currentScreen'
@@ -29,11 +29,21 @@ function onPlace(place: PlaylistPlace): string {
 
 /**
  * A new playlist's name, on vaporTV's keyboard; with `gameId`, that game goes in it. It shows
- * on the console tab it's made from (that tab's left bar), or Home from anywhere else.
- * `made`: whether one was made.
+ * on `place` (a game's menu asks: Home, or the game's own tab), or else on the tab it's made
+ * from (that tab's left bar), or Home from anywhere else. `made`: whether one was made.
  */
-export function NewPlaylistKeyboard({ gameId, gameTitle, onDone }: { gameId?: string; gameTitle?: string; onDone: (made: boolean) => void }) {
-  const [place] = useState(() => newPlaylistPlace(currentScreen()))
+export function NewPlaylistKeyboard({
+  gameId,
+  gameTitle,
+  place: chosen,
+  onDone
+}: {
+  gameId?: string
+  gameTitle?: string
+  place?: PlaylistPlace
+  onDone: (made: boolean) => void
+}) {
+  const [place] = useState(() => chosen ?? newPlaylistPlace(currentScreen()))
   return (
     <OnScreenKeyboard
       title="New playlist"
@@ -59,8 +69,14 @@ export function NewPlaylistKeyboard({ gameId, gameTitle, onDone }: { gameId?: st
   )
 }
 
-/** The game menu's Playlists step: a row per playlist with Add (Added once the game's in it; pressed again, it comes out), then New playlist. */
-export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; gameTitle: string; onNew: () => void }) {
+/**
+ * The game menu's Playlists step: a row per playlist that can take the game (Home's, and its
+ * own tab's) with Add (Added once the game's in it; pressed again, it comes out), then a new
+ * Home playlist, which mixes games from any system, or a new one for the game's own tab.
+ */
+export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; gameTitle: string; onNew: (place: PlaylistPlace) => void }) {
+  const tab = gameTab(gameId)
+  const tabName = tab && playlistPlacesLabel([tab])
   const [choices, setChoices] = useState<PlaylistChoice[] | null>(null)
 
   useEffect(() => {
@@ -83,9 +99,11 @@ export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; 
   }
 
   if (!choices) return null
+  // One on another console's tab is for that console's games, so it isn't offered.
+  const open = choices.filter((choice) => choice.has || playlistTakes(choice.showOn, tab))
   return (
     <>
-      {choices.map((choice) => (
+      {open.map((choice) => (
         <button
           key={choice.id}
           className="setting-row playlist-choice"
@@ -102,11 +120,27 @@ export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; 
           </span>
         </button>
       ))}
-      <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onNew}>
-        <span className="setting-name display">New playlist</span>
-        <span className="setting-detail">With this game in it</span>
-      </button>
+      <NewRow name="New Home playlist" detail="Shows on Home. Can mix games from any system" onClick={() => onNew('home')} />
+      {tab && tabName && (
+        <NewRow
+          name={`New ${tabName} playlist`}
+          detail={`Shows in the ${tabName} tab’s list. For ${tabName} games only`}
+          onClick={() => onNew(tab)}
+        />
+      )}
     </>
+  )
+}
+
+/** A New … playlist row: what it makes, and where it shows and what it takes. */
+function NewRow({ name, detail, onClick }: { name: string; detail: string; onClick: () => void }) {
+  return (
+    <button className="setting-row playlist-new" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
+      <span className="playlist-new-text">
+        <span className="setting-name display">{name}</span>
+        <span className="playlist-new-detail">{detail}</span>
+      </span>
+    </button>
   )
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
-import type { AppDetails, GameOptions, SteamGameDetails } from '../../../shared/types'
+import type { AppDetails, GameOptions, PlaylistPlace, SteamGameDetails } from '../../../shared/types'
 import calendar from '../assets/calendar.svg'
 import clock from '../assets/clock.svg'
 import drive from '../assets/drive.svg'
@@ -271,6 +271,7 @@ function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: 
   const [details, setDetails] = useState<SteamGameDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<'menu' | 'playlists' | 'newPlaylist'>(start)
+  const [newPlace, setNewPlace] = useState<PlaylistPlace>('home')
   const playlists = usePlaylistCount(id, step)
 
   useEffect(() => {
@@ -305,7 +306,7 @@ function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: 
     : undefined
 
   if (step === 'newPlaylist' && details)
-    return <NewPlaylistKeyboard gameId={id} gameTitle={details.title} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
+    return <NewPlaylistKeyboard gameId={id} gameTitle={details.title} place={newPlace} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
 
   return (
     <GamePanel
@@ -318,7 +319,14 @@ function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: 
     >
       {details &&
         (step === 'playlists' ? (
-          <PlaylistChoices gameId={id} gameTitle={details.title} onNew={() => setStep('newPlaylist')} />
+          <PlaylistChoices
+            gameId={id}
+            gameTitle={details.title}
+            onNew={(place) => {
+              setNewPlace(place)
+              setStep('newPlaylist')
+            }}
+          />
         ) : (
           <>
             {playlistsRow(playlists, () => setStep('playlists'))}
@@ -335,6 +343,7 @@ function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; sta
   const [options, setOptions] = useState<GameOptions | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>(start)
+  const [newPlace, setNewPlace] = useState<PlaylistPlace>('home')
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const playlists = usePlaylistCount(id, step)
@@ -428,7 +437,7 @@ function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; sta
     )
 
   if (step === 'newPlaylist' && options)
-    return <NewPlaylistKeyboard gameId={id} gameTitle={options.title} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
+    return <NewPlaylistKeyboard gameId={id} gameTitle={options.title} place={newPlace} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
 
   const current = options?.emulators.find((e) => e.id === options.emulator)?.name ?? options?.emulators[0]?.name
 
@@ -443,7 +452,14 @@ function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; sta
     >
       {options && (
         <>
-        {step === 'playlists' && <PlaylistChoices gameId={id} gameTitle={options.title} onNew={() => setStep('newPlaylist')} />}
+        {step === 'playlists' && <PlaylistChoices
+            gameId={id}
+            gameTitle={options.title}
+            onNew={(place) => {
+              setNewPlace(place)
+              setStep('newPlaylist')
+            }}
+          />}
         {step === 'menu' && (
           <>
             {playlistsRow(playlists, () => setStep('playlists'))}

@@ -3764,3 +3764,26 @@ button {
   color: var(--color-accent);
   background: rgba(0, 0, 0, 0.35);
 }
+
+/* A game's Playlists: New Home playlist / New <tab> playlist, each with a line under its name
+   saying where it shows and which games it takes. */
+.playlist-new {
+  height: auto;
+  min-height: 88px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.playlist-new-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.playlist-new-detail {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 400;
+  opacity: 0.8;
+}

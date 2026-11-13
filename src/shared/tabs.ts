@@ -70,6 +70,22 @@ export function newPlaylistPlace(screen: string): PlaylistPlace {
   return (PLAYLIST_TABS as string[]).includes(screen) ? (screen as LayoutTab) : 'home'
 }
 
+/**
+ * The tab a game is listed on, for its own tab's playlists: by its id's prefix (snes:…,
+ * steam:…). Non-Steam games are on Steam's; Neo Geo sets, kept as arcade:neogeo/…, on Neo
+ * Geo's. Null for anything that isn't a game on a tab (an app, a streaming service).
+ */
+export function gameTab(id: string): LayoutTab | null {
+  const prefix = id.slice(0, id.indexOf(':'))
+  const tab = prefix === 'shortcut' ? 'steam' : prefix === 'arcade' && id.startsWith('arcade:neogeo/') ? 'neogeo' : prefix
+  return (PLAYLIST_TABS as string[]).includes(tab) ? (tab as LayoutTab) : null
+}
+
+/** Whether a playlist showing on `places` can take a game on `tab`: one on Home takes any game, one on a tab only its own. */
+export function playlistTakes(places: PlaylistPlace[], tab: LayoutTab | null): boolean {
+  return places.includes('home') || (tab !== null && places.includes(tab))
+}
+
 /** e.g. "Home, Switch", in the bar's order. */
 export function playlistPlacesLabel(places: PlaylistPlace[]): string {
   return TAB_LIST.filter(({ id }) => (places as string[]).includes(id))
