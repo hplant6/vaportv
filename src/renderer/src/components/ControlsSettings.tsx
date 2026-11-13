@@ -5,9 +5,8 @@ import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { toast } from './Toast'
 
 /**
- * Settings → Controller → Controls: a row per action showing its button ("Hold" before it
- * for a hold action). Choosing a row waits for the next button pressed; a button another
- * action of the same kind (press or hold) had is swapped.
+ * Settings → Controller → Controls: a row per action showing its button. Choosing a row
+ * waits for the next button pressed; a button another action had is swapped.
  */
 export function ControlsSettings({ controls, onChange }: { controls: Controls; onChange: (controls: Controls) => void }) {
   const [waiting, setWaiting] = useState<ControlAction | null>(null)
@@ -25,7 +24,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
       if (button === null || button === controls[action]) return
       const holder = CONTROL_ACTIONS.find((a) => a.id === holderOf(controls, action, button))
       save(assignButton(controls, action, button))
-      if (holder) toast(`${holder.name} moved to ${holder.hold ? 'holding ' : ''}${buttonName(controls[action], family)}`)
+      if (holder) toast(`${holder.name} moved to ${buttonName(controls[action], family)}`)
     })
   }
 
@@ -56,7 +55,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             key={a.id}
             className={`setting-row${waiting === a.id ? ' waiting' : ''}`}
             tabIndex={-1}
-            aria-label={`${a.name}: ${a.hold ? 'hold ' : ''}${buttonName(controls[a.id], family)}`}
+            aria-label={`${a.name}: ${buttonName(controls[a.id], family)}`}
             data-focusable=""
             data-select-sound="move"
             onClick={() => listen(a.id)}
@@ -67,7 +66,6 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             ) : (
               <>
                 {a.detail && <span className="setting-detail">{a.detail}</span>}
-                {a.hold && <span className="setting-detail control-hold">Hold</span>}
                 <ButtonIcon button={controls[a.id]} family={family} />
               </>
             )}

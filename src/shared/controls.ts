@@ -1,7 +1,7 @@
 // What each controller button does in vaporTV. The D-pad and sticks always move;
-// everything else can be moved to another button in Settings → Controller. Most actions
-// are a press; a few are a hold, and share a button with a press action (tap Select for
-// the left bar, hold it for the button guide). No two presses share a button, nor two holds.
+// everything else can be moved to another button in Settings → Controller, one action to a
+// button. (Volume was on the triggers until they became the left bar and the button guide;
+// a remote's or keyboard's volume keys still work.)
 
 import type { ControllerFamily } from './controllers'
 
@@ -12,21 +12,17 @@ export type ControlAction =
   | 'favorite'
   | 'sideBar'
   | 'controlsGuide'
+  | 'settings'
   | 'gameMenu'
   | 'previousTab'
   | 'nextTab'
-  | 'volumeDown'
-  | 'volumeUp'
   | 'voiceSearch'
   | 'nextSong'
 
 /** Action → standard-mapping button index. */
 export type Controls = Record<ControlAction, number>
 
-/** How long a button is held before its hold action happens (and its press action no longer will). */
-export const HOLD_MS = 500
-
-export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string; hold?: true }[] = [
+export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string }[] = [
   { id: 'select', name: 'Select', detail: 'Open what’s highlighted' },
   { id: 'back', name: 'Back', detail: 'Close, or go back' },
   { id: 'favorite', name: 'Favorite', detail: 'Add or remove a favorite' },
@@ -34,12 +30,11 @@ export const CONTROL_ACTIONS: { id: ControlAction; name: string; detail: string;
   { id: 'gameMenu', name: 'Game options', detail: 'Rename, emulator, art or delete' },
   { id: 'previousTab', name: 'Previous tab', detail: '' },
   { id: 'nextTab', name: 'Next tab', detail: '' },
-  { id: 'volumeDown', name: 'Volume down', detail: 'Hold to keep going' },
-  { id: 'volumeUp', name: 'Volume up', detail: 'Hold to keep going' },
   { id: 'voiceSearch', name: 'Voice search', detail: 'Say a game or app' },
   { id: 'nextSong', name: 'Next song', detail: 'Skip to the next music track' },
   { id: 'sideBar', name: 'Left bar', detail: 'Show or hide a tab’s list' },
-  { id: 'controlsGuide', name: 'Show the buttons', detail: 'What each button does, along the bottom', hold: true }
+  { id: 'controlsGuide', name: 'Show the buttons', detail: 'What each button does, along the bottom' },
+  { id: 'settings', name: 'Settings', detail: '' }
 ]
 
 export const DEFAULT_CONTROLS: Controls = {
@@ -47,13 +42,12 @@ export const DEFAULT_CONTROLS: Controls = {
   back: 1,
   playlist: 2,
   favorite: 3,
-  sideBar: 8,
-  controlsGuide: 8,
+  sideBar: 6,
+  controlsGuide: 7,
+  settings: 8,
   gameMenu: 9,
   previousTab: 4,
   nextTab: 5,
-  volumeDown: 6,
-  volumeUp: 7,
   voiceSearch: 11,
   nextSong: 10
 }
@@ -82,18 +76,9 @@ const RENAMED: Record<string, ControlAction> = {
   options: 'playlist'
 }
 
-/** Whether the action happens on holding its button, rather than pressing it. */
-export const isHold = (action: ControlAction): boolean => CONTROL_ACTIONS.some((a) => a.id === action && a.hold)
-
-/** The other action of the same kind (press or hold) on `button`, if there is one. */
+/** The other action on `button`, if there is one. */
 export function holderOf(controls: Controls, action: ControlAction, button: number): ControlAction | undefined {
-  return CONTROL_ACTIONS.find((a) => a.id !== action && isHold(a.id) === isHold(action) && controls[a.id] === button)?.id
-}
-
-/** The action that happens on holding `button`, and the one on pressing it. */
-export function actionsOn(controls: Controls, button: number): { press?: ControlAction; hold?: ControlAction } {
-  const on = CONTROL_ACTIONS.filter((a) => controls[a.id] === button)
-  return { press: on.find((a) => !a.hold)?.id, hold: on.find((a) => a.hold)?.id }
+  return CONTROL_ACTIONS.find((a) => a.id !== action && controls[a.id] === button)?.id
 }
 
 /** Saved choices over the defaults, ignoring anything unusable. */
@@ -120,8 +105,8 @@ export function resolveControls(saved: Partial<Controls> | undefined): Controls 
 }
 
 /**
- * Gives `action` the `button`. The action of the same kind (press or hold) that had that
- * button takes `action`'s old one, so no two share a button and every action keeps one.
+ * Gives `action` the `button`. The action that had that button takes `action`'s old one, so
+ * no two share a button and every action keeps one.
  */
 export function assignButton(controls: Controls, action: ControlAction, button: number): Controls {
   const next = { ...controls }

@@ -818,7 +818,7 @@ button {
   transform: translate(-50%, 0);
 }
 
-/* The buttons and what they do (Select), in a line along the bottom as ES-DE's help bar. */
+/* The buttons and what they do (R2), in a line along the bottom as ES-DE's help bar. */
 .controls-guide {
   position: absolute;
   left: 50%;
@@ -3406,7 +3406,7 @@ button {
 
 /* ── Left bar (console tabs; SideBar.tsx) ──
    The console's name and totals over its lists; the grid of the list on show fills the rest.
-   Select hides it (.closed): it slides out left and the grid takes the full width. */
+   L2 hides it (.closed): it slides out left and the grid takes the full width. */
 /* Its left edge in line with the top bar's corner (the weather or date), 36px in. */
 .side-bar {
   position: absolute;

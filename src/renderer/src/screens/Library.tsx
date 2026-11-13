@@ -108,7 +108,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     return () => window.removeEventListener(FAVORITE_EVENT, handler)
   }, [onFavorite, load])
 
-  // Select (tapped): hides the bar, or brings it back. The cursor leaves it first if it's there.
+  // L2: hides the bar, or brings it back. The cursor leaves it first if it's there.
   // The grid's cards glide to their new places (more across without the bar, larger beside it).
   const moving = useRef<Snapshot | null>(null)
   useLayoutEffect(() => {

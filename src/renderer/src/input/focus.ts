@@ -240,7 +240,7 @@ export function switchTab(step: -1 | 1): void {
   window.dispatchEvent(new CustomEvent(TAB_EVENT, { detail: step }))
 }
 
-/** A remote's Menu key: Settings, or back Home from there. App listens for this. */
+/** Select (by default), or a remote's Menu key: Settings, or back Home from there. App listens for this. */
 export const SETTINGS_EVENT = 'steamtv:settings'
 
 export function openSettings(): void {
@@ -264,10 +264,10 @@ export function playlist(): void {
   if (el?.dataset.itemId || el?.dataset.appId) window.dispatchEvent(new CustomEvent(PLAYLIST_EVENT, { detail: el }))
 }
 
-/** Select (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
+/** R2 (by default), H on a keyboard: the buttons and what they do, along the bottom. ControlsGuide listens. */
 export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 
-/** Select (tapped) on a controller, L on a keyboard: shows or hides the tab's left bar. */
+/** L2 (by default), L on a keyboard: shows or hides the tab’s left bar. */
 export const SIDE_BAR_EVENT = 'steamtv:side-bar'
 
 export function sideBar(): void {

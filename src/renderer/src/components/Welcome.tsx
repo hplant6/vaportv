@@ -80,7 +80,8 @@ function Tour({ onClose }: { onClose: () => void }) {
           <Row keys={key('back')}>Go back</Row>
           <Row keys={<>{key('previousTab')}{key('nextTab')}</>}>Switch tabs</Row>
           <Row keys={key('sideBar')}>Show or hide a tab’s list of games</Row>
-          <Row keys={<>Hold {key('controlsGuide')}</>}>What each button does</Row>
+          <Row keys={key('controlsGuide')}>What each button does</Row>
+          <Row keys={key('settings')}>Settings</Row>
         </ul>
       )
     },
@@ -90,7 +91,6 @@ function Tour({ onClose }: { onClose: () => void }) {
         <ul className="welcome-list">
           <Row keys={key('favorite')}>Add it to Favorites, or take it off</Row>
           <Row keys={key('playlist')}>Add it to a playlist, or take it out</Row>
-          <Row keys={<>{key('volumeDown')}{key('volumeUp')}</>}>Volume down and up</Row>
           <Row keys={<><ButtonIcon button={8} family={family} /><ButtonIcon button={9} family={family} /></>}>
             Hold both while playing to close it and come back here
           </Row>

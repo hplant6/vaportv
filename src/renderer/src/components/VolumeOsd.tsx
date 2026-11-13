@@ -3,7 +3,7 @@ import { VOLUME_EVENT } from '../input/volume'
 
 const SHOWN_MS = 1500
 
-/** The volume bar that appears while L2 / R2 change it. */
+/** The volume bar that appears while a remote's or keyboard's volume keys change it. */
 export function VolumeOsd() {
   const [volume, setVolume] = useState<{ level: number; muted: boolean } | null>(null)
   const [visible, setVisible] = useState(false)

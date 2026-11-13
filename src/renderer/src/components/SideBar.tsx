@@ -16,7 +16,7 @@ const LOGOS = Object.fromEntries(
 // A console tab's left bar: the console's logo (or name), the console turning slowly, how many games it has, Sort (a drop-down), and its
 // lists (All games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, Arcade's systems). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
-// and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
+// and B there comes back. L2 hides the bar, and the grid takes the whole width.
 
 /** One of the bar's lists, and what its grid says when it has no games. */
 export interface SideList {
@@ -75,7 +75,7 @@ export function SideBar({
     return () => clearTimeout(timer)
   }, [open])
 
-  // Hidden (Select), the bar takes its drop-down with it.
+  // Hidden (L2), the bar takes its drop-down with it.
   useEffect(() => {
     if (!open) setSorting(false)
   }, [open])

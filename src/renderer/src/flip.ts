@@ -1,6 +1,6 @@
 // Moving things smoothly to where a layout change puts them (FLIP: first, last, invert, play).
 // Note where they are, change the layout, then play: each starts back where it was and glides
-// to its new place and size. The left bar uses it when Select hides or shows it, so the grid's
+// to its new place and size. The left bar uses it when L2 hides or shows it, so the grid's
 // cards slide and grow into their new columns instead of jumping.
 
 export type Snapshot = Map<HTMLElement, DOMRect>

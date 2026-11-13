@@ -670,9 +670,8 @@ describe('controls', () => {
     expect(next).toEqual({ ...DEFAULT_CONTROLS, favorite: 10, nextSong: 3 })
   })
   it('fills saved choices over the defaults and drops unusable ones', () => {
-    // Back took Select's press, so the left bar (Select's tap by default) takes the free B;
-    // holding Select is still the button guide.
-    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, sideBar: 1 })
+    // Back took Select, so Settings (Select by default) takes the free B.
+    expect(resolveControls({ back: 8, select: 16 } as never)).toEqual({ ...DEFAULT_CONTROLS, back: 8, settings: 1 })
     expect(resolveControls(undefined)).toEqual(DEFAULT_CONTROLS)
   })
   it('gives buttons saved before voice search its R3', () => {
