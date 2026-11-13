@@ -1175,7 +1175,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         <div className="settings-group">
           <h3 className="settings-heading display">Spinning consoles</h3>
           <p className="settings-help">
-            Each console’s tab (Steam’s a Steam Deck, Arcade’s an arcade stick) shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
+            Each console’s tab (Steam’s a Steam Deck, Arcade’s a Taito Egret 29 cabinet) shows the console turning slowly in its list on the left. Turn it off on a slower machine: the list shows just the
             console’s logo.
           </p>
           <div className="setting-list" data-focus-memory="settings-spinning-consoles">

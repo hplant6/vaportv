@@ -194,6 +194,13 @@ async function showScreen(model: THREE.Object3D, screen: Screen): Promise<void> 
     parts.push(mesh)
   })
   for (const mesh of parts) {
+    if (screen.modelUv) {
+      // glTF's texture coordinates run top-down.
+      const map = texture.clone()
+      map.flipY = false
+      mesh.material = screenMaterial(screen, map)
+      continue
+    }
     const geometry = mesh.geometry
     geometry.computeBoundingBox()
     const box = geometry.boundingBox!
@@ -220,16 +227,21 @@ async function showScreen(model: THREE.Object3D, screen: Screen): Promise<void> 
       map.repeat.set(1, imageAspect / screenAspect)
       map.offset.set(0, (1 - map.repeat.y) / 2)
     }
-    mesh.material = new THREE.MeshStandardMaterial({
-      name: screen.material,
-      color: 0x000000,
-      emissive: 0xffffff,
-      emissiveMap: map,
-      emissiveIntensity: 0.9,
-      roughness: 0.12,
-      metalness: 0
-    })
+    mesh.material = screenMaterial(screen, map)
   }
+}
+
+/** A lit screen: the image glowing, with a glossy finish for the lights' reflections. */
+function screenMaterial(screen: Screen, map: THREE.Texture): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    name: screen.material,
+    color: 0x000000,
+    emissive: 0xffffff,
+    emissiveMap: map,
+    emissiveIntensity: 0.9,
+    roughness: 0.12,
+    metalness: 0
+  })
 }
 
 /** Starts `product`'s backdrop on `canvas` at `quality`; onReady once its first frame is drawn. Returns a stop function. */

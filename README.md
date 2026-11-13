@@ -61,7 +61,7 @@ After that, vaporTV updates itself: it checks for new versions, shows what chang
 
 ### Consoles in 3D
 
-Each console's tab shows that console turning slowly at the top of its list on the left (the Steam tab a Steam Deck, Arcade an arcade stick). The Consoles screensaver shows them full screen on a mirror floor, as below, and the Apps tab its pile of VHS tapes.
+Each console's tab shows that console turning slowly at the top of its list on the left (the Steam tab a Steam Deck, Arcade a Taito Egret 29 cabinet). The Consoles screensaver shows them full screen on a mirror floor, as below, and the Apps tab its pile of VHS tapes.
 
 | ![Steam Deck](docs/screenshots/console-steam.jpg) | ![Switch](docs/screenshots/console-switch.jpg) | ![PS3](docs/screenshots/console-ps3.jpg) | ![Xbox](docs/screenshots/console-xbox.jpg) | ![PS2](docs/screenshots/console-ps2.jpg) |
 |:--:|:--:|:--:|:--:|:--:|
@@ -100,7 +100,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 - Pick any game's art by hand: SteamGridDB, RetroArch's box art, or a web image search (with a free [Brave Search API](https://brave.com/search/api/) key, added in **Settings → Artwork**)
 
 **Backdrops**
-- **Consoles in 3D:** each console's tab (Steam's a Steam Deck, Arcade's an arcade stick) shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). Apps shows a pile of VHS tapes full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
+- **Consoles in 3D:** each console's tab (Steam's a Steam Deck, Arcade's a Taito Egret 29 cabinet) shows that console turning slowly in its list on the left, lit in neon (**Settings → Backdrop → Spinning consoles** turns them off on a slower machine). Apps shows a pile of VHS tapes full screen, black on a mirror floor, the camera slowly swinging round it like a product shot, as the Consoles screensaver does every console. **Settings → Backdrop → Console backdrops** trades their sharpness for less work on the GPU
 - **Seven live backdrops**: Sea and Forest (both following the time of day), City Rain, Northern Lights, Gradient Drift, Chromatic Waves and Star Tunnel; or **your own videos and pictures**, looped or shuffled
 - **Home backdrop and Tabs backdrop**, chosen apart: the tabs show their consoles, or any backdrop instead, on every tab
 

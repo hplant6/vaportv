@@ -38,13 +38,14 @@ const ASSETS = [
   { from: 'models/nes.glb', to: 'nes.vtm', name: 'NES model' },
   { from: 'models/genesis.glb', to: 'genesis.vtm', name: 'Genesis model' },
   { from: 'models/xbox.glb', to: 'xbox.vtm', name: 'Xbox model' },
-  { from: 'models/arcade.glb', to: 'arcade.vtm', name: 'Arcade stick model' },
+  { from: 'models/arcade.glb', to: 'arcade.vtm', name: 'Arcade cabinet model' },
   { from: 'models/neogeo.glb', to: 'neogeo.vtm', name: 'Neo Geo model' },
   { from: 'models/apps.glb', to: 'apps.vtm', name: 'VHS tapes model' },
   // What the handhelds' screens show (their home screens), laid on the models' screens.
   { from: 'screens/psp.jpg', to: 'screen-psp.jpg', name: 'PSP screen' },
   { from: 'screens/steamdeck.jpg', to: 'screen-steamdeck.jpg', name: 'Steam Deck screen' },
-  { from: 'screens/switch.jpg', to: 'screen-switch.jpg', name: 'Switch screen' }
+  { from: 'screens/switch.jpg', to: 'screen-switch.jpg', name: 'Switch screen' },
+  { from: 'screens/arcade.jpg', to: 'screen-arcade.jpg', name: 'Arcade cabinet screen' }
 ]
 
 const KEY_FILE = join(SOURCE, 'model-key')

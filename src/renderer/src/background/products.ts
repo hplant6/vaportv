@@ -34,7 +34,9 @@ export interface Product {
  * What goes on a handheld's screen. The image (from scripts/private-assets.mjs: they're the
  * makers' own home screens, so not in the repo) covers the parts with `material` (in the node
  * named `node`, if given), mapped flat across their widest two directions and cropped to fit;
- * `flipX`/`flipY` turn it the right way round where the model's axes run the other way.
+ * `flipX`/`flipY` turn it the right way round where the model's axes run the other way. With
+ * `modelUv`, the model's own mapping is kept instead (a curved CRT whose screen is mapped
+ * properly; its image then fills it, made to the screen's shape).
  */
 export interface Screen {
   image: string
@@ -42,6 +44,7 @@ export interface Screen {
   node?: string
   flipX?: boolean
   flipY?: boolean
+  modelUv?: boolean
 }
 
 const GENESIS: Product = {
@@ -127,11 +130,9 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   // No 32X model: it sat on top of a Genesis anyway.
   sega32x: GENESIS,
   arcade: {
-    // An 8BitDo arcade stick. White plastic, dimmed like the Wii.
+    // A Taito Egret 29 cabinet (the stool left out), the Taito logo on its CRT (1.12:1).
     model: 'private/arcade.vtm',
-    zoom: 0.92,
-    white: 0.35,
-    exposure: 0.7
+    screen: { image: 'private/screen-arcade.jpg', material: 'Egret29_Screen.001', modelUv: true }
   },
   neogeo: {
     // The Neo Geo AES: black, with its gold logo.
