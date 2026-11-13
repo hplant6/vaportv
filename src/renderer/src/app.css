@@ -3812,3 +3812,21 @@ button {
   font-size: var(--text-small);
   opacity: 0.8;
 }
+
+/* Over each group of a game's playlists (Home playlists, Steam tab playlists): small and dim,
+   as the left bar's section headings. */
+.playlist-section {
+  flex: none;
+  margin: 12px 0 0;
+  padding: 0 24px;
+  font-size: var(--text-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* More playlists than fit: a gold bar down the box's right shows where you are, as Add music's does. */
+.game-panel.with-footer .game-settings {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08);
+}

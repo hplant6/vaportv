@@ -98,27 +98,42 @@ export function PlaylistChoices({ gameId, gameTitle }: { gameId: string; gameTit
   }
 
   if (!choices) return null
-  // One on another console's tab is for that console's games, so it isn't offered.
+  // One on another console's tab is for that console's games, so it isn't offered (unless the game's in it, to take it out).
   const open = choices.filter((choice) => choice.has || playlistTakes(choice.showOn, tab))
+  const tabName = tab && playlistPlacesLabel([tab])
+  // Under a heading each: Home's (any system; one on Home and a tab too is here), the game's own tab's, and any other.
+  const sections: [string, PlaylistChoice[]][] = [
+    ['Home playlists', open.filter((c) => c.showOn.includes('home'))],
+    [`${tabName} tab playlists`, open.filter((c) => !c.showOn.includes('home') && tab !== null && c.showOn.includes(tab))],
+    ['Other playlists', open.filter((c) => !c.showOn.includes('home') && (tab === null || !c.showOn.includes(tab)))]
+  ]
   return (
     <>
-      {open.map((choice) => (
-        <button
-          key={choice.id}
-          className="setting-row playlist-choice"
-          tabIndex={-1}
-          aria-label={`${choice.has ? 'Remove from' : 'Add to'} ${choice.name}`}
-          data-focusable=""
-          data-select-sound="move"
-          onClick={() => toggle(choice)}
-        >
-          <span className="setting-name display">{choice.name}</span>
-          <span className="setting-detail">{`${games(choice.count)} · ${playlistPlacesLabel(choice.showOn)}`}</span>
-          <span className={`playlist-action display${choice.has ? ' added' : ''}`} aria-hidden="true">
-            {choice.has ? 'Added ✓' : 'Add'}
-          </span>
-        </button>
-      ))}
+      {sections.map(
+        ([title, list]) =>
+          list.length > 0 && [
+            <h4 key={title} className="playlist-section display">
+              {title}
+            </h4>,
+            ...list.map((choice) => (
+              <button
+                key={choice.id}
+                className="setting-row playlist-choice"
+                tabIndex={-1}
+                aria-label={`${choice.has ? 'Remove from' : 'Add to'} ${choice.name}`}
+                data-focusable=""
+                data-select-sound="move"
+                onClick={() => toggle(choice)}
+              >
+                <span className="setting-name display">{choice.name}</span>
+                <span className="setting-detail">{`${games(choice.count)} · ${playlistPlacesLabel(choice.showOn)}`}</span>
+                <span className={`playlist-action display${choice.has ? ' added' : ''}`} aria-hidden="true">
+                  {choice.has ? 'Added ✓' : 'Add'}
+                </span>
+              </button>
+            ))
+          ]
+      )}
       {open.length === 0 && <p className="settings-help">No playlists for this game yet. Make one below.</p>}
     </>
   )
