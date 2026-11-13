@@ -30,19 +30,26 @@ const AFTER_WAKE_MS = 15_000
 /** A game closes when Home is pressed again within this long. */
 const HOME_AGAIN_MS = 3000
 const RESCAN_MS = 5000
-/** Asleep at least this long between ticks: the box slept (rather than vaporTV stalling). */
-const ASLEEP_MS = 2000
+/**
+ * Asleep at least this long between ticks: the box slept. A stall doesn't count (both
+ * clocks run through it), and suspending and resuming aren't asleep either, so a 6 s
+ * bounce measures about 2 s: hence 1 s, not more.
+ */
+const ASLEEP_MS = 1000
 /**
  * Asleep less than this, the box didn't really sleep: the Sofabaton hub reconnects
  * seconds into sleep and that wakes it (5-7 s in), however the sleep began (remote Power,
  * the controller switched off, the power menu, Steam's own Sleep). It goes back to sleep
- * after RESLEEP_DELAY_MS, when the hub's reconnect is over (a second sleep holds), unless
- * someone is waking it meanwhile: Power or another remote key, or a controller switched on.
+ * after RESLEEP_DELAY_MS, when the hub's reconnect is over (usually a second sleep holds;
+ * sometimes it bounces again), unless someone is waking it meanwhile: Power or another
+ * remote key, or a controller switched on.
  */
 const BOUNCE_MS = 10_000
 const RESLEEP_DELAY_MS = 8000
-/** A bounce this soon after vaporTV slept it again isn't put back to sleep: no loops. */
-const RESLEEP_ONCE_MS = 60_000
+/** Bounces in a row put back to sleep; past this many it stays awake: no endless loops. */
+const MAX_RESLEEPS = 4
+/** A bounce this long after vaporTV last slept it again starts a fresh run of bounces. */
+const RESLEEP_RUN_MS = 60_000
 /** Remotes, by the names their receivers give: a Sofabaton hub, a TV remote's USB dongle ("... RC"). */
 const REMOTE_NAME = /sofabaton|\bremote\b|\bRC\b/i
 
@@ -109,8 +116,9 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
   /** Controllers on at the last tick, and at the last one before the box slept. */
   let controllers: string[] = []
   let controllersBeforeSleep: string[] = []
-  /** When vaporTV last put the box back to sleep after a bounce. */
+  /** When vaporTV last put the box back to sleep after a bounce, and how many in a row. */
   let resleptAt = 0
+  let resleeps = 0
   let resleepTimer: ReturnType<typeof setTimeout> | undefined
   /** When Home was first pressed over a game; a second press soon after closes it. */
   let homeArmedAt = 0
@@ -121,6 +129,7 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     if (!resleepTimer) return false
     clearTimeout(resleepTimer)
     resleepTimer = undefined
+    resleeps = 0
     log(`sleep: ${why}, staying awake`)
     return true
   }
@@ -135,11 +144,13 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     if (asleep >= ASLEEP_MS) {
       awokeAt = now
       controllersBeforeSleep = controllers
-      if (asleep < BOUNCE_MS && now - resleptAt > RESLEEP_ONCE_MS) {
-        log(`sleep: woke after ${(asleep / 1000).toFixed(1)} s, going back to sleep in ${RESLEEP_DELAY_MS / 1000} s unless someone's waking it`)
+      if (asleep >= BOUNCE_MS || now - resleptAt > RESLEEP_RUN_MS) resleeps = 0
+      const secs = (asleep / 1000).toFixed(1)
+      if (asleep < BOUNCE_MS && resleeps < MAX_RESLEEPS) {
+        log(`sleep: woke after ${secs} s (bounce ${resleeps + 1}), going back to sleep in ${RESLEEP_DELAY_MS / 1000} s unless someone's waking it`)
         clearTimeout(resleepTimer)
         resleepTimer = setTimeout(() => sleepAgain(), RESLEEP_DELAY_MS)
-      } else if (asleep < BOUNCE_MS) log(`sleep: woke after ${(asleep / 1000).toFixed(1)} s again, staying awake`)
+      } else if (asleep < BOUNCE_MS) log(`sleep: woke after ${secs} s, bounced ${resleeps} times in a row, staying awake`)
     }
     controllers = await controllerNames()
     const switchedOn = controllers.find((name) => !controllersBeforeSleep.includes(name))
@@ -152,6 +163,7 @@ export function startRemoteKeys(log: Log, foreground: Foreground, backIsEscape: 
     if (why) return log(`sleep: woke straight back up, staying awake (${why})`)
     log('sleep: woke straight back up, sleeping again')
     resleptAt = Date.now()
+    resleeps++
     await power('sleep')
   }
 
