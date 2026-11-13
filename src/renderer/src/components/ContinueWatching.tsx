@@ -9,8 +9,10 @@ import { HOME_CHANGED_EVENT } from '../screens/Settings'
 // one in vaporTV's own player (MediaPlayer), from where it was left. Not there at all until a
 // server's signed in to in Settings, nor while none can be reached or nothing's part-watched.
 
-/** MediaPlayer listens: detail is { source, id } (the account and the item). */
+/** MediaPlayer listens: detail is { source, id } (the account and the item), and fromStart to begin at the start rather than resume. */
 export const MEDIA_PLAY_EVENT = 'steamtv:media-play'
+/** A film, show or episode changed (favourite, watched, from its details or Y): detail is { source, id, patch }. Lists patch it in and ask again. */
+export const MEDIA_CHANGED_EVENT = 'steamtv:media-changed'
 /** The player closed: the row asks again (what was just watched moves to the front). */
 export const MEDIA_WATCHED_EVENT = 'steamtv:media-watched'
 
@@ -37,8 +39,10 @@ export function ContinueWatching() {
     load()
     window.addEventListener('focus', load)
     window.addEventListener(MEDIA_WATCHED_EVENT, load)
+    window.addEventListener(MEDIA_CHANGED_EVENT, load)
     window.addEventListener(HOME_CHANGED_EVENT, load)
     return () => {
+      window.removeEventListener(MEDIA_CHANGED_EVENT, load)
       window.removeEventListener('focus', load)
       window.removeEventListener(MEDIA_WATCHED_EVENT, load)
       window.removeEventListener(HOME_CHANGED_EVENT, load)
@@ -84,12 +88,18 @@ export function WatchCard({ item, isDefault, onFocus }: { item: MediaItem; isDef
       data-focusable=""
       data-select-sound="move"
       data-item-id={item.id}
+      data-media-source={item.source}
       {...(isDefault ? { 'data-focus-default': '' } : {})}
       aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}`}
       onFocus={onFocus}
       onClick={() => window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))}
     >
       <span className="wide-card-art">
+        {item.favorite && (
+          <span className="favorite-star media-star" aria-label="Favourite">
+            ★
+          </span>
+        )}
         {item.wide ? (
           <img src={item.wide} alt="" />
         ) : item.cover ? (

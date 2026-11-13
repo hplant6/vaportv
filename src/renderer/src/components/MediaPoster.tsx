@@ -29,12 +29,18 @@ export function MediaPoster({ item, index, isDefault }: { item: MediaItem; index
       data-focusable=""
       data-select-sound="move"
       data-item-id={item.id}
+      data-media-source={item.source}
       data-index={index}
       {...(isDefault ? { 'data-focus-default': '' } : {})}
       aria-label={`${item.title}${item.subtitle ? `, ${item.subtitle}` : ''}${item.watched ? ', watched' : ''}`}
       onClick={open}
     >
       <div className="recent-art">
+        {item.favorite && (
+          <span className="favorite-star media-star" aria-label="Favourite">
+            ★
+          </span>
+        )}
         {item.cover ? (
           // Lazy: a library's grid can run to thousands; the server's pictures come as they near the screen.
           <img src={item.cover} alt="" loading="lazy" />

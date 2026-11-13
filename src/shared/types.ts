@@ -91,6 +91,12 @@ export interface MediaItem {
   added?: string
   released?: string
   rating?: number
+  /** Marked favourite on the server (Y). */
+  favorite?: boolean
+  /** The details panel's (Start): its summary, genres and age rating. */
+  overview?: string
+  genres?: string[]
+  officialRating?: string
   /** An episode's own name and number, its season, and its length (the show page lists them). */
   episodeName?: string
   episodeNumber?: number
@@ -820,6 +826,12 @@ export interface SteamTvApi {
     libraries(): Promise<MediaLibrary[]>
     /** A show's page: details, seasons, the next episode. */
     show(source: string, seriesId: string): Promise<MediaShow>
+    /** One film, show or episode with its summary and genres, for the details panel. */
+    details(source: string, id: string): Promise<MediaItem>
+    /** Marks it favourite or not, on its server; resolves to the new state. */
+    setFavorite(source: string, id: string, on: boolean): Promise<boolean>
+    /** Marks it (a show: every episode) watched or not, on its server. */
+    setWatched(source: string, id: string, on: boolean): Promise<void>
     /** One season's episodes, in order. */
     episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]>
     /** A page of a library, sorted and (unwatched) filtered by the server. */

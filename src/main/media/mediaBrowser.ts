@@ -136,7 +136,9 @@ interface Item {
   Overview?: string
   SeasonId?: string
   CommunityRating?: number
-  UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string; Played?: boolean; UnplayedItemCount?: number }
+  Genres?: string[]
+  OfficialRating?: string
+  UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string; Played?: boolean; UnplayedItemCount?: number; IsFavorite?: boolean }
 }
 
 const KINDS: Record<string, MediaItem['kind']> = { Movie: 'movie', Episode: 'episode', Series: 'series' }
@@ -178,9 +180,12 @@ export function card(item: Item, base: string): Omit<MediaItem, 'source'> {
     added: item.DateCreated,
     released: item.PremiereDate,
     rating: item.CommunityRating,
-    ...(episode
-      ? { episodeName: item.Name, episodeNumber: item.IndexNumber, seasonId: item.SeasonId, runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS / 60) : undefined }
-      : {})
+    favorite: item.UserData?.IsFavorite || undefined,
+    overview: item.Overview,
+    genres: item.Genres?.length ? item.Genres : undefined,
+    officialRating: item.OfficialRating,
+    runtimeMinutes: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS / 60) : undefined,
+    ...(episode ? { episodeName: item.Name, episodeNumber: item.IndexNumber, seasonId: item.SeasonId } : {})
   }
 }
 
@@ -266,6 +271,32 @@ export async function show(account: MediaAccount, base: string, seriesId: string
     seasons: seasons.Items.map((s) => ({ id: s.Id, name: s.Name, unwatched: s.UserData?.UnplayedItemCount })),
     next: next.at(0) && { ...next.at(0)!, source: '' }
   }
+}
+
+/** One item with its summary, genres and ratings, for the details panel. */
+export async function details(account: MediaAccount, base: string, id: string, device: string, version: string): Promise<Omit<MediaItem, 'source'>> {
+  const itemPath = userItem(account, id)
+  const fields = new URLSearchParams({ ...LIST_FIELDS, Fields: `${LIST_FIELDS.Fields},Overview,Genres,OfficialRating` })
+  const item = await request<Item>(`${account.url}${prefix(account.kind)}${itemPath}${itemPath.includes('?') ? '&' : '?'}${fields}`, {
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+  return card(item, base)
+}
+
+/** Favourite (POST) or not (DELETE), as the server keeps it for the user; Jellyfin 10.9 moved the path. */
+export async function setFavorite(account: MediaAccount, id: string, on: boolean, device: string, version: string): Promise<boolean> {
+  const path = account.kind === 'jellyfin' ? `/UserFavoriteItems/${id}?userId=${account.userId}` : `/Users/${account.userId}/FavoriteItems/${id}`
+  const reply = await request<{ IsFavorite?: boolean } | undefined>(`${account.url}${prefix(account.kind)}${path}`, {
+    method: on ? 'POST' : 'DELETE',
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+  return reply?.IsFavorite ?? on
+}
+
+/** Watched (POST) or not (DELETE); on a show or season, the server marks every episode. */
+export async function setWatched(account: MediaAccount, id: string, on: boolean, device: string, version: string): Promise<void> {
+  const path = account.kind === 'jellyfin' ? `/UserPlayedItems/${id}?userId=${account.userId}` : `/Users/${account.userId}/PlayedItems/${id}`
+  await request(`${account.url}${prefix(account.kind)}${path}`, { method: on ? 'POST' : 'DELETE', headers: authHeaders(account.kind, device, version, account.token) })
 }
 
 /** One season's episodes, in order. */

@@ -21,9 +21,9 @@ const REPORT_MS = 10_000
 
 /** Mounted once (App): opens when a Continue watching card asks. */
 export function MediaPlayerHost() {
-  const [item, setItem] = useState<{ source: string; id: string } | null>(null)
+  const [item, setItem] = useState<{ source: string; id: string; fromStart?: boolean } | null>(null)
   useEffect(() => {
-    const open = (event: Event): void => setItem((event as CustomEvent<{ source: string; id: string }>).detail)
+    const open = (event: Event): void => setItem((event as CustomEvent<{ source: string; id: string; fromStart?: boolean }>).detail)
     window.addEventListener(MEDIA_PLAY_EVENT, open)
     return () => window.removeEventListener(MEDIA_PLAY_EVENT, open)
   }, [])
@@ -33,6 +33,7 @@ export function MediaPlayerHost() {
       key={`${item.source}:${item.id}`}
       source={item.source}
       itemId={item.id}
+      fromStart={item.fromStart}
       onClose={() => {
         setItem(null)
         window.dispatchEvent(new Event(MEDIA_WATCHED_EVENT))
@@ -41,7 +42,7 @@ export function MediaPlayerHost() {
   )
 }
 
-function MediaPlayer({ source, itemId, onClose }: { source: string; itemId: string; onClose: () => void }) {
+function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; itemId: string; fromStart?: boolean; onClose: () => void }) {
   const self = useRef<HTMLButtonElement>(null)
   const video = useRef<HTMLVideoElement>(null)
   const [playback, setPlayback] = useState<MediaPlayback | null>(null)
@@ -81,7 +82,8 @@ function MediaPlayer({ source, itemId, onClose }: { source: string; itemId: stri
       .playback(source, itemId, choice)
       .then(async (info) => {
         if (cancelled || !video.current) return
-        const from = resumeAt.current ?? (info.startSeconds > 5 ? info.startSeconds : 0)
+        // Where it was left, unless asked to start over (Play from the start); a new track: where it had got to.
+        const from = resumeAt.current ?? (!fromStart && info.startSeconds > 5 ? info.startSeconds : 0)
         resumeAt.current = null
         started.current = false
         setPlayback(info)

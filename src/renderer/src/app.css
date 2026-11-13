@@ -4124,3 +4124,31 @@ button {
   column-gap: 24px;
   row-gap: 36px;
 }
+
+/* A media card's favourite star: top left, as the top right holds its watched tick or count. */
+.favorite-star.media-star {
+  left: 10px;
+  right: auto;
+}
+
+/* A film's, show's or episode's details (Start; MediaDetails.tsx): its genres and summary above
+   its choices, in the game panel's settings box. */
+.media-details-overview {
+  margin: 4px 0 8px;
+  padding: 0 4px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  opacity: 0.85;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.media-details-genres {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: var(--color-accent);
+}

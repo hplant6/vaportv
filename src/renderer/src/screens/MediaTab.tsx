@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
 import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort } from '../../../shared/types'
-import { MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
+import { MEDIA_CHANGED_EVENT, MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
 import { MEDIA_SHOW_EVENT, MediaPoster } from '../components/MediaPoster'
 import { MediaShowPage } from '../components/MediaShowPage'
 import { NavBar, type Screen } from '../components/NavBar'
@@ -122,6 +122,20 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   useEffect(() => {
     for (const lib of libraries) if (!pages[pageKey(lib)]) loadPage(lib, 0)
   }, [libraries, loadPage])
+
+  // A film, show or episode marked watched or favourite (its details, or Y): patched in where
+  // it shows, so a library keeps its place; the top lists are asked for again.
+  useEffect(() => {
+    const onChanged = (event: Event): void => {
+      const { source, id, patch } = (event as CustomEvent<{ source: string; id: string; patch: Partial<MediaItem> }>).detail
+      const apply = (items: MediaItem[]): MediaItem[] => items.map((i) => (i.source === source && i.id === id ? { ...i, ...patch } : i))
+      setPages((prev) => Object.fromEntries(Object.entries(prev).map(([k, page]) => [k, { ...page, items: apply(page.items) }])))
+      setLists((prev) => prev && { continueWatching: apply(prev.continueWatching), nextUp: apply(prev.nextUp), recentlyAdded: apply(prev.recentlyAdded), favorites: apply(prev.favorites) })
+      window.steamtv.media.lists().then(setLists).catch(() => undefined)
+    }
+    window.addEventListener(MEDIA_CHANGED_EVENT, onChanged)
+    return () => window.removeEventListener(MEDIA_CHANGED_EVENT, onChanged)
+  }, [])
 
   const loaded = lists !== null
   useEffect(() => {

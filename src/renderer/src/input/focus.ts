@@ -304,11 +304,21 @@ export const GAME_MENU_EVENT = 'steamtv:game-menu'
 /** The same again while they're open: closes them. */
 export const GAME_MENU_CLOSE_EVENT = 'steamtv:game-menu-close'
 
+/** Start on a film, show or episode (a card with data-media-source): its details. MediaDetails listens; detail is the card. */
+export const MEDIA_DETAILS_EVENT = 'steamtv:media-details'
+/** Y on one: favourite on its server, or not. MediaDetails listens; detail is the card. */
+export const MEDIA_FAVORITE_EVENT = 'steamtv:media-favorite'
+
 export function gameMenu(): void {
   const open = trap()
   if (open?.classList.contains('game-panel')) window.dispatchEvent(new Event(GAME_MENU_CLOSE_EVENT))
-  if (open) return
   const el = current()
+  // A film, show or episode: its details, on a tab or over a show's page (itself a trap).
+  if (el?.dataset.mediaSource && (!open || open.classList.contains('media-show'))) {
+    window.dispatchEvent(new CustomEvent(MEDIA_DETAILS_EVENT, { detail: el }))
+    return
+  }
+  if (open) return
   if (el?.dataset.itemId || el?.dataset.appId) window.dispatchEvent(new CustomEvent(GAME_MENU_EVENT, { detail: el }))
 }
 
@@ -329,7 +339,8 @@ export const FAVORITE_EVENT = 'steamtv:favorite'
 export function favorite(): void {
   const el = current()
   window.steamtv.logInput(`favorite ${el?.getAttribute('aria-label') ?? el?.dataset.itemId ?? 'nothing'}`)
-  if (el) window.dispatchEvent(new CustomEvent(FAVORITE_EVENT, { detail: el }))
+  if (el?.dataset.mediaSource) window.dispatchEvent(new CustomEvent(MEDIA_FAVORITE_EVENT, { detail: el }))
+  else if (el) window.dispatchEvent(new CustomEvent(FAVORITE_EVENT, { detail: el }))
 }
 
 export function activate(): void {

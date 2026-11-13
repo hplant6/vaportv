@@ -17,6 +17,7 @@ import { HOME_CHANGED_EVENT } from './screens/Settings'
 import { tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { MediaPlayerHost } from './components/MediaPlayer'
+import { MediaDetailsHost } from './components/MediaDetails'
 import { MediaTab } from './screens/MediaTab'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
@@ -471,6 +472,7 @@ export function App() {
       <Screensaver />
       <BackgroundMusic />
       <MediaPlayerHost />
+      <MediaDetailsHost />
       <Intro />
       <VolumeOsd />
       <Toast />

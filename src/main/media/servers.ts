@@ -166,6 +166,19 @@ export async function show(source: string, seriesId: string): Promise<MediaShow>
   return { ...page, source, next: page.next && { ...page.next, source } }
 }
 
+export async function details(source: string, id: string): Promise<MediaItem> {
+  const a = await account(source)
+  return { ...(await mediaBrowser.details(a, base(a), id, await device(), version())), source }
+}
+
+export async function setFavorite(source: string, id: string, on: boolean): Promise<boolean> {
+  return mediaBrowser.setFavorite(await account(source), id, on, await device(), version())
+}
+
+export async function setWatched(source: string, id: string, on: boolean): Promise<void> {
+  await mediaBrowser.setWatched(await account(source), id, on, await device(), version())
+}
+
 export async function episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]> {
   const a = await account(source)
   return (await mediaBrowser.episodes(a, base(a), seriesId, seasonId, await device(), version())).map((item) => ({ ...item, source }))

@@ -48,7 +48,7 @@ function day(iso: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(y === today.getFullYear() ? {} : { year: 'numeric' }) })
 }
 
-type Fact = [icon: string, label: string, value: string]
+export type Fact = [icon: string, label: string, value: string]
 
 /** The facts every game has: how long and when it was last played. */
 const playFacts = (playtime?: number, lastPlayed?: string): Fact[] => [
@@ -57,7 +57,7 @@ const playFacts = (playtime?: number, lastPlayed?: string): Fact[] => [
 ]
 
 /** A setting: its name, and what it's set to or does. */
-const row = (label: string, detail: ReactNode, onClick: () => void, extra = '') => (
+export const row = (label: string, detail: ReactNode, onClick: () => void, extra = '') => (
   <button className={`setting-row${extra}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
     <span className="setting-name display">{label}</span>
     {detail && <span className="setting-detail">{detail}</span>}
@@ -65,7 +65,7 @@ const row = (label: string, detail: ReactNode, onClick: () => void, extra = '') 
 )
 
 /** The modal around a game: its cover, name and facts, beside its settings box. */
-function GamePanel({
+export function GamePanel({
   panel,
   title,
   cover,
@@ -129,7 +129,7 @@ function playlistsRow(count: number | null, open: () => void) {
 }
 
 /** B and Start close it (B on a step goes back to the menu first, through `back`). Off while the keyboard has B. */
-function useCloseKeys(onClose: () => void, back?: () => void, off = false): void {
+export function useCloseKeys(onClose: () => void, back?: () => void, off = false): void {
   useEffect(() => {
     if (off) return
     const close = back ?? onClose

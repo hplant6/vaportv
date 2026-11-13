@@ -3,7 +3,7 @@ import type { MediaItem, MediaShow } from '../../../shared/types'
 import { focus, trap, TRAP_CLOSE_EVENT, TRAP_TAB_EVENT } from '../input/focus'
 import { play } from '../input/sounds'
 import { usePageScroll } from '../screens/usePageScroll'
-import { MEDIA_PLAY_EVENT, MEDIA_WATCHED_EVENT } from './ContinueWatching'
+import { MEDIA_CHANGED_EVENT, MEDIA_PLAY_EVENT, MEDIA_WATCHED_EVENT } from './ContinueWatching'
 import { toast } from './Toast'
 
 // A show's page on the Media tab (A on a show): its backdrop, name, years and summary, its
@@ -80,11 +80,18 @@ export function MediaShowPage({ source, id, title, onBack }: { source: string; i
       loadShow()
       loadEpisodes()
     }
+    // Marked watched or favourite: the seasons' counts and the episodes again, the cursor left where it is.
+    const marked = (): void => {
+      loadShow()
+      loadEpisodes()
+    }
     window.addEventListener(MEDIA_PLAY_EVENT, playing)
     window.addEventListener(MEDIA_WATCHED_EVENT, watched)
+    window.addEventListener(MEDIA_CHANGED_EVENT, marked)
     return () => {
       window.removeEventListener(MEDIA_PLAY_EVENT, playing)
       window.removeEventListener(MEDIA_WATCHED_EVENT, watched)
+      window.removeEventListener(MEDIA_CHANGED_EVENT, marked)
     }
   }, [loadShow, loadEpisodes])
 
@@ -175,10 +182,16 @@ function EpisodeCard({ episode }: { episode: MediaItem }) {
       data-focusable=""
       data-select-sound="move"
       data-item-id={episode.id}
+      data-media-source={episode.source}
       aria-label={`${name}${detail ? `, ${detail}` : ''}`}
       onClick={() => window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: episode.source, id: episode.id } }))}
     >
       <span className="wide-card-art">
+        {episode.favorite && (
+          <span className="favorite-star media-star" aria-label="Favourite">
+            ★
+          </span>
+        )}
         {episode.wide && <img src={episode.wide} alt="" loading="lazy" />}
         {episode.watched && (
           <span className="media-badge media-watched" aria-hidden="true">
