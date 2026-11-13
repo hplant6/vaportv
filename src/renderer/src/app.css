@@ -3469,15 +3469,15 @@ button {
   overflow-wrap: anywhere;
 }
 
-/* The totals: labels in a column, figures beside them, on the modals' warm glass. */
+/* The number of games, between two lines in the modals' warm brown. */
 .side-bar-stats {
   margin: 0;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 12px 18px;
-  padding: 22px 24px;
-  border-radius: 12px;
-  background: rgba(53, 41, 31, 0.5);
+  padding: 16px 24px;
+  border-top: 2px solid rgb(53, 41, 31);
+  border-bottom: 2px solid rgb(53, 41, 31);
   font-size: var(--text-body);
   letter-spacing: 0.04em;
 }
@@ -3535,8 +3535,9 @@ button {
 }
 
 /* The bar's panel, as Settings' sidebar: it runs off the left edge, so only its right
-   corners show, from just under the top bar to near the bottom of the screen. It slides out
-   with the bar. */
+   corners show, from just under the top bar to near the bottom of the screen. Darker than
+   Settings' (its options read over a bright backdrop), and darker again while the cursor's
+   in it. It slides out with the bar. */
 .side-bar::before {
   content: '';
   position: absolute;
@@ -3546,8 +3547,14 @@ button {
   top: -16px;
   bottom: -26px;
   border-radius: 18px;
-  background: var(--color-panel);
+  background: rgba(16, 12, 9, 0.55);
+  backdrop-filter: blur(12px);
   pointer-events: none;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar:focus-within::before {
+  background: rgba(16, 12, 9, 0.88);
 }
 
 /* Beside the bar, or the full width without it. */
