@@ -71,22 +71,21 @@ export function NewPlaylistKeyboard({
 
 /**
  * The game menu's Playlists step: a row per playlist that can take the game (Home's, and its
- * own tab's) with Add (Added once the game's in it; pressed again, it comes out), then a new
- * Home playlist, which mixes games from any system, or a new one for the game's own tab.
+ * own tab's) with Add (Added once the game's in it; pressed again, it comes out). The New
+ * playlist buttons sit below the box (NewPlaylistButtons).
  */
-export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; gameTitle: string; onNew: (place: PlaylistPlace) => void }) {
+export function PlaylistChoices({ gameId, gameTitle }: { gameId: string; gameTitle: string }) {
   const tab = gameTab(gameId)
-  const tabName = tab && playlistPlacesLabel([tab])
   const [choices, setChoices] = useState<PlaylistChoice[] | null>(null)
 
   useEffect(() => {
     window.steamtv.gamePlaylists.forGame(gameId).then(setChoices)
   }, [gameId])
 
-  // The cursor starts on the first row once they're in.
+  // The cursor starts on the first row once they're in (none yet: the first New button).
   const loaded = choices !== null
   useEffect(() => {
-    const el = loaded && document.querySelector<HTMLElement>('.game-panel .game-settings [data-focusable]')
+    const el = loaded && document.querySelector<HTMLElement>('.game-panel .game-settings [data-focusable], .game-panel .game-footer [data-focusable]')
     if (el) focus(el)
   }, [loaded])
 
@@ -120,27 +119,29 @@ export function PlaylistChoices({ gameId, gameTitle, onNew }: { gameId: string; 
           </span>
         </button>
       ))}
-      <NewRow name="New Home playlist" detail="Shows on Home. Can mix games from any system" onClick={() => onNew('home')} />
-      {tab && tabName && (
-        <NewRow
-          name={`New ${tabName} playlist`}
-          detail={`Shows in the ${tabName} tab’s list. For ${tabName} games only`}
-          onClick={() => onNew(tab)}
-        />
-      )}
+      {open.length === 0 && <p className="settings-help">No playlists for this game yet. Make one below.</p>}
     </>
   )
 }
 
-/** A New … playlist row: what it makes, and where it shows and what it takes. */
-function NewRow({ name, detail, onClick }: { name: string; detail: string; onClick: () => void }) {
-  return (
-    <button className="setting-row playlist-new" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
-      <span className="playlist-new-text">
-        <span className="setting-name display">{name}</span>
-        <span className="playlist-new-detail">{detail}</span>
-      </span>
+/**
+ * Below a game's playlists, side by side: a new Home playlist, which can mix games from any
+ * system, and (a game on a tab) a new one for its own tab, for that console's games only.
+ */
+export function NewPlaylistButtons({ gameId, onNew }: { gameId: string; onNew: (place: PlaylistPlace) => void }) {
+  const tab = gameTab(gameId)
+  const tabName = tab && playlistPlacesLabel([tab])
+  const button = (place: PlaylistPlace, name: string, detail: string) => (
+    <button key={place} className="playlist-new" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => onNew(place)}>
+      <span className="playlist-new-name display">{name}</span>
+      <span className="playlist-new-detail">{detail}</span>
     </button>
+  )
+  return (
+    <>
+      {button('home', 'New Home playlist', 'Shows on Home. Games from any system')}
+      {tab && tabName && button(tab, `New ${tabName} playlist`, `Shows on the ${tabName} tab. ${tabName} games only`)}
+    </>
   )
 }
 

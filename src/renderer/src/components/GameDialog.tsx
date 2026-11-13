@@ -6,7 +6,7 @@ import drive from '../assets/drive.svg'
 import trophy from '../assets/trophy.svg'
 import program from '../assets/window.svg'
 import { ARTWORK_EVENT, FAVORITE_EVENT, focus, GAME_MENU_CLOSE_EVENT, GAME_MENU_EVENT, PLAYLIST_EVENT, TRAP_CLOSE_EVENT } from '../input/focus'
-import { NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
+import { NewPlaylistButtons, NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
 import { OnScreenKeyboard } from './Keyboard'
 import { formatPlaytime } from './RecentCard'
 import { toast } from './Toast'
@@ -73,7 +73,8 @@ function GamePanel({
   facts,
   heading,
   error,
-  children
+  children,
+  footer
 }: {
   panel: RefObject<HTMLDivElement | null>
   title?: string
@@ -84,10 +85,12 @@ function GamePanel({
   heading: string
   error?: string | null
   children?: ReactNode
+  /** Below the settings box, outside it (a game's Playlists: its New playlist buttons). The panel's taller with one. */
+  footer?: ReactNode
 }) {
   return (
     <div className="dialog-backdrop">
-      <div className="dialog-panel game-panel" ref={panel} data-focus-trap="">
+      <div className={`dialog-panel game-panel${footer ? ' with-footer' : ''}`} ref={panel} data-focus-trap="">
         <div className={`game-cover${wide ? ' wide' : ''}`}>
           {cover && wide && <img className="game-cover-blur" src={cover} alt="" />}
           {cover ? <img src={cover} alt="" /> : <span className="display">{title}</span>}
@@ -113,6 +116,7 @@ function GamePanel({
               {children}
             </div>
           )}
+          {footer && <div className="game-footer">{footer}</div>}
         </div>
       </div>
     </div>
@@ -272,6 +276,10 @@ function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: 
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<'menu' | 'playlists' | 'newPlaylist'>(start)
   const [newPlace, setNewPlace] = useState<PlaylistPlace>('home')
+  const newPlaylist = (place: PlaylistPlace): void => {
+    setNewPlace(place)
+    setStep('newPlaylist')
+  }
   const playlists = usePlaylistCount(id, step)
 
   useEffect(() => {
@@ -316,17 +324,11 @@ function SteamGame({ id, start, onClose }: { id: string; start: Start; onClose: 
       facts={facts}
       heading={step === 'playlists' ? 'Playlists' : 'Game settings'}
       error={error}
+      footer={details && step === 'playlists' && <NewPlaylistButtons gameId={id} onNew={newPlaylist} />}
     >
       {details &&
         (step === 'playlists' ? (
-          <PlaylistChoices
-            gameId={id}
-            gameTitle={details.title}
-            onNew={(place) => {
-              setNewPlace(place)
-              setStep('newPlaylist')
-            }}
-          />
+          <PlaylistChoices gameId={id} gameTitle={details.title} />
         ) : (
           <>
             {playlistsRow(playlists, () => setStep('playlists'))}
@@ -344,6 +346,10 @@ function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; sta
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>(start)
   const [newPlace, setNewPlace] = useState<PlaylistPlace>('home')
+  const newPlaylist = (place: PlaylistPlace): void => {
+    setNewPlace(place)
+    setStep('newPlaylist')
+  }
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const playlists = usePlaylistCount(id, step)
@@ -449,17 +455,11 @@ function Game({ id, card, start, onClose }: { id: string; card: HTMLElement; sta
       facts={options ? [...playFacts(options.playtime, options.lastPlayed), [drive, 'Size', size(options.files.bytes)]] : undefined}
       heading={step === 'emulator' ? 'Choose emulator' : step === 'playlists' ? 'Playlists' : 'Game settings'}
       error={error}
+      footer={options && step === 'playlists' && <NewPlaylistButtons gameId={id} onNew={newPlaylist} />}
     >
       {options && (
         <>
-        {step === 'playlists' && <PlaylistChoices
-            gameId={id}
-            gameTitle={options.title}
-            onNew={(place) => {
-              setNewPlace(place)
-              setStep('newPlaylist')
-            }}
-          />}
+        {step === 'playlists' && <PlaylistChoices gameId={id} gameTitle={options.title} />}
         {step === 'menu' && (
           <>
             {playlistsRow(playlists, () => setStep('playlists'))}

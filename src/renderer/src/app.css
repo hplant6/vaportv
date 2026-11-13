@@ -3765,25 +3765,50 @@ button {
   background: rgba(0, 0, 0, 0.35);
 }
 
-/* A game's Playlists: New Home playlist / New <tab> playlist, each with a line under its name
-   saying where it shows and which games it takes. */
-.playlist-new {
-  height: auto;
-  min-height: 88px;
-  padding-top: 14px;
-  padding-bottom: 14px;
+/* A game's Playlists: taller, so the box has room for them all, with New Home playlist and
+   New <tab> playlist as two buttons side by side below it, each saying where it shows and
+   which games it takes. */
+.game-panel.with-footer {
+  --game-height: 860px;
 }
 
-.playlist-new-text {
+.game-footer {
+  flex: none;
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.playlist-new {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px 28px;
+  border-radius: 24px;
   text-align: left;
+  color: #fff;
+  background: rgba(190, 147, 111, 0.16);
+  box-shadow: 0 4px 84px rgba(49, 26, 5, 0.29);
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.playlist-new:focus {
+  background: rgba(238, 150, 13, 0.4);
+}
+
+.playlist-new-name.display {
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  font-stretch: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .playlist-new-detail {
   font-family: var(--font-body);
   font-size: var(--text-small);
-  font-weight: 400;
   opacity: 0.8;
 }
