@@ -207,6 +207,10 @@ export interface Config {
   steamGridDbKey?: string
   /** Brave Search API key, for the Artwork window's web image search. */
   braveSearchKey?: string
+  /** Emby, for Home's Continue watching: the server and the user signed in (their access token, never the password). */
+  emby?: { url: string; serverName?: string; userId: string; userName: string; token: string }
+  /** vaporTV's id as an Emby device, made the first time it talks to Emby. */
+  embyDeviceId?: string
   /** Steam's data folder. Defaults to ~/.local/share/Steam (or $STEAMTV_STEAM_ROOT). */
   steamRoot?: string
   /** How far back Recents looks, in days (default 30). */

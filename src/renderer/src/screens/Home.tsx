@@ -3,6 +3,7 @@ import { AppRow } from '../components/AppRow'
 import { AppTile } from '../components/AppTile'
 import { CardRow } from '../components/CardRow'
 import { CollectionGrid } from '../components/CollectionGrid'
+import { ContinueWatching } from '../components/ContinueWatching'
 import { NavBar, type Screen } from '../components/NavBar'
 import { usePageScroll } from './usePageScroll'
 
@@ -19,6 +20,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
             <div className="home-flow">
               <CollectionGrid title="Recents" items={data.recents} logos={data.platformLogos} memoryKey="recents" hasDefault />
               <FavoriteApps data={data} variant="flow" />
+              <ContinueWatching />
               <Playlists data={data} />
             </div>
           ) : (
@@ -36,6 +38,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
               {/* Favorite Apps keeps its place in the Figma frame; playlist rows follow it down the page. */}
               <div className={`home-lower${data.recents.length ? '' : ' no-recents'}`}>
                 <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
+                <ContinueWatching />
                 <Playlists data={data} />
               </div>
             </>

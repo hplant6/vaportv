@@ -11,10 +11,10 @@ export function artUrl(path: string): string {
   return `${SCHEME}://local/${encodeURIComponent(path)}`
 }
 
-/** Call before app ready. */
-export function registerArtScheme(): void {
+/** Call before app ready, once: Electron takes one list of schemes, so `others` (Emby's) go in with it. */
+export function registerArtScheme(others: Electron.CustomScheme[] = []): void {
   // stream: audio/video elements (background music) can only play from a scheme marked streamable.
-  protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, stream: true } }])
+  protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, stream: true } }, ...others])
 }
 
 /** Call after app ready. `roots` returns the directories art may come from; `alsoAllowed`, single files besides. */

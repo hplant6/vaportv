@@ -63,7 +63,7 @@ either version 3 of the License, or (at your option) any later version. See
 | Marvin Visions Big Bold (headings, tabs, clock and date) | not in this repository; added to Henry's builds from a private folder by `scripts/private-assets.mjs` (cut down to Latin characters, WOFF2) | Atelier Triay Ltd ([readvisions.com](https://www.readvisions.com/marvin)) | Commercial licence held by Henry Plant for vaporTV. **Not** covered by the GPL and not redistributable; builds without it use Tilt Warp and Big Shoulders |
 | Tilt Warp (menus and titles) | `src/renderer/src/assets/fonts/` | Andy Clymer (The Tilt Project Authors) | SIL Open Font License 1.1 (`TiltWarp-OFL.txt`) |
 | Big Shoulders (clock and date) | `src/renderer/src/assets/fonts/` | Patric King (The Big Shoulders Project Authors) | SIL Open Font License 1.1 (`BigShoulders-OFL.txt`) |
-| React, three.js, React Three Fiber, drei, postprocessing, qrcode and other npm dependencies | `package.json` | their authors | MIT / Apache-2.0 / ISC (see each package) |
+| React, three.js, hls.js, qrcode and other npm dependencies | `package.json` | their authors | MIT / Apache-2.0 / ISC (see each package) |
 
 All the built-in music above (Chris Zabriskie's and the Retro playlist's) is loudness-matched to -16 LUFS (EBU R128) when re-encoded; nothing else about the recordings is changed.
 

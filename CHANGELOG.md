@@ -7,6 +7,11 @@ as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Ch
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 
+## Unreleased
+
+### Added
+- **Continue watching** on Home, from your Emby server: the films and episodes you're part way through, newest first, with how far in you are and how long is left. Pick one and it plays full screen in vaporTV from where you stopped: A pauses, left and right skip back 10 seconds or on 30, B stops. Emby converts anything the TV can't play as it is, and hears where you got to, so the row (and Emby's own apps) pick up there next time. Sign in under **Settings → Home → Continue watching**: vaporTV finds Emby servers on your network, or takes an address, and keeps only the sign-in Emby gives it, never your password.
+
 ## 0.15.0
 
 ### Added

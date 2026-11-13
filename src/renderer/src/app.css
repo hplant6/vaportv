@@ -3815,3 +3815,76 @@ button {
   scrollbar-width: thin;
   scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08);
 }
+
+/* ── Continue watching (Home; ContinueWatching.tsx) ──
+   Emby's part-watched films and episodes as 16:9 wide cards: the name and how much is left
+   over a fade at the bottom, and a gold line for how far in. */
+.watch-card {
+  flex: none;
+  height: 240px;
+}
+
+.watch-card .wide-card-art img:not(.wide-card-backdrop):not(.wide-card-poster) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watch-card-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 40px 18px 12px;
+  background: linear-gradient(to top, rgba(6, 4, 8, 0.92), rgba(6, 4, 8, 0));
+  text-align: left;
+  font-family: var(--font-body);
+}
+
+.watch-card-title {
+  font-size: var(--text-label);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watch-card-detail {
+  font-size: var(--text-small);
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watch-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.watch-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+/* The Emby player (EmbyPlayer.tsx): full screen over everything, the Files viewer's bar on it. */
+.emby-player {
+  position: absolute;
+  inset: 0;
+  z-index: 1500;
+  background: #000;
+}
+
+/* Its picture while the stream starts. */
+.emby-player-poster {
+  object-fit: cover;
+  opacity: 0.5;
+}

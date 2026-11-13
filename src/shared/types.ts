@@ -44,6 +44,48 @@ export interface AppState {
   program?: string
 }
 
+/** An Emby server found on the network, or at an address typed in. */
+export interface EmbyServer {
+  url: string
+  id: string
+  name: string
+}
+
+export type EmbyStatus = { signedIn: false } | { signedIn: true; serverName?: string; userName: string; url: string }
+
+/** A film or episode in Continue watching. */
+export interface EmbyItem {
+  id: string
+  /** The film, or the episode's show. */
+  title: string
+  /** An episode's "S2 · E5 · Name", a film's year. */
+  subtitle: string
+  /** A 16:9 picture: the episode's still, or a backdrop. */
+  wide?: string
+  /** A poster: the film's, or the show's. */
+  cover?: string
+  /** How far in, 0–1. */
+  progress: number
+  remainingMinutes?: number
+  lastPlayed?: string
+}
+
+/** How to play an Emby item, and what to tell Emby about it. */
+export interface EmbyPlayback {
+  itemId: string
+  mediaSourceId: string
+  playSessionId: string
+  method: 'DirectPlay' | 'Transcode'
+  url: string
+  /** An HLS playlist (Emby converting it), played through hls.js; otherwise the file itself. */
+  hls: boolean
+  title: string
+  subtitle: string
+  backdrop?: string
+  startSeconds: number
+  durationSeconds?: number
+}
+
 export interface HomeData {
   recents: RecentItem[]
   /** Favorite Apps on Home, in the order they were added. */
@@ -676,6 +718,19 @@ export interface SteamTvApi {
   }
   /** Select on a console game: rename it, move it to another emulator, or delete it. */
   /** Game playlists (your own lists of games, on Home or a tab's left bar). */
+  emby: {
+    status(): Promise<EmbyStatus>
+    /** Servers answering on the network. */
+    discover(): Promise<EmbyServer[]>
+    /** The server at a typed address; throws if none answers. */
+    check(address: string): Promise<EmbyServer>
+    signIn(server: EmbyServer, user: string, password: string): Promise<EmbyStatus>
+    signOut(): Promise<void>
+    /** Continue watching: empty when signed out; throws if the server can't be reached. */
+    resume(): Promise<EmbyItem[]>
+    playback(itemId: string): Promise<EmbyPlayback>
+    report(event: 'start' | 'progress' | 'stop', playback: EmbyPlayback, positionSeconds: number, paused: boolean): Promise<void>
+  }
   gamePlaylists: {
     /** Every playlist, its games as cards, for Settings. */
     list(): Promise<PlaylistRow[]>
