@@ -1,9 +1,9 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatTotalPlaytime, libraryStats } from '../../../shared/libraryStats'
 import { LIBRARY_SORTS, type LibrarySort } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
-import { focus } from '../input/focus'
+import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 
 /** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id. */
 const LOGOS = Object.fromEntries(
@@ -13,8 +13,8 @@ const LOGOS = Object.fromEntries(
   ])
 )
 
-// A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, Sort, and its lists (All
-// games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, then its Genres and Years). The grid beside it shows
+// A console tab's left bar: the console's logo (or name), the console turning slowly, its totals, Sort (a drop-down), and its
+// lists (All games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, Arcade's systems). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. Select (tapped) hides the bar, and the grid takes the whole width.
 
@@ -24,7 +24,7 @@ export interface SideList {
   name: string
   items: RecentItem[]
   empty: string
-  /** The first of a section (Genres, Years): its heading goes above it. */
+  /** The first of a section (Playlists, Systems): its heading goes above it. */
   section?: string
 }
 
@@ -55,14 +55,20 @@ export function SideBar({
   selected: string
   open: boolean
   sort: LibrarySort
-  /** A on Sort: the next order. */
-  onSort: () => void
+  /** An order picked from Sort's drop-down. */
+  onSort: (sort: LibrarySort) => void
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
   const stats = libraryStats(all)
   const logoUrl = (logo && LOGOS[logo]) || LOGOS[tab]
   const current = lists.find((list) => list.id === selected)
+  const [sorting, setSorting] = useState(false)
+
+  // Hidden (Select), the bar takes its drop-down with it.
+  useEffect(() => {
+    if (!open) setSorting(false)
+  }, [open])
 
   // Keeps the focused list in view when there are more than fit (many playlists).
   const reveal = (el: HTMLElement): void => {
@@ -86,16 +92,32 @@ export function SideBar({
         <dt>Total playtime:</dt>
         <dd>{formatTotalPlaytime(stats.playtime)}</dd>
       </dl>
-      <button
-        className="side-bar-item side-bar-sort display"
-        tabIndex={-1}
-        {...(open ? { 'data-focusable': '' } : {})}
-        data-select-sound="move"
-        data-nav-right={SIDE_GRID_CARDS}
-        onClick={onSort}
-      >
-        Sort: {LIBRARY_SORTS.find((s) => s.id === sort)?.name}
-      </button>
+      <div className="side-bar-sort">
+        <button
+          id="side-bar-sort"
+          className={`side-bar-sort-button display${sorting ? ' open' : ''}`}
+          tabIndex={-1}
+          {...(open ? { 'data-focusable': '' } : {})}
+          data-select-sound="move"
+          data-nav-right={SIDE_GRID_CARDS}
+          aria-haspopup="menu"
+          aria-expanded={sorting}
+          onClick={() => setSorting(true)}
+        >
+          Sort by: {LIBRARY_SORTS.find((s) => s.id === sort)?.name}
+          <span className="side-bar-sort-arrow" aria-hidden="true" />
+        </button>
+        {sorting && (
+          <SortMenu
+            sort={sort}
+            onPick={(next) => {
+              setSorting(false)
+              if (next !== sort) onSort(next)
+            }}
+            onClose={() => setSorting(false)}
+          />
+        )}
+      </div>
       <div className="side-bar-lists" ref={box} data-focus-memory="side-bar">
         {lists.map((list) => [
           list.section && (
@@ -127,6 +149,51 @@ export function SideBar({
         ])}
       </div>
     </aside>
+  )
+}
+
+/**
+ * Sort's drop-down: the orders, opening on the one in use. Up and down and A inside it; B
+ * closes it. Either way the cursor goes back to Sort.
+ */
+function SortMenu({ sort, onPick, onClose }: { sort: LibrarySort; onPick: (sort: LibrarySort) => void; onClose: () => void }) {
+  const menu = useRef<HTMLDivElement>(null)
+  const back = (): void => {
+    const button = document.getElementById('side-bar-sort')
+    if (button) focus(button)
+  }
+
+  useEffect(() => {
+    const now = menu.current?.querySelector<HTMLElement>('[aria-checked="true"]')
+    if (now) focus(now)
+    const close = (): void => {
+      onClose()
+      back()
+    }
+    window.addEventListener(TRAP_CLOSE_EVENT, close)
+    return () => window.removeEventListener(TRAP_CLOSE_EVENT, close)
+  }, [])
+
+  return (
+    <div className="side-bar-sort-menu" role="menu" ref={menu} data-focus-trap="">
+      {LIBRARY_SORTS.map((s) => (
+        <button
+          key={s.id}
+          className="side-bar-sort-option display"
+          role="menuitemradio"
+          aria-checked={s.id === sort}
+          tabIndex={-1}
+          data-focusable=""
+          data-select-sound="move"
+          onClick={() => {
+            onPick(s.id)
+            back()
+          }}
+        >
+          {s.name}
+        </button>
+      ))}
+    </div>
   )
 }
 

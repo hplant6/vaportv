@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mainGenre } from './genres'
-import { genreGroups, nextSort, sortItems, yearGroups } from './librarySort'
+import { genreGroups, sortItems, yearGroups } from './librarySort'
 import type { RecentItem } from './types'
 
 const game = (title: string, more: Partial<RecentItem> = {}): RecentItem => ({ id: title, title, platform: 'snes', ...more })
@@ -22,10 +22,6 @@ describe('left bar sort', () => {
     expect(titles(sortItems(games, 'lastPlayed'))).toEqual(['actraiser', 'Zelda', 'Contra 3', 'Contra 10'])
     expect(titles(sortItems(games, 'mostPlayed'))).toEqual(['actraiser', 'Zelda', 'Contra 3', 'Contra 10'])
     expect(titles(sortItems(games, 'added'))).toEqual(['Zelda', 'actraiser', 'Contra 3', 'Contra 10'])
-  })
-
-  it('cycles Title, Last played, Most played, Recently added', () => {
-    expect([nextSort('title'), nextSort('lastPlayed'), nextSort('mostPlayed'), nextSort('added')]).toEqual(['lastPlayed', 'mostPlayed', 'added', 'title'])
   })
 })
 

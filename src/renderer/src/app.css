@@ -3505,12 +3505,7 @@ button {
   overflow: hidden;
 }
 
-/* Under the totals, apart from the lists below it. */
-.side-bar-sort {
-  width: 270px;
-}
-
-/* Over a section of the lists (Playlists, Genres, Years): small, dimmer, not selectable. */
+/* Over a section of the lists (Playlists, Collections, Systems): small, dimmer, not selectable. */
 .side-bar-heading {
   flex: none;
   margin: 14px 0 2px;
@@ -3593,4 +3588,97 @@ button {
   justify-content: space-between;
   column-gap: 36px;
   row-gap: 72px;
+}
+
+/* ── Sort (the left bar's drop-down; SideBar.tsx) ──
+   A button under the totals that opens the orders below it, over the lists. The design's
+   amber at 15% (40% with the cursor on it, or open) over its #444 board, as solid colours
+   so the backdrop doesn't change them; the arrow turns up while open. */
+/* As wide as the totals over it (the design's 305px wraps "Sort By: Most Played"). */
+.side-bar-sort {
+  position: relative;
+  flex: none;
+  width: 356px;
+}
+
+.side-bar-sort-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 55px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  white-space: nowrap;
+  color: var(--color-text);
+  background: #5b4f3e;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar-sort-button:focus,
+.side-bar-sort-button.open {
+  background: #8a6730;
+}
+
+/* A small triangle, pointing down; up while the drop-down is open. */
+.side-bar-sort-arrow {
+  flex: none;
+  width: 13px;
+  height: 11px;
+  background: #d9d9d9;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar-sort-button.open .side-bar-sort-arrow {
+  transform: rotate(180deg);
+}
+
+.side-bar-sort-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  padding: 24px;
+  border-radius: 12px;
+  background: #5b4f3e;
+  box-shadow: var(--shadow-card);
+}
+
+.side-bar-sort-option {
+  display: flex;
+  align-items: center;
+  height: 55px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  transition: background-color var(--dur-focus) var(--ease-focus);
+}
+
+/* The design's selected option: another 15% of amber. */
+.side-bar-sort-option:focus {
+  background: #765d39;
+}
+
+/* The design's type: Bricolage Grotesque ExtraBold, each word capitalised. */
+.side-bar-sort-button.display,
+.side-bar-sort-option.display {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-stretch: normal;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
 }

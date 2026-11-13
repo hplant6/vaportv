@@ -1,21 +1,17 @@
 import type { RecentItem } from './types'
 
-// The left bar's Sort, and its Genres and Years lists, from a console tab's game cards.
+// The left bar's Sort, from a console tab's game cards. Also its Genres and Years lists,
+// which the bar doesn't show for now (it has just the playlists people make).
 
 export type LibrarySort = 'title' | 'lastPlayed' | 'mostPlayed' | 'added'
 
-/** In the order A cycles them. */
+/** In the order Sort's drop-down lists them. */
 export const LIBRARY_SORTS: { id: LibrarySort; name: string }[] = [
-  { id: 'title', name: 'Title' },
+  { id: 'title', name: 'Name' },
   { id: 'lastPlayed', name: 'Last played' },
   { id: 'mostPlayed', name: 'Most played' },
-  { id: 'added', name: 'Recently added' }
+  { id: 'added', name: 'Date added' }
 ]
-
-export function nextSort(sort: LibrarySort): LibrarySort {
-  const i = LIBRARY_SORTS.findIndex((s) => s.id === sort)
-  return LIBRARY_SORTS[(i + 1) % LIBRARY_SORTS.length].id
-}
 
 const byTitle = (a: RecentItem, b: RecentItem): number => a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true })
 

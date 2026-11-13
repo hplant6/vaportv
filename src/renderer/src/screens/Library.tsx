@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { genreGroups, nextSort, sortItems, yearGroups, type LibrarySort } from '../../../shared/librarySort'
+import { sortItems, type LibrarySort } from '../../../shared/librarySort'
 import { hasSideBar, TAB_LIST } from '../../../shared/tabs'
 import type { CollectionRow, LibraryTab, PlaylistRow } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
@@ -142,8 +142,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     const all = rowItems('all')
     // Every list in the sort chosen, but Recents: that's in the order played, by definition.
     const sorted = (items: typeof all) => sortItems(items, sort)
-    const groups = (found: ReturnType<typeof genreGroups>, section: string): SideList[] =>
-      found.map((group, i) => ({ ...group, items: sorted(group.items), empty: '', ...(i === 0 ? { section } : {}) }))
     const lists: SideList[] = [
       { id: 'all', name: 'All games', items: sorted(all), empty: 'No games here.' },
       { id: 'recent', name: 'Recents', items: rowItems('recent'), empty: 'Games you play show up here.' },
@@ -164,10 +162,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           items: sorted(row.items),
           empty: 'No games here.',
           ...(i === 0 ? { section: screen === 'arcade' ? 'Systems' : 'Collections' } : {})
-        })),
-      // From what ES-DE's scrapers found; none if it hasn't scraped this console.
-      ...groups(genreGroups(all), 'Genres'),
-      ...groups(yearGroups(all), 'Years')
+        }))
     ]
     const current = lists.find((list) => list.id === selected) ?? lists[0]
     const label = TAB_LIST.find((t) => t.id === screen)?.label ?? screen
@@ -193,8 +188,7 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           selected={current.id}
           open={open}
           sort={sort}
-          onSort={() => {
-            const next = nextSort(sort)
+          onSort={(next) => {
             setSort(next)
             remember((saved) => {
               saved.sorts[screen] = next
