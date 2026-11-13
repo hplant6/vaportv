@@ -3720,3 +3720,11 @@ button {
   letter-spacing: 0.04em;
   text-transform: capitalize;
 }
+
+/* Settings → Controller: a two-button press (Select + Start), its icons side by side. */
+.control-combo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -16,6 +16,9 @@ const KILL_GRACE_MS = 5000
 /** Ryujinx ignores SIGTERM (it asks "are you sure?"), so emulators get a shorter wait. */
 const EMULATOR_GRACE_MS = 1500
 
+/** Steam's programs that start and watch an app (around vaporTV too): never what vaporTV launched. */
+const STEAM_PLUMBING = /(^|\/)(steam-runtime-launch-client|steam-runtime-supervisor|steam-launch-wrapper|reaper|srt-bwrap|pv-adverb)$/
+
 /** Steam's own UI in gamescope's app list. */
 const STEAM_UI_APPID = 769
 /**
@@ -187,6 +190,12 @@ async function launchedBySteamtv(): Promise<number[]> {
   const session = STEAMTV_APPID === null ? descendants(process.pid, parents) : await steamLaunchProcesses(STEAMTV_APPID)
   // vaporTV's own helpers (virtual keyboard and controller) aren't something it launched.
   for (const pid of session) if (isOwnHelper(pid)) for (const p of [pid, ...descendants(pid, parents)]) ours.add(p)
+  // Nor is Steam's own machinery for running vaporTV: its launch client carries vaporTV's app
+  // id but isn't under it, and closing it makes Steam close vaporTV (the game in front stayed).
+  for (const pid of session) {
+    const program = (await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).split('\0')[0]
+    if (STEAM_PLUMBING.test(program)) ours.add(pid)
+  }
   const candidates = session.filter((pid) => !ours.has(pid))
   // The AppImage runtime sits beside steamtv in the session and keeps its files
   // mounted; closing it pulls steamtv's own files away and crashes it.
@@ -231,12 +240,20 @@ async function closeWithAnimation(options: HotkeyOptions, pids: number[], name: 
   setTimeout(options.bringBack, 500)
 }
 
+/** pid and command of each, for the log (what's about to be closed). */
+async function describe(pids: number[]): Promise<string> {
+  const lines = await Promise.all(
+    pids.slice(0, 8).map(async (pid) => `${pid} ${(await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '?')).replace(/\0/g, ' ').trim().slice(0, 120)}`)
+  )
+  return lines.join(' | ') + (pids.length > 8 ? ` | …${pids.length - 8} more` : '')
+}
+
 async function closeForeground(options: HotkeyOptions): Promise<void> {
   const { log } = options
   const emulator = await launchedBySteamtv()
   if (emulator.length) {
     // Emulators run inside steamtv's own Steam session, so close just them.
-    log(`hotkey: closing what steamtv launched (${emulator.length} processes)`)
+    log(`hotkey: closing what steamtv launched (${emulator.length} processes): ${await describe(emulator)}`)
     await closeWithAnimation(options, emulator, options.nameFor('emulator'), EMULATOR_GRACE_MS)
   } else {
     const appid = await appOnScreen()

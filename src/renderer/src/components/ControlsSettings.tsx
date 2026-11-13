@@ -4,6 +4,12 @@ import { cancelCapture, captureButton, CONTROLS_CHANGED_EVENT } from '../input/g
 import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { toast } from './Toast'
 
+/** Pressed together, and the same whatever the buttons above are set to. */
+const FIXED: { name: string; detail: string; buttons: [number, number]; hold?: true }[] = [
+  { name: 'Close a game or app', detail: 'Hold both while it’s playing', buttons: [8, 9], hold: true },
+  { name: 'Sound off or on', detail: 'Click both sticks in', buttons: [10, 11] }
+]
+
 /**
  * Settings → Controller → Controls: a row per action showing its button. Choosing a row
  * waits for the next button pressed; a button another action had is swapped.
@@ -47,7 +53,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
     <div className="settings-group">
       <h3 className="settings-heading display">Controls</h3>
       <p className="settings-help">
-        Choose an action, then press the button you want for it. The D-pad and sticks always move around.
+        Choose an action, then press the button you want for it. The D-pad and sticks always move around, and the two-button presses at the end can’t be changed.
       </p>
       <div className="setting-list" data-focus-memory="settings-controls">
         {CONTROL_ACTIONS.map((a) => (
@@ -69,6 +75,26 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
                 <ButtonIcon button={controls[a.id]} family={family} />
               </>
             )}
+          </button>
+        ))}
+        {/* Two-button presses that are always the same: listed so they can be found, not changed. */}
+        {FIXED.map((f) => (
+          <button
+            key={f.name}
+            className="setting-row"
+            tabIndex={-1}
+            aria-label={`${f.name}: ${f.buttons.map((b) => buttonName(b, family)).join(' and ')}${f.hold ? ', held' : ''}`}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={() => toast(`${f.name} is always ${f.buttons.map((b) => buttonName(b, family)).join(' + ')}${f.hold ? ', held' : ''}`)}
+          >
+            <span className="setting-name display">{f.name}</span>
+            <span className="setting-detail">{f.detail}</span>
+            <span className="control-combo">
+              <ButtonIcon button={f.buttons[0]} family={family} />
+              <span className="controls-guide-plus">+</span>
+              <ButtonIcon button={f.buttons[1]} family={family} />
+            </span>
           </button>
         ))}
         {!isDefault && (

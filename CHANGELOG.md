@@ -6,6 +6,9 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+### Fixed
+- Holding Select + Start closes non-Steam games again (GOG and other games added to Steam). Newer Steam launches vaporTV through a helper that the shortcut mistook for something vaporTV had opened: it closed that instead, and Steam took vaporTV down with it, leaving the game running.
+
 ## Unreleased
 
 ### Added
@@ -23,7 +26,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - **X** on a game now opens its playlists, to add it to one (or a new one) or take it out; B closes them. Changing a game's artwork moved to its Game options (Start → Change artwork). If you had moved Artwork to another button, Playlist is on that button now.
 - New button layout: **L2** shows or hides a tab's list of games (the left bar), **R2** shows what each button does, and **Select** opens Settings. The triggers no longer change the volume (a remote's or keyboard's volume keys still do). If you'd moved buttons in Settings → Controller, yours are kept, and the new actions take free buttons.
 - Click both sticks in to turn vaporTV's sound off: the music and ambience, and anything playing in Files. Do it again to bring the music back. Clicking one stick still skips the song (left) or starts voice search (right), as you let go.
-- R2's button guide shows every button now, in two lines.
+- R2's button guide shows every button now, in two lines, Select + Start and both sticks included; so does Settings → Controller, at the end of its list.
 - The controls guide sits lower, near the bottom of the screen, and no longer lists Next song, so it fits on screen. The button still skips to the next track.
 
 ### Fixed
