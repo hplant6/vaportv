@@ -227,23 +227,81 @@ const DEVICE_PROFILE = {
   ],
   ContainerProfiles: [],
   CodecProfiles: [],
-  // Text subtitles aren't shown yet; picture ones (DVD, Blu-ray) only when burned in, which Emby does if asked.
-  SubtitleProfiles: [{ Format: 'srt', Method: 'External' }]
+  // Text subtitles come as WebVTT beside the video (the player draws them); picture ones (Blu-ray, DVD,
+  // DVB) can't be drawn by Chromium, so Emby burns them into the picture.
+  SubtitleProfiles: [
+    ...['vtt', 'srt', 'subrip', 'ass', 'ssa', 'sub', 'smi', 'ttml', 'mov_text'].map((Format) => ({ Format, Method: 'External' })),
+    ...['pgssub', 'pgs', 'dvdsub', 'vobsub', 'dvbsub', 'sup'].map((Format) => ({ Format, Method: 'Encode' }))
+  ]
 }
 
-/** How to play `itemId` from where it was left: the address, whether it's HLS, and where to start. */
-export async function embyPlayback(itemId: string): Promise<EmbyPlayback> {
+interface Stream {
+  Index: number
+  Type: string
+  Codec?: string
+  Language?: string
+  DisplayTitle?: string
+  Title?: string
+  Channels?: number
+  IsDefault?: boolean
+  IsForced?: boolean
+  IsTextSubtitleStream?: boolean
+  DeliveryMethod?: string
+}
+
+interface Source {
+  Id: string
+  Container?: string
+  SupportsDirectPlay?: boolean
+  SupportsDirectStream?: boolean
+  TranscodingUrl?: string
+  MediaStreams?: Stream[]
+  DefaultAudioStreamIndex?: number
+  DefaultSubtitleStreamIndex?: number
+}
+
+/** A track as the Audio & subtitles menu lists it: Emby's own name for it ("English · 5.1 DTS", "Spanish (Forced)"). */
+function trackName(stream: Stream, fallback: string): string {
+  return stream.DisplayTitle || [stream.Title, stream.Language].filter(Boolean).join(' · ') || fallback
+}
+
+/**
+ * How to play `itemId`: the address, whether it's HLS, where to start, and its audio and
+ * subtitle tracks. `choice` picks a track (subtitle -1: none); unset, Emby's defaults (the
+ * user's language preferences). Another audio track than the file's own default can't be
+ * switched to in Chromium, so Emby sends the video again with it (converting, or just
+ * repackaging); a picture subtitle is burned in the same way. A text subtitle comes beside it.
+ */
+export async function embyPlayback(itemId: string, choice: { audio?: number; subtitle?: number } = {}): Promise<EmbyPlayback> {
   const config = await loadConfig()
   const emby = config.emby
   if (!emby) throw new Error('Not signed in to Emby')
   const headers = await authHeader(config, emby.token)
   const item = await request<Item>(`${emby.url}/emby/Users/${emby.userId}/Items/${itemId}`, { headers })
-  const info = await request<{ PlaySessionId: string; MediaSources: { Id: string; Container?: string; SupportsDirectPlay?: boolean; SupportsDirectStream?: boolean; TranscodingUrl?: string }[] }>(
-    `${emby.url}/emby/Items/${itemId}/PlaybackInfo?UserId=${emby.userId}&IsPlayback=true&AutoOpenLiveStream=true&MaxStreamingBitrate=${DEVICE_PROFILE.MaxStreamingBitrate}`,
-    { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ DeviceProfile: DEVICE_PROFILE }) }
-  )
-  const source = info.MediaSources[0]
+  const ask = async (extra: Record<string, unknown>): Promise<{ PlaySessionId: string; MediaSources: Source[] }> => {
+    const query = new URLSearchParams({ UserId: emby.userId, IsPlayback: 'true', AutoOpenLiveStream: 'true', MaxStreamingBitrate: String(DEVICE_PROFILE.MaxStreamingBitrate) })
+    if (choice.audio !== undefined) query.set('AudioStreamIndex', String(choice.audio))
+    if (choice.subtitle !== undefined) query.set('SubtitleStreamIndex', String(choice.subtitle))
+    return request(`${emby.url}/emby/Items/${itemId}/PlaybackInfo?${query}`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ DeviceProfile: DEVICE_PROFILE, ...extra })
+    })
+  }
+  let info = await ask({})
+  let source = info.MediaSources[0]
   if (!source) throw new Error('Emby has nothing to play for this')
+  const streams = source.MediaStreams ?? []
+  const audio = choice.audio ?? source.DefaultAudioStreamIndex ?? streams.find((s) => s.Type === 'Audio' && s.IsDefault)?.Index
+  const subtitle = choice.subtitle ?? source.DefaultSubtitleStreamIndex ?? -1
+  const chosenSubtitle = streams.find((s) => s.Type === 'Subtitle' && s.Index === subtitle)
+  const burned = !!chosenSubtitle && !chosenSubtitle.IsTextSubtitleStream
+  // Straight from the file plays its default audio and no burned-in subtitle: for anything else, Emby's stream.
+  const fileAudio = streams.find((s) => s.Type === 'Audio' && s.IsDefault)?.Index ?? streams.find((s) => s.Type === 'Audio')?.Index
+  if (source.SupportsDirectPlay && ((audio !== undefined && audio !== fileAudio) || burned)) {
+    info = await ask({ EnableDirectPlay: false, EnableDirectStream: false })
+    source = info.MediaSources[0] ?? source
+  }
   const card = embyCard(item)
   const common = {
     itemId,
@@ -253,7 +311,13 @@ export async function embyPlayback(itemId: string): Promise<EmbyPlayback> {
     subtitle: card.subtitle,
     backdrop: card.wide,
     startSeconds: (item.UserData?.PlaybackPositionTicks ?? 0) / TICKS,
-    durationSeconds: item.RunTimeTicks ? item.RunTimeTicks / TICKS : undefined
+    durationSeconds: item.RunTimeTicks ? item.RunTimeTicks / TICKS : undefined,
+    audioTracks: streams.filter((s) => s.Type === 'Audio').map((s, i) => ({ index: s.Index, name: trackName(s, `Track ${i + 1}`) })),
+    subtitleTracks: streams.filter((s) => s.Type === 'Subtitle').map((s, i) => ({ index: s.Index, name: trackName(s, `Subtitles ${i + 1}`) })),
+    audio,
+    subtitleIndex: chosenSubtitle ? subtitle : -1,
+    // A text subtitle, as WebVTT, for the player to draw.
+    subtitleUrl: chosenSubtitle && !burned ? `${BASE}/Videos/${itemId}/${source.Id}/Subtitles/${subtitle}/Stream.vtt` : undefined
   }
   if (source.SupportsDirectPlay || (source.SupportsDirectStream && !source.TranscodingUrl)) {
     const query = new URLSearchParams({ Static: 'true', MediaSourceId: source.Id, PlaySessionId: info.PlaySessionId })

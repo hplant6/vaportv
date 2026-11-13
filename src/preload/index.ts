@@ -126,7 +126,7 @@ const api: SteamTvApi = {
     signIn: (server, user, password) => ipcRenderer.invoke('emby:signIn', server, user, password),
     signOut: () => ipcRenderer.invoke('emby:signOut'),
     resume: () => ipcRenderer.invoke('emby:resume'),
-    playback: (itemId) => ipcRenderer.invoke('emby:playback', itemId),
+    playback: (itemId, choice) => ipcRenderer.invoke('emby:playback', itemId, choice),
     report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('emby:report', event, playback, positionSeconds, paused)
   },
   gamePlaylists: {

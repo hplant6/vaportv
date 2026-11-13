@@ -799,7 +799,7 @@ ipcMain.handle('emby:check', (_event, address: string) => checkEmbyServer(addres
 ipcMain.handle('emby:signIn', (_event, server: EmbyServer, user: string, password: string) => embySignIn(server, user, password))
 ipcMain.handle('emby:signOut', () => embySignOut())
 ipcMain.handle('emby:resume', () => embyResume())
-ipcMain.handle('emby:playback', (_event, itemId: string) => embyPlayback(itemId))
+ipcMain.handle('emby:playback', (_event, itemId: string, choice?: { audio?: number; subtitle?: number }) => embyPlayback(itemId, choice))
 ipcMain.handle('emby:report', (_event, kind: 'start' | 'progress' | 'stop', playback: EmbyPlayback, position: number, paused: boolean) =>
   embyReport(kind, playback, position, paused).catch((err) => logInput(`emby: report ${kind} failed: ${err}`))
 )

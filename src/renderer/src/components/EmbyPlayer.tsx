@@ -52,6 +52,11 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
   const family = useControllerFamily()
   const started = useRef(false)
   const [playing, setPlaying] = useState(false)
+  // Audio & subtitles: the tracks picked (unset: Emby's defaults), the menu, and where to pick up after a change.
+  const [choice, setChoice] = useState<{ audio?: number; subtitle?: number }>({})
+  const [menu, setMenu] = useState(false)
+  const resumeAt = useRef<number | null>(null)
+  const [cues, setCues] = useState<string | null>(null)
 
   const showBar = useCallback(() => {
     setBarShown(true)
@@ -60,28 +65,35 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
   }, [])
   useEffect(() => () => clearTimeout(barTimer.current), [])
 
-  // Asks Emby how to play it, then plays: hls.js for a converted stream, the file itself otherwise.
   useEffect(() => {
     window.steamtv.getSettings().then((s) => setControls(s.controls))
     if (self.current) focus(self.current)
+  }, [])
+
+  // Asks Emby how to play it (with the tracks picked), then plays: hls.js for a converted stream,
+  // the file itself otherwise. A new pick plays again from where it had got to.
+  useEffect(() => {
     showBar()
     let hls: Hls | null = null
     let cancelled = false
     window.steamtv.emby
-      .playback(itemId)
+      .playback(itemId, choice)
       .then(async (info) => {
         if (cancelled || !video.current) return
+        const from = resumeAt.current ?? (info.startSeconds > 5 ? info.startSeconds : 0)
+        resumeAt.current = null
+        started.current = false
         setPlayback(info)
         const el = video.current
         const begin = (): void => {
-          if (info.startSeconds > 5) el.currentTime = info.startSeconds
+          if (from) el.currentTime = from
           el.play().catch(() => undefined)
         }
         if (info.hls) {
           const { default: HlsPlayer } = await import('hls.js')
           if (cancelled) return
           // No worker: the page's content policy doesn't allow blob: workers, and one stream doesn't need it.
-          hls = new HlsPlayer({ enableWorker: false, startPosition: info.startSeconds > 5 ? info.startSeconds : -1 })
+          hls = new HlsPlayer({ enableWorker: false, startPosition: from || -1 })
           hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
             if (!data.fatal) return
             console.error('steamtv: emby stream failed:', data.type, data.details)
@@ -105,7 +117,44 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
       cancelled = true
       hls?.destroy()
     }
-  }, [itemId])
+  }, [itemId, choice])
+
+  // Text subtitles: fetched as WebVTT and handed to the video as a track it draws.
+  const subtitleUrl = playback?.subtitleUrl
+  useEffect(() => {
+    setCues(null)
+    if (!subtitleUrl) return
+    let url: string | null = null
+    let cancelled = false
+    fetch(subtitleUrl)
+      .then((response) => (response.ok ? response.text() : Promise.reject(new Error(String(response.status)))))
+      .then((text) => {
+        if (cancelled) return
+        url = URL.createObjectURL(new Blob([text], { type: 'text/vtt' }))
+        setCues(url)
+      })
+      .catch((err) => {
+        console.error('steamtv: emby subtitles:', err)
+        toast('Couldn’t load those subtitles')
+      })
+    return () => {
+      cancelled = true
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [subtitleUrl])
+
+  /** Another audio track or subtitles: Emby's told this play stopped here, and it plays again with them from here. */
+  const pick = (next: { audio?: number; subtitle?: number }): void => {
+    setMenu(false)
+    if (!playback) return
+    const same = (next.audio ?? playback.audio) === playback.audio && (next.subtitle ?? playback.subtitleIndex) === playback.subtitleIndex
+    setTimeout(() => self.current && focus(self.current))
+    if (same) return
+    resumeAt.current = video.current?.currentTime ?? 0
+    if (started.current) report('stop')
+    setChoice({ audio: next.audio ?? playback.audio, subtitle: next.subtitle ?? playback.subtitleIndex })
+  }
+  const hasTracks = !!playback && (playback.audioTracks.length > 1 || playback.subtitleTracks.length > 0)
 
   // Where it's got to, for Emby: as it starts, every few seconds, on pausing, and as it stops.
   const position = (): number => video.current?.currentTime ?? 0
@@ -127,11 +176,16 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
     onClose()
   }, [report, onClose])
 
-  // B stops; the music waits and the screensaver stays off while it's open.
+  // B closes Audio & subtitles, or stops; the music waits and the screensaver stays off while it's open.
   useEffect(() => {
-    window.addEventListener(TRAP_CLOSE_EVENT, stop)
-    return () => window.removeEventListener(TRAP_CLOSE_EVENT, stop)
-  }, [stop])
+    const onBack = (): void => {
+      if (!menu) return stop()
+      setMenu(false)
+      setTimeout(() => self.current && focus(self.current))
+    }
+    window.addEventListener(TRAP_CLOSE_EVENT, onBack)
+    return () => window.removeEventListener(TRAP_CLOSE_EVENT, onBack)
+  }, [stop, menu])
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: true }))
     return () => void window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: false }))
@@ -152,6 +206,11 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
     const onDirection = (event: Event): void => {
       const direction = (event as CustomEvent<Direction>).detail
       showBar()
+      // Down: Audio & subtitles (the cursor moves in it, so it isn't sent here while open).
+      if (direction === 'down' && hasTracks) {
+        setMenu(true)
+        return
+      }
       const el = video.current
       if (!el || (direction !== 'left' && direction !== 'right')) return
       const length = el.duration || playback?.durationSeconds || 0
@@ -159,7 +218,15 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
     }
     window.addEventListener(OWN_DIRECTION_EVENT, onDirection)
     return () => window.removeEventListener(OWN_DIRECTION_EVENT, onDirection)
-  }, [showBar, playback])
+  }, [showBar, playback, hasTracks])
+
+  // Opening the menu puts the cursor on the audio track playing (or the first thing in it).
+  useEffect(() => {
+    if (!menu) return
+    // The menu's drawn by now (effects run after it is).
+    const el = document.querySelector<HTMLElement>('.emby-tracks [aria-checked="true"], .emby-tracks [data-focusable]')
+    if (el) focus(el)
+  }, [menu])
 
   const toggle = (): void => {
     showBar()
@@ -187,7 +254,7 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
         className={`files-viewer${barShown || paused ? ' bar-shown' : ''}`}
         tabIndex={-1}
         data-focusable=""
-        data-own-directions=""
+        {...(menu ? {} : { 'data-own-directions': '' })}
         data-select-sound="move"
         onClick={toggle}
       >
@@ -212,8 +279,24 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
           }}
           onEnded={stop}
           onTimeUpdate={tick}
+          onLoadedMetadata={() => {
+            // A new subtitles track starts hidden: show it.
+            for (const track of Array.from(video.current?.textTracks ?? [])) track.mode = 'showing'
+          }}
           onSeeked={tick}
-        />
+        >
+          {cues && (
+            <track
+              key={cues}
+              kind="subtitles"
+              src={cues}
+              default
+              onLoad={(event) => {
+                event.currentTarget.track.mode = 'showing'
+              }}
+            />
+          )}
+        </video>
         <div className="files-viewer-bar">
           <div className="files-viewer-line">
             <span className="files-viewer-name display">{playback?.title ?? 'Loading…'}</span>
@@ -233,12 +316,43 @@ function EmbyPlayer({ itemId, onClose }: { itemId: string; onClose: () => void }
             <span className="files-hint">
               <DpadIcon /> Back {BACK_S} s / on {ON_S} s
             </span>
+            {hasTracks && (
+              <span className="files-hint">
+                <DpadIcon /> Down: audio &amp; subtitles
+              </span>
+            )}
             <span className="files-hint">
               <ButtonIcon button={controls.back} family={family} /> Stop
             </span>
           </div>
         </div>
       </button>
+      {menu && playback && <TrackMenu playback={playback} onPick={pick} />}
+    </div>
+  )
+}
+
+/** Audio & subtitles: a list of each, the ones playing ticked. A picks one. */
+function TrackMenu({ playback, onPick }: { playback: EmbyPlayback; onPick: (choice: { audio?: number; subtitle?: number }) => void }) {
+  const row = (key: string, name: string, checked: boolean, onClick: () => void) => (
+    <button key={key} className="setting-row emby-track" role="menuitemradio" aria-checked={checked} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
+      <span className="setting-name">{name}</span>
+      {checked && <span className="emby-track-check">✓</span>}
+    </button>
+  )
+  return (
+    <div className="emby-tracks" role="menu">
+      {playback.audioTracks.length > 0 && (
+        <div className="emby-tracks-column" data-nav-scope="">
+          <h3 className="settings-heading display">Audio</h3>
+          {playback.audioTracks.map((t) => row(`a${t.index}`, t.name, t.index === playback.audio, () => onPick({ audio: t.index })))}
+        </div>
+      )}
+      <div className="emby-tracks-column" data-nav-scope="">
+        <h3 className="settings-heading display">Subtitles</h3>
+        {row('s-off', 'Off', playback.subtitleIndex === -1, () => onPick({ subtitle: -1 }))}
+        {playback.subtitleTracks.map((t) => row(`s${t.index}`, t.name, t.index === playback.subtitleIndex, () => onPick({ subtitle: t.index })))}
+      </div>
     </div>
   )
 }

@@ -84,6 +84,13 @@ export interface EmbyPlayback {
   backdrop?: string
   startSeconds: number
   durationSeconds?: number
+  /** Its audio and subtitle tracks, by Emby's stream index, and the ones playing (subtitle -1: none). */
+  audioTracks: { index: number; name: string }[]
+  subtitleTracks: { index: number; name: string }[]
+  audio?: number
+  subtitleIndex: number
+  /** The subtitles chosen, as WebVTT, when they're text (picture ones are burned into the video instead). */
+  subtitleUrl?: string
 }
 
 export interface HomeData {
@@ -728,7 +735,8 @@ export interface SteamTvApi {
     signOut(): Promise<void>
     /** Continue watching: empty when signed out; throws if the server can't be reached. */
     resume(): Promise<EmbyItem[]>
-    playback(itemId: string): Promise<EmbyPlayback>
+    /** `choice` picks the audio and subtitle tracks (subtitle -1: none); unset, Emby's defaults. */
+    playback(itemId: string, choice?: { audio?: number; subtitle?: number }): Promise<EmbyPlayback>
     report(event: 'start' | 'progress' | 'stop', playback: EmbyPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }
   gamePlaylists: {
