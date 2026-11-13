@@ -3489,36 +3489,14 @@ button {
   overflow-wrap: anywhere;
 }
 
-/* The number of games, between two lines in the modals' warm brown. */
-.side-bar-stats {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px 18px;
-  padding: 16px 24px;
-  border-top: 2px solid rgb(53, 41, 31);
-  border-bottom: 2px solid rgb(53, 41, 31);
-  font-size: var(--text-body);
-  letter-spacing: 0.04em;
-}
-
-.side-bar-stats dt {
-  font-weight: 700;
-}
-
-.side-bar-stats dt,
-.side-bar-stats dd {
-  white-space: nowrap;
-}
-
-.side-bar-stats dd {
-  margin: 0;
-}
-
+/* Positioned, so its items' offsetTop is from its own top: SideBar's reveal() scrolls it by
+   that (from the bar's top, it overshot going down and never came back up to All games). */
 .side-bar-lists {
+  position: relative;
   flex: 1;
   min-height: 0;
-  width: 270px;
+  /* As wide as Sort over it: room for a long name and its count. */
+  width: 356px;
   display: flex;
   flex-direction: column;
   gap: 9px;

@@ -194,7 +194,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
           logo={screen === 'arcade' && current.id.startsWith('row:') ? `arcade-${current.id.slice('row:'.length)}` : undefined}
           title={label}
           lists={lists}
-          all={all}
           selected={current.id}
           open={open}
           sort={sort}

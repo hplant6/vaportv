@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { libraryStats } from '../../../shared/libraryStats'
 import { LIBRARY_SORTS, type LibrarySort } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
@@ -13,7 +12,7 @@ const LOGOS = Object.fromEntries(
   ])
 )
 
-// A console tab's left bar: the console's logo (or name), the console turning slowly, how many games it has, Sort (a drop-down), and its
+// A console tab's left bar: the console's logo (or name), the console turning slowly, Sort (a drop-down), and its
 // lists (All games, Recents, Favorites, the playlists set to show on this tab, Steam's collections on Steam's, Arcade's systems). The grid beside it shows
 // the list the cursor is on, as Settings' pane follows its categories; A steps into the grid,
 // and B there comes back. L2 hides the bar, and the grid takes the whole width.
@@ -39,7 +38,6 @@ export function SideBar({
   logo,
   title,
   lists,
-  all,
   selected,
   open,
   sort,
@@ -53,8 +51,6 @@ export function SideBar({
   /** The console's name: under its logo for screen readers, or shown if it has none. */
   title: string
   lists: SideList[]
-  /** Every game on the tab, for the totals. */
-  all: RecentItem[]
   selected: string
   open: boolean
   sort: LibrarySort
@@ -63,7 +59,6 @@ export function SideBar({
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
-  const stats = libraryStats(all)
   const logoUrl = (logo && LOGOS[logo]) || LOGOS[tab]
   const current = lists.find((list) => list.id === selected)
   const [sorting, setSorting] = useState(false)
@@ -80,11 +75,14 @@ export function SideBar({
     if (!open) setSorting(false)
   }, [open])
 
-  // Keeps the focused list in view when there are more than fit (many playlists).
+  // Keeps the focused list in view when there are more than fit (many playlists), with its
+  // section's heading if it's the first under one; the first of all goes back to the very top.
   const reveal = (el: HTMLElement): void => {
     const list = box.current
     if (!list) return
-    if (el.offsetTop < list.scrollTop) list.scrollTop = el.offsetTop
+    const heading = el.previousElementSibling?.classList.contains('side-bar-heading') ? (el.previousElementSibling as HTMLElement) : null
+    const top = el === list.firstElementChild ? 0 : (heading ?? el).offsetTop
+    if (top < list.scrollTop) list.scrollTop = top
     else if (el.offsetTop + el.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = el.offsetTop + el.offsetHeight - list.clientHeight
   }
 
@@ -94,10 +92,6 @@ export function SideBar({
       <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
       {spinning && <ConsoleSpin tab={tab} />}
-      <dl className="side-bar-stats">
-        <dt>Total games:</dt>
-        <dd>{stats.games.toLocaleString()}</dd>
-      </dl>
       <div className="side-bar-sort">
         <button
           id="side-bar-sort"
@@ -150,7 +144,7 @@ export function SideBar({
               if (first) focus(first)
             }}
           >
-            {list.name}
+            {list.name} ({list.items.length.toLocaleString()})
           </button>
         ])}
       </div>
