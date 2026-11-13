@@ -3592,8 +3592,7 @@ button {
 
 /* ── Sort (the left bar's drop-down; SideBar.tsx) ──
    A button under the totals that opens the orders below it, over the lists. The design's
-   amber at 15% (40% with the cursor on it, or open) over its #444 board, as solid colours
-   so the backdrop doesn't change them; the arrow turns up while open. */
+   amber (#EE960D) at 15%, 40% with the cursor on it or open; the arrow turns up while open. */
 /* As wide as the totals over it (the design's 305px wraps "Sort By: Most Played"). */
 .side-bar-sort {
   position: relative;
@@ -3614,13 +3613,13 @@ button {
   text-transform: capitalize;
   white-space: nowrap;
   color: var(--color-text);
-  background: #5b4f3e;
+  background: rgba(238, 150, 13, 0.15);
   transition: background-color var(--dur-focus) var(--ease-focus);
 }
 
 .side-bar-sort-button:focus,
 .side-bar-sort-button.open {
-  background: #8a6730;
+  background: rgba(238, 150, 13, 0.4);
 }
 
 /* A small triangle, pointing down; up while the drop-down is open. */
@@ -3648,7 +3647,9 @@ button {
   width: 100%;
   padding: 24px;
   border-radius: 12px;
-  background: #5b4f3e;
+  background: rgba(238, 150, 13, 0.15);
+  /* Blurs the lists it opens over, so its own options read. */
+  backdrop-filter: blur(24px);
   box-shadow: var(--shadow-card);
 }
 
@@ -3669,7 +3670,7 @@ button {
 
 /* The design's selected option: another 15% of amber. */
 .side-bar-sort-option:focus {
-  background: #765d39;
+  background: rgba(238, 150, 13, 0.15);
 }
 
 /* The design's type: Bricolage Grotesque ExtraBold, each word capitalised. */
