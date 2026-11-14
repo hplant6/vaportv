@@ -7,6 +7,7 @@ import { play } from '../input/sounds'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { ICONS as PLAYER_ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
 import { toast } from './Toast'
 
 // The Files app (its tile is in Apps): everything in the home folders and on any USB drive or
@@ -23,6 +24,8 @@ const PAGE_ROWS = 8
 const SEEK_S = 10
 /** The viewer's bar fades this long after the last press, while something plays. */
 const BAR_MS = 3500
+/** The cursor on the buttons: the bar stays up longer, as something's being picked. */
+const BUTTONS_BAR_MS = 8000
 
 const MEDIA_NAME = { image: 'Picture', video: 'Video', audio: 'Song' } as const
 
@@ -115,6 +118,8 @@ let clipboard: Clip | null = null
 const folderOf = (path: string): string => path.slice(0, path.lastIndexOf('/')) || '/'
 
 function FilesBrowser({ onClose }: { onClose: () => void }) {
+  /** The viewer's own use of B (closing its shortcuts panel): true when it took it. */
+  const viewerBack = useRef<(() => boolean) | null>(null)
   const root = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLDivElement>(null)
   const [places, setPlaces] = useState<BrowseEntry[] | null>(null)
@@ -203,6 +208,8 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const onBack = (): void => {
+      // The viewer's shortcuts panel closes first.
+      if (viewing !== null && viewerBack.current?.()) return
       if (viewing !== null) {
         returnTo.current = files[viewing]?.path ?? null
         return setViewing(null)
@@ -410,7 +417,7 @@ function FilesBrowser({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {viewing !== null && files[viewing] && <Viewer files={files} index={viewing} onStep={setViewing} />}
+      {viewing !== null && files[viewing] && <Viewer files={files} index={viewing} onStep={setViewing} backRef={viewerBack} />}
     </div>
   )
 }
@@ -436,8 +443,20 @@ function useFileUrl(entry: BrowseEntry): string | null {
  * A file full screen. Pictures: left/right (or L1/R1) for the folder's others. Videos and
  * songs: A pauses, left/right skip 10 seconds, L1/R1 the previous or next file; a song
  * that ends goes on to the next if that's a song too. Anything else: what it is.
+ * D-pad down moves the cursor to the buttons along the foot (the same as these, and the
+ * controller icon, whose panel lists the shortcuts); up goes back.
  */
-function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number; onStep: (index: number) => void }) {
+function Viewer({
+  files,
+  index,
+  onStep,
+  backRef
+}: {
+  files: BrowseEntry[]
+  index: number
+  onStep: (index: number) => void
+  backRef: { current: (() => boolean) | null }
+}) {
   const entry = files[index]
   const url = useFileUrl(entry)
   const self = useRef<HTMLButtonElement>(null)
@@ -449,6 +468,21 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   const family = useControllerFamily()
   const playable = entry.media === 'video' || entry.media === 'audio'
+  /** The cursor on the buttons (not the top row), and the shortcuts panel. */
+  const [onButtons, setOnButtonsState] = useState(false)
+  const onButtonsRef = useRef(false)
+  const buttonsRow = useRef<HTMLDivElement>(null)
+  const mainButton = useRef<HTMLButtonElement>(null)
+  const [keysShown, setKeysShown] = useState(false)
+  const setOnButtons = (on: boolean): void => {
+    onButtonsRef.current = on
+    setOnButtonsState(on)
+  }
+  const toTop = useCallback((): void => {
+    onButtonsRef.current = false
+    setOnButtonsState(false)
+    if (self.current) focus(self.current)
+  }, [])
 
   useEffect(() => {
     window.steamtv.getSettings().then((s) => setControls(s.controls))
@@ -456,12 +490,31 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
     if (self.current) focus(self.current)
   }, [])
 
-  // The bar shows on any press, and fades while something plays.
+  // B closes the shortcuts panel before it closes the viewer.
+  useEffect(() => {
+    backRef.current = () => {
+      if (!keysShown) return false
+      setKeysShown(false)
+      return true
+    }
+    return () => {
+      backRef.current = null
+    }
+  }, [backRef, keysShown])
+
+  // The bar shows on any press, and fades while something plays (the cursor goes back to the top row).
   const showBar = useCallback(() => {
     setBarShown(true)
     clearTimeout(barTimer.current)
-    barTimer.current = setTimeout(() => setBarShown(false), BAR_MS)
-  }, [])
+    barTimer.current = setTimeout(
+      () => {
+        setBarShown(false)
+        setKeysShown(false)
+        if (onButtonsRef.current && media.current && !media.current.paused) toTop()
+      },
+      onButtonsRef.current ? BUTTONS_BAR_MS : BAR_MS
+    )
+  }, [toTop])
   useEffect(() => () => clearTimeout(barTimer.current), [])
   useEffect(() => {
     setPaused(false)
@@ -498,15 +551,34 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
     [index, files.length, onStep]
   )
 
+  const seek = useCallback((by: number): void => {
+    const el = media.current
+    if (el) el.currentTime = Math.max(0, Math.min(el.duration || 0, el.currentTime + by))
+  }, [])
+
   useEffect(() => {
     const onDirection = (event: Event): void => {
       const direction = (event as CustomEvent<Direction>).detail
       showBar()
-      const el = media.current
-      if (playable && el && (direction === 'left' || direction === 'right')) {
-        el.currentTime = Math.max(0, Math.min(el.duration || 0, el.currentTime + (direction === 'right' ? SEEK_S : -SEEK_S)))
+      if (onButtonsRef.current) {
+        if (direction === 'up') return toTop()
+        if (direction === 'down') return
+        const next = stepAlong(buttonsRow.current, direction)
+        if (next) {
+          play('move')
+          focus(next)
+        }
         return
       }
+      if (direction === 'down') {
+        setOnButtons(true)
+        play('move')
+        const first = mainButton.current?.hasAttribute('data-focusable') ? mainButton.current : buttonsRow.current?.querySelector<HTMLElement>('[data-focusable]')
+        if (first) focus(first)
+        showBar()
+        return
+      }
+      if (playable && (direction === 'left' || direction === 'right')) return seek(direction === 'right' ? SEEK_S : -SEEK_S)
       if (!playable && direction === 'left') step(-1)
       if (!playable && direction === 'right') step(1)
     }
@@ -520,7 +592,15 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
       window.removeEventListener(OWN_DIRECTION_EVENT, onDirection)
       window.removeEventListener(TRAP_TAB_EVENT, onTab)
     }
-  }, [playable, step, showBar])
+  }, [playable, step, seek, showBar, toTop])
+
+  // A file stepped to from the buttons: the cursor stays on the button pressed (or the nearest one left).
+  useEffect(() => {
+    if (!onButtonsRef.current) return
+    if (buttonsRow.current?.contains(document.activeElement)) return
+    const first = buttonsRow.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (first) focus(first)
+  }, [index])
 
   const toggle = (): void => {
     showBar()
@@ -546,16 +626,10 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
     onTimeUpdate: () => media.current && setTime({ at: media.current.currentTime, length: media.current.duration })
   }
 
+  const first = index === 0
+  const last = index === files.length - 1
   return (
-    <button
-      ref={self}
-      className={`files-viewer${barShown || paused || !playable ? ' bar-shown' : ''}`}
-      tabIndex={-1}
-      data-focusable=""
-      data-own-directions=""
-      data-select-sound="move"
-      onClick={playable ? toggle : showBar}
-    >
+    <div className={`files-viewer${barShown || paused || !playable ? ' bar-shown' : ''}${onButtons ? ' on-buttons' : ''}`} data-own-directions="">
       {entry.media === 'image' && url && <img key={url} className="files-viewer-media" src={url} alt="" />}
       {entry.media === 'video' && url && <video key={url} className="files-viewer-media" playsInline {...mediaEvents} />}
       {entry.media === 'audio' && (
@@ -576,42 +650,84 @@ function Viewer({ files, index, onStep }: { files: BrowseEntry[]; index: number;
         </div>
       )}
 
-      <div className="files-viewer-bar">
-        <div className="files-viewer-line">
-          <span className="files-viewer-name display">{entry.name}</span>
-          <span className="files-viewer-count">
-            {index + 1} of {files.length}
-          </span>
-        </div>
-        {playable && (
-          <div className="files-viewer-line">
-            <span className="files-viewer-time">{clock(time.at)}</span>
-            <span className="files-progress">
-              <span className="files-progress-fill" style={{ width: `${time.length ? (time.at / time.length) * 100 : 0}%` }} />
+      <div className="files-viewer-bar media-controls-bar">
+        {/* The top row has the cursor to begin with: A plays or pauses, left and right skip (a picture: the folder's others). */}
+        <button ref={self} className="media-seek files-viewer-top" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={playable ? toggle : showBar}>
+          <span className="files-viewer-line">
+            <span className="files-viewer-name display">{entry.name}</span>
+            <span className="files-viewer-count">
+              {index + 1} of {files.length}
             </span>
-            <span className="files-viewer-time">{clock(time.length)}</span>
+          </span>
+          {playable && (
+            <span className="files-viewer-line">
+              <span className="files-viewer-time">{clock(time.at)}</span>
+              <span className="files-progress media-progress">
+                <span className="files-progress-fill" style={{ width: `${time.length ? (time.at / time.length) * 100 : 0}%` }} />
+                <span className="media-playhead" style={{ left: `${time.length ? (time.at / time.length) * 100 : 0}%` }} />
+              </span>
+              <span className="files-viewer-time">{clock(time.length)}</span>
+            </span>
+          )}
+        </button>
+        <div className="media-buttons" ref={buttonsRow}>
+          <div className="media-buttons-middle">
+            <PlayerButton label="Previous" disabled={first} onClick={() => step(-1)}>
+              {PLAYER_ICONS.previous}
+            </PlayerButton>
+            {playable && (
+              <PlayerButton label={`Back ${SEEK_S} seconds`} onClick={() => (showBar(), seek(-SEEK_S))}>
+                {PLAYER_ICONS.back(SEEK_S)}
+              </PlayerButton>
+            )}
+            {playable && (
+              <PlayerButton label={paused ? 'Play' : 'Pause'} big buttonRef={mainButton} onClick={toggle}>
+                {paused ? PLAYER_ICONS.play : PLAYER_ICONS.pause}
+              </PlayerButton>
+            )}
+            {playable && (
+              <PlayerButton label={`On ${SEEK_S} seconds`} onClick={() => (showBar(), seek(SEEK_S))}>
+                {PLAYER_ICONS.on(SEEK_S)}
+              </PlayerButton>
+            )}
+            <PlayerButton label="Next" disabled={last} buttonRef={playable ? undefined : mainButton} onClick={() => step(1)}>
+              {PLAYER_ICONS.next}
+            </PlayerButton>
           </div>
-        )}
-        <div className="files-viewer-hints">
+          <PlayerButton
+            label="Controller shortcuts"
+            pressed={keysShown}
+            onClick={() => {
+              showBar()
+              setKeysShown((shown) => !shown)
+            }}
+          >
+            {PLAYER_ICONS.controller}
+          </PlayerButton>
+        </div>
+      </div>
+      {keysShown && (
+        <ShortcutsPanel>
           {playable && (
             <span className="files-hint">
-              <ButtonIcon button={controls.select} family={family} /> {paused ? 'Play' : 'Pause'}
+              <ButtonIcon button={controls.select} family={family} /> Play / pause
             </span>
           )}
           <span className="files-hint">
-            <DpadIcon /> {playable ? `${SEEK_S} seconds` : 'Previous / next'}
+            <DpadIcon leftRight /> {playable ? `${SEEK_S} seconds back / on` : 'Previous / next'}
           </span>
-          {playable && (
-            <span className="files-hint">
-              <ButtonIcon button={controls.previousTab} family={family} />
-              <ButtonIcon button={controls.nextTab} family={family} /> Previous / next
-            </span>
-          )}
+          <span className="files-hint">
+            <ButtonIcon button={controls.previousTab} family={family} />
+            <ButtonIcon button={controls.nextTab} family={family} /> Previous / next {playable ? 'file' : ''}
+          </span>
+          <span className="files-hint">
+            <DpadIcon /> Down to these buttons, up to {playable ? 'the seek bar' : 'the picture'}
+          </span>
           <span className="files-hint">
             <ButtonIcon button={controls.back} family={family} /> Back
           </span>
-        </div>
-      </div>
-    </button>
+        </ShortcutsPanel>
+      )}
+    </div>
   )
 }

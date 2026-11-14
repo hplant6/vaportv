@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type Hls from 'hls.js'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import type { MediaChoice, MediaPlayback } from '../../../shared/types'
@@ -9,6 +9,7 @@ import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { MEDIA_PLAY_EVENT, MEDIA_WATCHED_EVENT } from './ContinueWatching'
 import { Spinner } from './LaunchOverlay'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
 import { toast } from './Toast'
 
 // Plays a film or episode from a media server (Emby, Jellyfin) full screen, from where it was
@@ -270,8 +271,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
       if (onButtonsRef.current) {
         if (direction === 'up') return toSeekBar()
         if (direction === 'down') return
-        const buttons = [...(buttonsRow.current?.querySelectorAll<HTMLElement>('[data-focusable]') ?? [])]
-        const next = buttons[buttons.indexOf(document.activeElement as HTMLElement) + (direction === 'right' ? 1 : -1)]
+        const next = stepAlong(buttonsRow.current, direction)
         if (next) {
           playSound('move')
           focus(next)
@@ -453,29 +453,22 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
           </button>
           <div className="media-buttons" ref={buttonsRow}>
             <PlayerButton label="Stop" onClick={stop}>
-              <rect x="6" y="6" width="12" height="12" rx="1.5" className="fill" />
+              {ICONS.stop}
             </PlayerButton>
             <div className="media-buttons-middle">
               <PlayerButton label={`Back ${SKIP_S} seconds`} onClick={() => skip(-SKIP_S)}>
-                <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />
-                <text x="12" y="15.5" className="media-button-num">
-                  {SKIP_S}
-                </text>
+                {ICONS.back(SKIP_S)}
               </PlayerButton>
               <PlayerButton label={paused ? 'Play' : 'Pause'} big buttonRef={playButton} onClick={toggle}>
-                {paused ? <path d="M8 5.5v13l10.5-6.5z" className="fill" /> : <path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" className="fill" />}
+                {paused ? ICONS.play : ICONS.pause}
               </PlayerButton>
               <PlayerButton label={`On ${SKIP_S} seconds`} onClick={() => skip(SKIP_S)}>
-                <path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" />
-                <text x="12" y="15.5" className="media-button-num">
-                  {SKIP_S}
-                </text>
+                {ICONS.on(SKIP_S)}
               </PlayerButton>
             </div>
             {hasTracks && (
               <PlayerButton label="Audio & subtitles" onClick={tracks}>
-                <rect x="3" y="5.5" width="18" height="13" rx="2" />
-                <path d="M7 14.5h4M13 14.5h4M7 11h2M11 11h6" />
+                {ICONS.subtitles}
               </PlayerButton>
             )}
             <PlayerButton
@@ -486,16 +479,12 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
                 setKeysShown((shown) => !shown)
               }}
             >
-              <path d="M7 8.5h10a4 4 0 0 1 3.9 4.9l-.8 3.4a2.2 2.2 0 0 1-3.8 1L14.6 16H9.4l-1.7 1.8a2.2 2.2 0 0 1-3.8-1l-.8-3.4A4 4 0 0 1 7 8.5z" />
-              <path d="M8 11.2v2.6M6.7 12.5h2.6" />
-              <circle cx="15.6" cy="11.8" r=".5" className="fill" />
-              <circle cx="17" cy="13.2" r=".5" className="fill" />
+              {ICONS.controller}
             </PlayerButton>
           </div>
         </div>
         {keysShown && (
-          <div className="media-keys" role="dialog" aria-label="Controller shortcuts">
-            <h3 className="settings-heading display">Shortcuts</h3>
+          <ShortcutsPanel>
             <span className="files-hint">
               <ButtonIcon button={controls.select} family={family} /> Play / pause
             </span>
@@ -517,46 +506,11 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
             <span className="files-hint">
               <ButtonIcon button={controls.back} family={family} /> Stop
             </span>
-          </div>
+          </ShortcutsPanel>
         )}
       </div>
       {menu && playback && <TrackMenu playback={playback} onPick={pick} />}
     </div>
-  )
-}
-
-/** One of the player's buttons: an icon (SVG children, 24-unit box), its name shown while it has the cursor. */
-function PlayerButton({
-  label,
-  big = false,
-  pressed,
-  buttonRef,
-  onClick,
-  children
-}: {
-  label: string
-  big?: boolean
-  pressed?: boolean
-  buttonRef?: Ref<HTMLButtonElement>
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      ref={buttonRef}
-      className={`media-button${big ? ' big' : ''}`}
-      tabIndex={-1}
-      data-focusable=""
-      data-select-sound="move"
-      aria-label={label}
-      aria-pressed={pressed}
-      onClick={onClick}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        {children}
-      </svg>
-      <span className="media-button-label">{label}</span>
-    </button>
   )
 }
 

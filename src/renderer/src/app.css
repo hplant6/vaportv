@@ -4785,3 +4785,23 @@ button {
   right: 0;
   transform: none;
 }
+
+.media-button svg .fill-stroke {
+  fill: currentColor;
+}
+
+.media-button.disabled {
+  opacity: 0.35;
+}
+
+/* The Files viewer's top row: the name, and (a video or song) the seek bar, as one button. */
+.files-viewer-bar.media-controls-bar {
+  padding-bottom: 72px;
+}
+
+.files-viewer-top {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
