@@ -292,7 +292,35 @@ export interface BugReport {
 }
 
 /** What voice is listening for: a search (a few words, the library's names expected) or dictation (sentences). */
-export type VoicePurpose = 'search' | 'dictation'
+export type VoicePurpose = 'search' | 'dictation' | 'conversation'
+
+/** The Claude app's view of what it needs: Claude Code installed, speech built in, a conversation going, a reply on its way. */
+export interface ClaudeStatus {
+  installed: boolean
+  /** Claude Code has a sign-in it can use (false also when it expired). */
+  signedIn: boolean
+  speech: boolean
+  running: boolean
+  busy: boolean
+}
+
+/** Signing in from a phone: the page to scan (and why the last code failed), a code being checked, signed in, or stopped. */
+export type ClaudeLoginState =
+  | { phase: 'waiting'; url: string; message?: string }
+  | { phase: 'checking' }
+  | { phase: 'done' }
+  | { phase: 'failed'; message: string }
+
+/** A reply as it arrives: text so far, a tool in use (and what it's doing, in words), a request
+ *  to approve on the TV (and that one withdrawn), the end of it, or why not. */
+export type ClaudeEvent =
+  | { type: 'delta'; text: string }
+  | { type: 'tool'; name: string; detail?: string }
+  | { type: 'permission'; id: string; tool: string; description: string; detail: string }
+  | { type: 'permissionDone'; id: string }
+  | { type: 'done'; text: string }
+  | { type: 'error'; message: string; signIn?: boolean }
+  | { type: 'speechError'; message: string }
 
 /** Voice search, as it goes: the model downloading (first use), listening, working out the words, then the words or why not. */
 export type VoiceState =
@@ -944,6 +972,28 @@ export interface SteamTvApi {
   setVoiceHints(titles: string[]): void
   /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */
   onVoice(callback: (state: VoiceState, purpose: VoicePurpose) => void): () => void
+  /** The Claude app (a spoken conversation with Claude Code). */
+  claude: {
+    status(): Promise<ClaudeStatus>
+    /** The screen opened (true: replies are spoken, a remote's Menu talks to Claude) or closed. */
+    setOpen(open: boolean): void
+    send(text: string): Promise<void>
+    /** Stops the reply being spoken and written. */
+    interrupt(): void
+    /** Starts a new conversation. */
+    reset(): void
+    /** Approves (true) or turns down a permission request. */
+    answer(id: string, allow: boolean): void
+    onEvent(callback: (event: ClaudeEvent) => void): () => void
+    /** Speaking started (true) or finished (false). */
+    onSpeaking(callback: (speaking: boolean) => void): () => void
+    /** A remote's Menu tapped while the screen is open: talk. */
+    onTalk(callback: () => void): () => void
+    /** Starts signing in from a phone; progress comes through onLogin. */
+    signIn(): void
+    cancelSignIn(): void
+    onLogin(callback: (state: ClaudeLoginState) => void): () => void
+  }
   /** A GitHub issue link (and its QR code) for a bug report. */
   makeBugReport(input: BugReportInput): Promise<BugReport>
   /** A remote's Menu held: open Settings. */

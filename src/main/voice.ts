@@ -28,7 +28,9 @@ const MIN_SPEECH_MS = 150
 const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; maxMs: number }> = {
   // After speaking, endSilenceMs of quiet ends it; nothing said in noSpeechMs gives up.
   search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000 },
-  dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000 }
+  dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000 },
+  // Talking to Claude: a pause to think mid-sentence shouldn't end it.
+  conversation: { endSilenceMs: 1300, noSpeechMs: 8000, maxMs: 60_000 }
 }
 /** vaporTV's music fades out as search opens; the room is measured once it has. */
 const MUSIC_FADE_MS = 400
@@ -218,7 +220,12 @@ function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<stri
 
 /** Listens once (for a search, or dictating a bug report) and reports along the way: listening, thinking, then what was heard (or why not). */
 export async function listen(report: (state: VoiceState, purpose: VoicePurpose) => void, log: Log, purpose: VoicePurpose = 'search'): Promise<void> {
-  if (busy) return log('voice: already listening')
+  if (busy) {
+    log('voice: already listening')
+    // The Claude screen waits on an answer; tell it there wasn't one, so it stops waiting.
+    if (purpose === 'conversation') report({ phase: 'error', message: "Didn't hear anything" }, purpose)
+    return
+  }
   cancelled = false
   const send: Send = (state) => {
     if (!cancelled) report(state, purpose)
@@ -239,7 +246,7 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     }
     await new Promise((resolve) => setTimeout(resolve, MUSIC_FADE_MS))
     if (cancelled) return
-    log(`voice: listening on ${mic}`)
+    log(`voice: listening on ${mic} (${purpose})`)
     send({ phase: 'listening' })
     const pcm = await record(log, purpose)
     if (cancelled) return log('voice: cancelled')

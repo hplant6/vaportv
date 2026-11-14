@@ -19,6 +19,8 @@ export interface MediaAccount {
 }
 
 export interface Config {
+  /** The Claude app's model (a Claude Code alias or model id; default sonnet, quick to answer aloud). */
+  claudeModel?: string
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
   sleepOnControllerOff?: boolean
   /** Count down before that sleep (default on). */

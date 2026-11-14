@@ -353,10 +353,15 @@ export function gameMenu(): void {
  */
 export function voiceSearch(): void {
   const open = trap()
+  // In the Claude app it's talking to Claude.
+  if (open?.classList.contains('claude-app')) return void window.dispatchEvent(new Event(CLAUDE_TALK_EVENT))
   if (grabbed() || (open && !open.classList.contains('search-app'))) return
   window.steamtv.logInput('voice search (controller)')
   window.steamtv.startVoice()
 }
+
+/** R3 (or a remote's Menu) while the Claude app is open: talk, or talk over its reply. */
+export const CLAUDE_TALK_EVENT = 'steamtv:claude-talk'
 
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'

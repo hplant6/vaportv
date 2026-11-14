@@ -27,6 +27,7 @@ import { Intro } from './components/Intro'
 import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
 import { FilesApp } from './components/FilesApp'
+import { ClaudeApp } from './components/ClaudeApp'
 import { SearchScreen } from './components/SearchScreen'
 import { BugReportDialog } from './components/BugReportDialog'
 import { GuideReader } from './components/GuideReader'
@@ -458,6 +459,7 @@ export function App() {
       )}
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
       <FilesApp />
+      <ClaudeApp />
       <SearchScreen apps={home?.allApps ?? []} logos={home?.platformLogos ?? {}} />
       <LaunchOverlay />
       <SleepPrompt />

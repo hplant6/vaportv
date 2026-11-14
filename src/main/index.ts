@@ -29,6 +29,9 @@ import { watchSteamFocus } from './steamFocus'
 import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, stopListening } from './voice'
+import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
+import { setSpeechListeners } from './speech'
+import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
 import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
@@ -139,6 +142,41 @@ ipcMain.on('voice:start', (event, purpose: VoicePurpose) =>
   )
 )
 ipcMain.on('voice:stop', () => stopListening())
+
+// The Claude app. While its screen is open, replies are spoken and a remote's Menu talks to it.
+let claudeOpen = false
+const toWindow = (channel: string, ...args: unknown[]): void => {
+  if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
+}
+setClaudeListeners((event) => toWindow('claude:event', event), logInput)
+setSpeechListeners((speaking) => toWindow('claude:speaking', speaking), logInput)
+ipcMain.handle('claude:status', () => claudeStatus())
+ipcMain.on('claude:open', (_event, open: boolean) => {
+  claudeOpen = open
+  setClaudeVoice(open)
+  if (!open) {
+    stopListening()
+    stopClaudeLogin()
+  }
+})
+ipcMain.handle('claude:send', async (_event, text: string) => sendToClaude(text, (await loadConfig()).claudeModel))
+ipcMain.on('claude:interrupt', () => interruptClaude())
+ipcMain.on('claude:reset', () => endClaude())
+ipcMain.on('claude:answer', (_event, id: string, allow: boolean) => answerPermission(id, allow === true))
+ipcMain.on('claude:signIn', () => {
+  const bin = claudeBin()
+  if (!bin) return toWindow('claude:login', { phase: 'failed', message: 'Claude Code isn’t installed on this box' })
+  void startClaudeLogin(
+    bin,
+    (state) => {
+      // Signed in: the next thing said starts a session with the new sign-in.
+      if (state.phase === 'done') endClaude()
+      toWindow('claude:login', state)
+    },
+    logInput
+  )
+})
+ipcMain.on('claude:cancelSignIn', () => stopClaudeLogin())
 ipcMain.handle('bugReport:make', (_event, input: BugReportInput) => makeBugReport(input, INPUT_LOG))
 ipcMain.on('voice:hints', (_event, titles: string[]) => setVoiceHints(titles))
 
@@ -1049,6 +1087,7 @@ app.whenReady().then(async () => {
     startRemoteKeys(logInput, foreground, async () => !win?.isFocused() && (await foreground.runs(/vacuumtube/i)), {
       tap: async () => {
         if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
+        if (claudeOpen) return send('claude:talk')
         listen((state, why) => send('voice', state, why), logInput)
       },
       hold: async () => {

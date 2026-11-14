@@ -1,6 +1,7 @@
 import type { AppItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
 import { APP_SETUP_EVENT } from './AppSetupDialog'
+import { CLAUDE_EVENT } from './ClaudeApp'
 import { FILES_EVENT } from './FilesApp'
 
 export function AppTile({
@@ -28,9 +29,9 @@ export function AppTile({
       onClick={(e) =>
         needsSetup
           ? window.dispatchEvent(new CustomEvent(APP_SETUP_EVENT, { detail: { app, tile: e.currentTarget } }))
-          : app.id === 'files'
+          : app.id === 'files' || app.id === 'claude'
             ? // Part of vaporTV: opens over the screen rather than launching.
-              window.dispatchEvent(new CustomEvent(FILES_EVENT, { detail: e.currentTarget }))
+              window.dispatchEvent(new CustomEvent(app.id === 'files' ? FILES_EVENT : CLAUDE_EVENT, { detail: e.currentTarget }))
             : startLaunch('app', app.id, app.name, `${app.name} isn't set up on this computer yet`)
       }
     >

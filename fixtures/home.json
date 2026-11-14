@@ -81,6 +81,11 @@
       "id": "files",
       "name": "Files",
       "tile": "fixtures/tiles/files.png"
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "tile": "fixtures/tiles/claude.png"
     }
   ],
   "platformLogos": {

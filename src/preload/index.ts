@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GooglePhotosProgress, SteamTvApi, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
+import type { ClaudeEvent, ClaudeLoginState, GooglePhotosProgress, SteamTvApi, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
 
 const api: SteamTvApi = {
   getHome: () => ipcRenderer.invoke('home:get'),
@@ -246,6 +246,36 @@ const api: SteamTvApi = {
     const listener = (): void => callback()
     ipcRenderer.on('art:updated', listener)
     return () => ipcRenderer.removeListener('art:updated', listener)
+  },
+  claude: {
+    status: () => ipcRenderer.invoke('claude:status'),
+    setOpen: (open) => ipcRenderer.send('claude:open', open),
+    send: (text) => ipcRenderer.invoke('claude:send', text),
+    interrupt: () => ipcRenderer.send('claude:interrupt'),
+    reset: () => ipcRenderer.send('claude:reset'),
+    answer: (id, allow) => ipcRenderer.send('claude:answer', id, allow),
+    onEvent: (callback) => {
+      const listener = (_event: unknown, event: ClaudeEvent): void => callback(event)
+      ipcRenderer.on('claude:event', listener)
+      return () => ipcRenderer.removeListener('claude:event', listener)
+    },
+    onSpeaking: (callback) => {
+      const listener = (_event: unknown, speaking: boolean): void => callback(speaking)
+      ipcRenderer.on('claude:speaking', listener)
+      return () => ipcRenderer.removeListener('claude:speaking', listener)
+    },
+    onTalk: (callback) => {
+      const listener = (): void => callback()
+      ipcRenderer.on('claude:talk', listener)
+      return () => ipcRenderer.removeListener('claude:talk', listener)
+    },
+    signIn: () => ipcRenderer.send('claude:signIn'),
+    cancelSignIn: () => ipcRenderer.send('claude:cancelSignIn'),
+    onLogin: (callback) => {
+      const listener = (_event: unknown, state: ClaudeLoginState): void => callback(state)
+      ipcRenderer.on('claude:login', listener)
+      return () => ipcRenderer.removeListener('claude:login', listener)
+    }
   },
   startVoice: (purpose) => ipcRenderer.send('voice:start', purpose ?? 'search'),
   stopVoice: () => ipcRenderer.send('voice:stop'),
