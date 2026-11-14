@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { authHeaders, card, kindOf, serverUrl } from './mediaBrowser'
+import { describe, expect, it, vi } from 'vitest'
+import { authHeaders, card, kindOf, playback, serverUrl } from './mediaBrowser'
 
 const BASE = 'steamtv-media://abc123'
 
@@ -60,5 +60,55 @@ describe('Emby and Jellyfin', () => {
     expect(shown.subtitle).toBe('1995')
     expect(shown.wide).toContain('/Items/f1/Images/Backdrop')
     expect(shown.cover).toContain('/Items/f1/Images/Primary')
+  })
+})
+
+describe('playback subtitles', () => {
+  // An MKV (so always streamed by the server, repackaged), with a text subtitle (2) and a picture one (3).
+  const account = { key: 'abc123', kind: 'emby' as const, url: 'http://server:8096', serverId: 's', userId: 'u', userName: 'n', token: 't' }
+  const source = {
+    Id: 'ms1',
+    Container: 'mkv',
+    SupportsDirectPlay: false,
+    SupportsDirectStream: true,
+    TranscodingUrl: '/emby/videos/33/master.m3u8?MediaSourceId=ms1&api_key=secret&VideoCodec=h264&TranscodeReasons=ContainerNotSupported',
+    MediaStreams: [
+      { Type: 'Video', Index: 0 },
+      { Type: 'Audio', Index: 1, IsDefault: true },
+      { Type: 'Subtitle', Index: 2, Codec: 'subrip', IsTextSubtitleStream: true },
+      { Type: 'Subtitle', Index: 3, Codec: 'PGSSUB', IsTextSubtitleStream: false }
+    ]
+  }
+  const asked: string[] = []
+  const fakeFetch = vi.fn(async (url: string) => {
+    asked.push(String(url))
+    const body = String(url).includes('/PlaybackInfo') ? { PlaySessionId: 'ps', MediaSources: [source] } : String(url).endsWith('.vtt') ? 'WEBVTT' : { Id: '33', Name: 'Film', Type: 'Movie' }
+    return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status: 200 })
+  })
+
+  it('has a picture subtitle drawn into the stream, which the server left out of its address', async () => {
+    vi.stubGlobal('fetch', fakeFetch)
+    const p = await playback(account, BASE, '33', { subtitle: 3 }, 'dev', '1.0')
+    const url = new URL(p.url)
+    expect(p.hls).toBe(true)
+    expect(url.searchParams.get('SubtitleStreamIndex')).toBe('3')
+    expect(url.searchParams.get('SubtitleMethod')).toBe('Encode')
+    expect(url.searchParams.get('AllowVideoStreamCopy')).toBe('false')
+    expect(url.searchParams.get('api_key')).toBeNull()
+    expect(p.subtitleUrl).toBeUndefined()
+    vi.unstubAllGlobals()
+  })
+
+  it('draws nothing in for a text subtitle: it comes beside the video, and is asked for early', async () => {
+    asked.length = 0
+    vi.stubGlobal('fetch', fakeFetch)
+    const p = await playback(account, BASE, '34', { subtitle: 2 }, 'dev', '1.0')
+    const url = new URL(p.url)
+    expect(url.searchParams.get('SubtitleMethod')).toBeNull()
+    expect(p.subtitleUrl).toBe(`${BASE}/Videos/34/ms1/Subtitles/2/Stream.vtt`)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(asked).toContain('http://server:8096/emby/Videos/34/ms1/Subtitles/2/Stream.vtt')
+    expect(asked.some((u) => u.includes('/Subtitles/3/'))).toBe(false)
+    vi.unstubAllGlobals()
   })
 })

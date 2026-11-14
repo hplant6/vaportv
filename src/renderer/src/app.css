@@ -4870,3 +4870,18 @@ button {
   border-color: var(--color-accent-line);
   background: var(--color-focus-tint);
 }
+
+/* Text subtitles still coming from the server (the first time can take a minute or two): a note in the corner. */
+.media-subs-loading {
+  position: absolute;
+  top: 48px;
+  right: 72px;
+  z-index: 2;
+  margin: 0;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  background: rgba(6, 4, 8, 0.6);
+  pointer-events: none;
+}

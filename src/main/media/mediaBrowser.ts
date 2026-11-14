@@ -460,6 +460,14 @@ export async function playback(
     info = await ask({ EnableDirectPlay: false, EnableDirectStream: false })
     source = info.MediaSources[0] ?? source
   }
+  // Text subtitles come as a file the server pulls out of the video, which the first time means reading
+  // all of it (a couple of minutes for a big MKV). Asked for now, they're ready (the server keeps them)
+  // by the time one's picked.
+  warmSubtitles(
+    `${root}/Videos/${itemId}/${source.Id}/Subtitles`,
+    streams.filter((s) => s.Type === 'Subtitle' && s.IsTextSubtitleStream).map((s) => s.Index),
+    headers
+  )
   const shown = card(item, base)
   const common = {
     itemId,
@@ -486,7 +494,32 @@ export async function playback(
   // The token comes from the proxy, not the address.
   const url = new URL(`${base}${source.TranscodingUrl.replace(/^\/emby(?=\/)/i, '')}`)
   for (const param of ['StartTimeTicks', 'api_key', 'ApiKey']) url.searchParams.delete(param)
+  // A picture subtitle is drawn into the video. The server's own address leaves it out when it's only
+  // repackaging (an MKV, say: the video copied as it is, so nothing can be drawn on it), so it's asked for here.
+  for (const param of ['SubtitleStreamIndex', 'SubtitleMethod']) url.searchParams.delete(param)
+  if (burned) {
+    url.searchParams.set('SubtitleStreamIndex', String(subtitle))
+    url.searchParams.set('SubtitleMethod', 'Encode')
+    url.searchParams.set('AllowVideoStreamCopy', 'false')
+  }
   return { ...common, url: url.toString(), hls: true, method: 'Transcode' }
+}
+
+/** Subtitle files already asked for (by address), so playing a film again doesn't ask twice. */
+const warmed = new Set<string>()
+
+/** Has the server pull out each text subtitle, one at a time, in the background; failures don't matter. */
+function warmSubtitles(base: string, indexes: number[], headers: Record<string, string>): void {
+  const todo = indexes.map((index) => `${base}/${index}/Stream.vtt`).filter((url) => !warmed.has(url))
+  if (!todo.length) return
+  for (const url of todo) warmed.add(url)
+  void (async () => {
+    for (const url of todo) {
+      await fetch(url, { headers, signal: AbortSignal.timeout(10 * 60_000) })
+        .then((response) => response.arrayBuffer())
+        .catch(() => warmed.delete(url))
+    }
+  })()
 }
 
 /** Tells the server where playback is (started, every few seconds, stopped), so it can resume there. */

@@ -87,6 +87,8 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   const [menu, setMenu] = useState(false)
   const resumeAt = useRef<number | null>(null)
   const [cues, setCues] = useState<string | null>(null)
+  /** Text subtitles on their way (the server can take a while the first time): said in the corner. */
+  const [cuesLoading, setCuesLoading] = useState(false)
   /** The cursor on the buttons row (not the seek bar), and the shortcuts panel. */
   const [onButtons, setOnButtonsState] = useState(false)
   const onButtonsRef = useRef(false)
@@ -178,6 +180,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   const subtitleUrl = playback?.subtitleUrl
   useEffect(() => {
     setCues(null)
+    setCuesLoading(!!subtitleUrl)
     if (!subtitleUrl) return
     let url: string | null = null
     let cancelled = false
@@ -187,8 +190,11 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
         if (cancelled) return
         url = URL.createObjectURL(new Blob([text], { type: 'text/vtt' }))
         setCues(url)
+        setCuesLoading(false)
       })
       .catch((err) => {
+        if (cancelled) return
+        setCuesLoading(false)
         console.error('steamtv: media subtitles:', err)
         toast('Couldn’t load those subtitles')
       })
@@ -418,6 +424,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
             />
           )}
         </video>
+        {cuesLoading && !menu && <p className="media-subs-loading">Loading subtitles…</p>}
         {(loading || skipped) && (
           <div className="media-loading" aria-live="polite">
             <div className="media-loading-spin">{loading && <Spinner />}</div>
