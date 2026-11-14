@@ -90,6 +90,21 @@ export async function installBootVideo(config: Config): Promise<void> {
   await writeFile(file, withStartupMovie(await readFile(file, 'utf8'), BOOT_VIDEO_PATH))
 }
 
+/**
+ * After an update with a new intro: Steam's copy of it is replaced, so the box boots into the
+ * new one. Only the movie file changes (config.vdf isn't touched), so Steam can be running.
+ * Resolves true when it was out of date.
+ */
+export async function refreshBootVideo(config: Config): Promise<boolean> {
+  if (!(await bootVideoSelected(config))) return false
+  const shipped = await readFile(shippedIntro()).catch(() => null)
+  if (!shipped) return false
+  const installed = await readFile(movieFile(config)).catch(() => null)
+  if (installed?.equals(shipped)) return false
+  await writeFile(movieFile(config), shipped)
+  return true
+}
+
 /** Steam's own startup movie again, if vaporTV's was chosen. Steam must be closed. */
 export async function removeBootVideo(config: Config): Promise<void> {
   if (await bootVideoSelected(config)) {

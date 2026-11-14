@@ -40,7 +40,7 @@ import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSt
 import { stageNetflixExtension } from './netflixExtension'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
-import { bootVideoSelected, steamJustStarted } from './bootVideo'
+import { bootVideoSelected, refreshBootVideo, steamJustStarted } from './bootVideo'
 import { systemBattery } from './battery'
 import { systemStats } from './systemStats'
 import { cleanClockCorners } from '../shared/clock'
@@ -1064,6 +1064,11 @@ ipcMain.handle('power:sleepBlocker', () => sleepBlocker())
 ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(direction === 1 ? 1 : -1))
 
 app.whenReady().then(async () => {
+  // A new intro in this version: Steam's startup movie copy follows it.
+  void loadConfig()
+    .then(refreshBootVideo)
+    .then((changed) => changed && logInput('intro: refreshed Steam\'s startup movie'))
+    .catch((err) => logInput(`intro: refreshing Steam's startup movie: ${err}`))
   void recordSteamShortcut()
   // A config.json from before saves made it owner-only, until its next save.
   chmod(configPath(), 0o600).catch(() => {})
