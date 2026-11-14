@@ -70,13 +70,13 @@ export function useControllerFamily(): ControllerFamily {
   return family
 }
 
-/** `wide`: the shoulder buttons, drawn across the middle of a square, shown cropped wider. */
+/** `wide`: the bumpers, drawn across the middle of a square, shown cropped wider (the triggers are upright, square). */
 function iconFor(button: number, family: ControllerFamily): { src: string; mark?: string; wide?: boolean } | null {
   if (button <= 3) return { src: FACE[family][button] }
   if (button === 4) return { src: l1, wide: true }
   if (button === 5) return { src: r1, wide: true }
-  if (button === 6) return { src: l2, wide: true }
-  if (button === 7) return { src: r2, wide: true }
+  if (button === 6) return { src: l2 }
+  if (button === 7) return { src: r2 }
   if (button === 8) return { src: SELECT_START[family][0] }
   if (button === 9) return { src: SELECT_START[family][1] }
   // The stick clicks share one picture: marked with which stick.
