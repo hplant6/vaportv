@@ -3708,6 +3708,17 @@ button {
   text-transform: capitalize;
 }
 
+/* The lists (All games, playlists, collections, systems) in the same type as Sort, their names
+   as written; the section headings over them keep the display face. */
+.side-bar-item.display {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-stretch: normal;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
 /* Settings → Controller: a two-button press (Select + Start), its icons side by side. */
 .control-combo {
   flex: none;
