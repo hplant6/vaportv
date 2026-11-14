@@ -28,7 +28,7 @@ import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
-import { listen, setVoiceHints, stopListening } from './voice'
+import { listen, setVoiceHints, finishListening, stopListening } from './voice'
 import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
 import { setSpeechListeners } from './speech'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
@@ -142,6 +142,7 @@ ipcMain.on('voice:start', (event, purpose: VoicePurpose) =>
   )
 )
 ipcMain.on('voice:stop', () => stopListening())
+ipcMain.on('voice:finish', () => finishListening())
 
 // The Claude app. While its screen is open, replies are spoken and a remote's Menu talks to it.
 let claudeOpen = false

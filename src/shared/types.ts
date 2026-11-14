@@ -968,6 +968,8 @@ export interface SteamTvApi {
   /** Listens once (for a search unless said); what happens comes through onVoice. */
   startVoice(purpose?: VoicePurpose): void
   stopVoice(): void
+  /** Send: stops listening now and works out what was said so far. */
+  finishVoice(): void
   /** Titles to help speech recognition spell names. */
   setVoiceHints(titles: string[]): void
   /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */

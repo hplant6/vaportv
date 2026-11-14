@@ -17,21 +17,22 @@ import { ownHelper } from './helpers'
 const RATE = 16000
 /** Level is judged over this much sound at a time. */
 const FRAME_MS = 30
-/** The first frames set the room's noise level; speech is this much louder. */
+/** The first frames set the room's noise level (their quieter end, in case speech starts at once); speech is louder by the purpose's `overNoiseDb`. */
 const CALIBRATE_MS = 300
-const SPEECH_OVER_NOISE_DB = 12
 /** Quieter than this is never speech, however quiet the room. */
 const SPEECH_FLOOR_DB = -45
 /** Speech has to last this long to count (not a cough or a click). */
 const MIN_SPEECH_MS = 150
 /** How long each kind of listening goes on: a search is a few words; a bug report, sentences with pauses. */
-const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; maxMs: number }> = {
+const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; maxMs: number; overNoiseDb: number }> = {
   // After speaking, endSilenceMs of quiet ends it; nothing said in noSpeechMs gives up.
-  search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000 },
-  dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000 },
-  // Talking to Claude: a pause to think mid-sentence shouldn't end it.
-  conversation: { endSilenceMs: 1300, noSpeechMs: 8000, maxMs: 60_000 }
+  search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000, overNoiseDb: 12 },
+  dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000, overNoiseDb: 12 },
+  // Talking to Claude from the sofa: quieter speech counts, and a pause to think mid-sentence shouldn't end it.
+  conversation: { endSilenceMs: 1300, noSpeechMs: 10_000, maxMs: 60_000, overNoiseDb: 8 }
 }
+/** Nothing counted as speech, but something this far over the room was there: worth transcribing anyway (talking to Claude). */
+const MAYBE_SPEECH_DB = 4
 /** vaporTV's music fades out as search opens; the room is measured once it has. */
 const MUSIC_FADE_MS = 400
 
@@ -44,6 +45,8 @@ type Send = (state: VoiceState) => void
 type Log = (line: string) => void
 
 let recorder: ChildProcess | null = null
+/** Ends the recording now with what's been said (Send), set while recording. */
+let finishNow: (() => void) | null = null
 let busy = false
 /** The search screen closed while listening: say nothing more. */
 let cancelled = false
@@ -101,9 +104,15 @@ function microphone(): Promise<string | null> {
   })
 }
 
-/** Records until the speaker stops; resolves to the sound, or null if nothing was said. */
-function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
-  const { endSilenceMs, noSpeechMs, maxMs } = LIMITS[purpose]
+/** The quieter end of the calibration frames: a room's noise, even if speech started in them. */
+export function roomLevel(frames: number[]): number {
+  const sorted = [...frames].sort((a, b) => a - b)
+  return sorted[Math.floor((sorted.length - 1) * 0.3)] ?? SPEECH_FLOOR_DB
+}
+
+/** Records until the speaker stops (or Send); resolves to the sound, or null if nothing was said. `onReady`: sound is coming in, so it's listening. */
+function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<Buffer | null> {
+  const { endSilenceMs, noSpeechMs, maxMs, overNoiseDb } = LIMITS[purpose]
   return new Promise((resolve, reject) => {
     const child = spawn('parecord', ['--raw', `--rate=${RATE}`, '--channels=1', '--format=s16le'], { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
@@ -118,12 +127,26 @@ function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
     let heard = false
     let quiet = 0
     let done = false
+    let room = SPEECH_FLOOR_DB
+    let loudest = -Infinity
 
     const finish = (result: Buffer | null): void => {
       if (done) return
       done = true
+      finishNow = null
       child.kill()
       resolve(result)
+    }
+    // Send: whatever's been said so far (whisper says if it was nothing).
+    finishNow = () => {
+      log(`voice: sent (${heard ? 'speech heard' : `nothing over ${threshold.toFixed(1)} dB, loudest ${loudest.toFixed(1)} dB`})`)
+      finish(elapsed > CALIBRATE_MS ? Buffer.concat(chunks) : null)
+    }
+    // Given up with nothing counted as speech: talking to Claude, something near it is still sent.
+    const giveUp = (): void => {
+      const maybe = purpose === 'conversation' && loudest >= room + MAYBE_SPEECH_DB
+      log(`voice: nothing over ${threshold.toFixed(1)} dB (loudest ${loudest.toFixed(1)} dB)${maybe ? ', transcribing anyway' : ''}`)
+      finish(maybe ? Buffer.concat(chunks) : null)
     }
 
     child.stdout.on('data', (chunk: Buffer) => {
@@ -137,13 +160,15 @@ function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
         if (elapsed <= CALIBRATE_MS) {
           noise.push(db)
           if (elapsed + FRAME_MS > CALIBRATE_MS) {
-            const room = noise.reduce((a, b) => a + b, 0) / noise.length
-            threshold = Math.max(SPEECH_FLOOR_DB, room + SPEECH_OVER_NOISE_DB)
+            room = roomLevel(noise)
+            threshold = Math.max(SPEECH_FLOOR_DB, room + overNoiseDb)
             log(`voice: room ${room.toFixed(1)} dB, speech over ${threshold.toFixed(1)} dB`)
             noise = []
+            onReady()
           }
           continue
         }
+        loudest = Math.max(loudest, db)
         if (db > threshold) {
           speech += FRAME_MS
           quiet = 0
@@ -153,8 +178,8 @@ function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
           quiet += FRAME_MS
         }
         if (heard && quiet >= endSilenceMs) return finish(Buffer.concat(chunks))
-        if (!heard && elapsed >= noSpeechMs) return finish(null)
-        if (elapsed >= maxMs) return finish(heard ? Buffer.concat(chunks) : null)
+        if (!heard && elapsed >= noSpeechMs) return giveUp()
+        if (elapsed >= maxMs) return heard ? finish(Buffer.concat(chunks)) : giveUp()
       }
     })
     child.stderr.on('data', (chunk: Buffer) => log(`voice: parecord: ${chunk.toString().trim()}`))
@@ -164,6 +189,7 @@ function record(log: Log, purpose: VoicePurpose): Promise<Buffer | null> {
     })
     child.on('close', () => {
       if (recorder === child) recorder = null
+      finishNow = null
       // Stopped from outside (cancelled), or parecord gave up.
       if (!done) finish(null)
     })
@@ -246,9 +272,12 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     }
     await new Promise((resolve) => setTimeout(resolve, MUSIC_FADE_MS))
     if (cancelled) return
-    log(`voice: listening on ${mic} (${purpose})`)
-    send({ phase: 'listening' })
-    const pcm = await record(log, purpose)
+    log(`voice: starting the microphone ${mic} (${purpose})`)
+    // Listening once sound is actually coming in (parecord takes a moment), so the first words aren't lost.
+    const pcm = await record(log, purpose, () => {
+      log('voice: listening')
+      send({ phase: 'listening' })
+    })
     if (cancelled) return log('voice: cancelled')
     if (!pcm) {
       send({ phase: 'error', message: "Didn't hear anything" })
@@ -267,6 +296,11 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
   } finally {
     busy = false
   }
+}
+
+/** Send: stops listening and works out what was said so far. */
+export function finishListening(): void {
+  finishNow?.()
 }
 
 /** Stops listening (the search screen closed); nothing is reported for it. */

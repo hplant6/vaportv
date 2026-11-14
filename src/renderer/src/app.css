@@ -4816,3 +4816,9 @@ button {
   gap: 18px;
   text-align: left;
 }
+
+/* The mic's still starting: not pulsing yet, so it's clear when to talk. */
+.claude-talk.phase-listening.mic-starting {
+  animation: none;
+  opacity: 0.6;
+}

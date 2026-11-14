@@ -74,6 +74,13 @@ function Conversation({ onClose }: { onClose: () => void }) {
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   /** What Claude is doing between words (a tool in use), and a request waiting for Allow or Deny. */
   const [working, setWorking] = useState<string | null>(null)
+  /** The microphone's actually recording (it takes a moment to start): talk now. */
+  const [micReady, setMicReadyState] = useState(false)
+  const micReadyRef = useRef(false)
+  const setMicReady = (ready: boolean): void => {
+    micReadyRef.current = ready
+    setMicReadyState(ready)
+  }
   const [request, setRequestState] = useState<Request | null>(null)
   const requestRef = useRef<Request | null>(null)
   const allowButton = useRef<HTMLButtonElement>(null)
@@ -99,6 +106,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
 
   const listen = useCallback((): void => {
     setNote(null)
+    setMicReady(false)
     setPhase('listening')
     window.steamtv.startVoice('conversation')
   }, [])
@@ -109,13 +117,19 @@ function Conversation({ onClose }: { onClose: () => void }) {
     if (phaseRef.current === 'thinking' || phaseRef.current === 'speaking') listen()
   }, [listen])
 
-  /** The big button, R3 and a remote's Menu: talk, stop listening, or talk over the reply. */
+  /** The big button, R3 and a remote's Menu: talk, send what's been said, or talk over the reply. */
   const talk = useCallback((): void => {
     const now = phaseRef.current
     if (now === 'checking' || now === 'setup' || now === 'hearing' || now === 'approving') return
     if (now === 'listening') {
-      window.steamtv.stopVoice()
-      setPhase('idle')
+      // Send: no waiting for the pause that ends it. Before the mic's started there's nothing to send: stop.
+      if (micReadyRef.current) {
+        window.steamtv.finishVoice()
+        setPhase('hearing')
+      } else {
+        window.steamtv.stopVoice()
+        setPhase('idle')
+      }
       return
     }
     if (now === 'thinking' || now === 'speaking') {
@@ -198,6 +212,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
     const offVoice = window.steamtv.onVoice((state: VoiceState, purpose) => {
       if (purpose !== 'conversation') return
       if (state.phase === 'preparing') setNote('Getting speech recognition ready (first time only)…')
+      else if (state.phase === 'listening') setMicReady(true)
       else if (state.phase === 'thinking') setPhase('hearing')
       else if (state.phase === 'heard') {
         setNote(null)
@@ -327,7 +342,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
     checking: 'Starting…',
     setup: 'Not set up',
     idle: 'Press to talk',
-    listening: 'Listening…',
+    listening: 'Listening · press to send',
     hearing: 'Got it…',
     thinking: 'Thinking…',
     speaking: 'Speaking · press to interrupt',
@@ -409,7 +424,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
       <div className="claude-controls">
         <button
           ref={talkButton}
-          className={`claude-talk phase-${phase}`}
+          className={`claude-talk phase-${phase}${phase === 'listening' && !micReady ? ' mic-starting' : ''}`}
           tabIndex={-1}
           data-focusable={request ? undefined : ''}
           aria-label={status[phase]}
@@ -418,13 +433,16 @@ function Conversation({ onClose }: { onClose: () => void }) {
           <svg viewBox="0 0 24 24" aria-hidden="true">
             {phase === 'thinking' || phase === 'speaking' || phase === 'approving' ? (
               <rect x="7" y="7" width="10" height="10" rx="1.5" />
+            ) : phase === 'listening' && micReady ? (
+              // Send: an arrow up.
+              <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
             ) : (
               <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
             )}
           </svg>
         </button>
         <p className="claude-status display" aria-live="polite">
-          {phase === 'setup' && !setupText ? 'Waiting for your phone' : status[phase]}
+          {phase === 'setup' && !setupText ? 'Waiting for your phone' : phase === 'listening' && !micReady ? 'Starting the mic…' : status[phase]}
         </p>
         {note && <p className="claude-note">{note}</p>}
         {login?.phase === 'failed' ? (
@@ -444,7 +462,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
       <div className="claude-hints">
         {phase !== 'setup' && (
           <span className="files-hint">
-            <ButtonIcon button={controls.select} family={family} /> {request ? 'Choose' : 'Talk'}
+            <ButtonIcon button={controls.select} family={family} /> {request ? 'Choose' : phase === 'listening' ? 'Send' : 'Talk'}
           </span>
         )}
         <span className="files-hint">
