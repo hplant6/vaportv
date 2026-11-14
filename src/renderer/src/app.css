@@ -4822,3 +4822,55 @@ button {
   animation: none;
   opacity: 0.6;
 }
+
+/* The Claude app's options, left of the talk button (New chat is on the right): Hands-free and the voice. */
+.claude-options {
+  position: absolute;
+  left: 0;
+  top: 64px;
+  display: flex;
+  gap: 16px;
+}
+
+.claude-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: auto;
+  height: auto;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 2px solid var(--color-panel-line);
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.claude-option .toggle {
+  width: 52px;
+  height: 28px;
+}
+
+.claude-option .toggle-knob {
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+}
+
+.claude-option.on .toggle {
+  background: var(--color-accent);
+}
+
+.claude-option.on .toggle-knob {
+  transform: translateX(24px);
+}
+
+.claude-option:focus {
+  outline: none;
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+}

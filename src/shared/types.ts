@@ -302,6 +302,10 @@ export interface ClaudeStatus {
   speech: boolean
   running: boolean
   busy: boolean
+  /** Listening again by itself after each reply; off, only when Talk is pressed. */
+  handsFree: boolean
+  /** The speaking voice's id (shared/claudeVoices.ts). */
+  voice: string
 }
 
 /** Signing in from a phone: the page to scan (and why the last code failed), a code being checked, signed in, or stopped. */
@@ -984,6 +988,10 @@ export interface SteamTvApi {
     interrupt(): void
     /** Starts a new conversation. */
     reset(): void
+    /** Hands-free on or off (remembered). */
+    setHandsFree(on: boolean): Promise<void>
+    /** Another speaking voice (remembered); it says a line to show how it sounds. */
+    setVoice(id: string): Promise<void>
     /** Approves (true) or turns down a permission request. */
     answer(id: string, allow: boolean): void
     onEvent(callback: (event: ClaudeEvent) => void): () => void

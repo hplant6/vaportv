@@ -254,6 +254,8 @@ const api: SteamTvApi = {
     interrupt: () => ipcRenderer.send('claude:interrupt'),
     reset: () => ipcRenderer.send('claude:reset'),
     answer: (id, allow) => ipcRenderer.send('claude:answer', id, allow),
+    setHandsFree: (on) => ipcRenderer.invoke('claude:handsFree', on),
+    setVoice: (id) => ipcRenderer.invoke('claude:voice', id),
     onEvent: (callback) => {
       const listener = (_event: unknown, event: ClaudeEvent): void => callback(event)
       ipcRenderer.on('claude:event', listener)

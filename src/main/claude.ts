@@ -4,6 +4,7 @@ import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { createInterface } from 'node:readline'
+import { claudeVoice } from '../shared/claudeVoices'
 import type { ClaudeEvent, ClaudeStatus } from '../shared/types'
 import { claudeSignedIn } from './claudeLogin'
 import { ownHelper } from './helpers'
@@ -74,9 +75,17 @@ export function claudeBin(): string | null {
   return null
 }
 
-export async function claudeStatus(): Promise<ClaudeStatus> {
+export async function claudeStatus(prefs: { handsFree?: boolean; voice?: string } = {}): Promise<ClaudeStatus> {
   const bin = claudeBin()
-  return { installed: bin !== null, signedIn: bin !== null && (await claudeSignedIn(bin)), speech: speechReady(), running: proc !== null, busy }
+  return {
+    installed: bin !== null,
+    signedIn: bin !== null && (await claudeSignedIn(bin)),
+    speech: speechReady(),
+    running: proc !== null,
+    busy,
+    handsFree: prefs.handsFree !== false,
+    voice: claudeVoice(prefs.voice).id
+  }
 }
 
 export function setClaudeListeners(sender: Send, logger: Log): void {

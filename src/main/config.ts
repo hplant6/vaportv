@@ -21,6 +21,10 @@ export interface MediaAccount {
 export interface Config {
   /** The Claude app's model (a Claude Code alias or model id; default sonnet, quick to answer aloud). */
   claudeModel?: string
+  /** The Claude app listens again by itself after each reply (and on opening); off, only when Talk is pressed. Default on. */
+  claudeHandsFree?: boolean
+  /** The Claude app's speaking voice (an id from shared/claudeVoices.ts). */
+  claudeVoice?: string
   /** Sleep when the controller is switched off (while vaporTV is on screen). */
   sleepOnControllerOff?: boolean
   /** Count down before that sleep (default on). */
