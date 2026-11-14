@@ -7,34 +7,18 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { claudeVoice, DEFAULT_CLAUDE_VOICE } from '../shared/claudeVoices'
 import { ownHelper } from './helpers'
 
 // Speaking aloud, for the Claude app: Piper (a small neural text-to-speech engine) turns each
 // sentence into a WAV as soon as it's written, and they play one after another. All on this
-// machine. Piper ships with vaporTV (scripts/piper.sh fetches it); each voice (~60 MB)
-// downloads the first time it speaks (shared/claudeVoices.ts lists them).
+// machine. Piper ships with vaporTV (scripts/piper.sh fetches it); its voice (~63 MB)
+// downloads the first time something is spoken.
 
+/** Piper's northern English male voice (trained on OpenSLR 83, CC BY-SA 4.0). */
+const VOICE_NAME = 'en_GB-northern_english_male-medium'
+const VOICE_URL = `https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/northern_english_male/medium/${VOICE_NAME}.onnx`
 const VOICE_DIR = join(homedir(), '.local', 'share', 'steamtv', 'voice')
-/** The voice in use (an id from CLAUDE_VOICES). */
-let voiceId = DEFAULT_CLAUDE_VOICE
-
-function voiceFile(): string {
-  return join(VOICE_DIR, `${claudeVoice(voiceId).id}.onnx`)
-}
-
-function voiceUrl(): string {
-  const voice = claudeVoice(voiceId)
-  return `https://huggingface.co/rhasspy/piper-voices/resolve/main/${voice.path}/${voice.id}.onnx`
-}
-
-/** Speaks in this voice from the next sentence on (what's being said now stops). */
-export function setSpeechVoice(id: string): void {
-  const next = claudeVoice(id).id
-  if (next === voiceId) return
-  voiceId = next
-  stopSpeaking()
-}
+const VOICE = join(VOICE_DIR, `${VOICE_NAME}.onnx`)
 
 type Log = (line: string) => void
 
@@ -80,10 +64,9 @@ async function download(url: string, to: string): Promise<void> {
 /** Downloads the voice if it isn't here yet (its model and the settings Piper reads beside it). */
 export async function prepareSpeech(): Promise<void> {
   if (!speechReady()) throw new Error("Speech isn't installed in this build")
-  const file = voiceFile()
-  if (!existsSync(file)) log(`speech: downloading the voice ${voiceId}`)
-  await download(`${voiceUrl()}.json`, `${file}.json`)
-  await download(voiceUrl(), file)
+  if (!existsSync(VOICE)) log('speech: downloading the voice')
+  await download(`${VOICE_URL}.json`, `${VOICE}.json`)
+  await download(VOICE_URL, VOICE)
 }
 
 function setSpeaking(on: boolean): void {
@@ -120,7 +103,7 @@ async function startPiper(): Promise<ChildProcess> {
   if (piper) return piper
   outDir = await mkdtemp(join(tmpdir(), 'vaportv-speech-'))
   // Reads a sentence a line; writes each as a WAV in outDir and prints its path.
-  const child = spawn(piperBin(), ['--model', voiceFile(), '--output_dir', outDir, '--sentence_silence', '0.15', '--quiet'], {
+  const child = spawn(piperBin(), ['--model', VOICE, '--output_dir', outDir, '--sentence_silence', '0.15', '--quiet'], {
     stdio: ['pipe', 'pipe', 'pipe']
   })
   ownHelper(child)

@@ -29,8 +29,8 @@ import { watchSteamFocus } from './steamFocus'
 import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, finishListening, stopListening } from './voice'
-import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
-import { setSpeechListeners, setSpeechVoice, speak } from './speech'
+import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
+import { setSpeechListeners } from './speech'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
 import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
@@ -100,7 +100,6 @@ import { captureAndQuit, screenshotMode } from './screenshot'
 import { stepVolume } from './volume'
 import { getWeather } from './weather'
 import { arrangeTabs, TAB_LIST } from '../shared/tabs'
-import { claudeVoice, DEFAULT_CLAUDE_VOICE } from '../shared/claudeVoices'
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 /**
@@ -152,19 +151,8 @@ const toWindow = (channel: string, ...args: unknown[]): void => {
 }
 setClaudeListeners((event) => toWindow('claude:event', event), logInput)
 setSpeechListeners((speaking) => toWindow('claude:speaking', speaking), logInput)
-ipcMain.handle('claude:status', async () => {
-  const config = await loadConfig()
-  setSpeechVoice(config.claudeVoice ?? DEFAULT_CLAUDE_VOICE)
-  return claudeStatus({ handsFree: config.claudeHandsFree, voice: config.claudeVoice })
-})
-ipcMain.handle('claude:handsFree', (_event, on: boolean) => saveConfig({ claudeHandsFree: on === true }))
-ipcMain.handle('claude:voice', async (_event, id: string) => {
-  const voice = claudeVoice(id)
-  await saveConfig({ claudeVoice: voice.id })
-  setSpeechVoice(voice.id)
-  // How it sounds (the first time, once it's downloaded).
-  if (claudeOpen) void speak(`Hi, I'm ${voice.name.replace(/ \(.*\)$/, '')}. This is how I'll sound.`).catch((err) => logInput(`speech: ${err}`))
-})
+ipcMain.handle('claude:status', () => claudeStatus())
+ipcMain.on('claude:quiet', () => quietClaude())
 ipcMain.on('claude:open', (_event, open: boolean) => {
   claudeOpen = open
   setClaudeVoice(open)

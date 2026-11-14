@@ -270,6 +270,8 @@ export function playlist(): void {
   const el = current()
   // A film, show or episode: its playlists, on a tab or over a show's page (itself a trap).
   const open = trap()
+  // In the Claude app: stop speaking this reply.
+  if (open?.classList.contains('claude-app')) return void window.dispatchEvent(new Event(CLAUDE_QUIET_EVENT))
   if (el?.dataset.mediaSource && (!open || open.classList.contains('media-show')) && !grabbed()) {
     window.dispatchEvent(new CustomEvent(MEDIA_PLAYLIST_EVENT, { detail: el }))
     return
@@ -362,6 +364,9 @@ export function voiceSearch(): void {
 
 /** R3 (or a remote's Menu) while the Claude app is open: talk, or talk over its reply. */
 export const CLAUDE_TALK_EVENT = 'steamtv:claude-talk'
+
+/** X while the Claude app is open: stop speaking this reply (it's still written out, and the next one is spoken). */
+export const CLAUDE_QUIET_EVENT = 'steamtv:claude-quiet'
 
 /** Y on a controller, F on a keyboard: favourite the focused game. Screens listen for this. */
 export const FAVORITE_EVENT = 'steamtv:favorite'

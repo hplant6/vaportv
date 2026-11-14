@@ -4,7 +4,6 @@ import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { createInterface } from 'node:readline'
-import { claudeVoice } from '../shared/claudeVoices'
 import type { ClaudeEvent, ClaudeStatus } from '../shared/types'
 import { claudeSignedIn } from './claudeLogin'
 import { ownHelper } from './helpers'
@@ -65,6 +64,8 @@ let busy = false
 let discarding = 0
 /** Speak replies aloud (off while the screen is closed). */
 let voiceOn = true
+/** This reply's speaking was stopped (X): the rest of it is only written. */
+let quiet = false
 let requestId = 0
 /** Permission requests waiting for an answer on the TV, by request id. */
 const pending = new Map<string, Record<string, unknown>>()
@@ -75,16 +76,14 @@ export function claudeBin(): string | null {
   return null
 }
 
-export async function claudeStatus(prefs: { handsFree?: boolean; voice?: string } = {}): Promise<ClaudeStatus> {
+export async function claudeStatus(): Promise<ClaudeStatus> {
   const bin = claudeBin()
   return {
     installed: bin !== null,
     signedIn: bin !== null && (await claudeSignedIn(bin)),
     speech: speechReady(),
     running: proc !== null,
-    busy,
-    handsFree: prefs.handsFree !== false,
-    voice: claudeVoice(prefs.voice).id
+    busy
   }
 }
 
@@ -112,7 +111,7 @@ export function splitSentences(text: string): [string[], string] {
 
 /** Hands finished sentences (all of it, when `final`) to speech; resolves once they're queued. */
 async function speakSome(final: boolean): Promise<void> {
-  if (!voiceOn) {
+  if (!voiceOn || quiet) {
     unspoken = ''
     return
   }
@@ -238,7 +237,7 @@ function askPermission(msg: Record<string, unknown>): void {
   const { description, detail } = describeRequest(request.tool_name ?? '', input, request.description)
   log(`claude: asks to use ${request.tool_name}: ${description}${detail ? ` (${detail})` : ''}`)
   send({ type: 'permission', id, tool: request.tool_name ?? '', description, detail })
-  if (voiceOn) void speak(`Can I go ahead? ${description}.`).catch(() => {})
+  if (voiceOn && !quiet) void speak(`Can I go ahead? ${description}.`).catch(() => {})
 }
 
 /** The answer from the TV. A denied request tells Claude to stop and ask what to do instead. */
@@ -379,8 +378,16 @@ export async function sendToClaude(text: string, model = DEFAULT_MODEL): Promise
   reply = ''
   unspoken = ''
   busy = true
+  quiet = false
   stopSpeaking()
   child.stdin!.write(`${JSON.stringify({ type: 'user', message: { role: 'user', content: text } })}\n`)
+}
+
+/** Stops speaking this reply (X); it carries on being written, and the next reply is spoken. */
+export function quietClaude(): void {
+  quiet = true
+  unspoken = ''
+  stopSpeaking()
 }
 
 /** Cuts the reply short (talking over it): stops speaking and stops Claude's turn. */

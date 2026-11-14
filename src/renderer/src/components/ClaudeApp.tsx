@@ -2,8 +2,7 @@ import QRCode from 'qrcode'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ClaudeEvent, ClaudeLoginState, VoiceState } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
-import { CLAUDE_VOICES, claudeVoice, DEFAULT_CLAUDE_VOICE } from '../../../shared/claudeVoices'
-import { CLAUDE_TALK_EVENT, focus, OWN_DIRECTION_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
+import { CLAUDE_QUIET_EVENT, CLAUDE_TALK_EVENT, focus, OWN_DIRECTION_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { play } from '../input/sounds'
 import { ButtonIcon, useControllerFamily } from './ButtonIcon'
@@ -75,10 +74,8 @@ function Conversation({ onClose }: { onClose: () => void }) {
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   /** What Claude is doing between words (a tool in use), and a request waiting for Allow or Deny. */
   const [working, setWorking] = useState<string | null>(null)
-  /** Listening again by itself after each reply (off: only on Talk), and the speaking voice. */
-  const [handsFree, setHandsFreeState] = useState(true)
-  const handsFreeRef = useRef(true)
-  const [voice, setVoiceState] = useState(DEFAULT_CLAUDE_VOICE)
+  /** Whether it's speaking now (the stop button's for that). */
+  const [isSpeaking, setIsSpeaking] = useState(false)
   /** The microphone's actually recording (it takes a moment to start): talk now. */
   const [micReady, setMicReadyState] = useState(false)
   const micReadyRef = useRef(false)
@@ -119,35 +116,15 @@ function Conversation({ onClose }: { onClose: () => void }) {
   /** A reply ends once it's all written and all said: then it's the user's turn again. */
   const afterReply = useCallback((): void => {
     if (!replyDone.current || speaking.current) return
-    if (phaseRef.current !== 'thinking' && phaseRef.current !== 'speaking') return
-    if (handsFreeRef.current) listen()
-    else setPhase('idle')
+    if (phaseRef.current === 'thinking' || phaseRef.current === 'speaking') listen()
   }, [listen])
 
-  /** Hands-free on: listen now if nothing else is going on. Off: stop listening. */
-  const toggleHandsFree = (): void => {
-    const on = !handsFreeRef.current
-    handsFreeRef.current = on
-    setHandsFreeState(on)
-    void window.steamtv.claude.setHandsFree(on)
-    if (!on && phaseRef.current === 'listening') {
-      window.steamtv.stopVoice()
-      setPhase('idle')
-    } else if (on && phaseRef.current === 'idle') listen()
-  }
-
-  /** The next voice along; it says a line so you hear it (the mic stops first, so it doesn't hear itself). */
-  const nextVoice = (): void => {
-    const at = CLAUDE_VOICES.findIndex((v) => v.id === voice)
-    const next = CLAUDE_VOICES[(at + 1) % CLAUDE_VOICES.length]
-    setVoiceState(next.id)
-    if (phaseRef.current === 'listening') {
-      window.steamtv.stopVoice()
-      setPhase('idle')
-    }
-    setNote(null)
-    void window.steamtv.claude.setVoice(next.id)
-  }
+  /** The stop button and X: no more speaking for this reply. It's still written out, and when it's done it listens as usual. */
+  const quiet = useCallback((): void => {
+    if (!speaking.current) return
+    window.steamtv.claude.quiet()
+    if (phaseRef.current === 'speaking') setPhase('thinking')
+  }, [])
 
   /** The big button, R3 and a remote's Menu: talk, send what's been said, or talk over the reply. */
   const talk = useCallback((): void => {
@@ -224,12 +201,8 @@ function Conversation({ onClose }: { onClose: () => void }) {
       if (!status.signedIn) return signIn()
       if (!status.speech) setNote('Speech isn’t in this build: replies are shown, not spoken.')
       replyDone.current = !status.busy
-      handsFreeRef.current = status.handsFree
-      setHandsFreeState(status.handsFree)
-      setVoiceState(status.voice)
       if (status.busy) setPhase('thinking')
-      else if (status.handsFree) listen()
-      else setPhase('idle')
+      else listen()
     })
     return () => {
       window.steamtv.stopVoice()
@@ -310,6 +283,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
     })
     const offSpeaking = window.steamtv.claude.onSpeaking((on) => {
       speaking.current = on
+      setIsSpeaking(on)
       if (on && phaseRef.current === 'thinking' && !requestRef.current) setPhase('speaking')
       if (!on) afterReply()
     })
@@ -328,7 +302,9 @@ function Conversation({ onClose }: { onClose: () => void }) {
     })
     const offTalk = window.steamtv.claude.onTalk(talk)
     window.addEventListener(CLAUDE_TALK_EVENT, talk)
+    window.addEventListener(CLAUDE_QUIET_EVENT, quiet)
     return () => {
+      window.removeEventListener(CLAUDE_QUIET_EVENT, quiet)
       offVoice()
       offEvent()
       offSpeaking()
@@ -336,7 +312,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
       offLogin()
       window.removeEventListener(CLAUDE_TALK_EVENT, talk)
     }
-  }, [afterReply, talk, signIn, listen])
+  }, [afterReply, talk, quiet, signIn, listen])
 
   // B closes; up and down scroll the conversation, left and right move between the buttons.
   useEffect(() => {
@@ -381,7 +357,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
     listening: 'Listening · press to send',
     hearing: 'Got it…',
     thinking: 'Thinking…',
-    speaking: 'Speaking · press to interrupt',
+    speaking: 'Speaking · press to talk over it',
     approving: 'Needs your OK'
   }
 
@@ -460,14 +436,19 @@ function Conversation({ onClose }: { onClose: () => void }) {
       <div className="claude-controls">
         {phase !== 'setup' && !request && (
           <div className="claude-options">
-            <button className={`claude-option${handsFree ? ' on' : ''}`} role="switch" aria-checked={handsFree} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={toggleHandsFree}>
-              <span>Hands-free</span>
-              <span className="toggle" aria-hidden="true">
-                <span className="toggle-knob" />
-              </span>
-            </button>
-            <button className="claude-option" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={nextVoice}>
-              <span>Voice: {claudeVoice(voice).name}</span>
+            {/* Stop speaking (X): dimmed while nothing's being said. */}
+            <button
+              className={`claude-stop${isSpeaking ? '' : ' idle'}`}
+              tabIndex={-1}
+              data-focusable=""
+              data-select-sound="move"
+              aria-label="Stop speaking"
+              title="Stop speaking"
+              onClick={quiet}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="1.5" />
+              </svg>
             </button>
           </div>
         )}
@@ -480,9 +461,7 @@ function Conversation({ onClose }: { onClose: () => void }) {
           onClick={talk}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            {phase === 'thinking' || phase === 'speaking' || phase === 'approving' ? (
-              <rect x="7" y="7" width="10" height="10" rx="1.5" />
-            ) : phase === 'listening' && micReady ? (
+            {phase === 'listening' && micReady ? (
               // Send: an arrow up.
               <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
             ) : (
@@ -512,6 +491,11 @@ function Conversation({ onClose }: { onClose: () => void }) {
         {phase !== 'setup' && (
           <span className="files-hint">
             <ButtonIcon button={controls.select} family={family} /> {request ? 'Choose' : phase === 'listening' ? 'Send' : 'Talk'}
+          </span>
+        )}
+        {isSpeaking && (
+          <span className="files-hint">
+            <ButtonIcon button={controls.playlist} family={family} /> Stop speaking
           </span>
         )}
         <span className="files-hint">

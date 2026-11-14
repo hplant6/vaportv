@@ -73,15 +73,3 @@ describe('describeTool and describeRequest', () => {
   })
 })
 
-describe('claude voices', async () => {
-  const { CLAUDE_VOICES, claudeVoice } = await import('../shared/claudeVoices')
-
-  it('falls back to the first voice for an unknown or missing id', () => {
-    expect(claudeVoice(undefined).id).toBe(CLAUDE_VOICES[0].id)
-    expect(claudeVoice('nope').id).toBe(CLAUDE_VOICES[0].id)
-  })
-
-  it('names each voice after its folder, as piper-voices does', () => {
-    for (const v of CLAUDE_VOICES) expect(v.path.split('/').slice(-2).join('-')).toBe(v.id.split('-').slice(1).join('-'))
-  })
-})
