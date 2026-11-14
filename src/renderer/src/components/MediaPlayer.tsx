@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import type Hls from 'hls.js'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import type { MediaChoice, MediaPlayback } from '../../../shared/types'
 import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
+import { play as playSound } from '../input/sounds'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { MEDIA_PLAY_EVENT, MEDIA_WATCHED_EVENT } from './ContinueWatching'
 import { Spinner } from './LaunchOverlay'
@@ -15,6 +16,11 @@ import { toast } from './Toast'
 // D-pad left and right scrub along the bar, the triggers skip back or on 10 seconds, Y opens
 // Audio & subtitles, B stops. The figure eight spins while it loads or buffers. The server hears where it's
 // got to as it plays, and where it stopped, so Continue watching (and its own apps) pick up there.
+//
+// The bar has two rows the cursor moves between: the seek bar (where it starts, so A and the
+// D-pad work as above) and, D-pad down, the usual player buttons (stop, back 10, play/pause,
+// on 10, audio & subtitles, and the controller icon, whose panel lists the buttons' shortcuts).
+// Left and right step along the buttons; up goes back to the seek bar.
 
 /** The triggers (L2 / R2 by default) skip this far; it comes with PLAYER_SKIP_EVENT. */
 const SKIP_S = 10
@@ -28,6 +34,8 @@ const SCRUB_MIN_S = 10
 const SCRUB_FASTEST = 4
 const SCRUB_SETTLE_MS = 700
 const BAR_MS = 3500
+/** The cursor on the buttons: the bar stays up longer, as something's being picked. */
+const BUTTONS_BAR_MS = 8000
 const REPORT_MS = 10_000
 
 /** Mounted once (App): opens when a Continue watching card asks. */
@@ -78,12 +86,36 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   const [menu, setMenu] = useState(false)
   const resumeAt = useRef<number | null>(null)
   const [cues, setCues] = useState<string | null>(null)
+  /** The cursor on the buttons row (not the seek bar), and the shortcuts panel. */
+  const [onButtons, setOnButtonsState] = useState(false)
+  const onButtonsRef = useRef(false)
+  const buttonsRow = useRef<HTMLDivElement>(null)
+  const playButton = useRef<HTMLButtonElement>(null)
+  const [keysShown, setKeysShown] = useState(false)
+  const setOnButtons = (on: boolean): void => {
+    onButtonsRef.current = on
+    setOnButtonsState(on)
+  }
+  /** Back to the seek bar (the bar hid, a menu closed). */
+  const toSeekBar = useCallback((): void => {
+    onButtonsRef.current = false
+    setOnButtonsState(false)
+    if (self.current) focus(self.current)
+  }, [])
 
   const showBar = useCallback(() => {
     setBarShown(true)
     clearTimeout(barTimer.current)
-    barTimer.current = setTimeout(() => setBarShown(false), BAR_MS)
-  }, [])
+    barTimer.current = setTimeout(
+      () => {
+        setBarShown(false)
+        setKeysShown(false)
+        // Hidden with the cursor on a button: it goes back to the seek bar, so A and the D-pad do what they did.
+        if (onButtonsRef.current && !video.current?.paused) toSeekBar()
+      },
+      onButtonsRef.current ? BUTTONS_BAR_MS : BAR_MS
+    )
+  }, [toSeekBar])
   useEffect(() => () => clearTimeout(barTimer.current), [])
 
   useEffect(() => {
@@ -170,7 +202,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     setMenu(false)
     if (!playback) return
     const same = (next.audio ?? playback.audio) === playback.audio && (next.subtitle ?? playback.subtitleIndex) === playback.subtitleIndex
-    setTimeout(() => self.current && focus(self.current))
+    setTimeout(toSeekBar)
     if (same) return
     resumeAt.current = video.current?.currentTime ?? 0
     if (started.current) report('stop')
@@ -204,13 +236,14 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
   // B closes Audio & subtitles, or stops; the music waits and the screensaver stays off while it's open.
   useEffect(() => {
     const onBack = (): void => {
+      if (keysShown) return setKeysShown(false)
       if (!menu) return stop()
       setMenu(false)
-      setTimeout(() => self.current && focus(self.current))
+      setTimeout(toSeekBar)
     }
     window.addEventListener(TRAP_CLOSE_EVENT, onBack)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, onBack)
-  }, [stop, menu])
+  }, [stop, menu, keysShown, toSeekBar])
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: true }))
     return () => void window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: false }))
@@ -227,11 +260,31 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     return () => window.removeEventListener('blur', onBlur)
   }, [])
 
-  // D-pad left/right: scrub. Up and down just show the bar.
+  // On the seek bar, D-pad left/right scrub and down goes to the buttons; on the buttons, left and
+  // right step along them and up goes back. The first press with the bar hidden only shows it,
+  // unless it's a scrub (which shows it too).
   useEffect(() => {
     const onDirection = (event: Event): void => {
       const direction = (event as CustomEvent<Direction>).detail
       showBar()
+      if (onButtonsRef.current) {
+        if (direction === 'up') return toSeekBar()
+        if (direction === 'down') return
+        const buttons = [...(buttonsRow.current?.querySelectorAll<HTMLElement>('[data-focusable]') ?? [])]
+        const next = buttons[buttons.indexOf(document.activeElement as HTMLElement) + (direction === 'right' ? 1 : -1)]
+        if (next) {
+          playSound('move')
+          focus(next)
+        }
+        return
+      }
+      if (direction === 'down') {
+        setOnButtons(true)
+        playSound('move')
+        if (playButton.current) focus(playButton.current)
+        showBar()
+        return
+      }
       const el = video.current
       if (!el || (direction !== 'left' && direction !== 'right')) return
       const length = el.duration || playback?.durationSeconds || 0
@@ -256,36 +309,41 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
       window.removeEventListener(OWN_DIRECTION_EVENT, onDirection)
       clearTimeout(scrubbing.current.timer)
     }
-  }, [showBar, playback])
+  }, [showBar, playback, toSeekBar])
 
   // The triggers: back or on 10 seconds. Y: Audio & subtitles (again, closed).
-  useEffect(() => {
-    const onSkip = (event: Event): void => {
+  const skip = useCallback(
+    (by: number): void => {
       showBar()
       const el = video.current
       if (!el) return
-      const by = (event as CustomEvent<number>).detail
       const length = el.duration || playback?.durationSeconds || 0
       el.currentTime = Math.max(0, Math.min(Math.max(0, length - 1), el.currentTime + by))
       // Pressed again the same way soon after: one total ("Fast-forwarding 30 seconds").
       setSkipped((was) => ({ by: was && Math.sign(was.by) === Math.sign(by) ? was.by + by : by, key: (was?.key ?? 0) + 1 }))
       clearTimeout(skipTimer.current)
       skipTimer.current = setTimeout(() => setSkipped(null), 1400)
-    }
-    const onTracks = (): void => {
-      if (!hasTracks) return toast('This has no other audio or subtitles')
-      setMenu((open) => {
-        if (open) setTimeout(() => self.current && focus(self.current))
-        return !open
-      })
-    }
+    },
+    [showBar, playback]
+  )
+  const tracks = useCallback((): void => {
+    if (!hasTracks) return toast('This has no other audio or subtitles')
+    setKeysShown(false)
+    setMenu((open) => {
+      if (open) setTimeout(toSeekBar)
+      return !open
+    })
+  }, [hasTracks, toSeekBar])
+  useEffect(() => {
+    const onSkip = (event: Event): void => skip((event as CustomEvent<number>).detail)
+    const onTracks = (): void => tracks()
     window.addEventListener(PLAYER_SKIP_EVENT, onSkip)
     window.addEventListener(PLAYER_TRACKS_EVENT, onTracks)
     return () => {
       window.removeEventListener(PLAYER_SKIP_EVENT, onSkip)
       window.removeEventListener(PLAYER_TRACKS_EVENT, onTracks)
     }
-  }, [showBar, playback, hasTracks])
+  }, [skip, tracks])
 
   // Opening the menu puts the cursor on the audio track playing (or the first thing in it).
   useEffect(() => {
@@ -315,16 +373,8 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
 
   const length = (Number.isFinite(time.length) && time.length) || playback?.durationSeconds || 0
   return (
-    <div className="media-player" data-focus-trap="">
-      <button
-        ref={self}
-        className={`files-viewer${barShown || paused ? ' bar-shown' : ''}`}
-        tabIndex={-1}
-        data-focusable=""
-        {...(menu ? {} : { 'data-own-directions': '' })}
-        data-select-sound="move"
-        onClick={toggle}
-      >
+    <div className="media-player" data-focus-trap="" {...(menu ? {} : { 'data-own-directions': '' })}>
+      <div className={`files-viewer${barShown || paused ? ' bar-shown' : ''}${onButtons ? ' on-buttons' : ''}`}>
         {/* Its picture while it loads. */}
         {!playing && playback?.backdrop && <img className="files-viewer-media media-player-poster" src={playback.backdrop} alt="" />}
         <video
@@ -383,7 +433,8 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
             <span className="files-viewer-name display">{playback?.title ?? 'Loading…'}</span>
             <span className="files-viewer-count">{playback?.subtitle}</span>
           </div>
-          <div className="files-viewer-line">
+          {/* The seek bar: the cursor starts here (A plays or pauses, left and right scrub). */}
+          <button ref={self} className="files-viewer-line media-seek" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={toggle}>
             {/* Scrubbing, the marker and its time go where it'll jump to. */}
             <span className={`files-viewer-time${scrub !== null ? ' media-scrub-time' : ''}`}>{clock(scrub ?? time.at)}</span>
             {/* Where it's at: the fill and a playhead; scrubbing, a gold marker where it'll jump to, and the stretch between. */}
@@ -399,17 +450,64 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
               {scrub !== null && length > 0 && <span className="media-scrub-head" style={{ left: `${(scrub / length) * 100}%` }} />}
             </span>
             <span className="files-viewer-time">{clock(length)}</span>
+          </button>
+          <div className="media-buttons" ref={buttonsRow}>
+            <PlayerButton label="Stop" onClick={stop}>
+              <rect x="6" y="6" width="12" height="12" rx="1.5" className="fill" />
+            </PlayerButton>
+            <div className="media-buttons-middle">
+              <PlayerButton label={`Back ${SKIP_S} seconds`} onClick={() => skip(-SKIP_S)}>
+                <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />
+                <text x="12" y="15.5" className="media-button-num">
+                  {SKIP_S}
+                </text>
+              </PlayerButton>
+              <PlayerButton label={paused ? 'Play' : 'Pause'} big buttonRef={playButton} onClick={toggle}>
+                {paused ? <path d="M8 5.5v13l10.5-6.5z" className="fill" /> : <path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" className="fill" />}
+              </PlayerButton>
+              <PlayerButton label={`On ${SKIP_S} seconds`} onClick={() => skip(SKIP_S)}>
+                <path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4" />
+                <text x="12" y="15.5" className="media-button-num">
+                  {SKIP_S}
+                </text>
+              </PlayerButton>
+            </div>
+            {hasTracks && (
+              <PlayerButton label="Audio & subtitles" onClick={tracks}>
+                <rect x="3" y="5.5" width="18" height="13" rx="2" />
+                <path d="M7 14.5h4M13 14.5h4M7 11h2M11 11h6" />
+              </PlayerButton>
+            )}
+            <PlayerButton
+              label="Controller shortcuts"
+              pressed={keysShown}
+              onClick={() => {
+                showBar()
+                setKeysShown((shown) => !shown)
+              }}
+            >
+              <path d="M7 8.5h10a4 4 0 0 1 3.9 4.9l-.8 3.4a2.2 2.2 0 0 1-3.8 1L14.6 16H9.4l-1.7 1.8a2.2 2.2 0 0 1-3.8-1l-.8-3.4A4 4 0 0 1 7 8.5z" />
+              <path d="M8 11.2v2.6M6.7 12.5h2.6" />
+              <circle cx="15.6" cy="11.8" r=".5" className="fill" />
+              <circle cx="17" cy="13.2" r=".5" className="fill" />
+            </PlayerButton>
           </div>
-          <div className="files-viewer-hints">
+        </div>
+        {keysShown && (
+          <div className="media-keys" role="dialog" aria-label="Controller shortcuts">
+            <h3 className="settings-heading display">Shortcuts</h3>
             <span className="files-hint">
-              <ButtonIcon button={controls.select} family={family} /> {paused ? 'Play' : 'Pause'}
+              <ButtonIcon button={controls.select} family={family} /> Play / pause
             </span>
             <span className="files-hint">
-              <DpadIcon leftRight /> Scrub
+              <DpadIcon leftRight /> Scrub (on the seek bar)
+            </span>
+            <span className="files-hint">
+              <DpadIcon /> Down to these buttons, up to the seek bar
             </span>
             <span className="files-hint">
               <ButtonIcon button={controls.sideBar} family={family} />
-              <ButtonIcon button={controls.controlsGuide} family={family} /> {SKIP_S} s back / on
+              <ButtonIcon button={controls.controlsGuide} family={family} /> {SKIP_S} seconds back / on
             </span>
             {hasTracks && (
               <span className="files-hint">
@@ -420,10 +518,45 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
               <ButtonIcon button={controls.back} family={family} /> Stop
             </span>
           </div>
-        </div>
-      </button>
+        )}
+      </div>
       {menu && playback && <TrackMenu playback={playback} onPick={pick} />}
     </div>
+  )
+}
+
+/** One of the player's buttons: an icon (SVG children, 24-unit box), its name shown while it has the cursor. */
+function PlayerButton({
+  label,
+  big = false,
+  pressed,
+  buttonRef,
+  onClick,
+  children
+}: {
+  label: string
+  big?: boolean
+  pressed?: boolean
+  buttonRef?: Ref<HTMLButtonElement>
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      ref={buttonRef}
+      className={`media-button${big ? ' big' : ''}`}
+      tabIndex={-1}
+      data-focusable=""
+      data-select-sound="move"
+      aria-label={label}
+      aria-pressed={pressed}
+      onClick={onClick}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        {children}
+      </svg>
+      <span className="media-button-label">{label}</span>
+    </button>
   )
 }
 
