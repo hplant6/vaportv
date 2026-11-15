@@ -9,25 +9,31 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { ownHelper } from './helpers'
 
-// Speaking aloud, for the Claude app: Piper (a small neural text-to-speech engine) turns each
-// sentence into a WAV as soon as it's written, and they play one after another. All on this
-// machine. Piper ships with vaporTV (scripts/piper.sh fetches it); its voice (~63 MB)
-// downloads the first time something is spoken.
+// Speaking aloud, for the Claude app: Kokoro (a small, natural-sounding neural voice, run by
+// sherpa-onnx) turns each sentence into a WAV as soon as it's written, and they play one after
+// another. All on this machine, on the CPU (about six times faster than it's spoken on the box's
+// Ryzen). sherpa-onnx ships with vaporTV (scripts/kokoro.sh fetches it) and runs in a worker of its
+// own (scripts/kokoro-worker.cjs); the model (~350 MB) downloads the first time something is spoken.
 
-/** Piper's northern English male voice (trained on OpenSLR 83, CC BY-SA 4.0). */
-const VOICE_NAME = 'en_GB-northern_english_male-medium'
-const VOICE_URL = `https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/northern_english_male/medium/${VOICE_NAME}.onnx`
+/** Kokoro v1.0 (Apache 2.0) as sherpa-onnx packs it: the model, its 54 voices, lexicons and eSpeak's data. */
+const MODEL_NAME = 'kokoro-multi-lang-v1_0'
+const MODEL_URL = `https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/${MODEL_NAME}.tar.bz2`
 const VOICE_DIR = join(homedir(), '.local', 'share', 'steamtv', 'voice')
-const VOICE = join(VOICE_DIR, `${VOICE_NAME}.onnx`)
+const MODEL_DIR = join(VOICE_DIR, MODEL_NAME)
+/** The voice: George, a British man (speaker 26 of the model's 54). */
+const SPEAKER = 26
+const SPEED = 1
+/** The box's Ryzen has 12 cores; this many keeps a sentence well ahead of the one playing. */
+const THREADS = 8
 
 type Log = (line: string) => void
 
 /** Speaking started (true) or everything queued has been said (false). */
 export type SpeakingListener = (speaking: boolean) => void
 
-let piper: ChildProcess | null = null
+let worker: ChildProcess | null = null
 let outDir: string | null = null
-/** Sentences written to Piper whose WAV hasn't come back yet. */
+/** Sentences sent to the worker whose WAV hasn't come back yet. */
 let pending = 0
 /** WAVs waiting their turn to play. */
 const queue: string[] = []
@@ -37,13 +43,14 @@ let speaking = false
 let stops = 0
 let onSpeaking: SpeakingListener = () => {}
 let log: Log = () => {}
+let downloading: Promise<void> | null = null
 
-function piperBin(): string {
-  return app.isPackaged ? join(process.resourcesPath, 'voice', 'piper', 'piper') : join(app.getAppPath(), 'build', 'voice', 'piper', 'piper')
+function kokoroDir(): string {
+  return app.isPackaged ? join(process.resourcesPath, 'voice', 'kokoro') : join(app.getAppPath(), 'build', 'voice', 'kokoro')
 }
 
 export function speechReady(): boolean {
-  return existsSync(piperBin())
+  return existsSync(join(kokoroDir(), 'worker.cjs')) && existsSync(join(kokoroDir(), 'node_modules', 'sherpa-onnx-node'))
 }
 
 export function setSpeechListeners(listener: SpeakingListener, logger: Log): void {
@@ -51,22 +58,39 @@ export function setSpeechListeners(listener: SpeakingListener, logger: Log): voi
   log = logger
 }
 
-async function download(url: string, to: string): Promise<void> {
-  if (existsSync(to)) return
+/** Downloads the model and unpacks it beside the other voice files, if it isn't here yet. */
+async function downloadModel(): Promise<void> {
+  if (existsSync(join(MODEL_DIR, 'model.onnx'))) return
+  log('speech: downloading the voice')
   await mkdir(VOICE_DIR, { recursive: true })
-  const res = await fetch(url)
-  if (!res.ok || !res.body) throw new Error(`Couldn't download the speaking voice (${res.status})`)
-  const part = `${to}.part`
-  await pipeline(Readable.fromWeb(res.body as import('node:stream/web').ReadableStream), createWriteStream(part))
-  await rename(part, to)
+  const part = join(VOICE_DIR, `${MODEL_NAME}.tar.bz2.part`)
+  const unpacking = join(VOICE_DIR, `${MODEL_NAME}.unpacking`)
+  try {
+    const res = await fetch(MODEL_URL)
+    if (!res.ok || !res.body) throw new Error(`Couldn't download the speaking voice (${res.status})`)
+    await pipeline(Readable.fromWeb(res.body as import('node:stream/web').ReadableStream), createWriteStream(part))
+    await rm(unpacking, { recursive: true, force: true })
+    await mkdir(unpacking)
+    await new Promise<void>((resolve, reject) => {
+      const tar = spawn('tar', ['-xjf', part, '-C', unpacking, '--strip-components=1'], { stdio: ['ignore', 'ignore', 'pipe'] })
+      let err = ''
+      tar.stderr.on('data', (chunk: Buffer) => (err += chunk.toString()))
+      tar.on('error', reject)
+      tar.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`Couldn't unpack the speaking voice: ${err.trim() || code}`))))
+    })
+    await rename(unpacking, MODEL_DIR)
+    log('speech: voice ready')
+  } finally {
+    await rm(part, { force: true })
+    await rm(unpacking, { recursive: true, force: true })
+  }
 }
 
-/** Downloads the voice if it isn't here yet (its model and the settings Piper reads beside it). */
+/** Downloads the voice if it isn't here yet (once, however many sentences are waiting on it). */
 export async function prepareSpeech(): Promise<void> {
   if (!speechReady()) throw new Error("Speech isn't installed in this build")
-  if (!existsSync(VOICE)) log('speech: downloading the voice')
-  await download(`${VOICE_URL}.json`, `${VOICE}.json`)
-  await download(VOICE_URL, VOICE)
+  downloading ??= downloadModel().finally(() => (downloading = null))
+  await downloading
 }
 
 function setSpeaking(on: boolean): void {
@@ -99,29 +123,36 @@ function playNext(): void {
   child.on('close', done)
 }
 
-async function startPiper(): Promise<ChildProcess> {
-  if (piper) return piper
+async function startWorker(): Promise<ChildProcess> {
+  if (worker) return worker
   outDir = await mkdtemp(join(tmpdir(), 'vaportv-speech-'))
-  // Reads a sentence a line; writes each as a WAV in outDir and prints its path.
-  const child = spawn(piperBin(), ['--model', VOICE, '--output_dir', outDir, '--sentence_silence', '0.15', '--quiet'], {
-    stdio: ['pipe', 'pipe', 'pipe']
+  // vaporTV's own Electron, as plain Node: reads a sentence a line, writes each as a WAV in outDir
+  // and prints its path (an empty line for one it couldn't say).
+  const child = spawn(process.execPath, [join(kokoroDir(), 'worker.cjs'), MODEL_DIR, outDir, String(SPEAKER), String(SPEED), String(THREADS)], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
   })
   ownHelper(child)
-  piper = child
+  worker = child
   createInterface({ input: child.stdout! }).on('line', (line) => {
-    if (piper !== child) return
-    const file = line.trim()
-    if (!file.endsWith('.wav')) return
+    if (worker !== child) return
     pending = Math.max(0, pending - 1)
-    queue.push(file)
-    playNext()
+    const file = line.trim()
+    if (file.endsWith('.wav')) {
+      queue.push(file)
+      playNext()
+    } else settle()
   })
-  child.stderr!.on('data', (chunk: Buffer) => log(`speech: piper: ${chunk.toString().trim()}`))
-  child.on('error', (err) => log(`speech: piper: ${err}`))
+  child.stderr!.on('data', (chunk: Buffer) => {
+    // sherpa-onnx notes each phoneme it has no sound for (a syllable mark eSpeak adds): not worth a log line each.
+    const lines = chunk.toString().split('\n').filter((l) => l.trim() && !/Skip unknown phonemes/.test(l))
+    for (const l of lines) log(`speech: kokoro: ${l.trim()}`)
+  })
+  child.on('error', (err) => log(`speech: kokoro: ${err}`))
   child.on('close', (code) => {
-    if (piper !== child) return
-    log(`speech: piper exited ${code}`)
-    piper = null
+    if (worker !== child) return
+    log(`speech: kokoro exited ${code}`)
+    worker = null
     pending = 0
     settle()
   })
@@ -150,7 +181,7 @@ export async function speak(text: string): Promise<void> {
   const generation = stops
   try {
     await prepareSpeech()
-    const child = await startPiper()
+    const child = await startWorker()
     if (generation !== stops) return
     child.stdin!.write(`${line}\n`)
   } catch (err) {
@@ -165,8 +196,8 @@ export async function speak(text: string): Promise<void> {
 /** Stops talking at once and forgets what was queued. */
 export function stopSpeaking(): void {
   stops++
-  const child = piper
-  piper = null
+  const child = worker
+  worker = null
   pending = 0
   child?.kill()
   player?.kill()
