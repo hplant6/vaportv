@@ -829,17 +829,6 @@ button {
   box-shadow: var(--shadow-tile-focus);
 }
 
-/* Outer columns grow inward so the enlarged tile stays inside the screen gutter. */
-.app-tile:nth-child(4n + 1) {
-  transform-origin: left center;
-  --pivot-x: 50%;
-}
-
-.app-tile:nth-child(4n) {
-  transform-origin: right center;
-  --pivot-x: -50%;
-}
-
 .app-tile img {
   display: block;
   width: 100%;
@@ -1219,15 +1208,16 @@ button {
   transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Outer columns grow inward, as on Favorite Apps. */
-.wide-card:nth-child(4n + 1) {
-  transform-origin: left center;
-  --pivot-x: 50%;
+/* Every card in a grid grows from its centre, whichever column it's in; the grids are inset
+   a little so the outer columns' grown cards still clear the screen's edge. */
+.app-tile,
+.wide-card {
+  transform-origin: center;
 }
 
-.wide-card:nth-child(4n) {
-  transform-origin: right center;
-  --pivot-x: -50%;
+.favorites-grid,
+.wide-grid {
+  padding-inline: 8px;
 }
 
 /* Scrolling a row leans its cards with its speed (scrollTilt.ts), about their upright
