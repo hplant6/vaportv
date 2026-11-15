@@ -29,7 +29,7 @@ import { watchSteamFocus } from './steamFocus'
 import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, finishListening, stopListening } from './voice'
-import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
+import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeAutoApprove, setClaudeListeners, setClaudeVoice } from './claude'
 import { setSpeechListeners } from './speech'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
@@ -162,7 +162,11 @@ ipcMain.on('claude:open', (_event, open: boolean) => {
     stopClaudeLogin()
   }
 })
-ipcMain.handle('claude:send', async (_event, text: string) => sendToClaude(text, (await loadConfig()).claudeModel))
+ipcMain.handle('claude:send', async (_event, text: string) => {
+  const config = await loadConfig()
+  setClaudeAutoApprove(config.claudeAutoApprove === true)
+  return sendToClaude(text, config.claudeModel)
+})
 ipcMain.on('claude:interrupt', () => interruptClaude())
 ipcMain.on('claude:reset', () => endClaude())
 ipcMain.on('claude:answer', (_event, id: string, allow: boolean) => answerPermission(id, allow === true))
@@ -677,6 +681,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     musicFolder: musicFolder(config).replace(homedir(), '~'),
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
+    claudeAutoApprove: config.claudeAutoApprove ?? false,
     controls: resolveControls(config.controls),
     screensaverDelay: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY,
     screensaverStyle: screensaverStyle(config),
@@ -766,6 +771,7 @@ ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTak
 ipcMain.handle('settings:sleepOnControllerOff', (_event, on: boolean) => saveConfig({ sleepOnControllerOff: on }))
 ipcMain.handle('settings:arcadeRowsHidden', (_event, rows: ArcadeRow[]) => saveConfig({ arcadeRowsHidden: rows }))
 ipcMain.handle('settings:controls', (_event, controls: Controls) => saveConfig({ controls: resolveControls(controls) }))
+ipcMain.handle('settings:claudeAutoApprove', (_event, on: boolean) => saveConfig({ claudeAutoApprove: on === true }))
 ipcMain.handle('settings:sleepWarning', (_event, on: boolean) => saveConfig({ sleepWarning: on }))
 ipcMain.handle('settings:screensaverStyle', (_event, style: ScreensaverStyle) => saveConfig({ screensaverStyle: style }))
 ipcMain.handle('settings:screensaverClock', (_event, spot: ScreensaverClockSpot) => saveConfig({ screensaverClock: spot }))

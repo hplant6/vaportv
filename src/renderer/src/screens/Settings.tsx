@@ -569,6 +569,13 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setArcadeRowsHidden(hidden)
   }
 
+  const toggleClaudeAutoApprove = (): void => {
+    if (!settings) return
+    const on = !settings.claudeAutoApprove
+    setSettings({ ...settings, claudeAutoApprove: on })
+    window.steamtv.setClaudeAutoApprove(on)
+  }
+
   const toggleSleepWarning = (): void => {
     if (!settings) return
     const on = !settings.sleepWarning
@@ -723,7 +730,25 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   const panes: Record<Category, ReactNode> = {
-    general: <GeneralSettings />,
+    general: (
+      <>
+        <GeneralSettings />
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Claude app</h3>
+          <div className="setting-list" data-focus-memory="settings-claude-auto">
+            {settings && (
+              <ToggleRow
+                label="Go ahead without asking"
+                detail="Claude runs commands and edits files without waiting for your OK"
+                on={settings.claudeAutoApprove}
+                onToggle={toggleClaudeAutoApprove}
+              />
+            )}
+          </div>
+        </div>
+      </>
+    ),
     tabs: <TabsSettings />,
     home: (
       <>

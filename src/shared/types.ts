@@ -602,6 +602,8 @@ export interface Settings {
   sleepOnControllerOff: boolean
   /** With sleepOnControllerOff: a few seconds' warning first, cancelled by switching it back on. */
   sleepWarning: boolean
+  /** The Claude app goes ahead without asking first. */
+  claudeAutoApprove: boolean
   /** What each controller button does. */
   controls: Controls
   /** Screensaver delay in minutes (0 = off), and where it reads photos. */
@@ -1163,6 +1165,7 @@ export interface SteamTvApi {
   }
   /** Adds an app to Home's Favorite Apps or takes it off; resolves with whether it's now a favorite. */
   toggleFavoriteApp(id: string): Promise<boolean>
+  setClaudeAutoApprove(on: boolean): Promise<void>
   setSleepWarning(on: boolean): Promise<void>
   /** Google Photos add-on (screensaver photos). */
   googlePhotos: {

@@ -224,6 +224,12 @@ function controlResponse(requestId: string, response: Record<string, unknown>): 
   proc?.stdin?.write(`${JSON.stringify({ type: 'control_response', response: { subtype: 'success', request_id: requestId, response } })}\n`)
 }
 
+let autoApprove = false
+/** Whether requests are answered yes without showing them on the TV (a setting, read when a message is sent). */
+export function setClaudeAutoApprove(on: boolean): void {
+  autoApprove = on
+}
+
 /** Claude Code asks before changing or running anything: the TV shows it and waits for A (allow) or B (deny). */
 function askPermission(msg: Record<string, unknown>): void {
   const id = String(msg.request_id ?? '')
@@ -236,6 +242,11 @@ function askPermission(msg: Record<string, unknown>): void {
   pending.set(id, input)
   const { description, detail } = describeRequest(request.tool_name ?? '', input, request.description)
   log(`claude: asks to use ${request.tool_name}: ${description}${detail ? ` (${detail})` : ''}`)
+  if (autoApprove) {
+    log('claude: auto-approved')
+    answerPermission(id, true)
+    return
+  }
   send({ type: 'permission', id, tool: request.tool_name ?? '', description, detail })
   if (voiceOn && !quiet) void speak(`Can I go ahead? ${description}.`).catch(() => {})
 }
