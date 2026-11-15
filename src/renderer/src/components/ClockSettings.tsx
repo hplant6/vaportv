@@ -18,6 +18,12 @@ const NAMES: Record<ClockWidget, string> = {
   gpuTemp: 'GPU temperature'
 }
 
+const NOW_PLAYING: { id: ClockCorners['nowPlaying']; name: string }[] = [
+  { id: 'left', name: 'Top left corner' },
+  { id: 'right', name: 'Top right corner' },
+  { id: 'off', name: 'Off' }
+]
+
 const UNITS: { id: ClockCorners['sensorUnit']; name: string; detail: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' },
   { id: 'fahrenheit', name: 'Fahrenheit', detail: '°F' }
@@ -42,11 +48,17 @@ export function ClockSettings() {
     window.steamtv.clock.set(next).then(() => window.dispatchEvent(new Event(CLOCK_CHANGED_EVENT)))
   }
 
-  const chooseUnit = (unit: ClockCorners['sensorUnit']): void => {
-    if (!corners || corners.sensorUnit === unit) return
-    const next = { ...corners, sensorUnit: unit }
+  const save = (next: ClockCorners): void => {
     setCorners(next)
     window.steamtv.clock.set(next).then(() => window.dispatchEvent(new Event(CLOCK_CHANGED_EVENT)))
+  }
+
+  const chooseUnit = (unit: ClockCorners['sensorUnit']): void => {
+    if (corners && corners.sensorUnit !== unit) save({ ...corners, sensorUnit: unit })
+  }
+
+  const chooseNowPlaying = (spot: ClockCorners['nowPlaying']): void => {
+    if (corners && corners.nowPlaying !== spot) save({ ...corners, nowPlaying: spot })
   }
 
   const row = (side: Side, id: ClockWidget | null) => {
@@ -94,6 +106,28 @@ export function ClockSettings() {
     <>
       {group('left', 'Top left corner')}
       {group('right', 'Top right corner')}
+      <div className="settings-group">
+        <h3 className="settings-heading display">Now playing</h3>
+        <p className="settings-help">While the Music app plays, the song and its cover show in this corner, in place of what it usually shows.</p>
+        <div className="setting-list" data-focus-memory="settings-clock-now-playing">
+          {NOW_PLAYING.map((spot) => (
+            <button
+              key={spot.id}
+              className={`setting-row${corners.nowPlaying === spot.id ? ' on' : ''}`}
+              tabIndex={-1}
+              role="radio"
+              aria-checked={corners.nowPlaying === spot.id}
+              aria-label={spot.name}
+              data-focusable=""
+              data-select-sound="move"
+              onClick={() => chooseNowPlaying(spot.id)}
+            >
+              <span className="radio" aria-hidden="true" />
+              <span className="setting-name display">{spot.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="settings-group">
         <h3 className="settings-heading display">CPU & GPU temperature</h3>
         <p className="settings-help">Apart from the weather's, which is in General.</p>

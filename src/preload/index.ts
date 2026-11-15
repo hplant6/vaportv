@@ -251,7 +251,8 @@ const api: SteamTvApi = {
   music: {
     places: () => ipcRenderer.invoke('music:places'),
     browse: (dir) => ipcRenderer.invoke('music:browse', dir),
-    tags: (paths) => ipcRenderer.invoke('music:tags', paths)
+    tags: (paths) => ipcRenderer.invoke('music:tags', paths),
+    folders: (paths) => ipcRenderer.invoke('music:folders', paths)
   },
   claude: {
     status: () => ipcRenderer.invoke('claude:status'),

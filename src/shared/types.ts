@@ -262,6 +262,8 @@ export interface ClockCorners {
   right: ClockWidget[]
   /** The CPU and GPU temperatures' unit, apart from the weather's. */
   sensorUnit: 'celsius' | 'fahrenheit'
+  /** While the Music app plays, the song in this corner (in place of what it shows), or nowhere. */
+  nowPlaying: 'off' | 'left' | 'right'
 }
 
 /** The box's load and temperatures (°C); null where it can't be read (e.g. not on Linux). */
@@ -316,6 +318,8 @@ export interface MusicEntry {
   name: string
   path: string
   kind: 'folder' | 'track'
+  /** A folder's last change (ms), for Recently added. */
+  modified?: number
 }
 
 /** A song as the Music app shows it: from its tags, or its file's name; its cover (or its folder's) as an address. */
@@ -327,6 +331,15 @@ export interface MusicTags {
   track?: number
   /** Seconds, when its headers say. */
   duration?: number
+  cover?: string
+}
+
+/** A music folder as a card in the grid: its cover, and the album and artist its songs name (or its name). */
+export interface MusicFolder {
+  path: string
+  /** The album (from the first song's tags), else the folder's name less an "Artist - " in front. */
+  title: string
+  artist?: string
   cover?: string
 }
 
@@ -1007,6 +1020,8 @@ export interface SteamTvApi {
     places(): Promise<MusicPlace[]>
     browse(dir: string): Promise<MusicEntry[]>
     tags(paths: string[]): Promise<MusicTags[]>
+    /** Folders' covers and names for the grid, a few at a time; in the order asked. */
+    folders(paths: string[]): Promise<MusicFolder[]>
   }
   /** The Claude app (a spoken conversation with Claude Code). */
   claude: {

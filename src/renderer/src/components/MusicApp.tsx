@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MusicEntry, MusicPlace, MusicTags } from '../../../shared/types'
+import type { MusicEntry, MusicFolder, MusicPlace, MusicTags } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, TRAP_CLOSE_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { play } from '../input/sounds'
 import { cycleRepeat, current, next, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, type PlayerState } from '../music/player'
-import { Visualizer } from '../music/Visualizer'
+import { FloatingCover } from '../music/FloatingCover'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
 
 // The Music app (its tile is in Apps): your own music from ~/Music, network shares (mounted
-// under ~/Network) and drives. Places on the left, the folder on the right, as in Files: A on
-// a song plays the folder from it; Play all and Shuffle at the top. Now playing is the
-// visualizer, coloured from the cover, with the player's buttons along the foot (D-pad down
+// under ~/Network) and drives. Places on the left; on the right a folder's folders as a grid of
+// covers (as the console tabs show games), and its songs as an album: the cover, Play all and
+// Shuffle, then the songs. A on a song plays the folder from it. Now playing is the
+// cover floating over the backdrop, the song beside it, and the player's buttons along the foot (D-pad down
 // to them, as in the video players). The music carries on when the screen closes.
 
 /** AppTile fires this for the Music tile (detail: the tile, to come back to). */
@@ -21,6 +22,8 @@ export const MUSIC_EVENT = 'steamtv:music'
 
 /** Tags asked for at a time, as the list fills in. */
 const TAGS_AT_ONCE = 24
+/** Folders' covers asked for at a time, as the grid fills in. */
+const FOLDERS_AT_ONCE = 10
 /** Now playing: the bar fades this long after the last press, unless the cursor's on the buttons. */
 const BAR_MS = 5000
 
@@ -32,6 +35,19 @@ function clock(seconds: number): string {
 
 function centre(box: HTMLElement | null, row: HTMLElement): void {
   if (box) box.scrollTop = row.offsetTop - (box.clientHeight - row.offsetHeight) / 2
+}
+
+/** "1 h 12 min" or "48 min": an album's length. */
+function albumLength(seconds: number): string {
+  const minutes = Math.round(seconds / 60)
+  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`
+}
+
+/** "Aphex Twin - Syro" → "Syro" by "Aphex Twin" (as the main side splits a folder's name). */
+function splitName(name: string): { artist?: string; title: string } {
+  const at = name.search(/\s+[-–]\s+/)
+  const rest = at > 0 ? name.slice(at).replace(/^\s+[-–]\s+/, '').trim() : ''
+  return rest ? { artist: name.slice(0, at).trim(), title: rest } : { title: name }
 }
 
 function usePlayer(): PlayerState {
@@ -71,6 +87,27 @@ function Music({ onClose }: { onClose: () => void }) {
 /** Remembered while vaporTV runs: where you were. */
 let lastTrail: MusicEntry[] = []
 
+/** How a folder's folders are ordered: by name, by artist, or newest first. */
+type Sort = 'name' | 'artist' | 'recent'
+const SORTS: { id: Sort; name: string }[] = [
+  { id: 'name', name: 'A–Z' },
+  { id: 'artist', name: 'Artist' },
+  { id: 'recent', name: 'Recently added' }
+]
+/** The order chosen, on this TV (losing it just means A–Z). */
+const SORT_STORE = 'vaportv.musicSort'
+
+function savedSort(): Sort {
+  try {
+    const saved = localStorage.getItem(SORT_STORE)
+    return SORTS.some((s) => s.id === saved) ? (saved as Sort) : 'name'
+  } catch {
+    return 'name'
+  }
+}
+
+const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
 function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose: () => void; onPlaying: () => void }) {
   const root = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLDivElement>(null)
@@ -78,9 +115,19 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
   const [trail, setTrail] = useState<MusicEntry[]>(lastTrail)
   const [entries, setEntries] = useState<MusicEntry[] | null>(null)
   const [tags, setTags] = useState<Record<string, MusicTags>>({})
+  const [cards, setCards] = useState<Record<string, MusicFolder>>({})
   const [error, setError] = useState<string | null>(null)
+  const [sort, setSort] = useState<Sort>(savedSort)
   const returnTo = useRef<string | null>(null)
   const here = trail[trail.length - 1] ?? null
+  const unsorted = entries?.filter((e) => e.kind === 'folder') ?? []
+  const artistOf = (e: MusicEntry): string => cards[e.path]?.artist ?? splitName(e.name).artist ?? e.name
+  const folders =
+    sort === 'recent'
+      ? [...unsorted].sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0))
+      : sort === 'artist'
+        ? [...unsorted].sort((a, b) => byName.compare(artistOf(a), artistOf(b)) || byName.compare(a.name, b.name))
+        : unsorted
   const tracks = entries?.filter((e) => e.kind === 'track') ?? []
 
   useEffect(() => {
@@ -97,12 +144,7 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
       .catch((err: unknown) => setError(errorText(err)))
   }, [])
 
-  useEffect(() => {
-    const first = root.current?.querySelector<HTMLElement>('.files-place.active, .files-place')
-    if (first) focus(first)
-  }, [places])
-
-  // The folder, then its songs' tags a screenful at a time.
+  // The folder, then its folders' covers and its songs' tags, a screenful at a time.
   useEffect(() => {
     if (!here) return
     let live = true
@@ -113,12 +155,21 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
       .then(async (found) => {
         if (!live) return
         setEntries(found)
-        const paths = found.filter((e) => e.kind === 'track').map((e) => e.path)
-        for (let i = 0; i < paths.length && live; i += TAGS_AT_ONCE) {
-          const got = await window.steamtv.music.tags(paths.slice(i, i + TAGS_AT_ONCE)).catch(() => [] as MusicTags[])
-          if (!live) return
-          setTags((was) => ({ ...was, ...Object.fromEntries(got.map((t) => [t.path, t])) }))
+        const dirs = found.filter((e) => e.kind === 'folder').map((e) => e.path)
+        const songs = found.filter((e) => e.kind === 'track').map((e) => e.path)
+        const fillCards = async (): Promise<void> => {
+          for (let i = 0; i < dirs.length && live; i += FOLDERS_AT_ONCE) {
+            const got = await window.steamtv.music.folders(dirs.slice(i, i + FOLDERS_AT_ONCE)).catch(() => [] as MusicFolder[])
+            if (live) setCards((was) => ({ ...was, ...Object.fromEntries(got.map((c) => [c.path, c])) }))
+          }
         }
+        const fillTags = async (): Promise<void> => {
+          for (let i = 0; i < songs.length && live; i += TAGS_AT_ONCE) {
+            const got = await window.steamtv.music.tags(songs.slice(i, i + TAGS_AT_ONCE)).catch(() => [] as MusicTags[])
+            if (live) setTags((was) => ({ ...was, ...Object.fromEntries(got.map((t) => [t.path, t])) }))
+          }
+        }
+        await Promise.all([fillTags(), fillCards()])
       })
       .catch((err: unknown) => live && setError(errorText(err)))
     return () => {
@@ -126,18 +177,33 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
     }
   }, [here])
 
-  // Back out of a folder: the cursor on it. Into one: its first row (if the cursor was in the list).
+  // Back out of a folder: the cursor on its card. Into one, or opening the app (back from Now
+  // playing too): the song playing, else the album's Play all or the first card. Not when the
+  // cursor's in the places, choosing one.
   useEffect(() => {
     if (!entries) return
     const back = returnTo.current && list.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(returnTo.current)}"]`)
     returnTo.current = null
     if (back) return focus(back)
     if (list.current?.contains(document.activeElement) || !root.current?.contains(document.activeElement)) {
-      const first = list.current?.querySelector<HTMLElement>('[data-focusable]')
+      const first =
+        list.current?.querySelector<HTMLElement>('.music-row.playing') ??
+        list.current?.querySelector<HTMLElement>('.music-album [data-focusable], .music-card, .music-row') ??
+        list.current?.querySelector<HTMLElement>('[data-focusable]')
       if (first) focus(first)
       else root.current?.querySelector<HTMLElement>('.files-place.active')?.focus()
     }
   }, [entries])
+
+  const chooseSort = (next: Sort): void => {
+    setSort(next)
+    try {
+      localStorage.setItem(SORT_STORE, next)
+    } catch {
+      // Not kept; it's A–Z next time.
+    }
+    if (list.current) list.current.scrollTop = 0
+  }
 
   const songsHere = (): MusicTags[] => tracks.map((t) => tags[t.path] ?? { path: t.path, title: t.name.replace(/\.[^.]+$/, '') })
 
@@ -148,16 +214,16 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
     onPlaying()
   }
 
-  // B: up a folder, then to the places, then closes (the music carries on).
+  // B: up a folder (wherever the cursor is), then from the top of a place to its name on the
+  // left, then closes (the music carries on).
   useEffect(() => {
     const onBack = (): void => {
-      const inList = list.current?.contains(document.activeElement)
-      if (inList && trail.length > 1) {
+      if (trail.length > 1) {
         returnTo.current = here!.path
         return setTrail((t) => t.slice(0, -1))
       }
       const place = root.current?.querySelector<HTMLElement>('.files-place.active')
-      if (inList && place) return focus(place)
+      if (list.current?.contains(document.activeElement) && place) return focus(place)
       onClose()
     }
     window.addEventListener(TRAP_CLOSE_EVENT, onBack)
@@ -165,6 +231,23 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
   })
 
   const playingPath = current()?.path
+  // A folder of songs is an album: its first song's tags name it, and the cover is the one most of its songs share.
+  const first = tracks[0] && tags[tracks[0].path]
+  const named = here ? splitName(here.name) : { title: '' }
+  const album = {
+    title: first?.album ?? (trail.length > 1 ? named.title : (here?.name ?? '')),
+    artist: first?.artist ?? (trail.length > 1 ? named.artist : undefined),
+    cover: tracks.map((t) => tags[t.path]?.cover).find(Boolean)
+  }
+  const totalSeconds = tracks.reduce((sum, t) => sum + (tags[t.path]?.duration ?? 0), 0)
+  const sameArtist = (t: MusicTags | undefined): boolean => !t?.artist || t.artist === album.artist
+  const where = here ? trail.map((t) => t.name).join(' / ') : ''
+  const counts = entries
+    ? [folders.length && `${folders.length} ${folders.length === 1 ? 'folder' : 'folders'}`, tracks.length && `${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
+
   return (
     <div className="files-app music-app" ref={root} data-focus-trap="">
       <div className="settings-scrim" aria-hidden="true" />
@@ -172,7 +255,7 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
         <h2 className="settings-title display">Music</h2>
         <div className="settings-categories files-places" data-nav-scope="">
           {player.at >= 0 && (
-            <button className="settings-category files-place music-now display" tabIndex={-1} data-focusable="" data-select-sound="move" data-nav-right=".files-list [data-focusable]" onClick={onPlaying}>
+            <button className="settings-category files-place music-now display" tabIndex={-1} data-focusable="" data-select-sound="move" data-nav-right=".music-scroll [data-focusable]" onClick={onPlaying}>
               <span className="music-now-bars" aria-hidden="true">
                 <i />
                 <i />
@@ -188,13 +271,13 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
               tabIndex={-1}
               data-focusable=""
               data-select-sound="move"
-              data-nav-right=".files-list [data-focusable]"
+              data-nav-right=".music-scroll [data-focusable]"
               onFocus={() => {
                 if (trail[0]?.path !== p.path) setTrail([{ name: p.name, path: p.path, kind: 'folder' }])
               }}
               onClick={() => {
-                const first = list.current?.querySelector<HTMLElement>('[data-focusable]')
-                if (first) focus(first)
+                const firstInPane = list.current?.querySelector<HTMLElement>('[data-focusable]')
+                if (firstInPane) focus(firstInPane)
               }}
             >
               <span className="files-place-name">{p.name}</span>
@@ -205,60 +288,138 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
       </div>
 
       <div className="files-pane">
-        <div className="settings-group files-group">
-          <h3 className="settings-heading display">{here?.name ?? 'Music'}</h3>
-          <p className="settings-help files-path">
-            {here ? `${trail.map((t) => t.name).join(' / ')}${entries ? ` · ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}` : ''}` : ''}
-          </p>
-          <div className="files-list browse-list music-list" ref={list} data-nav-scope="" data-nav-left=".files-place.active">
-            {tracks.length > 0 && (
-              <div className="music-actions">
-                <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => start(0)}>
-                  Play all
-                </button>
-                <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => start(0, true)}>
-                  Shuffle
-                </button>
-              </div>
-            )}
+        <div className="settings-group files-group music-group">
+          {tracks.length === 0 && <h3 className="settings-heading display">{here?.name ?? 'Music'}</h3>}
+          <p className="settings-help files-path">{counts ? `${where} · ${counts}` : where}</p>
+          <div className="files-list browse-list music-scroll" ref={list} data-nav-scope="" data-nav-left=".files-place.active">
             {error && <p className="settings-help">{error}</p>}
             {!entries && !error && <p className="settings-help">Loading…</p>}
             {entries && entries.length === 0 && !error && <p className="settings-help">No songs or folders here.</p>}
-            {entries?.map((e) => {
-              const t = tags[e.path]
-              return (
-                <button
-                  key={e.path}
-                  className={`setting-row files-row music-row${e.path === playingPath ? ' playing' : ''}`}
-                  tabIndex={-1}
-                  data-focusable=""
-                  data-select-sound="move"
-                  data-path={e.path}
-                  onFocus={(event) => centre(list.current, event.currentTarget)}
-                  onClick={() => {
-                    if (e.kind === 'folder') return setTrail((was) => [...was, e])
-                    start(tracks.indexOf(e))
-                  }}
-                >
-                  {e.kind === 'folder' ? (
-                    <svg className="files-icon" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.2l2 2h8.8A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
-                    </svg>
-                  ) : t?.cover ? (
-                    <img className="music-thumb" src={t.cover} alt="" />
-                  ) : (
-                    <span className="music-thumb music-thumb-empty" aria-hidden="true">
-                      ♪
-                    </span>
-                  )}
-                  <span className="music-row-text">
-                    <span className="setting-name display">{e.kind === 'folder' ? e.name : (t?.title ?? e.name.replace(/\.[^.]+$/, ''))}</span>
-                    {e.kind === 'track' && (t?.artist || t?.album) && <span className="music-row-sub">{[t.artist, t.album].filter(Boolean).join(' · ')}</span>}
+
+            {tracks.length > 0 && (
+              <div className="music-album">
+                {album.cover ? (
+                  <img className="music-album-cover" src={album.cover} alt="" />
+                ) : (
+                  <span className="music-album-cover music-no-cover display" aria-hidden="true">
+                    ♪
                   </span>
-                  {e.kind === 'track' && t?.duration !== undefined && <span className="setting-detail">{clock(t.duration)}</span>}
-                </button>
-              )
-            })}
+                )}
+                <div className="music-album-text">
+                  <h3 className="music-album-title display">{album.title}</h3>
+                  {album.artist && <p className="music-album-artist">{album.artist}</p>}
+                  <p className="music-album-facts">
+                    {tracks.length} {tracks.length === 1 ? 'song' : 'songs'}
+                    {totalSeconds > 0 && ` · ${albumLength(totalSeconds)}`}
+                  </p>
+                  <div className="music-actions">
+                    <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onFocus={() => list.current && (list.current.scrollTop = 0)} onClick={() => start(0)}>
+                      Play all
+                    </button>
+                    <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onFocus={() => list.current && (list.current.scrollTop = 0)} onClick={() => start(0, true)}>
+                      Shuffle
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tracks.length > 0 && (
+              <div className="music-tracks">
+                {tracks.map((e, i) => {
+                  const t = tags[e.path]
+                  return (
+                    <button
+                      key={e.path}
+                      className={`setting-row files-row music-row${e.path === playingPath ? ' playing' : ''}`}
+                      tabIndex={-1}
+                      data-focusable=""
+                      data-select-sound="move"
+                      data-path={e.path}
+                      onFocus={(event) => centre(list.current, event.currentTarget)}
+                      onClick={() => start(i)}
+                    >
+                      <span className="music-track-no">
+                        {e.path === playingPath ? (
+                          <span className="music-now-bars" aria-hidden="true">
+                            <i />
+                            <i />
+                            <i />
+                          </span>
+                        ) : (
+                          (t?.track ?? i + 1)
+                        )}
+                      </span>
+                      <span className="music-row-text">
+                        <span className="setting-name display">{t?.title ?? e.name.replace(/\.[^.]+$/, '')}</span>
+                        {!sameArtist(t) && <span className="music-row-sub">{t!.artist}</span>}
+                      </span>
+                      {t?.duration !== undefined && <span className="setting-detail">{clock(t.duration)}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {folders.length > 0 && (
+              <>
+                {tracks.length > 0 && <h4 className="music-section display">Folders</h4>}
+                {folders.length > 1 && (
+                  <div className="music-sorts" role="radiogroup" aria-label="Order">
+                    {SORTS.map((o) => (
+                      <button
+                        key={o.id}
+                        className={`files-action music-sort display${sort === o.id ? ' on' : ''}`}
+                        tabIndex={-1}
+                        role="radio"
+                        aria-checked={sort === o.id}
+                        data-focusable=""
+                        data-select-sound="move"
+                        onFocus={(event) => centre(list.current, event.currentTarget)}
+                        onClick={() => chooseSort(o.id)}
+                      >
+                        {o.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="music-grid">
+                  {folders.map((e) => {
+                    const card = cards[e.path]
+                    const title = card?.title ?? e.name
+                    return (
+                      <button
+                        key={e.path}
+                        className="recent-card music-card"
+                        tabIndex={-1}
+                        data-focusable=""
+                        data-select-sound="move"
+                        data-path={e.path}
+                        aria-label={card?.artist ? `${title}, ${card.artist}` : title}
+                        onFocus={(event) => centre(list.current, event.currentTarget)}
+                        onClick={() => setTrail((was) => [...was, e])}
+                      >
+                        <div className="recent-art">
+                          {card?.cover ? (
+                            <img src={card.cover} alt="" loading="lazy" />
+                          ) : (
+                            <span className={`recent-no-art display${card ? '' : ' loading'}`}>
+                              <span className="no-art-band">{title}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="recent-footer">
+                          <div className="recent-text">
+                            <div className="recent-title">{title}</div>
+                            <div className="recent-date">{card?.artist ?? ''}</div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -266,7 +427,7 @@ function Browser({ player, onClose, onPlaying }: { player: PlayerState; onClose:
   )
 }
 
-/** Now playing: the visualizer, the song, and the player's buttons. */
+/** Now playing: the cover floating over the backdrop, the song beside it, and the player's buttons. */
 function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => void }) {
   const self = useRef<HTMLButtonElement>(null)
   const buttonsRow = useRef<HTMLDivElement>(null)
@@ -369,11 +530,16 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   const queueText = player.order.length > 1 ? `${player.at + 1} of ${player.order.length}` : ''
   return (
     <div className="media-player music-playing" data-focus-trap="" data-own-directions="">
-      <Visualizer cover={song?.cover} />
+      <div className="music-playing-scrim" aria-hidden="true" />
       <div className={`files-viewer music-viewer${barShown || !player.playing || onButtons ? ' bar-shown' : ''}`}>
-        <div className="music-song">
-          <p className="music-song-title display">{song?.title ?? ''}</p>
-          {(song?.artist || song?.album) && <p className="music-song-sub">{[song?.artist, song?.album].filter(Boolean).join(' · ')}</p>}
+        <div className="music-now-stage">
+          <FloatingCover cover={song?.cover} playing={player.playing} />
+          <div className="music-song">
+            {queueText && <p className="music-song-queue">{queueText}</p>}
+            <p className="music-song-title display">{song?.title ?? ''}</p>
+            {song?.artist && <p className="music-song-artist">{song.artist}</p>}
+            {song?.album && <p className="music-song-album">{song.album}</p>}
+          </div>
         </div>
         <div className="files-viewer-bar media-controls-bar">
           <button ref={self} className="files-viewer-line media-seek" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => (showBar(), toggle())}>
@@ -429,7 +595,6 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
             </PlayerButton>
           </div>
         </div>
-        {queueText && <p className="music-queue-count">{queueText}</p>}
         {player.loading && <p className="media-subs-loading">Loading…</p>}
       </div>
       {keysShown && (

@@ -26,4 +26,10 @@ describe('cleanClockCorners', () => {
     expect(cleanClockCorners({ left: [] }).sensorUnit).toBe('celsius')
     expect(cleanClockCorners({ left: [], sensorUnit: 'fahrenheit' }).sensorUnit).toBe('fahrenheit')
   })
+
+  it('shows the song playing in the corner chosen, or nowhere', () => {
+    expect(cleanClockCorners({ left: [] }).nowPlaying).toBe('off')
+    expect(cleanClockCorners({ left: [], nowPlaying: 'right' }).nowPlaying).toBe('right')
+    expect(cleanClockCorners({ left: [], nowPlaying: 'middle' as never }).nowPlaying).toBe('off')
+  })
 })

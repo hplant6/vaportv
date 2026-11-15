@@ -227,6 +227,83 @@ button {
   font-size: var(--text-body);
 }
 
+/* Now playing (Settings → Home): the song's cover against the screen's edge, its title and
+   artist beside it, kept short of the bar's tabs. */
+.clock-widget.now-playing {
+  align-items: center;
+  gap: 14px;
+  max-width: 296px;
+}
+
+.now-playing-cover {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.now-playing-no-cover {
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: var(--gradient-empty);
+}
+
+.now-playing-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.clock-widget.now-playing.right .now-playing-text {
+  align-items: flex-end;
+}
+
+.now-playing-title {
+  max-width: 100%;
+  font-size: var(--text-large);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The artist (or Paused) in the body font, small, with the bars bouncing while it plays. */
+.now-playing-artist {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -2px;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 700;
+  font-variation-settings: normal;
+  -webkit-text-stroke: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.now-playing-artist .music-now-bars {
+  flex: none;
+  width: 16px;
+  height: 14px;
+  gap: 2px;
+}
+
+.now-playing-artist-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+.now-playing-paused {
+  flex: none;
+  color: var(--color-accent);
+}
+
 /* The bar as it always was: a small temperature, then the date. */
 .clock-widget.date-temp {
   gap: 13.45px;
@@ -4936,6 +5013,148 @@ button {
   padding: 10px 0 14px;
 }
 
+/* A folder's folders: square covers, five across, as the console tabs' cards (RecentCard). */
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: 34px;
+  row-gap: 40px;
+  padding: 32px 14px 32px;
+}
+
+.music-card.recent-card {
+  width: auto;
+  /* In a grid the card grows from its middle, not from near its top as in a carousel. */
+  transform-origin: 50% 50%;
+}
+
+.music-card .recent-art {
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.music-card .recent-footer {
+  padding: 0 12px;
+}
+
+.music-card .recent-date {
+  font-size: var(--text-small);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-card .no-art-band {
+  padding: 24px 16px;
+}
+
+/* Its cover not read yet: the name, faint, until it comes. */
+.music-card .recent-no-art.loading {
+  opacity: 0.5;
+}
+
+.music-section {
+  margin: 18px 28px 0;
+  font-size: var(--text-large);
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+/* The grid's order (A–Z, Artist, Recently added): the chosen one lit. */
+.music-sorts {
+  display: flex;
+  gap: 16px;
+  padding: 18px 14px 0;
+}
+
+.files-action.music-sort.on {
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* A folder of songs: an album. The cover, its names and Play all / Shuffle, then the songs. */
+.music-album {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 40px;
+  padding: 20px 28px 18px;
+}
+
+.music-album-cover {
+  flex: none;
+  width: 260px;
+  height: 260px;
+  border-radius: var(--card-radius);
+  object-fit: cover;
+  box-shadow: var(--shadow-card);
+}
+
+.music-no-cover {
+  display: grid;
+  place-items: center;
+  font-size: 96px;
+  background: var(--gradient-empty);
+}
+
+.music-album-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.music-album-title {
+  margin: 0;
+  font-size: 48px;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.music-album-artist {
+  margin: 6px 0 0;
+  font-size: var(--text-large);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.music-album-facts {
+  margin: 4px 0 0;
+  font-size: var(--text-small);
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.music-album .music-actions {
+  padding: 22px 0 0;
+}
+
+.music-tracks {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The song's number, or the bouncing bars on the one playing. */
+.music-track-no {
+  flex: none;
+  width: 44px;
+  display: flex;
+  justify-content: center;
+  font-size: var(--text-small);
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.music-row.playing .music-track-no {
+  opacity: 1;
+}
+
 /* Now playing, in the places column: three bars bouncing. */
 .music-now {
   gap: 14px;
@@ -4972,27 +5191,104 @@ button {
 }
 
 /* Now playing: the visualizer full screen, the song over its lower left, the player's bar along the foot. */
-.music-visualizer {
-  position: absolute;
-  inset: 0;
+/* Now playing: the backdrop (whichever is chosen) shows through, dimmed for the words, with
+   the cover floating in the middle of the left half and the song beside it. */
+.media-player.music-playing {
+  background: transparent;
 }
 
-.music-visualizer canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+.stage:has(.music-playing) .page {
+  visibility: hidden;
+}
+
+.music-playing-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 45%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.6) 75%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.55));
 }
 
 .files-viewer.music-viewer {
   background: transparent;
 }
 
-.music-song {
+.music-now-stage {
   position: absolute;
-  left: 96px;
-  right: 50%;
-  bottom: 300px;
-  text-align: left;
+  left: 140px;
+  right: 120px;
+  top: 90px;
+  bottom: 250px;
+  display: flex;
+  align-items: center;
+  gap: 90px;
+}
+
+.music-cover-stage {
+  position: relative;
+  flex: none;
+  width: 600px;
+  height: 600px;
+  perspective: 1600px;
+}
+
+/* A soft light in the cover's colour behind it, brighter on the beat. */
+.music-cover-glow {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.45;
+  transition: background-color 1.2s ease;
+}
+
+.music-cover-float {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.music-cover-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75);
+}
+
+.music-cover-art.now {
+  animation: music-cover-in 0.9s ease both;
+}
+
+.music-cover-art.was {
+  animation: music-cover-out 0.9s ease both;
+}
+
+.music-cover-none {
+  display: grid;
+  place-items: center;
+  font-size: 220px;
+  background: var(--gradient-empty);
+}
+
+@keyframes music-cover-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes music-cover-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.music-song {
+  min-width: 0;
+  flex: 1;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
 }
 
@@ -5000,25 +5296,34 @@ button {
   margin: 0;
 }
 
+.music-song-queue {
+  margin-bottom: 18px !important;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
 .music-song-title {
   font-size: var(--text-display);
   line-height: 1.1;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.music-song-sub {
-  margin-top: 10px !important;
+.music-song-artist {
+  margin-top: 18px !important;
   font-family: var(--font-body);
   font-size: var(--text-large);
-  opacity: 0.85;
+  font-weight: 700;
 }
 
-.music-queue-count {
-  position: absolute;
-  top: 48px;
-  left: 96px;
-  margin: 0;
+.music-song-album {
+  margin-top: 6px !important;
   font-family: var(--font-body);
-  font-size: var(--text-body);
+  font-size: var(--text-large);
   opacity: 0.7;
 }

@@ -81,7 +81,7 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { browseMusic, MUSIC_COVERS, musicPlaces, musicTags } from './musicLibrary'
+import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags } from './musicLibrary'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -739,6 +739,7 @@ ipcMain.handle('files:open', (_event, path: string) => openFile(path))
 ipcMain.handle('music:places', () => musicPlaces())
 ipcMain.handle('music:browse', (_event, dir: string) => browseMusic(dir))
 ipcMain.handle('music:tags', (_event, paths: string[]) => musicTags(paths))
+ipcMain.handle('music:folders', (_event, paths: string[]) => musicFolders(paths))
 ipcMain.handle('files:paste', (event, source: string, folder: string, move: boolean) =>
   pasteFile(source, folder, move, (percent) => {
     if (!event.sender.isDestroyed()) event.sender.send('files:pasteProgress', percent)

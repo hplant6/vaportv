@@ -4,7 +4,7 @@ import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { parseFile } from 'music-metadata'
-import type { MusicEntry, MusicPlace, MusicTags } from '../shared/types'
+import type { MusicEntry, MusicFolder, MusicPlace, MusicTags } from '../shared/types'
 import { allowed, AUDIO } from './browse'
 import { artUrl } from './library/art'
 
@@ -47,17 +47,22 @@ const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base'
 export async function browseMusic(dir: string): Promise<MusicEntry[]> {
   const full = resolve(dir)
   if (!allowed(full)) throw new Error("vaporTV can't look in there")
-  const entries = await readdir(full, { withFileTypes: true })
+  const entries = (await readdir(full, { withFileTypes: true })).filter((e) => !SYSTEM_FOLDERS.test(e.name))
   const folders: MusicEntry[] = []
   const tracks: MusicEntry[] = []
-  for (const entry of entries) {
-    if (SYSTEM_FOLDERS.test(entry.name)) continue
-    const path = join(full, entry.name)
-    // A share's folders can come back as symlinks or unknown; ask the file itself.
-    const isDir = entry.isDirectory() || ((entry.isSymbolicLink() || !entry.isFile()) && (await stat(path).then((s) => s.isDirectory()).catch(() => false)))
-    if (isDir) folders.push({ name: entry.name, path, kind: 'folder' })
-    else if (AUDIO.test(entry.name)) tracks.push({ name: entry.name, path, kind: 'track' })
-  }
+  await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(full, entry.name)
+      if (entry.isFile()) {
+        if (AUDIO.test(entry.name)) tracks.push({ name: entry.name, path, kind: 'track' })
+        return
+      }
+      // A folder (a share's can come back as symlinks or unknown, so ask the file itself), and when it last changed.
+      const info = await stat(path).catch(() => null)
+      if (info?.isDirectory()) folders.push({ name: entry.name, path, kind: 'folder', modified: info.mtimeMs })
+      else if (info?.isFile() && AUDIO.test(entry.name)) tracks.push({ name: entry.name, path, kind: 'track' })
+    })
+  )
   folders.sort((a, b) => byName.compare(a.name, b.name))
   tracks.sort((a, b) => byName.compare(a.name, b.name))
   return [...folders, ...tracks]
@@ -125,17 +130,79 @@ async function readTags(path: string): Promise<MusicTags> {
   return tags
 }
 
-/** Tags for these songs, a few at a time; in the order asked. */
-export async function musicTags(paths: string[]): Promise<MusicTags[]> {
-  const ok = paths.map((p) => resolve(p)).filter((p) => allowed(p) && AUDIO.test(p))
-  const out: MusicTags[] = new Array(ok.length)
+/** `work` on each of these, READ_AT_ONCE at a time; the answers in the order asked. */
+async function fewAtATime<T, R>(items: T[], work: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length)
   let next = 0
   const worker = async (): Promise<void> => {
-    while (next < ok.length) {
+    while (next < items.length) {
       const i = next++
-      out[i] = await readTags(ok[i])
+      out[i] = await work(items[i])
     }
   }
-  await Promise.all(Array.from({ length: Math.min(READ_AT_ONCE, ok.length) }, worker))
+  await Promise.all(Array.from({ length: Math.min(READ_AT_ONCE, items.length) }, worker))
   return out
+}
+
+/** Tags for these songs, a few at a time; in the order asked. */
+export async function musicTags(paths: string[]): Promise<MusicTags[]> {
+  return fewAtATime(
+    paths.map((p) => resolve(p)).filter((p) => allowed(p) && AUDIO.test(p)),
+    readTags
+  )
+}
+
+/** "Aphex Twin - Syro" → artist and album; a name without " - " is the album alone. */
+export function splitFolderName(name: string): { artist?: string; title: string } {
+  const at = name.search(/\s+[-–]\s+/)
+  if (at <= 0) return { title: name.trim() }
+  const rest = name.slice(at).replace(/^\s+[-–]\s+/, '').trim()
+  return rest ? { artist: name.slice(0, at).trim(), title: rest } : { title: name.trim() }
+}
+
+const folderCache = new Map<string, Promise<MusicFolder>>()
+
+/** A folder's first song and first subfolder, in name order (as the list shows them). */
+async function firstInside(dir: string): Promise<{ song?: string; folder?: string }> {
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+  const names = entries.filter((e) => !SYSTEM_FOLDERS.test(e.name)).sort((a, b) => byName.compare(a.name, b.name))
+  const song = names.find((e) => !e.isDirectory() && AUDIO.test(e.name))
+  const folder = names.find((e) => e.isDirectory())
+  return { song: song && join(dir, song.name), folder: folder && join(dir, folder.name) }
+}
+
+/**
+ * A folder as a card: its picture (cover.jpg and the like, else its first song's), and the album
+ * and artist that song's tags name. A folder of folders (an artist's albums) shows its first
+ * album's cover. Without tags, its name: "Artist - Album" splits in two.
+ */
+function readFolder(dir: string): Promise<MusicFolder> {
+  let found = folderCache.get(dir)
+  if (!found) {
+    found = (async () => {
+      const named = splitFolderName(basename(dir))
+      const card: MusicFolder = { path: dir, ...named }
+      const { song, folder } = await firstInside(dir)
+      if (song) {
+        const tags = await readTags(song)
+        if (tags.album) card.title = tags.album
+        if (tags.artist) card.artist = tags.artist
+        card.cover = tags.cover
+      } else {
+        card.cover = await folderCover(dir)
+        if (!card.cover && folder) card.cover = (await readFolder(folder)).cover
+      }
+      return card
+    })().catch(() => ({ path: dir, ...splitFolderName(basename(dir)) }))
+    folderCache.set(dir, found)
+  }
+  return found
+}
+
+/** Folders as cards, a few at a time; in the order asked. */
+export async function musicFolders(paths: string[]): Promise<MusicFolder[]> {
+  return fewAtATime(
+    paths.map((p) => resolve(p)).filter((p) => allowed(p)),
+    readFolder
+  )
 }

@@ -4,6 +4,7 @@ import { DEFAULT_CLOCK_CORNERS } from '../../../shared/clock'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { useNow } from './useNow'
 import { useBattery } from '../power'
+import { current, playerState, subscribe as subscribeMusic } from '../music/player'
 import charging from '../assets/battery/charg.svg'
 import full from '../assets/battery/full.svg'
 import high from '../assets/battery/high.svg'
@@ -202,9 +203,62 @@ const cornersStore = store<ClockCorners>(DEFAULT_CLOCK_CORNERS, (set) => {
 
 const useCorners = (): ClockCorners => useSyncExternalStore(cornersStore.subscribe, cornersStore.get)
 
-/** One corner of the top bar. */
+// The Music app's player, for the song in a corner: redrawn as it changes song or pauses, not as it plays on.
+const musicNow = (): string => {
+  const song = current()
+  return song ? `${song.path}|${playerState().playing}|${song.title}|${song.artist ?? ''}|${song.cover ?? ''}` : ''
+}
+const useMusicNow = (): string => useSyncExternalStore(subscribeMusic, musicNow)
+
+/** The song playing (or paused): its cover against the screen's edge, its title and artist beside it. */
+export function NowPlayingLayout({ side }: { side: 'left' | 'right' }) {
+  useMusicNow()
+  const song = current()
+  if (!song) return null
+  const playing = playerState().playing
+  const cover = song.cover ? (
+    <img key="cover" className="now-playing-cover" src={song.cover} alt="" />
+  ) : (
+    <span key="cover" className="now-playing-cover now-playing-no-cover" aria-hidden="true">
+      ♪
+    </span>
+  )
+  const text = (
+    <span key="text" className="now-playing-text">
+      <span className="now-playing-title">{song.title}</span>
+      <span className="now-playing-artist">
+        {playing ? (
+          <span className="music-now-bars" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        ) : (
+          <span className="now-playing-paused">Paused</span>
+        )}
+        {song.artist && <span className="now-playing-artist-name">{song.artist}</span>}
+      </span>
+    </span>
+  )
+  return (
+    <span className={`clock-widget now-playing ${side}`} aria-label={`${playing ? 'Playing' : 'Paused'}: ${song.title}${song.artist ? `, ${song.artist}` : ''}`}>
+      {side === 'right' ? [text, cover] : [cover, text]}
+    </span>
+  )
+}
+
+/** One corner of the top bar: its layout, or the song while music plays if Settings puts it here. */
 export function ClockCorner({ side }: { side: 'left' | 'right' }) {
-  const widgets = useCorners()[side]
+  const corners = useCorners()
+  const music = useMusicNow()
+  if (corners.nowPlaying === side && music) {
+    return (
+      <div className={`clock-corner ${side} display`}>
+        <NowPlayingLayout side={side} />
+      </div>
+    )
+  }
+  const widgets = corners[side]
   if (!widgets.length) return null
   return (
     <div className={`clock-corner ${side} display`}>

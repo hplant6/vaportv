@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/nowhere' }, protocol: {}, net: {} }))
 
-const { browseMusic, titleFromName } = await import('./musicLibrary')
+const { browseMusic, splitFolderName, titleFromName } = await import('./musicLibrary')
 const { paletteFromPixels } = await import('../renderer/src/music/palette')
 
 describe('titleFromName', () => {
@@ -16,6 +16,19 @@ describe('titleFromName', () => {
     expect(titleFromName('/m/1999.mp3')).toBe('1999')
     expect(titleFromName('/m/99 Luftballons.mp3')).toBe('Luftballons')
     expect(titleFromName('/m/Intro.wav')).toBe('Intro')
+  })
+})
+
+describe('splitFolderName', () => {
+  it('splits "Artist - Album" at the first dash', () => {
+    expect(splitFolderName('Aphex Twin - Syro - flac')).toEqual({ artist: 'Aphex Twin', title: 'Syro - flac' })
+    expect(splitFolderName('Darkside (22) – Psychic')).toEqual({ artist: 'Darkside (22)', title: 'Psychic' })
+  })
+
+  it('keeps a name without a spaced dash whole', () => {
+    expect(splitFolderName('Altin Gun')).toEqual({ title: 'Altin Gun' })
+    expect(splitFolderName('Dur-Dur_Band_Volume_5_(ATFA004)')).toEqual({ title: 'Dur-Dur_Band_Volume_5_(ATFA004)' })
+    expect(splitFolderName('- Untitled')).toEqual({ title: '- Untitled' })
   })
 })
 
