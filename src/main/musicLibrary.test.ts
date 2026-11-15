@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/nowhere' }, protocol: {}, net: {} }))
 
-const { titleFromName } = await import('./musicLibrary')
+const { browseMusic, titleFromName } = await import('./musicLibrary')
 const { paletteFromPixels } = await import('../renderer/src/music/palette')
 
 describe('titleFromName', () => {
@@ -32,5 +32,22 @@ describe('paletteFromPixels', () => {
 
   it('falls back to vaporTV colours for a cover that is all black', () => {
     expect(paletteFromPixels(pixels(Array(20).fill([0, 0, 0])))).toEqual(['#ee960d', '#7b3fe4', '#1fb5c9'])
+  })
+})
+
+describe('browseMusic', () => {
+  it("leaves out a NAS's snapshot and recycle folders and Windows' own, and sorts numbers as numbers", async () => {
+    const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises')
+    const { homedir } = await import('node:os')
+    const { join } = await import('node:path')
+    const dir = await mkdtemp(join(homedir(), '.vaportv-music-test-'))
+    try {
+      for (const name of ['@Recently-Snapshot', '@Recycle', '#recycle', '$RECYCLE.BIN', 'System Volume Information', 'Album 10', 'Album 2']) await mkdir(join(dir, name))
+      for (const name of ['10 Ten.mp3', '2 Two.flac', 'notes.txt']) await writeFile(join(dir, name), '')
+      const names = (await browseMusic(dir)).map((e) => e.name)
+      expect(names).toEqual(['Album 2', 'Album 10', '2 Two.flac', '10 Ten.mp3'])
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })

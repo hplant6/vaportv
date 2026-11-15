@@ -20,6 +20,8 @@ export const NETWORK_DIR = join(homedir(), 'Network')
 export const MUSIC_COVERS = join(homedir(), '.cache', 'steamtv', 'music-covers')
 /** A folder's own picture, by the names people and rippers give it. */
 const FOLDER_COVERS = /^(cover|folder|front|album|albumart(small|large)?)\.(jpe?g|png|webp)$/i
+/** A NAS's or Windows' own housekeeping folders (snapshots, recycle bins), never music. */
+const SYSTEM_FOLDERS = /^(@|#recycle$|\$recycle\.bin$|system volume information$|\.)/i
 /** Songs read at once: shares are slow to open a file, and the list shows a screenful at a time. */
 const READ_AT_ONCE = 4
 
@@ -49,7 +51,7 @@ export async function browseMusic(dir: string): Promise<MusicEntry[]> {
   const folders: MusicEntry[] = []
   const tracks: MusicEntry[] = []
   for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue
+    if (SYSTEM_FOLDERS.test(entry.name)) continue
     const path = join(full, entry.name)
     // A share's folders can come back as symlinks or unknown; ask the file itself.
     const isDir = entry.isDirectory() || ((entry.isSymbolicLink() || !entry.isFile()) && (await stat(path).then((s) => s.isDirectory()).catch(() => false)))
