@@ -3,6 +3,10 @@ import { startLaunch } from '../launch'
 import { APP_SETUP_EVENT } from './AppSetupDialog'
 import { CLAUDE_EVENT } from './ClaudeApp'
 import { FILES_EVENT } from './FilesApp'
+import { MUSIC_EVENT } from './MusicApp'
+
+/** vaporTV's own apps, by id: the event that opens each. */
+const BUILTIN_EVENTS: Record<string, string> = { files: FILES_EVENT, claude: CLAUDE_EVENT, music: MUSIC_EVENT }
 
 export function AppTile({
   app,
@@ -29,9 +33,9 @@ export function AppTile({
       onClick={(e) =>
         needsSetup
           ? window.dispatchEvent(new CustomEvent(APP_SETUP_EVENT, { detail: { app, tile: e.currentTarget } }))
-          : app.id === 'files' || app.id === 'claude'
+          : app.id in BUILTIN_EVENTS
             ? // Part of vaporTV: opens over the screen rather than launching.
-              window.dispatchEvent(new CustomEvent(app.id === 'files' ? FILES_EVENT : CLAUDE_EVENT, { detail: e.currentTarget }))
+              window.dispatchEvent(new CustomEvent(BUILTIN_EVENTS[app.id], { detail: e.currentTarget }))
             : startLaunch('app', app.id, app.name, `${app.name} isn't set up on this computer yet`)
       }
     >

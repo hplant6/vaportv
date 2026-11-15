@@ -304,6 +304,32 @@ export interface ClaudeStatus {
   busy: boolean
 }
 
+/** Where the Music app starts: ~/Music, a network share (mounted under ~/Network) or a drive. */
+export interface MusicPlace {
+  name: string
+  path: string
+  kind: 'folder' | 'network' | 'drive'
+}
+
+/** In a music folder: a subfolder or a song. */
+export interface MusicEntry {
+  name: string
+  path: string
+  kind: 'folder' | 'track'
+}
+
+/** A song as the Music app shows it: from its tags, or its file's name; its cover (or its folder's) as an address. */
+export interface MusicTags {
+  path: string
+  title: string
+  artist?: string
+  album?: string
+  track?: number
+  /** Seconds, when its headers say. */
+  duration?: number
+  cover?: string
+}
+
 /** Signing in from a phone: the page to scan (and why the last code failed), a code being checked, signed in, or stopped. */
 export type ClaudeLoginState =
   | { phase: 'waiting'; url: string; message?: string }
@@ -974,6 +1000,12 @@ export interface SteamTvApi {
   setVoiceHints(titles: string[]): void
   /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */
   onVoice(callback: (state: VoiceState, purpose: VoicePurpose) => void): () => void
+  /** The Music app's library: places to start, a folder's contents, songs' tags and covers. */
+  music: {
+    places(): Promise<MusicPlace[]>
+    browse(dir: string): Promise<MusicEntry[]>
+    tags(paths: string[]): Promise<MusicTags[]>
+  }
   /** The Claude app (a spoken conversation with Claude Code). */
   claude: {
     status(): Promise<ClaudeStatus>

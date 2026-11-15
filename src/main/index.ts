@@ -81,6 +81,7 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
+import { browseMusic, MUSIC_COVERS, musicPlaces, musicTags } from './musicLibrary'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -730,6 +731,9 @@ ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKi
   browseFiles(dir, kind, kind === 'all' ? [] : [musicFolder(await loadConfig()), BACKDROP_FOLDER])
 )
 ipcMain.handle('files:open', (_event, path: string) => openFile(path))
+ipcMain.handle('music:places', () => musicPlaces())
+ipcMain.handle('music:browse', (_event, dir: string) => browseMusic(dir))
+ipcMain.handle('music:tags', (_event, paths: string[]) => musicTags(paths))
 ipcMain.handle('files:paste', (event, source: string, folder: string, move: boolean) =>
   pasteFile(source, folder, move, (percent) => {
     if (!event.sender.isDestroyed()) event.sender.send('files:pasteProgress', percent)
@@ -1065,7 +1069,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, ...screensaverFolders(config)], wasOpened)
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, MUSIC_COVERS, ...screensaverFolders(config)], wasOpened)
   media.handleMediaScheme()
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()

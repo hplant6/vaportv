@@ -247,6 +247,11 @@ const api: SteamTvApi = {
     ipcRenderer.on('art:updated', listener)
     return () => ipcRenderer.removeListener('art:updated', listener)
   },
+  music: {
+    places: () => ipcRenderer.invoke('music:places'),
+    browse: (dir) => ipcRenderer.invoke('music:browse', dir),
+    tags: (paths) => ipcRenderer.invoke('music:tags', paths)
+  },
   claude: {
     status: () => ipcRenderer.invoke('claude:status'),
     setOpen: (open) => ipcRenderer.send('claude:open', open),

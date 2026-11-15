@@ -52,7 +52,8 @@ export async function serveMedia(path: string, type: string, rangeHeader: string
   if (range === 'unsatisfiable') return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } })
   const { start, end } = range ?? { start: 0, end: size - 1 }
   const body = Readable.toWeb(createReadStream(path, { start, end })) as ReadableStream<Uint8Array>
-  const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': String(end - start + 1) }
+  // Readable by the page's Web Audio (the Music app's visualizer), which hears silence from another origin otherwise.
+  const headers = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': String(end - start + 1), 'Access-Control-Allow-Origin': '*' }
   return range
     ? new Response(body, { status: 206, headers: { ...headers, 'Content-Range': `bytes ${start}-${end}/${size}` } })
     : new Response(body, { status: 200, headers })

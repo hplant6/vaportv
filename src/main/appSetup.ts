@@ -64,7 +64,8 @@ const RECIPES: Record<string, Recipe> = {
   kodi: { kind: 'flatpak', flatpak: 'tv.kodi.Kodi', program: 'Kodi' },
   esde: { kind: 'emudeck' },
   files: { kind: 'builtin' },
-  claude: { kind: 'builtin' }
+  claude: { kind: 'builtin' },
+  music: { kind: 'builtin' }
 }
 
 /**

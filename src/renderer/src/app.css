@@ -4885,3 +4885,140 @@ button {
   background: rgba(6, 4, 8, 0.6);
   pointer-events: none;
 }
+
+/* ── Music app ──────────────────────────────────────── */
+/* Browsing: Files' layout, with covers and the song's artist and album under its title. */
+.music-row {
+  height: 84px;
+}
+
+.music-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.music-row-sub {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  opacity: 0.7;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.music-row.playing .setting-name {
+  color: var(--color-accent);
+}
+
+.music-thumb {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.music-thumb-empty {
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  opacity: 0.6;
+}
+
+.music-actions {
+  flex: none;
+  display: flex;
+  gap: 16px;
+  padding: 10px 0 14px;
+}
+
+/* Now playing, in the places column: three bars bouncing. */
+.music-now {
+  gap: 14px;
+}
+
+.music-now-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  width: 26px;
+  height: 24px;
+}
+
+.music-now-bars i {
+  flex: 1;
+  height: 40%;
+  border-radius: 2px;
+  background: var(--color-accent);
+  animation: music-bar 0.9s ease-in-out infinite;
+}
+
+.music-now-bars i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.music-now-bars i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+@keyframes music-bar {
+  50% {
+    height: 100%;
+  }
+}
+
+/* Now playing: the visualizer full screen, the song over its lower left, the player's bar along the foot. */
+.music-visualizer {
+  position: absolute;
+  inset: 0;
+}
+
+.music-visualizer canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.files-viewer.music-viewer {
+  background: transparent;
+}
+
+.music-song {
+  position: absolute;
+  left: 96px;
+  right: 50%;
+  bottom: 300px;
+  text-align: left;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+
+.music-song p {
+  margin: 0;
+}
+
+.music-song-title {
+  font-size: var(--text-display);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.music-song-sub {
+  margin-top: 10px !important;
+  font-family: var(--font-body);
+  font-size: var(--text-large);
+  opacity: 0.85;
+}
+
+.music-queue-count {
+  position: absolute;
+  top: 48px;
+  left: 96px;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  opacity: 0.7;
+}

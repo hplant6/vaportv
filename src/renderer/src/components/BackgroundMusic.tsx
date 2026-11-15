@@ -223,10 +223,14 @@ function Layer({ kind }: { kind: MusicKind }) {
 
     const onBlur = (): void => fadeTo(0, () => el.pause())
     const onSoundToggled = (): void => (soundOff ? fadeTo(0, () => el.pause(), HOLD_FADE_MS) : start())
+    // Counted: the Music app can hold it while a video or Claude holds it too, and it comes back once all let go.
+    let holders = 0
     const onHold = (event: Event): void => {
-      held = (event as CustomEvent<boolean>).detail
-      if (held) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
-      else start()
+      holders = Math.max(0, holders + ((event as CustomEvent<boolean>).detail ? 1 : -1))
+      const was = held
+      held = holders > 0
+      if (held && !was) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
+      else if (!held && was) start()
     }
     load()
     el.addEventListener('ended', onEnded)

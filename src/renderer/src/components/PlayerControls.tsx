@@ -27,6 +27,16 @@ export const ICONS = {
   ),
   previous: <path d="M6 5.5v13M18.5 5.5v13L8.5 12z" className="fill-stroke" />,
   next: <path d="M18 5.5v13M5.5 5.5v13l10-6.5z" className="fill-stroke" />,
+  shuffle: <path d="M3.5 7h3.2c2 0 3.2 1 4.3 2.7l2 3.6c1.1 1.7 2.3 2.7 4.3 2.7h3.2M17.5 13.5l3 2.5-3 2.5M3.5 17h3.2c1.4 0 2.4-.5 3.2-1.4M13.3 8.4c.8-.9 1.8-1.4 3.2-1.4h4M17.5 4.5l3 2.5-3 2.5" />,
+  repeat: <path d="M4 11.5V10a3 3 0 0 1 3-3h12.5M16.5 4l3 3-3 3M20 12.5V14a3 3 0 0 1-3 3H4.5M7.5 20l-3-3 3-3" />,
+  repeatOne: (
+    <>
+      <path d="M4 11.5V10a3 3 0 0 1 3-3h12.5M16.5 4l3 3-3 3M20 12.5V14a3 3 0 0 1-3 3H4.5M7.5 20l-3-3 3-3" />
+      <text x="12" y="14.6" className="media-button-num">
+        1
+      </text>
+    </>
+  ),
   subtitles: (
     <>
       <rect x="3" y="5.5" width="18" height="13" rx="2" />

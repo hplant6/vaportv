@@ -14,7 +14,8 @@ export function artUrl(path: string): string {
 /** Call before app ready, once: Electron takes one list of schemes, so `others` (Emby's) go in with it. */
 export function registerArtScheme(others: Electron.CustomScheme[] = []): void {
   // stream: audio/video elements (background music) can only play from a scheme marked streamable.
-  protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, stream: true } }, ...others])
+  // corsEnabled: the Music app's visualizer reads songs through Web Audio (mediaRange adds the header).
+  protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, stream: true, corsEnabled: true } }, ...others])
 }
 
 /** Call after app ready. `roots` returns the directories art may come from; `alsoAllowed`, single files besides. */
