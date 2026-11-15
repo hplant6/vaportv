@@ -23,6 +23,7 @@ import { xboxGames } from './xboxTab'
 import { wiiGames } from './wiiTab'
 import { activeUserDir, playedShortcuts, playedSteamGames, type Played } from './steam'
 import { cachedArt, GAME_ART } from './steamgriddb'
+import { shortcutArtKey } from './steamTab'
 import { ps3Games } from './ps3Tab'
 import { switchGames } from './switchTab'
 import home from '../../../fixtures/home.json'
@@ -170,6 +171,11 @@ export async function loadRecents(config: Config, now = Date.now()): Promise<Rec
     if (SERVICE_ART[played.platform] && !played.art.portrait) {
       played.art.portrait = (await cachedArt(serviceArtKey(played.platform))).portrait
     }
+  }
+  // Non-Steam games with no art in Steam's grid folder: the SteamGridDB art vaporTV fetched, as on the Steam tab.
+  for (const played of recent) {
+    if (!played.id.startsWith('shortcut:') || played.art.portrait) continue
+    played.art.portrait = (await cachedArt(shortcutArtKey(played.title))).portrait
   }
   // The services' wide art, and your own app tiles (their shortcuts get the tile too).
   const art = await appArt()
