@@ -375,6 +375,8 @@ export interface MusicPlaylist {
   fresh: boolean
   /** Made from a station or by Claude, so it can be kept fresh. */
   canFresh: boolean
+  /** A playlist file in your music (.m3u): shown as it is, read-only; Make a copy to change it. */
+  file?: string
   updated: number
 }
 

@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, extname, join } from 'node:path'
 import type { MusicPlaylist, MusicTags } from '../shared/types'
 import { sameSong } from './musicFavorites'
 import { indexedSong, librarySongs } from './musicIndex'
-import { readTags } from './musicLibrary'
+import { libraryPlaylistFiles, parseM3u, readTags } from './musicLibrary'
 import { loadConfig } from './config'
 import { musicFolder, playlists as backgroundPlaylists } from './music'
 
@@ -103,6 +103,47 @@ async function record(path: string): Promise<SavedSong> {
 export async function musicPlaylists(): Promise<MusicPlaylist[]> {
   const list = await load()
   const all = await librarySongs()
+  return [...(await ownPlaylists(list, all)), ...(await filePlaylists(all))]
+}
+
+/** The last `n` parts of a path, folded: "Artist/Album/01 Song.flac", to match a playlist file's songs from another computer. */
+const tail = (path: string, n: number): string => path.replace(/\\/g, '/').split('/').slice(-n).join('/').toLowerCase()
+
+/**
+ * Playlist files (.m3u) in your music, their songs matched to the library: by path, else by
+ * the last three parts of it, then two (a playlist made on another computer: D:\Music\…),
+ * then the file's name alone when only one song has it. Songs it can't find are left out.
+ */
+async function filePlaylists(all: MusicTags[]): Promise<MusicPlaylist[]> {
+  const files = await libraryPlaylistFiles()
+  if (!files.length) return []
+  const byPath = new Map(all.map((s) => [s.path, s]))
+  const index = (n: number): Map<string, MusicTags | null> => {
+    const m = new Map<string, MusicTags | null>()
+    for (const s of all) {
+      const k = tail(s.path, n)
+      m.set(k, m.has(k) ? null : s)
+    }
+    return m
+  }
+  const t3 = index(3)
+  const t2 = index(2)
+  const t1 = index(1)
+  const out: MusicPlaylist[] = []
+  for (const file of files) {
+    const text = await readFile(file, 'utf8').catch(() => '')
+    const songs: MusicTags[] = []
+    for (const p of parseM3u(text, file)) {
+      const s = byPath.get(p) ?? t3.get(tail(p, 3)) ?? t2.get(tail(p, 2)) ?? t1.get(tail(p, 1))
+      if (s && !songs.includes(s)) songs.push(s)
+    }
+    if (!songs.length) continue
+    out.push({ id: `file:${file}`, name: basename(file, extname(file)), home: false, fresh: false, canFresh: false, updated: 0, songs, file })
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+async function ownPlaylists(list: Saved[], all: MusicTags[]): Promise<MusicPlaylist[]> {
   return [...list]
     .sort((a, b) => b.created - a.created)
     .map((p) => ({

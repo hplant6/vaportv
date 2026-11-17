@@ -50,7 +50,8 @@ function Picker({ pick, onClose }: { pick: PlaylistPick; onClose: () => void }) 
         >
           ＋ New playlist: {pick.name}
         </button>
-        {playlists.map((p) => (
+        {/* Not a playlist file: it's read-only. */}
+        {playlists.filter((p) => !p.file).map((p) => (
           <button
             key={p.id}
             className="side-bar-sort-option display"

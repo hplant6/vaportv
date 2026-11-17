@@ -64,3 +64,11 @@ describe('browseMusic', () => {
     }
   })
 })
+
+describe('parseM3u', () => {
+  it('reads songs: relative to the file, absolute, Windows paths and file:// addresses, skipping comments', async () => {
+    const { parseM3u } = await import('./musicLibrary')
+    const text = '\uFEFF#EXTM3U\r\n#EXTINF:123,Artist - Song\r\n01 Song.flac\r\nsub/02.mp3\r\n/abs/03.ogg\r\nD:\\Music\\A\\B\\04.flac\r\nfile:///x/My%20Song.mp3\r\n\r\n'
+    expect(parseM3u(text, '/m/Album/list.m3u')).toEqual(['/m/Album/01 Song.flac', '/m/Album/sub/02.mp3', '/abs/03.ogg', 'D:/Music/A/B/04.flac', '/x/My Song.mp3'])
+  })
+})

@@ -270,6 +270,10 @@ export interface Indexed {
 }
 
 const indexes = new Map<string, { at: number; names: Promise<Indexed[]> }>()
+/** Playlist files (.m3u, .m3u8) found while walking each place. */
+const playlistFiles = new Map<string, string[]>()
+/** A playlist file's name. */
+const PLAYLIST_FILE = /\.m3u8?$/i
 
 /** "Beyoncé" and "beyonce" match: lower case, accents off. */
 export function fold(text: string): string {
@@ -286,6 +290,7 @@ export const NOT_MUSIC = /^(gog|lutris|heroic|steam|steamapps|steamlibrary|compa
 /** Every folder and song name in a place (not their tags: a share would take minutes). */
 async function walk(root: string): Promise<Indexed[]> {
   const out: Indexed[] = []
+  const found: string[] = []
   const visit = async (dir: string, depth: number, self?: Indexed): Promise<void> => {
     if (out.length >= SEARCH_MOST) return
     const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
@@ -308,6 +313,8 @@ async function walk(root: string): Promise<Indexed[]> {
         const folder: Indexed = { entry: { name: e.name, path, kind: 'folder' }, where, own: fold(e.name) }
         out.push(folder)
         inner.push(folder)
+      } else if (isFile && PLAYLIST_FILE.test(e.name)) {
+        found.push(path)
       } else if (isFile && AUDIO.test(e.name)) {
         out.push({ entry: { name: e.name, path, kind: 'track' }, where, own: fold(basename(e.name, extname(e.name))) })
         if (self) self.album = true
@@ -316,6 +323,7 @@ async function walk(root: string): Promise<Indexed[]> {
     if (depth < SEARCH_DEPTH) for (const d of inner) await visit(d.entry.path, depth + 1, d)
   }
   await visit(root, 1)
+  playlistFiles.set(root, found)
   return out
 }
 
@@ -386,4 +394,35 @@ function statSyncDir(path: string): boolean {
   } catch {
     return false
   }
+}
+
+/** Every playlist file in the library's places (as last walked). */
+export async function libraryPlaylistFiles(): Promise<string[]> {
+  const out: string[] = []
+  for (const place of await libraryPlaces()) {
+    const root = resolve(place.path)
+    await indexOf(root)
+    out.push(...(playlistFiles.get(root) ?? []))
+  }
+  return out
+}
+
+/**
+ * A playlist file's songs, as the paths it names: comments (#) skipped, Windows' backslashes
+ * turned round, and names relative to the file made full. Paths from another computer
+ * ("D:\Music\…") come back as they are, for matching against the library.
+ */
+export function parseM3u(text: string, file: string): string[] {
+  return text
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))
+    .map((l) => {
+      const line = l.replace(/\\/g, '/')
+      if (/^file:\/\//i.test(line)) return decodeURIComponent(line.replace(/^file:\/\//i, ''))
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(line)) return line
+      if (line.startsWith('/') || /^[a-z]:\//i.test(line)) return line
+      return resolve(dirname(file), line)
+    })
 }

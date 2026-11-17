@@ -5,7 +5,7 @@ import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
 import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favorites'
-import { pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
+import { newPlaylist, pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
 import { MusicSources } from '../music/MusicSources'
 import { setBackground, useBackgroundChoice } from '../music/background'
 import { turnItUp, useBackgroundSong } from '../music/backgroundSong'
@@ -825,7 +825,7 @@ function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
 
   if (!p) return null
   const ago = Math.round((Date.now() - p.updated) / 3_600_000)
-  const facts = [`${p.songs.length} ${p.songs.length === 1 ? 'song' : 'songs'}`, p.fresh && `kept fresh by Claude (updated ${ago < 1 ? 'just now' : ago < 24 ? `${ago} h ago` : `${Math.round(ago / 24)} d ago`})`].filter(Boolean).join(' · ')
+  const facts = [p.file && 'From a playlist file in your music', `${p.songs.length} ${p.songs.length === 1 ? 'song' : 'songs'}`, p.fresh && `kept fresh by Claude (updated ${ago < 1 ? 'just now' : ago < 24 ? `${ago} h ago` : `${Math.round(ago / 24)} d ago`})`].filter(Boolean).join(' · ')
   const button = (label: string, onClick: () => void, on = false) => (
     <button className={`files-action display${on ? ' on' : ''}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
       {label}
@@ -840,9 +840,16 @@ function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
         songs={songs}
         liked={favorites.liked}
         showArtist
-        playlistId={p.id}
+        // A playlist file is read-only: its songs' menus don't offer Move or Remove.
+        playlistId={p.file ? undefined : p.id}
         grabbed={grab?.path ?? null}
         extra={
+          p.file ? (
+            <>
+              {button('Make a copy', () => void newPlaylist(p.name, p.songs.map((s) => s.path)))}
+              <BackgroundButton choice={`playlist:${p.id}`} name={p.name} />
+            </>
+          ) : (
           <>
             {button('Rename', () => setRenaming(true))}
             {p.canFresh && button(p.fresh ? '✓ Keep it fresh' : 'Keep it fresh', () => void window.steamtv.music.changePlaylist(p.id, { fresh: !p.fresh }).then(() => reloadPlaylists()), p.fresh)}
@@ -857,6 +864,7 @@ function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
               })
             })}
           </>
+          )
         }
         onPlay={(at, shuffle, el) => {
           if (grab) return putDown()
