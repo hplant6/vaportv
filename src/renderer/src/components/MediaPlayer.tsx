@@ -150,8 +150,10 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
           const { default: HlsPlayer } = await import('hls.js')
           if (cancelled) return
           // No worker: the page's content policy doesn't allow blob: workers, and one stream doesn't need it.
-          hls = new HlsPlayer({ enableWorker: false, startPosition: from || -1 })
+          // Buffers well ahead (two minutes) so a slow stretch of the server or Wi-Fi doesn't stop the picture.
+          hls = new HlsPlayer({ enableWorker: false, startPosition: from || -1, maxBufferLength: 120, maxMaxBufferLength: 180, maxBufferSize: 200 * 1000 * 1000, backBufferLength: 30 })
           hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
+            console.warn(`steamtv: media stream ${data.fatal ? 'failed' : 'hiccup'}: ${data.type} ${data.details}`)
             if (!data.fatal) return
             console.error('steamtv: media stream failed:', data.type, data.details)
             toast(`Couldn’t play ${info.title}`)
@@ -387,7 +389,12 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
           ref={video}
           className="files-viewer-media"
           playsInline
-          onWaiting={() => setLoading(true)}
+          onWaiting={(e) => {
+            const v = e.currentTarget
+            const ahead = v.buffered.length ? v.buffered.end(v.buffered.length - 1) - v.currentTime : 0
+            console.warn(`steamtv: media stalled at ${Math.round(v.currentTime)}s, ${ahead.toFixed(1)}s buffered, ${playback?.method ?? '?'}`)
+            setLoading(true)
+          }}
           onSeeking={() => setLoading(true)}
           onCanPlay={() => setLoading(false)}
           onPlaying={() => {

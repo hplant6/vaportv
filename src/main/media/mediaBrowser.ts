@@ -371,7 +371,7 @@ export async function libraryPage(
  */
 const DEVICE_PROFILE = {
   Name: 'vaporTV',
-  MaxStreamingBitrate: 80_000_000,
+  MaxStreamingBitrate: 20_000_000,
   MaxStaticBitrate: 120_000_000,
   MusicStreamingTranscodingBitrate: 192_000,
   DirectPlayProfiles: [
