@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MusicTags } from '../../../shared/types'
 import { focus, SONG_MENU_EVENT, trap, TRAP_CLOSE_EVENT } from '../input/focus'
-import { isLiked, startRadio, toggleLiked, useClaudeReady, useMusicFavorites } from './favorites'
+import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from './favorites'
 
 // A song's menu: the game-options button on a song's row (the Music tab's album and Liked
 // songs pages, the folder browser) opens it beside the row. Like or Unlike, and with Claude
-// Code on the box, Start radio (a station of songs like it). B closes it; either way the
+// Code on the box, Start radio (a station of songs like it). Thumbs down, or undo it. B closes it; either way the
 // cursor goes back to the row.
 
 /** Mounted once in App. */
@@ -21,7 +21,7 @@ export function SongMenu() {
 
 function Menu({ row, onClose }: { row: HTMLElement; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null)
-  useMusicFavorites()
+  const { disliked } = useMusicFavorites()
   const claudeReady = useClaudeReady()
   const path = row.dataset.songPath!
   const title = row.dataset.title ?? 'this song'
@@ -62,6 +62,19 @@ function Menu({ row, onClose }: { row: HTMLElement; onClose: () => void }) {
         }}
       >
         {liked ? '♥ Remove from Liked songs' : '♡ Add to Liked songs'}
+      </button>
+      <button
+        className="side-bar-sort-option display"
+        role="menuitem"
+        tabIndex={-1}
+        data-focusable=""
+        data-select-sound="move"
+        onClick={() => {
+          void toggleDisliked(path, title)
+          close()
+        }}
+      >
+        {disliked.has(path) ? '👍 Undo thumbs down' : '👎 Thumbs down (never on radio)'}
       </button>
       {claudeReady && (
         <button

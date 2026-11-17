@@ -21,6 +21,8 @@ export interface PlayerState {
   repeat: Repeat
   time: number
   duration: number
+  /** A radio station is playing (Claude's, from this song): Now playing can show its songs. */
+  station: { seed: MusicTags } | null
 }
 
 /** Back goes to the start of the song after this long in; before it, the song before. */
@@ -32,7 +34,7 @@ const audio = new Audio()
 audio.crossOrigin = 'anonymous'
 audio.preload = 'auto'
 
-let state: PlayerState = { queue: [], at: -1, order: [], playing: false, loading: false, shuffle: false, repeat: 'off', time: 0, duration: 0 }
+let state: PlayerState = { queue: [], at: -1, order: [], playing: false, loading: false, shuffle: false, repeat: 'off', time: 0, duration: 0, station: null }
 const listeners = new Set<(s: PlayerState) => void>()
 let holding = false
 let context: AudioContext | null = null
@@ -110,13 +112,34 @@ async function load(at: number, autoplay = true): Promise<void> {
   }
 }
 
-/** Plays `songs` from `start` (shuffled when shuffle's on, `start` first). */
-export function playQueue(songs: MusicTags[], start = 0): void {
+/** Plays `songs` from `start` (shuffled when shuffle's on, `start` first); `station` when they're a radio station. */
+export function playQueue(songs: MusicTags[], start = 0, station: PlayerState['station'] = null): void {
   if (!songs.length) return
   hold(true)
   const order = state.shuffle ? shuffled(songs.length, start) : songs.map((_, i) => i)
-  state = { ...state, queue: songs, order }
+  state = { ...state, queue: songs, order, station }
   void load(state.shuffle ? 0 : start)
+}
+
+/** Jumps to the song at this place in the play order. */
+export function playAt(position: number): void {
+  if (position >= 0 && position < state.order.length) void load(position)
+}
+
+/** Takes a song out of the queue (a thumbs down); the one playing gives way to the next. */
+export function dropSong(path: string): void {
+  const index = state.queue.findIndex((s) => s.path === path)
+  if (index < 0) return
+  const queue = state.queue.filter((_, i) => i !== index)
+  if (!queue.length) return stopMusic()
+  const position = state.order.indexOf(index)
+  const playing = position === state.at
+  const order = state.order.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i))
+  // Before the one playing: it moves up one. The one playing: the next takes its place.
+  const at = Math.min(position < state.at ? state.at - 1 : state.at, order.length - 1)
+  state = { ...state, queue, order, at }
+  if (playing) void load(at)
+  else set({})
 }
 
 /** Songs' tags read after they were queued (a request through Claude queues names first): the queue keeps its order. */
@@ -186,7 +209,7 @@ export function stopMusic(): void {
   audio.pause()
   audio.removeAttribute('src')
   audio.load()
-  set({ queue: [], order: [], at: -1, playing: false, loading: false, time: 0, duration: 0 })
+  set({ queue: [], order: [], at: -1, playing: false, loading: false, time: 0, duration: 0, station: null })
   hold(false)
 }
 

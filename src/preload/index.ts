@@ -263,6 +263,8 @@ const api: SteamTvApi = {
     toggleSong: (path) => ipcRenderer.invoke('music:toggleSong', path),
     toggleAlbum: (id) => ipcRenderer.invoke('music:toggleAlbum', id),
     claudeReady: () => ipcRenderer.invoke('music:claudeReady'),
+    toggleDislike: (path) => ipcRenderer.invoke('music:toggleDislike', path),
+    disliked: () => ipcRenderer.invoke('music:disliked'),
     radio: (path) => ipcRenderer.invoke('music:radio', path),
     onIndex: (callback) => {
       const listener = (_event: unknown, status: MusicIndexStatus): void => callback(status)

@@ -4,9 +4,9 @@ import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, trap, TRAP_CLOSE_EVENT, TRAP_SIDE_BAR_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { play } from '../input/sounds'
-import { cycleRepeat, current, next, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
+import { cycleRepeat, current, next, playAt, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
 import { FloatingCover } from '../music/FloatingCover'
-import { isLiked, startRadio, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
+import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
@@ -885,8 +885,13 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   const family = useControllerFamily()
   const song = current()
   // The heart (liked or not) and radio (with Claude Code on the box).
-  useMusicFavorites()
+  const favs = useMusicFavorites()
   const liked = isLiked(song?.path)
+  // A station's songs, over Now playing (the radio button again).
+  const [stationOpen, setStationOpen] = useState(false)
+  useEffect(() => {
+    if (!player.station) setStationOpen(false)
+  }, [player.station])
   const claudeReady = useClaudeReady()
   const like = useCallback((): void => {
     const now = current()
@@ -935,10 +940,17 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
 
   // B: the shortcuts panel, then back to browsing (the music carries on).
   useEffect(() => {
-    const onClose = (): void => (keysShown ? setKeysShown(false) : onBack())
+    const onClose = (): void => {
+      if (stationOpen) {
+        setStationOpen(false)
+        return toTop()
+      }
+      if (keysShown) setKeysShown(false)
+      else onBack()
+    }
     window.addEventListener(TRAP_CLOSE_EVENT, onClose)
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, onClose)
-  }, [keysShown, onBack])
+  }, [keysShown, onBack, stationOpen])
 
   // On the seek bar: left and right skip 10 seconds, down to the buttons. On the buttons: along them, up back.
   // L1 / R1: the song before or after. The triggers: 10 seconds back or on, as in the video players.
@@ -988,7 +1000,8 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   const progress = length ? Math.min(100, (player.time / length) * 100) : 0
   const queueText = player.order.length > 1 ? `${player.at + 1} of ${player.order.length}` : ''
   return (
-    <div className="media-player music-playing" data-focus-trap="" data-own-directions="">
+    // The station's list takes the D-pad while it's open.
+    <div className="media-player music-playing" data-focus-trap="" {...(stationOpen ? {} : { 'data-own-directions': '' })}>
       <div className="music-playing-scrim" aria-hidden="true" />
       <div className={`files-viewer music-viewer${barShown || !player.playing || onButtons ? ' bar-shown' : ''}`}>
         <div className="music-now-stage">
@@ -1045,8 +1058,21 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
             <PlayerButton label={liked ? 'Liked: unlike this song' : 'Like this song'} pressed={liked} onClick={() => (showBar(), like())}>
               <path d="M12 19.5s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 6.6a4.2 4.2 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" className={liked ? 'fill' : undefined} />
             </PlayerButton>
+            {song && (
+              <PlayerButton label={`Thumbs down: skip ${song.title}, never on radio again`} onClick={() => (showBar(), void toggleDisliked(song.path, song.title))}>
+                <path d="M9.5 15.5v3.2a2 2 0 0 0 2 2l3.5-7.2V4.5H7.2a2 2 0 0 0-2 1.7l-1 6.3a2 2 0 0 0 2 2.3h3.3zM15 4.5h3.5v9H15" />
+              </PlayerButton>
+            )}
             {claudeReady && song && (
-              <PlayerButton label={`Radio: songs like ${song.title} (Claude picks them)`} onClick={() => (showBar(), void startRadio(song, null))}>
+              <PlayerButton
+                label={player.station ? `${player.station.seed.title} radio: its songs` : `Radio: songs like ${song.title} (Claude picks them)`}
+                pressed={!!player.station}
+                onClick={() => {
+                  showBar()
+                  if (player.station) setStationOpen(true)
+                  else void startRadio(song, null)
+                }}
+              >
                 <path d="M4.5 9.5h15v9.5h-15zM7.5 9.5l9.5-4.5M8 14.25h4M15.5 14.25m-1.75 0a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0-3.5 0" />
               </PlayerButton>
             )}
@@ -1064,6 +1090,7 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
         </div>
         {player.loading && <p className="media-subs-loading">Loading…</p>}
       </div>
+      {stationOpen && player.station && <StationPanel player={player} disliked={favs.disliked} liked={favs.liked} />}
       {keysShown && (
         <ShortcutsPanel>
           <span className="files-hint">
@@ -1087,6 +1114,80 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
           </span>
         </ShortcutsPanel>
       )}
+    </div>
+  )
+}
+
+/**
+ * A radio station's songs, over Now playing (the radio button while one plays): in the order
+ * they play, the one playing marked and the cursor on it. A plays one; right to its thumbs
+ * down (it leaves the station, never on radio again); B closes the list.
+ */
+function StationPanel({ player, liked, disliked }: { player: PlayerState; liked: Set<string>; disliked: Set<string> }) {
+  const list = useRef<HTMLDivElement>(null)
+  const songs = player.order.map((i) => player.queue[i])
+  useEffect(() => {
+    const now = list.current?.querySelector<HTMLElement>('.station-row.playing .station-song') ?? list.current?.querySelector<HTMLElement>('.station-song')
+    if (now) focus(now)
+  }, [])
+  const centreRow = (event: React.FocusEvent<HTMLElement>): void => {
+    const box = list.current
+    const row = event.currentTarget.closest<HTMLElement>('.station-row')
+    if (box && row) box.scrollTop = row.offsetTop - (box.clientHeight - row.offsetHeight) / 2
+  }
+  return (
+    <div className="station-panel" data-focus-trap="">
+      <h2 className="station-title display">{player.station?.seed.title} radio</h2>
+      <p className="station-facts">
+        {songs.length} songs · Claude picked them · right for 👎 on a song you don't want
+      </p>
+      <div className="station-list" ref={list} data-nav-scope="">
+        {songs.map((s, position) => (
+          <div key={s.path} className={`station-row${position === player.at ? ' playing' : ''}${position < player.at ? ' played' : ''}`}>
+            <button
+              className="station-song"
+              tabIndex={-1}
+              data-focusable=""
+              data-select-sound="move"
+              data-song-path={s.path}
+              data-title={s.title}
+              onFocus={centreRow}
+              onClick={() => playAt(position)}
+            >
+              <span className="music-track-no">
+                {position === player.at ? (
+                  <span className="music-now-bars" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                ) : (
+                  position + 1
+                )}
+              </span>
+              {s.cover ? <img className="station-cover" src={s.cover} alt="" /> : <span className="station-cover music-no-cover">♪</span>}
+              <span className="music-row-text">
+                <span className="setting-name display">{s.title}</span>
+                <span className="music-row-sub">{[s.artist, s.album].filter(Boolean).join(' · ')}</span>
+              </span>
+              {liked.has(s.path) && <span className="music-liked">♥</span>}
+            </button>
+            <button
+              className={`station-down${disliked.has(s.path) ? ' on' : ''}`}
+              tabIndex={-1}
+              data-focusable=""
+              data-select-sound="move"
+              aria-label={`Thumbs down: ${s.title}`}
+              onFocus={centreRow}
+              onClick={() => void toggleDisliked(s.path, s.title)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.5 15.5v3.2a2 2 0 0 0 2 2l3.5-7.2V4.5H7.2a2 2 0 0 0-2 1.7l-1 6.3a2 2 0 0 0 2 2.3h3.3zM15 4.5h3.5v9H15" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

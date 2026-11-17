@@ -84,7 +84,7 @@ import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFo
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, musicRadio } from './claudeMusic'
-import { musicFavorites, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
+import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
 import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
@@ -770,6 +770,8 @@ ipcMain.handle('music:favorites', () => musicFavorites())
 ipcMain.handle('music:toggleSong', (_event, path: string) => toggleFavoriteSong(String(path)))
 ipcMain.handle('music:toggleAlbum', (_event, id: string) => toggleFavoriteAlbum(String(id)))
 ipcMain.handle('music:claudeReady', () => !!claudeBin())
+ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))
+ipcMain.handle('music:disliked', () => dislikedPaths())
 ipcMain.handle('music:radio', (_event, path: string) => musicRadio(String(path)))
 ipcMain.handle('music:browse', (_event, dir: string) => browseMusic(dir))
 ipcMain.handle('music:tags', (_event, paths: string[]) => musicTags(paths))

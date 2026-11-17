@@ -1103,6 +1103,10 @@ export interface SteamTvApi {
     toggleSong(path: string): Promise<boolean>
     /** Favorites or unfavorites an album (by index id); true if a favorite now. */
     toggleAlbum(id: string): Promise<boolean>
+    /** Thumbs down on a song (or back up): never on radio again, and Claude hears it; true if disliked now. */
+    toggleDislike(path: string): Promise<boolean>
+    /** Paths given a thumbs down. */
+    disliked(): Promise<string[]>
     /** Whether Claude Code is on this box (radio and spoken requests need it). */
     claudeReady(): Promise<boolean>
     /** A radio station from a song, through Claude: the song, then songs like it from the library. Null without Claude, or if it fails. */

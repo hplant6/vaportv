@@ -9,6 +9,7 @@ import { albumSongs, indexedSong, libraryAlbums } from './musicIndex'
 import { browseMusic, musicAlbums } from './musicLibrary'
 import type { MusicAlbum, MusicAnswer, MusicEntry, MusicTags } from '../shared/types'
 import { readTags } from './musicLibrary'
+import { isDisliked, musicTaste } from './musicFavorites'
 
 // The Music app's voice search, through Claude Code: what was heard goes to Claude with every
 // album in the library (its folder path, "Artist/Album", one numbered line each), and Claude
@@ -150,13 +151,23 @@ export async function musicRadio(path: string): Promise<MusicTags[] | null> {
   if (!seed || !albums.length) return null
   await writePrompt(albums.map(albumLine))
   const facts = [seed.album && `from ${seed.album}`, seed.year, seed.genre].filter(Boolean).join(', ')
-  const request = `Make a radio station from the song "${seed.title}"${seed.artist ? ` by ${seed.artist}` : ''}${facts ? ` (${facts})` : ''}: pick 15 to 25 albums in the library that sound like it (similar artists, era, style and mood), best first, the song's own album included if it's there. Action: shuffle.`
+  // What they've liked and given a thumbs down: Claude leans toward the one and away from the other.
+  const taste = await musicTaste()
+  const request = [
+    `Make a radio station from the song "${seed.title}"${seed.artist ? ` by ${seed.artist}` : ''}${facts ? ` (${facts})` : ''}: pick 15 to 25 albums in the library that sound like it (similar artists, era, style and mood), best first, the song's own album included if it's there. Action: shuffle.`,
+    taste.liked.length ? `Songs the listener liked (lean toward their sound): ${taste.liked.join('; ')}.` : '',
+    taste.disliked.length ? `Songs the listener gave a thumbs down (avoid albums that sound like these, and these artists unless the song is theirs): ${taste.disliked.join('; ')}.` : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
   const reply = await ask(bin, request)
   const answer = reply === null ? null : readAnswer(reply, albums.length)
   if (!answer?.picks.length) return null
   const picked: MusicTags[] = []
   for (const n of answer.picks) {
-    const songs = (await albumSongs(albums[n].id)).filter((s) => s.path !== seed.path)
+    const songs: MusicTags[] = []
+    // Never a song given a thumbs down.
+    for (const s of await albumSongs(albums[n].id)) if (s.path !== seed.path && !(await isDisliked(s))) songs.push(s)
     picked.push(...shuffle(songs).slice(0, RADIO_PER_ALBUM))
   }
   return [seed, ...shuffle(picked).slice(0, RADIO_SONGS - 1)]

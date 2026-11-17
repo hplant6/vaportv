@@ -5,7 +5,9 @@ import type { MusicAlbum, MusicFavorites, MusicTags } from '../shared/types'
 import { indexedSong, libraryAlbums, librarySongs } from './musicIndex'
 import { fold, readTags } from './musicLibrary'
 
-// Liked songs and favorite albums (the Favorite button; the heart in Now playing), kept with
+// Liked songs and favorite albums (the Favorite button; the heart in Now playing), and songs
+// given a thumbs down (never on a radio station again; Claude hears what you liked and didn't),
+// kept with
 // vaporTV's settings. Each is saved by its path and what it is (title, artist, album, length),
 // so when a share mounts somewhere new or folders are tidied, it's found again in the index
 // by what it is rather than lost.
@@ -29,15 +31,16 @@ interface SavedAlbum {
   at: number
 }
 
-let saved: { songs: SavedSong[]; albums: SavedAlbum[] } | null = null
+let saved: { songs: SavedSong[]; albums: SavedAlbum[]; dislikes: SavedSong[] } | null = null
 
-async function load(): Promise<{ songs: SavedSong[]; albums: SavedAlbum[] }> {
+async function load(): Promise<{ songs: SavedSong[]; albums: SavedAlbum[]; dislikes: SavedSong[] }> {
   if (saved) return saved
   try {
-    const got = JSON.parse(await readFile(FILE, 'utf8')) as { songs?: SavedSong[]; albums?: SavedAlbum[] }
-    saved = { songs: Array.isArray(got.songs) ? got.songs : [], albums: Array.isArray(got.albums) ? got.albums : [] }
+    const got = JSON.parse(await readFile(FILE, 'utf8')) as { songs?: SavedSong[]; albums?: SavedAlbum[]; dislikes?: SavedSong[] }
+    const list = <T,>(v: T[] | undefined): T[] => (Array.isArray(v) ? v : [])
+    saved = { songs: list(got.songs), albums: list(got.albums), dislikes: list(got.dislikes) }
   } catch {
-    saved = { songs: [], albums: [] }
+    saved = { songs: [], albums: [], dislikes: [] }
   }
   return saved
 }
@@ -111,4 +114,47 @@ export async function toggleFavoriteAlbum(id: string): Promise<boolean> {
   state.albums.push({ id, title: album.title, artist: album.artist, at: Date.now() })
   await save()
   return true
+}
+
+/** A song's record as saved: what it is and when. */
+function record(path: string, tags: MusicTags): SavedSong {
+  return { path, title: tags.title, artist: tags.artist, album: tags.album, duration: tags.duration, at: Date.now() }
+}
+
+/**
+ * Thumbs down on a song (or, again, back up); true if it's disliked now. A disliked song is
+ * never on a radio station again, and Claude hears it among what you didn't like. It's no
+ * longer a liked song either.
+ */
+export async function toggleDislike(path: string): Promise<boolean> {
+  const state = await load()
+  const tags = indexedSong(path) ?? (await readTags(path))
+  const at = state.dislikes.findIndex((s) => s.path === path || sameSong(s, tags))
+  if (at >= 0) {
+    state.dislikes.splice(at, 1)
+    await save()
+    return false
+  }
+  state.dislikes.push(record(path, tags))
+  state.songs = state.songs.filter((s) => s.path !== path && !sameSong(s, tags))
+  await save()
+  return true
+}
+
+/** Whether a song's had a thumbs down. */
+export async function isDisliked(song: MusicTags): Promise<boolean> {
+  return (await load()).dislikes.some((s) => s.path === song.path || sameSong(s, song))
+}
+
+/** What you've liked and given a thumbs down, newest first (a few dozen each), as "Artist — Title" for Claude. */
+export async function musicTaste(most = 30): Promise<{ liked: string[]; disliked: string[] }> {
+  const { songs, dislikes } = await load()
+  const line = (s: SavedSong): string => `${s.artist ? `${s.artist} — ` : ''}${s.title}`
+  const newest = (list: SavedSong[]): string[] => [...list].sort((a, b) => b.at - a.at).slice(0, most).map(line)
+  return { liked: newest(songs), disliked: newest(dislikes) }
+}
+
+/** Paths given a thumbs down (for the screens to mark). */
+export async function dislikedPaths(): Promise<string[]> {
+  return (await load()).dislikes.map((s) => s.path)
 }
