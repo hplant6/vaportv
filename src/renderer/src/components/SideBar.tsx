@@ -27,6 +27,8 @@ export interface SideList<T = RecentItem> {
   empty: string
   /** The first of a section (Playlists, Systems): its heading goes above it. */
   section?: string
+  /** Not a list of things (Music's + Add music): no count after its name. */
+  noCount?: boolean
 }
 
 /** A drop-down in the bar besides Sort: its options (the first is "all", shown as off), the one chosen. */
@@ -222,7 +224,7 @@ export function SideBar({
               if (first) focus(first)
             }}
           >
-            {list.name} ({(list.count ?? list.items.length).toLocaleString()})
+            {list.noCount ? list.name : `${list.name} (${(list.count ?? list.items.length).toLocaleString()})`}
           </button>
         ])}
       </div>

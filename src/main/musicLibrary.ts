@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { existsSync, statSync } from 'node:fs'
+import { cp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { parseFile } from 'music-metadata'
 import type { MusicEntry, MusicFolder, MusicPlace, MusicTags } from '../shared/types'
-import { allowed, AUDIO } from './browse'
+import { allowed, AUDIO, copyInto } from './browse'
 import { artUrl } from './library/art'
 
 // The Music app's library: your own music, wherever it is. Its places are ~/Music, each drive
@@ -43,6 +43,36 @@ export async function musicPlaces(): Promise<MusicPlace[]> {
 }
 
 const byName = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+/** Places switched out of the library (Music sources: a games-only drive), kept with the settings. Still browsable in Folders. */
+const SOURCES_FILE = join(homedir(), '.config', 'steamtv', 'music-sources.json')
+let excluded: Set<string> | null = null
+
+export async function excludedPlaces(): Promise<Set<string>> {
+  if (excluded) return excluded
+  try {
+    const got = JSON.parse(await readFile(SOURCES_FILE, 'utf8')) as { excluded?: string[] }
+    excluded = new Set(Array.isArray(got.excluded) ? got.excluded : [])
+  } catch {
+    excluded = new Set()
+  }
+  return excluded
+}
+
+/** A place in or out of the library. */
+export async function includePlace(path: string, on: boolean): Promise<void> {
+  const set = await excludedPlaces()
+  if (on) set.delete(resolve(path))
+  else set.add(resolve(path))
+  await mkdir(dirname(SOURCES_FILE), { recursive: true })
+  await writeFile(SOURCES_FILE, JSON.stringify({ excluded: [...set] }, null, 1))
+}
+
+/** The places the library reads (search, the index, Claude): every place not switched out. */
+export async function libraryPlaces(): Promise<MusicPlace[]> {
+  const out = await excludedPlaces()
+  return (await musicPlaces()).filter((p) => !out.has(resolve(p.path)))
+}
 
 /** A folder's subfolders, then its songs, in name order (track numbers in names sort as numbers). */
 export async function browseMusic(dir: string): Promise<MusicEntry[]> {
@@ -299,7 +329,7 @@ export function indexOf(root: string): Promise<Indexed[]> {
 
 /** Starts walking every place (opening the app does), so the first search doesn't wait for a share. */
 export async function warmMusicIndex(): Promise<void> {
-  for (const place of await musicPlaces()) void indexOf(resolve(place.path))
+  for (const place of await libraryPlaces()) void indexOf(resolve(place.path))
 }
 
 /**
@@ -310,7 +340,7 @@ export async function warmMusicIndex(): Promise<void> {
 export async function searchMusic(query: string): Promise<MusicEntry[]> {
   const words = fold(query).split(/\s+/).filter(Boolean)
   if (!words.length) return []
-  const all = (await Promise.all((await musicPlaces()).map((p) => indexOf(resolve(p.path))))).flat()
+  const all = (await Promise.all((await libraryPlaces()).map((p) => indexOf(resolve(p.path))))).flat()
   const found = all.filter((i) => words.every((w) => i.where.includes(w)) && words.some((w) => i.own.includes(w)))
   const named = (a: Indexed, b: Indexed): number => byName.compare(a.entry.name, b.entry.name)
   const folders = found.filter((i) => i.entry.kind === 'folder').sort(named).slice(0, FOUND_FOLDERS)
@@ -321,9 +351,37 @@ export async function searchMusic(query: string): Promise<MusicEntry[]> {
 /** Every album (a folder with songs right in it) in every place, as "Artist/Album" from its place, for Claude to choose from. */
 export async function musicAlbums(): Promise<{ entry: MusicEntry; where: string }[]> {
   const out: { entry: MusicEntry; where: string }[] = []
-  for (const place of await musicPlaces()) {
+  for (const place of await libraryPlaces()) {
     const root = resolve(place.path)
     for (const i of await indexOf(root)) if (i.album) out.push({ entry: i.entry, where: i.entry.path.slice(root.length + 1) })
   }
   return out
+}
+
+/** Audio and cover pictures: what copying a folder of music brings across. */
+const COPIED = /\.(mp3|flac|ogg|opus|m4a|aac|wav|wma|aiff?|alac|ape|wv|jpe?g|png|webp)$/i
+
+/**
+ * Copy a song, or a whole folder of them (an album, an artist's albums), into ~/Music: a
+ * folder keeps its name and what's inside (audio and covers only); one already there of the
+ * same name gets " (2)". Returns where it went.
+ */
+export async function copyMusic(source: string): Promise<string> {
+  const from = resolve(source)
+  if (!allowed(from)) throw new Error("vaporTV can't copy from there")
+  const music = join(homedir(), 'Music')
+  const info = await stat(from)
+  if (info.isFile()) return copyInto(from, music)
+  let target = join(music, basename(from))
+  for (let n = 2; existsSync(target); n++) target = join(music, `${basename(from)} (${n})`)
+  await cp(from, target, { recursive: true, filter: (src) => src === from || COPIED.test(src) || statSyncDir(src) })
+  return target
+}
+
+function statSyncDir(path: string): boolean {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
 }

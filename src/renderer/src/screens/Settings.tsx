@@ -32,6 +32,7 @@ import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
+import { MusicSources } from '../music/MusicSources'
 
 function CollectionRow({
   collection,
@@ -1239,12 +1240,15 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         </div>
 
         <div className="settings-group">
-          <h3 className="settings-heading display">Add your own</h3>
-          <p className="settings-help">Copies an audio file into {settings?.musicFolder ?? '~/Music'}, as music or ambience.</p>
+          <h3 className="settings-heading display">Add a sound</h3>
+          <p className="settings-help">Copies an audio file into {settings?.musicFolder ?? '~/Music'}/Ambience, to choose under Ambience.</p>
           <div className="setting-list" data-focus-memory="settings-music-add">
-            <AddMusicRow onAdded={() => window.steamtv.getSettings().then(setSettings)} />
+            <AddMusicRow kind="ambience" onAdded={() => window.steamtv.getSettings().then(setSettings)} />
           </div>
         </div>
+
+        {/* Music sources: the same screen as the Music tab's + Add music. */}
+        <MusicSources />
 
         {(['music', 'ambience'] as const).map((kind) => (
           <div className="settings-group" key={kind}>

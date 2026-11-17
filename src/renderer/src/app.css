@@ -5891,3 +5891,20 @@ button {
   background: var(--color-focus-tint);
   box-shadow: inset 0 0 0 2px var(--color-accent);
 }
+
+/* Albums with only the included two: a card to add your own. */
+.add-music-plus {
+  font-size: 120px;
+  line-height: 1;
+  color: var(--color-accent);
+}
+
+/* Music sources inside the Music tab's grid: its groups at a readable width. */
+.side-grid .music-sources {
+  max-width: 1200px;
+  margin-top: 8px;
+}
+
+.music-sources-reading {
+  color: var(--color-accent);
+}

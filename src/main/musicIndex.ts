@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { MusicAlbum, MusicIndexStatus, MusicTags } from '../shared/types'
 import { builtInSongs } from './music'
-import { fold, indexOf, musicPlaces, readTags } from './musicLibrary'
+import { excludedPlaces, fold, indexOf, libraryPlaces, readTags } from './musicLibrary'
 
 // The music library as a library, not folders: every song's tags, read once and kept on disk,
 // so the Music tab can show Albums, Artists and Genres across every place at once, Claude can
@@ -85,7 +85,9 @@ export function scanMusic(): Promise<void> {
       const seen = new Set<string>()
       const reachable: string[] = []
       const toRead: { path: string; size: number; mtime: number }[] = []
-      for (const place of await musicPlaces()) {
+      // A place switched out of the library: its songs go.
+      for (const root of await excludedPlaces()) reachable.push(root)
+      for (const place of await libraryPlaces()) {
         const root = resolve(place.path)
         const names = await indexOf(root)
         // A place that lists nothing (a share that's down) keeps what it had.
@@ -241,4 +243,11 @@ export function indexedSong(path: string): MusicTags | undefined {
 export async function librarySongs(): Promise<MusicTags[]> {
   await load()
   return [...Object.values(songs), ...INCLUDED]
+}
+
+/** Songs and albums in the index from under a place (Music sources' counts). */
+export async function placeCounts(root: string): Promise<{ songs: number; albums: number }> {
+  await load()
+  const under = Object.values(songs).filter((s) => s.path.startsWith(root + '/'))
+  return { songs: under.length, albums: new Set(under.map(albumKey)).size }
 }

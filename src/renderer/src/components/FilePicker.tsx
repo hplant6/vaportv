@@ -23,12 +23,15 @@ export function FilePicker({
   title,
   kind,
   ask,
+  folders = false,
   add,
   onClose
 }: {
   title: string
   kind: BrowseKind
   ask?: { question: (entry: BrowseEntry) => string; choices: PickerChoice[] }
+  /** Inside a folder, a first row adds the whole folder (Music sources: copy an album). */
+  folders?: boolean
   add: (entry: BrowseEntry, choice: string | null) => Promise<void>
   onClose: () => void
 }) {
@@ -119,9 +122,10 @@ export function FilePicker({
             <p className="dialog-message">{here ? here.path : 'Choose where to look. B goes back.'}</p>
             {error && <p className="dialog-message">{error}</p>}
             {entries && entries.length === 0 && !error && <p className="dialog-message">No folders or files to add here.</p>}
-            {entries && entries.length > 0 && (
+            {(entries && entries.length > 0) || (folders && here) ? (
               <div className="artwork-list browse-list">
-                {entries.map((e) =>
+                {folders && here && row(`all:${here.path}`, `Copy all of “${here.name}”`, 'This folder and everything in it', () => finish(here, null))}
+                {(entries ?? []).map((e) =>
                   row(
                     e.path,
                     e.name,
@@ -131,7 +135,7 @@ export function FilePicker({
                   )
                 )}
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>

@@ -6,6 +6,7 @@ import { SideBar, sideListId, type SideList } from '../components/SideBar'
 import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favorites'
 import { pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
+import { MusicSources } from '../music/MusicSources'
 import { PLAYLIST_SONG_EVENT } from '../music/SongMenu'
 import { OnScreenKeyboard } from '../components/Keyboard'
 import { toast } from '../components/Toast'
@@ -84,7 +85,7 @@ interface Artist {
 }
 
 /** An item in the grid: an album, an artist, or a place (Folders). */
-type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Artist } | { kind: 'place'; place: MusicPlace } | { kind: 'liked'; songs: MusicTags[] } | { kind: 'playlist'; playlist: MusicPlaylist }
+type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Artist } | { kind: 'place'; place: MusicPlace } | { kind: 'liked'; songs: MusicTags[] } | { kind: 'playlist'; playlist: MusicPlaylist } | { kind: 'add' }
 
 interface MusicList extends SideList<Card> {}
 
@@ -212,7 +213,13 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       items: playlists.map((p) => ({ kind: 'playlist' as const, playlist: p })),
       empty: 'Save a radio station (its list in Now playing), add songs from their menus, or ask Claude: “make me a playlist of rainy-day jazz”.'
     },
-    { id: 'albums', name: 'Albums', items: asAlbums([...shown].sort(order)), empty: inGenre || noneYet },
+    {
+      id: 'albums',
+      name: 'Albums',
+      // Only the included albums so far: a card at the end to add your own.
+      items: [...asAlbums([...shown].sort(order)), ...((albums ?? []).every((a) => a.included) ? [{ kind: 'add' as const }] : [])],
+      empty: inGenre || noneYet
+    },
     { id: 'artists', name: 'Artists', items: artists.map((a) => ({ kind: 'artist', artist: a })), empty: inGenre || noneYet },
     {
       id: 'folders',
@@ -220,7 +227,9 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       items: places.map((p) => ({ kind: 'place', place: p })),
       empty: 'No music folders yet.',
       section: 'Browse'
-    }
+    },
+    // Music sources: the same screen as Settings → Music's.
+    { id: 'sources', name: '＋ Add music', items: [], empty: '', noCount: true }
   ]
   const current = all.find((l) => l.id === selected) ?? all[0]
   const select = (id: string): void => {
@@ -230,7 +239,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       saved.lists[SCREEN] = id
     })
   }
-  const title = `${open ? '' : 'Music · '}${current.name}${genreOn && current.id !== 'folders' ? ` · ${genreName}` : ''} (${current.items.length.toLocaleString()})`
+  const title = current.id === 'sources' ? 'Add music' : `${open ? '' : 'Music · '}${current.name}${genreOn && current.id !== 'folders' ? ` · ${genreName}` : ''} (${current.items.length.toLocaleString()})`
 
   const playAlbum = (a: MusicAlbum, from: HTMLElement | null, at = 0, shuffle = false): void => {
     setPlayed(markAlbumPlayed(a.id))
@@ -238,7 +247,13 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   const openCard = (card: Card, el: HTMLElement): void => {
-    if (card.kind === 'liked') setLikedOpen(el)
+    if (card.kind === 'add') {
+      select('sources')
+      setTimeout(() => {
+        const first = document.querySelector<HTMLElement>('.side-grid .music-sources [data-focusable]')
+        if (first) focus(first)
+      })
+    } else if (card.kind === 'liked') setLikedOpen(el)
     else if (card.kind === 'playlist') setPlaylistOpen({ id: card.playlist.id, from: el })
     else if (card.kind === 'album') setAlbum({ album: card.album, from: el })
     else if (card.kind === 'artist') setArtist({ artist: card.artist, from: el })
@@ -286,7 +301,9 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           <section className="collection-grid">
             <h2 className="section-label display">{title}</h2>
             {reading && <p className="music-tab-reading">{reading}</p>}
-            {!loaded ? (
+            {current.id === 'sources' ? (
+              <MusicSources />
+            ) : !loaded ? (
               <p className="empty-note">Looking for your music…</p>
             ) : current.items.length === 0 ? (
               <p className="empty-note">{current.empty}</p>
@@ -354,6 +371,25 @@ function CardGrid({ cards, memory, favorites, onOpen }: { cards: Card[]; memory:
   return (
     <div className="album-grid" data-focus-memory={memory}>
       {cards.map((card, index) => {
+        if (card.kind === 'add') {
+          return (
+            <button key="add" className="recent-card album-card add-music-card" tabIndex={-1} data-focusable="" data-select-sound="move" data-index={index} aria-label="Add your music" onClick={(event) => onOpen(card, event.currentTarget)}>
+              <div className="recent-art">
+                <span className="recent-no-art display">
+                  <span className="add-music-plus" aria-hidden="true">
+                    ＋
+                  </span>
+                </span>
+              </div>
+              <div className="recent-footer">
+                <div className="recent-text">
+                  <div className="recent-title">Add your music</div>
+                  <div className="recent-date">From a drive, a share, or this TV</div>
+                </div>
+              </div>
+            </button>
+          )
+        }
         if (card.kind === 'liked' || card.kind === 'playlist') {
           const songs = card.kind === 'liked' ? card.songs : card.playlist.songs
           const name = card.kind === 'liked' ? 'Liked songs' : card.playlist.name

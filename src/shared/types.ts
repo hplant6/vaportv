@@ -396,6 +396,13 @@ export interface MusicAlbum {
   songs: number
 }
 
+/** A place music comes from (Music sources): whether the library reads it, and what it found there. */
+export interface MusicSource extends MusicPlace {
+  included: boolean
+  songs: number
+  albums: number
+}
+
 /** Liked songs and favorite albums, newest first. */
 export interface MusicFavorites {
   songs: MusicTags[]
@@ -1128,6 +1135,14 @@ export interface SteamTvApi {
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */
     disliked(): Promise<string[]>
+    /** Music sources: every place, in the library or not, with its counts. */
+    sources(): Promise<MusicSource[]>
+    /** A place in or out of the library (a rescan follows). */
+    includePlace(path: string, on: boolean): Promise<void>
+    /** Copies a song or a folder of them into ~/Music (a rescan follows); where it went. */
+    copyMusic(path: string): Promise<string>
+    /** Reads every place again now. */
+    rescan(): Promise<void>
     playlists(): Promise<MusicPlaylist[]>
     /** A new playlist (`source`: how it was made, for Keep it fresh); its id. */
     createPlaylist(name: string, paths: string[], source?: { seed?: string; request?: string }): Promise<string>

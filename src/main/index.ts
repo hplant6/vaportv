@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { appendFile, chmod, mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import home from '../../fixtures/home.json'
 import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
@@ -82,11 +82,11 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
+import { browseMusic, copyMusic, excludedPlaces, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
-import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, setMusicIndexListener } from './musicIndex'
+import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -775,6 +775,20 @@ ipcMain.handle('music:claudeReady', () => !!claudeBin())
 ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))
 ipcMain.handle('music:disliked', () => dislikedPaths())
 ipcMain.handle('music:playlists', () => musicPlaylists())
+ipcMain.handle('music:sources', async () => {
+  const out = await excludedPlaces()
+  return Promise.all((await musicPlaces()).map(async (p) => ({ ...p, included: !out.has(resolve(p.path)), ...(await placeCounts(resolve(p.path))) })))
+})
+ipcMain.handle('music:includePlace', async (_event, path: string, on: boolean) => {
+  await includePlace(String(path), on === true)
+  void scanMusic().catch(() => {})
+})
+ipcMain.handle('music:copy', async (_event, path: string) => {
+  const to = await copyMusic(String(path))
+  void scanMusic().catch(() => {})
+  return to
+})
+ipcMain.handle('music:rescan', () => void scanMusic().catch(() => {}))
 ipcMain.handle('music:createPlaylist', (_event, name: string, paths: string[], source?: { seed?: string; request?: string }) =>
   createMusicPlaylist(String(name), Array.isArray(paths) ? paths.map(String) : [], source && { seed: source.seed && String(source.seed), request: source.request && String(source.request) })
 )
