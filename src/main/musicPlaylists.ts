@@ -6,6 +6,8 @@ import type { MusicPlaylist, MusicTags } from '../shared/types'
 import { sameSong } from './musicFavorites'
 import { indexedSong, librarySongs } from './musicIndex'
 import { readTags } from './musicLibrary'
+import { loadConfig } from './config'
+import { musicFolder, playlists as backgroundPlaylists } from './music'
 
 // Your own playlists: made from a radio station (Save as playlist), by adding songs or albums
 // (Add to playlist), or by asking Claude ("make me a playlist of rainy-day jazz"). Kept with
@@ -41,13 +43,39 @@ interface Saved {
 
 let saved: Saved[] | null = null
 
+/**
+ * Background music's playlists (made in Settings, and the included Ambient and Retro) move
+ * here once, keeping their ids so a background choice of one still finds it: one set of
+ * playlists, edited in the Music tab.
+ */
+async function migrated(): Promise<Saved[]> {
+  const config = await loadConfig().catch(() => null)
+  if (!config) return []
+  const folder = musicFolder(config)
+  const now = Date.now()
+  const out: Saved[] = []
+  for (const [i, p] of backgroundPlaylists(config).entries()) {
+    const songs: SavedSong[] = []
+    for (const file of p.files) songs.push(await record(file.startsWith('builtin:') ? file : join(folder, file)).catch(() => ({ path: join(folder, file), title: file })))
+    // Older first, so the included ones end up last in the newest-first list.
+    out.push({ id: p.id, name: p.name, songs, created: now - (backgroundPlaylists(config).length - i) * 1000, updated: now, home: false, fresh: false })
+  }
+  return out
+}
+
 async function load(): Promise<Saved[]> {
   if (saved) return saved
+  let got: { playlists?: Saved[]; migrated?: boolean } = {}
   try {
-    const got = JSON.parse(await readFile(FILE, 'utf8')) as { playlists?: Saved[] }
-    saved = Array.isArray(got.playlists) ? got.playlists : []
+    got = JSON.parse(await readFile(FILE, 'utf8')) as typeof got
   } catch {
-    saved = []
+    // None yet.
+  }
+  saved = Array.isArray(got.playlists) ? got.playlists : []
+  if (!got.migrated) {
+    const old = await migrated()
+    saved.push(...old.filter((o) => !saved!.some((p) => p.id === o.id)))
+    await save()
   }
   return saved
 }
@@ -56,7 +84,7 @@ async function save(): Promise<void> {
   if (!saved) return
   await mkdir(dirname(FILE), { recursive: true })
   const temp = `${FILE}.tmp`
-  await writeFile(temp, JSON.stringify({ playlists: saved }, null, 1))
+  await writeFile(temp, JSON.stringify({ migrated: true, playlists: saved }, null, 1))
   await rename(temp, FILE)
 }
 

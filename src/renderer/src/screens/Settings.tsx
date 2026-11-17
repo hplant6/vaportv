@@ -1224,17 +1224,9 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Playlists</h3>
-          <p className="settings-help">Your own lists of music tracks, to choose above like a track.</p>
+          <p className="settings-help">Playlists live in the Music tab now, with your music: make and edit them there, then choose one above to play in the background.</p>
           <div className="setting-list" data-focus-memory="settings-playlists">
-            {settings?.playlists.map((playlist) => (
-              <ActionRow
-                key={playlist.id}
-                label={playlist.name}
-                detail={`Edit · ${playlist.files.length} ${playlist.files.length === 1 ? 'track' : 'tracks'}`}
-                onSelect={() => editPlaylist(playlist)}
-              />
-            ))}
-            <ActionRow label="New playlist" detail="Name it, then pick its tracks" onSelect={() => editPlaylist(null)} />
+            <ActionRow label="Open the Music tab" detail={`${settings?.playlists.length ?? 0} playlists`} onSelect={() => onNavigate('music')} />
           </div>
         </div>
 

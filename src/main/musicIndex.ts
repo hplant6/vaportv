@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import type { MusicAlbum, MusicIndexStatus, MusicTags } from '../shared/types'
+import { builtInSongs } from './music'
 import { fold, indexOf, musicPlaces, readTags } from './musicLibrary'
 
 // The music library as a library, not folders: every song's tags, read once and kept on disk,
@@ -28,6 +29,8 @@ export interface IndexedSong extends MusicTags {
 }
 
 let songs: Record<string, IndexedSong> = {}
+/** The music included with vaporTV, always in the library (never on disk in the index). */
+const INCLUDED = builtInSongs()
 /** Bumped whenever `songs` changes, so the albums are worked out again. */
 let changes = 0
 let loaded: Promise<void> | null = null
@@ -150,6 +153,8 @@ const VARIOUS = 'Various Artists'
  */
 /** Which album a song belongs to: album artist and album; without an album artist, its folder too (two "Greatest Hits" stay apart); without an album, its folder. */
 function albumKey(song: MusicTags): string {
+  // Included with vaporTV: their own albums, apart from any of yours with the same names.
+  if (song.path.startsWith('builtin:')) return `builtin|${fold(song.album ?? '')}`
   const folder = dirname(song.path)
   if (!song.album) return `folder|${folder}`
   return song.albumArtist ? `${fold(song.albumArtist)}|${fold(song.album)}` : `|${fold(song.album)}|${folder}`
@@ -193,7 +198,8 @@ function toAlbum(key: string, list: IndexedSong[]): MusicAlbum {
     year: most((s) => s.year),
     genre: most((s) => firstGenre(s.genre)),
     cover: most((s) => s.cover),
-    folder: dirname(first.path),
+    folder: first.path.startsWith('builtin:') ? 'builtin:' : dirname(first.path),
+    ...(first.path.startsWith('builtin:') ? { included: true } : {}),
     added: Math.max(...list.map((s) => s.mtime)),
     duration: list.reduce((sum, s) => sum + (s.duration ?? 0), 0),
     songs: list.length
@@ -204,7 +210,7 @@ let albumCache: { changes: number; albums: MusicAlbum[]; byId: Map<string, Index
 
 function albumsNow(): { albums: MusicAlbum[]; byId: Map<string, IndexedSong[]> } {
   if (albumCache?.changes === changes) return albumCache
-  const byId = songsByAlbum(Object.values(songs))
+  const byId = songsByAlbum([...Object.values(songs), ...INCLUDED.map((s) => ({ ...s, size: 0, mtime: 0 }))])
   albumCache = { changes, albums: [...byId].map(([id, list]) => toAlbum(id, list)), byId }
   return albumCache
 }
@@ -228,11 +234,11 @@ export function hasMusicIndex(): boolean {
 
 /** A song in the index by path (its tags), if it's there. */
 export function indexedSong(path: string): MusicTags | undefined {
-  return songs[path]
+  return songs[path] ?? INCLUDED.find((s) => s.path === path)
 }
 
 /** Every song in the index. */
 export async function librarySongs(): Promise<MusicTags[]> {
   await load()
-  return Object.values(songs)
+  return [...Object.values(songs), ...INCLUDED]
 }

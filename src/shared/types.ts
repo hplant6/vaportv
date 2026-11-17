@@ -345,6 +345,9 @@ export interface MusicTags {
   year?: number
   /** The first genre its tags name. */
   genre?: string
+  /** Included with vaporTV: where the page plays it from (its path is builtin:…), and its licence's credit. */
+  url?: string
+  credit?: string
   /** Seconds, when its headers say. */
   duration?: number
   cover?: string
@@ -386,6 +389,8 @@ export interface MusicAlbum {
   folder: string
   /** Its newest song's file time (ms), for Recently added. */
   added: number
+  /** Included with vaporTV (Ambient, Retro), not from your library. */
+  included?: boolean
   /** Seconds, as far as its songs' headers say. */
   duration: number
   songs: number

@@ -685,7 +685,8 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     favoritesLayout: config.favoritesLayout ?? 'rows',
     recentsLayouts: Object.fromEntries(RECENTS_TABS.map((tab) => [tab, recentsLayout(config, tab)])) as Record<RecentsTab, SteamLayout>,
     musicTracks: await musicTracks(config),
-    playlists: playlists(config),
+    // The Music tab's playlists (background music's moved there), as background choices.
+    playlists: (await musicPlaylists()).map((p) => ({ id: p.id, name: p.name, files: p.songs.map((s) => s.path), shuffle: false })),
     ...musicChoices(config),
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
@@ -827,7 +828,7 @@ ipcMain.handle('backdrop:get', async () => {
   const custom = main.custom ?? home?.custom ?? null
   return { style: main.style, homeStyle: home?.style ?? null, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high', consoleBackdrops: config.consoleBackdrops ?? true }
 })
-ipcMain.handle('music:get', async () => currentMusic(await loadConfig()))
+ipcMain.handle('music:get', async () => currentMusic(await loadConfig(), await musicPlaylists()))
 ipcMain.handle('music:trackUrl', async (_event, file: string) => trackUrl(await loadConfig(), file))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
 ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTaken(await loadConfig(), url))

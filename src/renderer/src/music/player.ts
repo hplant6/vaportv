@@ -99,7 +99,8 @@ async function load(at: number, autoplay = true): Promise<void> {
   set({ at, time: 0, duration: song.duration ?? 0, loading: true })
   musicAnalyser()
   try {
-    const url = await window.steamtv.openFile(song.path)
+    // Included with vaporTV: played from the page's own files.
+    const url = song.url ?? (await window.steamtv.openFile(song.path))
     // Another song since (its tags filling in doesn't count).
     if (current()?.path !== song.path) return
     audio.src = url

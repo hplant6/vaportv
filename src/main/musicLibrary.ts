@@ -25,7 +25,7 @@ const SYSTEM_FOLDERS = /^(@|#recycle$|\$recycle\.bin$|system volume information$
 /** Songs read at once: shares are slow to open a file, and the list shows a screenful at a time. */
 const READ_AT_ONCE = 4
 
-/** Where to look: the shares, the drives, then ~/Music (as "vaporTV Music"). */
+/** Where to look: the shares, the drives, then ~/Music (as "Music on this TV"). */
 export async function musicPlaces(): Promise<MusicPlace[]> {
   const places: MusicPlace[] = []
   const music = join(homedir(), 'Music')
@@ -37,8 +37,8 @@ export async function musicPlaces(): Promise<MusicPlace[]> {
       if (entry.isDirectory() && !entry.name.startsWith('.')) places.push({ name: entry.name, path: join(parent, entry.name), kind: 'drive' })
     }
   }
-  // vaporTV's own music folder goes last, after the shares and drives.
-  if (existsSync(music)) places.push({ name: 'vaporTV Music', path: music, kind: 'folder' })
+  // This TV's own music folder (~/Music) goes last, after the shares and drives.
+  if (existsSync(music)) places.push({ name: 'Music on this TV', path: music, kind: 'folder' })
   return places
 }
 

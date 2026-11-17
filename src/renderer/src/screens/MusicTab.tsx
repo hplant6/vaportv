@@ -390,7 +390,7 @@ function CardGrid({ cards, memory, favorites, onOpen }: { cards: Card[]; memory:
         }
         const [key, title, sub, cover] =
           card.kind === 'album'
-            ? [card.album.id, card.album.title, [card.album.artist, card.album.year].filter(Boolean).join(' · '), card.album.cover]
+            ? [card.album.id, card.album.title, [card.album.artist, card.album.included ? 'Included with vaporTV' : card.album.year].filter(Boolean).join(' · '), card.album.cover]
             : card.kind === 'artist'
               ? [`artist:${card.artist.name}`, card.artist.name, `${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`, card.artist.albums.find((a) => a.cover)?.cover]
               : [`place:${card.place.path}`, card.place.name, card.place.kind === 'network' ? 'Network share' : card.place.kind === 'drive' ? 'Drive' : 'Folder', undefined]
@@ -502,7 +502,7 @@ function AlbumPage({ album, onPlay, onBack }: { album: MusicAlbum; onPlay: (at: 
       .then(setSongs)
       .catch(() => setSongs([]))
   }, [album.id])
-  const facts = [album.year, album.genre, `${album.songs} ${album.songs === 1 ? 'song' : 'songs'}`, album.duration > 0 && albumLength(album.duration)].filter(Boolean).join(' · ')
+  const facts = [album.included && 'Included with vaporTV', album.year, album.genre, `${album.songs} ${album.songs === 1 ? 'song' : 'songs'}`, album.duration > 0 && albumLength(album.duration)].filter(Boolean).join(' · ')
   const favorite = favorites.albumIds.has(album.id)
   return (
     <SongsPage
@@ -666,7 +666,10 @@ function SongsPage({
             <span className="music-track-no">{showArtist ? i + 1 : discs && s.track ? `${s.disc ?? 1}.${s.track}` : (s.track ?? i + 1)}</span>
             <span className="music-row-text">
               <span className="setting-name display">{s.title}</span>
-              {showArtist && (s.artist || s.album) ? (
+              {s.credit ? (
+                // Included music: its licence's credit, as it asks.
+                <span className="music-row-sub">{s.credit}</span>
+              ) : showArtist && (s.artist || s.album) ? (
                 <span className="music-row-sub">{[s.artist, s.album].filter(Boolean).join(' · ')}</span>
               ) : (
                 s.artist && s.artist !== albumArtist && <span className="music-row-sub">{s.artist}</span>

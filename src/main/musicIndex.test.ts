@@ -57,3 +57,13 @@ describe('firstGenre', async () => {
     expect(firstGenre(undefined)).toBeUndefined()
   })
 })
+
+describe('included music', async () => {
+  const { builtInSongs } = await import('./music')
+  it('is two albums, Ambient and Retro, credited', () => {
+    const songs = builtInSongs()
+    expect(new Set(songs.map((s) => s.album))).toEqual(new Set(['Ambient', 'Retro']))
+    expect(songs.every((s) => s.path.startsWith('builtin:') && s.url && s.credit)).toBe(true)
+    expect(songs.find((s) => s.credit?.startsWith('Music by'))?.artist).toBe('Oblidivm')
+  })
+})

@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, relative, sep } from 'node:path'
-import type { MusicKind, MusicLayer, MusicTrack, MusicVolume, Playlist } from '../shared/types'
+import type { MusicKind, MusicLayer, MusicTags, MusicTrack, MusicVolume, Playlist } from '../shared/types'
 import { AUDIO, copyInto } from './browse'
 import type { Config } from './config'
 import { artUrl } from './library/art'
@@ -62,6 +62,33 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
   { file: 'builtin:retro-oblidivm-the-labyrinth', name: 'The Labyrinth', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-the-labyrinth.ogg', kind: 'music' },
   { file: 'builtin:retro-oblidivm-the-undefeated', name: 'The Undefeated', credit: 'Music by Oblidivm · oblidivmmusic.blogspot.com', url: 'music/retro-oblidivm-the-undefeated.ogg', kind: 'music' }
 ]
+
+/** The included music's albums, as the library shows them: by file prefix. */
+const INCLUDED_ALBUMS = [
+  { prefix: 'builtin:zabriskie-', album: 'Ambient', albumArtist: 'Chris Zabriskie', genre: 'Ambient' },
+  { prefix: 'builtin:retro-', album: 'Retro', albumArtist: 'Various Artists', genre: 'Chiptune' }
+]
+
+/**
+ * The included music as library songs (the Music tab's "Included with vaporTV" albums): path
+ * is its builtin: file, url where the page plays it, artist from its credit ("Music by
+ * Oblidivm" is Oblidivm), and the credit kept, as its licence asks.
+ */
+export function builtInSongs(): MusicTags[] {
+  const songs: MusicTags[] = []
+  for (const group of INCLUDED_ALBUMS) {
+    BUILT_IN.filter((t) => t.kind === 'music' && t.file.startsWith(group.prefix)).forEach((t, i) => {
+      const by = t.credit?.split(' · ')[0].replace(/^Music by /, '')
+      songs.push({ path: t.file, title: t.name, artist: by, album: group.album, albumArtist: group.albumArtist, genre: group.genre, track: i + 1, url: t.url, credit: t.credit })
+    })
+  }
+  return songs
+}
+
+/** Where the page plays a song from: an included one's own address, else the file through the art scheme. */
+export function songUrl(path: string): string {
+  return BUILT_IN.find((t) => t.file === path)?.url ?? artUrl(path)
+}
 
 const builtInFiles = (prefix: string): string[] => BUILT_IN.filter((t) => t.file.startsWith(prefix)).map((t) => t.file)
 
@@ -156,13 +183,27 @@ export function trackUrl(config: Config, file: string): string {
   return BUILT_IN.find((t) => t.file === file)?.url ?? artUrl(join(musicFolder(config), file))
 }
 
-/** What the page should play on each layer: the chosen track, a playlist's tracks, or every one shuffled, and a volume. */
-export async function currentMusic(config: Config): Promise<Record<MusicKind, MusicLayer>> {
+/**
+ * What the page should play on each layer: the chosen track, a playlist's songs, or every one
+ * shuffled, and a volume. Playlists are the Music tab's (`lists`), so a background choice of
+ * one plays it from the library.
+ */
+export async function currentMusic(config: Config, lists: { id: string; songs: MusicTags[] }[] = []): Promise<Record<MusicKind, MusicLayer>> {
   const tracks = await musicTracks(config)
   const choices = musicChoices(config)
   const url = (file: string): string => trackUrl(config, file)
   const layer = (kind: MusicKind, volume: MusicVolume | undefined): MusicLayer => {
     const choice = choices[kind]
+    const library = kind === 'music' && choice?.startsWith(PLAYLIST) ? lists.find((p) => PLAYLIST + p.id === choice) : undefined
+    if (library) {
+      return {
+        urls: library.songs.map((s) => songUrl(s.path)),
+        files: library.songs.map((s) => s.path),
+        names: library.songs.map((s) => s.title),
+        shuffle: false,
+        volume: Math.min(1, MUSIC_VOLUME[volume ?? 'medium'] * MUSIC_GAIN)
+      }
+    }
     const files = tracks[kind].map((t) => t.file)
     // A playlist's tracks in its order, less any no longer there.
     const list = kind === 'music' && choice?.startsWith(PLAYLIST) ? playlists(config).find((p) => PLAYLIST + p.id === choice) : undefined
