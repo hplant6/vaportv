@@ -80,14 +80,14 @@ import { fillSwitchArt, loadSwitchTab, switchGames } from './library/switchTab'
 import { fillXbox360Art, loadXbox360Tab, xbox360Games } from './library/xbox360Tab'
 import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUnit } from './location'
 import { emulatorIcons } from './emulatorIcons'
-import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
+import { BUILT_IN_PLAYLIST_IDS, currentMusic, loudnessGain, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { browseMusic, copyMusic, excludedPlaces, readTags, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { backgroundSongs } from './backgroundMusic'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
-import { albumSongs, freshenMusic, indexedSong, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
+import { albumSongs, freshenMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -786,6 +786,10 @@ ipcMain.handle('music:songs', async (_event, paths: string[]) => {
       return indexedSong(path) ?? (await readTags(path).catch(() => ({ path, title: path.split('/').pop() ?? path })))
     })
   )
+})
+ipcMain.handle('music:loudness', async (_event, path: string) => {
+  const lufs = await songLoudness(String(path))
+  return lufs === null ? null : loudnessGain(lufs)
 })
 ipcMain.handle('music:sources', async () => {
   const out = await excludedPlaces()

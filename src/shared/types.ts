@@ -348,6 +348,8 @@ export interface MusicTags {
   /** Included with vaporTV: where the page plays it from (its path is builtin:…), and its licence's credit. */
   url?: string
   credit?: string
+  /** How loud it is (integrated LUFS): from its ReplayGain tag, or measured once; background music evens songs out by it. */
+  loudness?: number
   /** Seconds, when its headers say. */
   duration?: number
   cover?: string
@@ -597,6 +599,11 @@ export interface MusicLayer {
   names: string[]
   shuffle: boolean
   volume: number
+  /**
+   * Each track's own volume against the included music's loudness (1: as loud; a loud master
+   * less), or null where it isn't known yet (the page asks music.loudness as it starts). Unset: all 1.
+   */
+  gains?: (number | null)[]
 }
 
 /** A named list of music tracks, chosen in Settings → Music like a single track. */
@@ -1135,6 +1142,8 @@ export interface SteamTvApi {
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */
     disliked(): Promise<string[]>
+    /** A song's volume against the included music's loudness, measured once if its tags don't say; null if it can't be. */
+    loudness(path: string): Promise<number | null>
     /** Songs by path (the index's, the included ones', else their tags). */
     songs(paths: string[]): Promise<MusicTags[]>
     /** Music sources: every place, in the library or not, with its counts. */

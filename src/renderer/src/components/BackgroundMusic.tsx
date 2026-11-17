@@ -114,15 +114,41 @@ function Layer({ kind }: { kind: MusicKind }) {
     let playlist: string[] = []
     let files: string[] = []
     let names: string[] = []
+    /** Each track's loudness gain (null: not measured yet); the layer's volume. */
+    let gains: (number | null)[] = []
+    let base = 0
     let random = false
     /** Tracks played before this one, newest last, so Previous can go back in a shuffle too. */
     let history: string[] = []
 
-    const show = (): void =>
+    /**
+     * The volume for the track that's on: the layer's, times its loudness gain, so a loud
+     * master sits as quietly as the included music. Not known yet: asked for (measured once),
+     * and faded to when it comes.
+     */
+    const level = (): void => {
+      const at = playlist.indexOf(el.src)
+      const gain = gains[at]
+      target.current = Math.min(1, base * (gain ?? 1))
+      if (gain === null && files[at]) {
+        gains[at] = 1
+        void window.steamtv.music.loudness(files[at]).then((g) => {
+          if (g === null) return
+          gains[at] = g
+          if (playlist.indexOf(el.src) !== at) return
+          target.current = Math.min(1, base * g)
+          if (!el.paused) fadeTo(target.current)
+        })
+      }
+    }
+
+    const show = (): void => {
+      level()
       publish(kind, {
         file: el.src ? (files[playlist.indexOf(el.src)] ?? null) : null,
         canSkip: playlist.length > 1
       })
+    }
     const onPlay = (): void => publish(kind, { playing: true })
     const onPause = (): void => publish(kind, { playing: false })
 
@@ -164,7 +190,9 @@ function Layer({ kind }: { kind: MusicKind }) {
     const load = (): void => {
       window.steamtv.getMusic().then((layers) => {
         const { urls, shuffle, volume } = layers[kind]
+        base = volume
         target.current = volume
+        gains = layers[kind].gains ?? urls.map(() => 1)
         playlist = urls.map(absolute)
         files = layers[kind].files
         names = layers[kind].names
@@ -199,7 +227,8 @@ function Layer({ kind }: { kind: MusicKind }) {
       history.push(el.src)
       el.src = following()
       show()
-      el.play().catch(() => {})
+      // To this song's own level (a loud master quieter).
+      el.play().then(() => fadeTo(target.current)).catch(() => {})
     }
 
     // Skipped from Settings: back goes to the last one played (else the one before in the list).

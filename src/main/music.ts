@@ -15,6 +15,14 @@ export const MUSIC_VOLUME: Record<MusicVolume, number> = { low: 0.12, medium: 0.
  */
 const MUSIC_GAIN = 2
 
+/** The included music's loudness: every background song is evened out to it. */
+export const TARGET_LUFS = -16
+
+/** A song's volume against the included music (clamped: no song pushed far up or pushed to nothing). */
+export function loudnessGain(lufs: number): number {
+  return Math.min(2, Math.max(0.15, 10 ** ((TARGET_LUFS - lufs) / 20)))
+}
+
 /** A saved choice that plays every track of its kind in random order. */
 export const SHUFFLE = 'shuffle'
 
@@ -79,7 +87,8 @@ export function builtInSongs(): MusicTags[] {
   for (const group of INCLUDED_ALBUMS) {
     BUILT_IN.filter((t) => t.kind === 'music' && t.file.startsWith(group.prefix)).forEach((t, i) => {
       const by = t.credit?.split(' · ')[0].replace(/^Music by /, '')
-      songs.push({ path: t.file, title: t.name, artist: by, album: group.album, albumArtist: group.albumArtist, genre: group.genre, track: i + 1, url: t.url, credit: t.credit })
+      // Loudness-matched to -16 LUFS when they were encoded (see MUSIC_GAIN).
+      songs.push({ path: t.file, title: t.name, artist: by, album: group.album, albumArtist: group.albumArtist, genre: group.genre, track: i + 1, url: t.url, credit: t.credit, loudness: TARGET_LUFS })
     })
   }
   return songs
@@ -205,6 +214,7 @@ export async function currentMusic(
         urls: library.songs.map((s) => songUrl(s.path)),
         files: library.songs.map((s) => s.path),
         names: library.songs.map((s) => s.title),
+        gains: library.songs.map((s) => (s.loudness === undefined ? null : loudnessGain(s.loudness))),
         shuffle: false,
         volume: Math.min(1, MUSIC_VOLUME[volume ?? 'medium'] * MUSIC_GAIN)
       }

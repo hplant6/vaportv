@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -250,4 +251,32 @@ export async function placeCounts(root: string): Promise<{ songs: number; albums
   await load()
   const under = Object.values(songs).filter((s) => s.path.startsWith(root + '/'))
   return { songs: under.length, albums: new Set(under.map(albumKey)).size }
+}
+
+/** Seconds of a song ffmpeg listens to, to measure its loudness: enough for most, quick over a share. */
+const MEASURE_S = 180
+
+/** A song's loudness (LUFS): its tags', else measured once by ffmpeg (EBU R128) and kept in the index. Null if it can't be. */
+export async function songLoudness(path: string): Promise<number | null> {
+  await load()
+  const known = indexedSong(path)?.loudness
+  if (known !== undefined) return known
+  const lufs = await new Promise<number | null>((done) => {
+    const child = spawn('ffmpeg', ['-nostats', '-hide_banner', '-t', String(MEASURE_S), '-i', path, '-filter_complex', 'ebur128', '-f', 'null', '-'], { stdio: ['ignore', 'ignore', 'pipe'] })
+    let err = ''
+    child.stderr.on('data', (chunk: Buffer) => (err += chunk.toString()).length > 200_000 && (err = err.slice(-50_000)))
+    child.on('error', () => done(null))
+    child.on('close', () => {
+      // The summary at the end: "Integrated loudness: … I: -14.2 LUFS".
+      const summary = err.slice(err.lastIndexOf('Integrated loudness'))
+      const m = summary.match(/I:\s*(-?\d+(?:\.\d+)?)\s*LUFS/)
+      done(m && Number.isFinite(Number(m[1])) && Number(m[1]) > -70 ? Number(m[1]) : null)
+    })
+  })
+  if (lufs !== null && songs[path]) {
+    songs[path] = { ...songs[path], loudness: lufs }
+    changes++
+    void save().catch(() => {})
+  }
+  return lufs
 }

@@ -177,3 +177,13 @@ describe('media ranges', () => {
     expect(parseRange('bytes=1000-', 1000)).toBe('unsatisfiable')
   })
 })
+
+describe('loudnessGain', async () => {
+  const { loudnessGain } = await import('./music')
+  it('leaves music as loud as the included tracks alone, turns a loud master down, and clamps', () => {
+    expect(loudnessGain(-16)).toBe(1)
+    expect(loudnessGain(-10)).toBeCloseTo(0.501, 2)
+    expect(loudnessGain(-60)).toBe(2)
+    expect(loudnessGain(5)).toBe(0.15)
+  })
+})

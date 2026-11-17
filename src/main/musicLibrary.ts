@@ -152,6 +152,8 @@ export async function readTags(path: string): Promise<MusicTags> {
       disc: c.disk?.no ?? undefined,
       year: c.year ?? undefined,
       genre: c.genre?.map((g) => g.split(/\s*[,;/|]\s*/)[0].trim()).find(Boolean),
+      // ReplayGain brings a song to about -18 LUFS: its loudness is that less the gain.
+      loudness: c.replaygain_track_gain?.dB !== undefined && Number.isFinite(c.replaygain_track_gain.dB) ? -18 - c.replaygain_track_gain.dB : undefined,
       duration: meta.format.duration && Number.isFinite(meta.format.duration) ? meta.format.duration : undefined
     }
     const picture = c.picture?.[0]
