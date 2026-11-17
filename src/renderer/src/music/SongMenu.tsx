@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { MusicTags } from '../../../shared/types'
 import { focus, SONG_MENU_EVENT, trap, TRAP_CLOSE_EVENT } from '../input/focus'
 import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from './favorites'
+import { pickPlaylist } from './playlists'
+
+/** A playlist's page listens: detail is { path, action } (remove the song, or pick it up to move). */
+export const PLAYLIST_SONG_EVENT = 'steamtv:music-playlist-song'
 
 // A song's menu: the game-options button on a song's row (the Music tab's album and Liked
 // songs pages, the folder browser) opens it beside the row. Like or Unlike, and with Claude
@@ -63,6 +67,49 @@ function Menu({ row, onClose }: { row: HTMLElement; onClose: () => void }) {
       >
         {liked ? '♥ Remove from Liked songs' : '♡ Add to Liked songs'}
       </button>
+      <button
+        className="side-bar-sort-option display"
+        role="menuitem"
+        tabIndex={-1}
+        data-focusable=""
+        data-select-sound="move"
+        onClick={() => {
+          onClose()
+          pickPlaylist({ paths: [path], name: title, from: row })
+        }}
+      >
+        ＋ Add to playlist…
+      </button>
+      {row.dataset.playlistId && (
+        <>
+          <button
+            className="side-bar-sort-option display"
+            role="menuitem"
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={() => {
+              close()
+              window.dispatchEvent(new CustomEvent(PLAYLIST_SONG_EVENT, { detail: { path, action: 'move' } }))
+            }}
+          >
+            ↕ Move in this playlist
+          </button>
+          <button
+            className="side-bar-sort-option display"
+            role="menuitem"
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={() => {
+              close()
+              window.dispatchEvent(new CustomEvent(PLAYLIST_SONG_EVENT, { detail: { path, action: 'remove' } }))
+            }}
+          >
+            − Remove from this playlist
+          </button>
+        </>
+      )}
       <button
         className="side-bar-sort-option display"
         role="menuitem"

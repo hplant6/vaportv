@@ -21,6 +21,7 @@ import { MediaDetailsHost } from './components/MediaDetails'
 import { MediaTab } from './screens/MediaTab'
 import { MusicTab } from './screens/MusicTab'
 import { SongMenu } from './music/SongMenu'
+import { PlaylistPicker } from './music/PlaylistPicker'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { RepairDialog } from './components/RepairDialog'
@@ -466,6 +467,7 @@ export function App() {
       <ClaudeApp />
       <MusicApp />
       <SongMenu />
+      <PlaylistPicker />
       <SearchScreen apps={home?.allApps ?? []} logos={home?.platformLogos ?? {}} />
       <LaunchOverlay />
       <SleepPrompt />

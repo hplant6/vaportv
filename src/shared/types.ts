@@ -354,7 +354,23 @@ export interface MusicTags {
 export interface MusicAnswer {
   albums: MusicEntry[]
   songs: MusicEntry[]
-  action: 'play' | 'shuffle' | 'show'
+  /** "playlist": Claude made one (its songs, in order, and `name`), to save. */
+  action: 'play' | 'shuffle' | 'show' | 'playlist'
+  name?: string
+}
+
+/** One of your playlists, its songs found in the index. */
+export interface MusicPlaylist {
+  id: string
+  name: string
+  songs: MusicTags[]
+  /** On Home's Music row. */
+  home: boolean
+  /** Keep it fresh: made again once a day. */
+  fresh: boolean
+  /** Made from a station or by Claude, so it can be kept fresh. */
+  canFresh: boolean
+  updated: number
 }
 
 /** An album in the music index (musicIndex.ts): songs grouped by their tags, across folders and places. */
@@ -1107,6 +1123,17 @@ export interface SteamTvApi {
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */
     disliked(): Promise<string[]>
+    playlists(): Promise<MusicPlaylist[]>
+    /** A new playlist (`source`: how it was made, for Keep it fresh); its id. */
+    createPlaylist(name: string, paths: string[], source?: { seed?: string; request?: string }): Promise<string>
+    /** Songs added to its end; how many were new. */
+    addToPlaylist(id: string, paths: string[]): Promise<number>
+    removeFromPlaylist(id: string, path: string): Promise<void>
+    moveInPlaylist(id: string, from: number, to: number): Promise<void>
+    changePlaylist(id: string, change: { name?: string; home?: boolean; fresh?: boolean }): Promise<void>
+    deletePlaylist(id: string): Promise<void>
+    /** Keep it fresh: made again if due (or `now`); true if it changed. */
+    freshenPlaylist(id: string, now?: boolean): Promise<boolean>
     /** Whether Claude Code is on this box (radio and spoken requests need it). */
     claudeReady(): Promise<boolean>
     /** A radio station from a song, through Claude: the song, then songs like it from the library. Null without Claude, or if it fails. */

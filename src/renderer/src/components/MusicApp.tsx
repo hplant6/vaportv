@@ -7,6 +7,7 @@ import { play } from '../input/sounds'
 import { cycleRepeat, current, next, playAt, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
 import { FloatingCover } from '../music/FloatingCover'
 import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
+import { newPlaylist } from '../music/playlists'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
@@ -387,6 +388,13 @@ function Browser({
         setAsking(false)
         // No Claude Code here (or no answer): the names that match stand.
         if (!answer) return setNote('')
+        // "Make me a playlist of…": saved to Playlists and played.
+        if (answer.action === 'playlist' && answer.songs.length) {
+          const name = answer.name ?? heard
+          setNote(`Claude made “${name}”: ${answer.songs.length} songs, saved to Playlists`)
+          void newPlaylist(name, answer.songs.map((e) => e.path), { request: heard })
+          return playSongs(answer.songs, false)
+        }
         const n = answer.albums.length
         if (!n) return setNote(`Claude didn't find anything for that`)
         if (answer.action !== 'show' && answer.songs.length) {
@@ -1137,10 +1145,24 @@ function StationPanel({ player, liked, disliked }: { player: PlayerState; liked:
   }
   return (
     <div className="station-panel" data-focus-trap="">
-      <h2 className="station-title display">{player.station?.seed.title} radio</h2>
-      <p className="station-facts">
-        {songs.length} songs · Claude picked them · right for 👎 on a song you don't want
-      </p>
+      <div className="station-head">
+        <div className="station-head-text">
+          <h2 className="station-title display">{player.station?.seed.title} radio</h2>
+          <p className="station-facts">{songs.length} songs · Claude picked them · right for 👎 on a song you don't want</p>
+        </div>
+        <button
+          className="files-action display station-save"
+          tabIndex={-1}
+          data-focusable=""
+          data-select-sound="move"
+          onClick={() => {
+            const seed = player.station!.seed
+            void newPlaylist(`${seed.title} radio`, songs.map((s) => s.path), { seed: seed.path })
+          }}
+        >
+          Save as playlist
+        </button>
+      </div>
       <div className="station-list" ref={list} data-nav-scope="">
         {songs.map((s, position) => (
           <div key={s.path} className={`station-row${position === player.at ? ' playing' : ''}${position < player.at ? ' played' : ''}`}>

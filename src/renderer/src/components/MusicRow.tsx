@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import { useDrag } from '../input/drag'
 import { playNow, useMusicFavorites } from '../music/favorites'
+import { useMusicPlaylists } from '../music/playlists'
 import { useScrollTilt } from '../scrollTilt'
 
-// Home's Music row: Liked songs (a tile of four of their covers), then the favorite albums,
-// newest first. A plays at once: Liked songs shuffled, an album from its start; Now playing
+// Home's Music row: Liked songs (a tile of four of their covers), the playlists set to Show on
+// Home, then the favorite albums, newest first. A plays at once: Liked songs shuffled, an album from its start; Now playing
 // opens. The Favorite button on an album takes it off the row. Not there until something's liked.
 
 const CARD_W = 253.56
@@ -14,12 +15,13 @@ const VIEWPORT_W = 1848
 
 export function MusicRow() {
   const favorites = useMusicFavorites()
+  const onHome = useMusicPlaylists().filter((p) => p.home && p.songs.length)
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
   const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - VIEWPORT_W))
   useScrollTilt(track, 'x', offset, '--row-tilt')
 
-  if (!favorites.songs.length && !favorites.albums.length) return null
+  if (!favorites.songs.length && !favorites.albums.length && !onHome.length) return null
 
   const reveal = (index: number): void => {
     const left = index * (CARD_W + CARD_GAP)
@@ -28,7 +30,7 @@ export function MusicRow() {
   }
   const covers = [...new Set(favorites.songs.map((s) => s.cover).filter((c): c is string => !!c))].slice(0, 4)
   const liked = favorites.songs.length > 0
-  const at = (album: number): number => album + (liked ? 1 : 0)
+  const at = (album: number): number => album + (liked ? 1 : 0) + onHome.length
 
   return (
     <section className="card-row music-home-row">
@@ -70,6 +72,37 @@ export function MusicRow() {
             </div>
           </button>
         )}
+        {onHome.map((p, i) => {
+          const pc = [...new Set(p.songs.map((s) => s.cover).filter((c): c is string => !!c))].slice(0, 4)
+          return (
+            <button
+              key={p.id}
+              className="recent-card album-card liked-card playlist-card"
+              tabIndex={-1}
+              data-focusable=""
+              data-select-sound="move"
+              aria-label={`${p.name}, ${p.songs.length} songs`}
+              onFocus={() => reveal(i + (liked ? 1 : 0))}
+              onClick={(event) => playNow(p.songs, event.currentTarget)}
+            >
+              <div className="recent-art">
+                <span className={`music-mosaic${pc.length >= 4 ? ' four' : ''}${pc.length ? '' : ' music-no-cover'}`} aria-hidden="true">
+                  {(pc.length >= 4 ? pc : pc.slice(0, 1)).map((c) => (
+                    <img key={c} src={c} alt="" loading="lazy" />
+                  ))}
+                </span>
+              </div>
+              <div className="recent-footer">
+                <div className="recent-text">
+                  <div className="recent-title">{p.name}</div>
+                  <div className="recent-date">
+                    {p.songs.length} {p.songs.length === 1 ? 'song' : 'songs'}
+                  </div>
+                </div>
+              </div>
+            </button>
+          )
+        })}
         {favorites.albums.map((album, i) => (
           <button
             key={album.id}

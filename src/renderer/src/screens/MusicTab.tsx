@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { MusicAlbum, MusicIndexStatus, MusicPlace, MusicTags } from '../../../shared/types'
+import type { MusicAlbum, MusicIndexStatus, MusicPlace, MusicPlaylist, MusicTags } from '../../../shared/types'
 import { MUSIC_EVENT, openMusicAt } from '../components/MusicApp'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
-import { focus, focusContentDefault, trap, TRAP_CLOSE_EVENT } from '../input/focus'
+import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favorites'
+import { pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
+import { PLAYLIST_SONG_EVENT } from '../music/SongMenu'
+import { OnScreenKeyboard } from '../components/Keyboard'
+import { toast } from '../components/Toast'
 import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
 // The Music tab: the console tabs' left bar and grid, filled from the music index
 // (musicIndex.ts: every song's tags, across ~/Music, drives and shares). The bar turns Henry's
-// turntable; Genre (a drop-down under Sort) narrows Recently played, Albums and Artists, and
+// turntable; its lists are Recently played, Favorites (Liked songs, then albums), Playlists,
+// Albums, Artists and Folders; Genre (a drop-down under Sort) narrows the albums and artists, and
 // Folders (the places, opening the folder browser). A on an album opens its page (Play all,
 // Shuffle, its songs), which plays straight from the index; playing opens Now playing. Voice
 // search here (R3, a remote's Menu) asks Claude for music.
@@ -79,7 +84,7 @@ interface Artist {
 }
 
 /** An item in the grid: an album, an artist, or a place (Folders). */
-type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Artist } | { kind: 'place'; place: MusicPlace } | { kind: 'liked'; songs: MusicTags[] }
+type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Artist } | { kind: 'place'; place: MusicPlace } | { kind: 'liked'; songs: MusicTags[] } | { kind: 'playlist'; playlist: MusicPlaylist }
 
 interface MusicList extends SideList<Card> {}
 
@@ -96,7 +101,9 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [album, setAlbum] = useState<{ album: MusicAlbum; from: HTMLElement | null } | null>(null)
   const [artist, setArtist] = useState<{ artist: Artist; from: HTMLElement | null } | null>(null)
   const [likedOpen, setLikedOpen] = useState<HTMLElement | null>(null)
+  const [playlistOpen, setPlaylistOpen] = useState<{ id: string; from: HTMLElement | null } | null>(null)
   const favorites = useMusicFavorites()
+  const playlists = useMusicPlaylists()
 
   // The albums, and again as the index's scan reads more (not more than every few seconds).
   useEffect(() => {
@@ -119,6 +126,8 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       setStatus(s)
       if (!timer) timer = setTimeout(() => ((timer = null), load()), s.scanning ? 4000 : 0)
     })
+    // Playlists may have changed elsewhere (Claude made one, a station was saved).
+    void reloadPlaylists()
     // A remote's Menu searches music while the tab's up.
     window.steamtv.music.setOpen(true)
     return () => {
@@ -197,6 +206,12 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       ],
       empty: 'Press Y on an album to make it a favorite, or on a song (or in Now playing) to like it.'
     },
+    {
+      id: 'playlists',
+      name: 'Playlists',
+      items: playlists.map((p) => ({ kind: 'playlist' as const, playlist: p })),
+      empty: 'Save a radio station (its list in Now playing), add songs from their menus, or ask Claude: “make me a playlist of rainy-day jazz”.'
+    },
     { id: 'albums', name: 'Albums', items: asAlbums([...shown].sort(order)), empty: inGenre || noneYet },
     { id: 'artists', name: 'Artists', items: artists.map((a) => ({ kind: 'artist', artist: a })), empty: inGenre || noneYet },
     {
@@ -224,6 +239,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
   const openCard = (card: Card, el: HTMLElement): void => {
     if (card.kind === 'liked') setLikedOpen(el)
+    else if (card.kind === 'playlist') setPlaylistOpen({ id: card.playlist.id, from: el })
     else if (card.kind === 'album') setAlbum({ album: card.album, from: el })
     else if (card.kind === 'artist') setArtist({ artist: card.artist, from: el })
     else {
@@ -308,6 +324,16 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           }}
         />
       )}
+      {playlistOpen && (
+        <PlaylistPage
+          id={playlistOpen.id}
+          onBack={() => {
+            const from = playlistOpen.from
+            setPlaylistOpen(null)
+            if (from?.isConnected) setTimeout(() => focus(from))
+          }}
+        />
+      )}
       {album && (
         <AlbumPage
           album={album.album}
@@ -328,30 +354,34 @@ function CardGrid({ cards, memory, favorites, onOpen }: { cards: Card[]; memory:
   return (
     <div className="album-grid" data-focus-memory={memory}>
       {cards.map((card, index) => {
-        if (card.kind === 'liked') {
+        if (card.kind === 'liked' || card.kind === 'playlist') {
+          const songs = card.kind === 'liked' ? card.songs : card.playlist.songs
+          const name = card.kind === 'liked' ? 'Liked songs' : card.playlist.name
           return (
             <button
-              key="liked"
-              className="recent-card album-card liked-card"
+              key={card.kind === 'liked' ? 'liked' : card.playlist.id}
+              className={`recent-card album-card liked-card${card.kind === 'playlist' ? ' playlist-card' : ''}`}
               tabIndex={-1}
               data-focusable=""
               data-select-sound="move"
               data-index={index}
               {...(index === 0 ? { 'data-focus-default': '' } : {})}
-              aria-label={`Liked songs, ${card.songs.length} songs`}
+              aria-label={`${name}, ${songs.length} songs`}
               onClick={(event) => onOpen(card, event.currentTarget)}
             >
               <div className="recent-art">
-                <Mosaic songs={card.songs} />
-                <span className="liked-heart" aria-hidden="true">
-                  ♥
-                </span>
+                <Mosaic songs={songs} />
+                {card.kind === 'liked' && (
+                  <span className="liked-heart" aria-hidden="true">
+                    ♥
+                  </span>
+                )}
               </div>
               <div className="recent-footer">
                 <div className="recent-text">
-                  <div className="recent-title">Liked songs</div>
+                  <div className="recent-title">{name}</div>
                   <div className="recent-date">
-                    {card.songs.length} {card.songs.length === 1 ? 'song' : 'songs'}
+                    {songs.length} {songs.length === 1 ? 'song' : 'songs'}
                   </div>
                 </div>
               </div>
@@ -503,6 +533,17 @@ function AlbumPage({ album, onPlay, onBack }: { album: MusicAlbum; onPlay: (at: 
           {favorite ? '★ Favorite' : '☆ Favorite'}
         </button>
       }
+      extra2={
+        <button
+          className="files-action display"
+          tabIndex={-1}
+          data-focusable=""
+          data-select-sound="move"
+          onClick={(e) => songs && pickPlaylist({ paths: songs.map((s) => s.path), name: album.title, from: e.currentTarget })}
+        >
+          ＋ Playlist
+        </button>
+      }
       onPlay={onPlay}
       onBack={onBack}
     />
@@ -543,6 +584,9 @@ function SongsPage({
   albumArtist,
   showArtist,
   extra,
+  extra2,
+  playlistId,
+  grabbed,
   onPlay,
   onBack
 }: {
@@ -558,6 +602,11 @@ function SongsPage({
   /** Each song's artist and album under it (Liked songs). */
   showArtist?: boolean
   extra?: React.ReactNode
+  extra2?: React.ReactNode
+  /** A playlist's page: its songs' menus offer Move and Remove. */
+  playlistId?: string
+  /** The song picked up to move (A puts it down). */
+  grabbed?: string | null
   onPlay: (at: number, shuffle: boolean, el: HTMLElement) => void
   onBack: () => void
 }) {
@@ -586,6 +635,7 @@ function SongsPage({
               Shuffle
             </button>
             {extra}
+            {extra2}
           </div>
         </div>
       </div>
@@ -595,8 +645,10 @@ function SongsPage({
         {songs?.map((s, i) => (
           <button
             key={s.path}
-            className="setting-row files-row music-row"
+            className={`setting-row files-row music-row${grabbed === s.path ? ' grabbed' : ''}`}
             tabIndex={-1}
+            {...(playlistId ? { 'data-playlist-id': playlistId } : {})}
+            {...(grabbed === s.path ? { 'data-grabbed': '' } : {})}
             data-focusable=""
             data-select-sound="move"
             data-song-path={s.path}
@@ -609,6 +661,7 @@ function SongsPage({
               if (box) box.scrollTop = row.offsetTop - (box.clientHeight - row.offsetHeight) / 2
             }}
             onClick={(e) => onPlay(i, false, e.currentTarget)}
+            aria-label={grabbed === s.path ? `${s.title}: up or down to move, A to put down, B to cancel` : undefined}
           >
             <span className="music-track-no">{showArtist ? i + 1 : discs && s.track ? `${s.disc ?? 1}.${s.track}` : (s.track ?? i + 1)}</span>
             <span className="music-row-text">
@@ -628,6 +681,201 @@ function SongsPage({
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * One of your playlists: its songs (the song menu's Move and Remove work here), Play all and
+ * Shuffle, then Rename (say it or type it), Keep it fresh (a station's or Claude's: made again
+ * once a day), Show on Home, and Delete (pressed twice).
+ */
+function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
+  const playlists = useMusicPlaylists()
+  const favorites = useMusicFavorites()
+  const p = playlists.find((x) => x.id === id)
+  const [order, setOrder] = useState<MusicTags[] | null>(null)
+  const [grab, setGrab] = useState<{ path: string; from: number; before: MusicTags[] } | null>(null)
+  const [renaming, setRenaming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const songs = order ?? p?.songs ?? null
+
+  // Keep it fresh: made again when it's due, as it opens.
+  useEffect(() => {
+    if (!p?.fresh) return
+    void window.steamtv.music.freshenPlaylist(id).then((changed) => {
+      if (changed) {
+        toast(`${p.name}: fresh songs from Claude`)
+        void reloadPlaylists()
+      }
+    })
+  }, [id])
+  useEffect(() => setOrder(null), [p])
+
+  // The song menu's Remove and Move.
+  useEffect(() => {
+    const onSong = (event: Event): void => {
+      const { path, action } = (event as CustomEvent<{ path: string; action: 'move' | 'remove' }>).detail
+      const list = songs ?? []
+      if (action === 'remove') {
+        const s = list.find((x) => x.path === path)
+        void window.steamtv.music.removeFromPlaylist(id, path).then(() => {
+          toast(`Removed ${s?.title ?? 'the song'} from ${p?.name ?? 'the playlist'}`)
+          void reloadPlaylists()
+        })
+      } else {
+        const from = list.findIndex((x) => x.path === path)
+        if (from >= 0) setGrab({ path, from, before: list })
+      }
+    }
+    window.addEventListener(PLAYLIST_SONG_EVENT, onSong)
+    return () => window.removeEventListener(PLAYLIST_SONG_EVENT, onSong)
+  }, [songs, id, p])
+
+  // Picked up: up and down move it; A puts it down (saved); B puts it back.
+  useEffect(() => {
+    if (!grab) return
+    const onMove = (event: Event): void => {
+      const direction = (event as CustomEvent<Direction>).detail
+      if (direction !== 'up' && direction !== 'down') return
+      setOrder((was) => {
+        const list = [...(was ?? songs ?? [])]
+        const at = list.findIndex((x) => x.path === grab.path)
+        const to = at + (direction === 'up' ? -1 : 1)
+        if (at < 0 || to < 0 || to >= list.length) return was
+        ;[list[at], list[to]] = [list[to], list[at]]
+        return list
+      })
+    }
+    const onCancel = (): void => {
+      setOrder(grab.before)
+      setGrab(null)
+    }
+    window.addEventListener(GRAB_MOVE_EVENT, onMove)
+    window.addEventListener(GRAB_CANCEL_EVENT, onCancel)
+    return () => {
+      window.removeEventListener(GRAB_MOVE_EVENT, onMove)
+      window.removeEventListener(GRAB_CANCEL_EVENT, onCancel)
+    }
+  }, [grab, songs])
+  // The cursor stays on the song being moved, the list following it.
+  useEffect(() => {
+    if (!grab) return
+    const row = document.querySelector<HTMLElement>(`.music-page-songs [data-song-path="${CSS.escape(grab.path)}"]`)
+    if (row) {
+      focus(row)
+      row.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    }
+  }, [grab, order])
+
+  const putDown = (): void => {
+    if (!grab || !songs) return
+    const to = songs.findIndex((x) => x.path === grab.path)
+    setGrab(null)
+    if (to !== grab.from) void window.steamtv.music.moveInPlaylist(id, grab.from, to).then(() => reloadPlaylists())
+  }
+
+  if (!p) return null
+  const ago = Math.round((Date.now() - p.updated) / 3_600_000)
+  const facts = [`${p.songs.length} ${p.songs.length === 1 ? 'song' : 'songs'}`, p.fresh && `kept fresh by Claude (updated ${ago < 1 ? 'just now' : ago < 24 ? `${ago} h ago` : `${Math.round(ago / 24)} d ago`})`].filter(Boolean).join(' · ')
+  const button = (label: string, onClick: () => void, on = false) => (
+    <button className={`files-action display${on ? ' on' : ''}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
+      {label}
+    </button>
+  )
+  return (
+    <>
+      <SongsPage
+        title={p.name}
+        facts={facts}
+        cover={<Mosaic songs={p.songs} className="music-page-cover" />}
+        songs={songs}
+        liked={favorites.liked}
+        showArtist
+        playlistId={p.id}
+        grabbed={grab?.path ?? null}
+        extra={
+          <>
+            {button('Rename', () => setRenaming(true))}
+            {p.canFresh && button(p.fresh ? '✓ Keep it fresh' : 'Keep it fresh', () => void window.steamtv.music.changePlaylist(p.id, { fresh: !p.fresh }).then(() => reloadPlaylists()), p.fresh)}
+            {button(p.home ? '✓ On Home' : 'Show on Home', () => void window.steamtv.music.changePlaylist(p.id, { home: !p.home }).then(() => reloadPlaylists()), p.home)}
+            {button(deleting ? 'Press again to delete' : 'Delete', () => {
+              if (!deleting) return setDeleting(true)
+              void window.steamtv.music.deletePlaylist(p.id).then(() => {
+                toast(`Deleted ${p.name}`)
+                onBack()
+                void reloadPlaylists()
+              })
+            })}
+          </>
+        }
+        onPlay={(at, shuffle, el) => {
+          if (grab) return putDown()
+          playNow(songs ?? [], el, at, shuffle)
+        }}
+        onBack={() => {
+          if (renaming || grab) return
+          onBack()
+        }}
+      />
+      {renaming && (
+        <RenameDialog
+          name={p.name}
+          onDone={(name) => {
+            setRenaming(false)
+            if (name && name !== p.name) void window.steamtv.music.changePlaylist(p.id, { name }).then(() => reloadPlaylists())
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+/** Rename: say the new name (dictation), or type it on the on-screen keyboard. B leaves it as it was. */
+function RenameDialog({ name, onDone }: { name: string; onDone: (name: string | null) => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [typing, setTyping] = useState(false)
+  const [status, setStatus] = useState('')
+  useEffect(() => {
+    const first = box.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (first) focus(first)
+    const onBack = (): void => {
+      if (trap() === box.current) {
+        window.steamtv.stopVoice()
+        onDone(null)
+      }
+    }
+    const off = window.steamtv.onVoice((state, purpose) => {
+      if (purpose !== 'dictation') return
+      if (state.phase === 'heard') {
+        const said = state.text.trim().replace(/[.!?]+$/, '')
+        if (said) onDone(said)
+        else setStatus("Didn't catch that")
+      } else if (state.phase === 'error') setStatus(state.message)
+      else setStatus(state.phase === 'listening' ? 'Listening… say the new name' : 'Getting ready…')
+    })
+    window.addEventListener(TRAP_CLOSE_EVENT, onBack)
+    return () => {
+      off()
+      window.removeEventListener(TRAP_CLOSE_EVENT, onBack)
+    }
+  }, [])
+  return (
+    <div className="dialog-backdrop music-picker-backdrop">
+      {typing ? (
+        <OnScreenKeyboard title="Rename playlist" initial={name} onDone={(text) => onDone(text.trim() || null)} onCancel={() => setTyping(false)} />
+      ) : (
+        <div className="side-bar-sort-menu music-picker" ref={box} role="menu" data-focus-trap="" data-nav-scope="">
+          <p className="music-song-menu-title">Rename “{name}”</p>
+          <button className="side-bar-sort-option display" role="menuitem" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => window.steamtv.startVoice('dictation')}>
+            🎤 Say the new name
+          </button>
+          <button className="side-bar-sort-option display" role="menuitem" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => setTyping(true)}>
+            ⌨ Type it
+          </button>
+          {status && <p className="music-song-menu-title">{status}</p>}
+        </div>
+      )}
     </div>
   )
 }

@@ -5856,3 +5856,38 @@ button {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* Add to playlist: in the middle of the screen, over a dim. */
+.side-bar-sort-menu.music-picker {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 640px;
+  max-height: 640px;
+  background: rgba(30, 22, 10, 0.95);
+}
+
+.music-picker-backdrop {
+  z-index: 950;
+}
+
+.station-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.station-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.station-save {
+  flex: none;
+}
+
+/* A playlist's song picked up to move: outlined in gold until put down. */
+.music-row.grabbed {
+  background: var(--color-focus-tint);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}

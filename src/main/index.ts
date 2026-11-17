@@ -83,7 +83,8 @@ import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
-import { askMusic, musicRadio } from './claudeMusic'
+import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
+import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
 import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
@@ -772,6 +773,29 @@ ipcMain.handle('music:toggleAlbum', (_event, id: string) => toggleFavoriteAlbum(
 ipcMain.handle('music:claudeReady', () => !!claudeBin())
 ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))
 ipcMain.handle('music:disliked', () => dislikedPaths())
+ipcMain.handle('music:playlists', () => musicPlaylists())
+ipcMain.handle('music:createPlaylist', (_event, name: string, paths: string[], source?: { seed?: string; request?: string }) =>
+  createMusicPlaylist(String(name), Array.isArray(paths) ? paths.map(String) : [], source && { seed: source.seed && String(source.seed), request: source.request && String(source.request) })
+)
+ipcMain.handle('music:addToPlaylist', (_event, id: string, paths: string[]) => addToPlaylist(String(id), Array.isArray(paths) ? paths.map(String) : []))
+ipcMain.handle('music:removeFromPlaylist', (_event, id: string, path: string) => removeFromPlaylist(String(id), String(path)))
+ipcMain.handle('music:moveInPlaylist', (_event, id: string, from: number, to: number) => moveInPlaylist(String(id), Number(from), Number(to)))
+ipcMain.handle('music:changePlaylist', (_event, id: string, change: { name?: string; home?: boolean; fresh?: boolean }) =>
+  changePlaylist(String(id), { name: typeof change?.name === 'string' ? change.name : undefined, home: typeof change?.home === 'boolean' ? change.home : undefined, fresh: typeof change?.fresh === 'boolean' ? change.fresh : undefined })
+)
+ipcMain.handle('music:deletePlaylist', (_event, id: string) => deleteMusicPlaylist(String(id)))
+// Keep it fresh: a station's made again from its song, Claude's from its request.
+ipcMain.handle('music:freshenPlaylist', (_event, id: string, now?: boolean) =>
+  freshenPlaylist(
+    String(id),
+    async (source) => {
+      if (source.seed) return (await musicRadio(source.seed))?.map((s) => s.path) ?? null
+      if (source.request) return (await claudePlaylist(source.request))?.songs.map((s) => s.path) ?? null
+      return null
+    },
+    now === true
+  )
+)
 ipcMain.handle('music:radio', (_event, path: string) => musicRadio(String(path)))
 ipcMain.handle('music:browse', (_event, dir: string) => browseMusic(dir))
 ipcMain.handle('music:tags', (_event, paths: string[]) => musicTags(paths))
