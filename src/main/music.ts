@@ -73,8 +73,9 @@ const BUILT_IN: (MusicTrack & { url: string; kind: MusicKind })[] = [
 
 /** The included music's albums, as the library shows them: by file prefix. */
 const INCLUDED_ALBUMS = [
-  { prefix: 'builtin:zabriskie-', album: 'Ambient', albumArtist: 'Chris Zabriskie', genre: 'Ambient' },
-  { prefix: 'builtin:retro-', album: 'Retro', albumArtist: 'Various Artists', genre: 'Chiptune' }
+  // Covers by Henry, in the page's own files.
+  { prefix: 'builtin:zabriskie-', album: 'Ambient', albumArtist: 'Chris Zabriskie', genre: 'Ambient', cover: 'music/cover-ambient.jpg' },
+  { prefix: 'builtin:retro-', album: 'Retro', albumArtist: 'Various Artists', genre: 'Chiptune', cover: 'music/cover-retro.jpg' }
 ]
 
 /**
@@ -88,7 +89,7 @@ export function builtInSongs(): MusicTags[] {
     BUILT_IN.filter((t) => t.kind === 'music' && t.file.startsWith(group.prefix)).forEach((t, i) => {
       const by = t.credit?.split(' · ')[0].replace(/^Music by /, '')
       // Loudness-matched to -16 LUFS when they were encoded (see MUSIC_GAIN).
-      songs.push({ path: t.file, title: t.name, artist: by, album: group.album, albumArtist: group.albumArtist, genre: group.genre, track: i + 1, url: t.url, credit: t.credit, loudness: TARGET_LUFS })
+      songs.push({ path: t.file, title: t.name, artist: by, album: group.album, albumArtist: group.albumArtist, genre: group.genre, track: i + 1, url: t.url, cover: group.cover, credit: t.credit, loudness: TARGET_LUFS })
     })
   }
   return songs
