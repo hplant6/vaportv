@@ -216,7 +216,7 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
     })
   }
   const count = current.count ?? current.items.length
-  const title = `${open ? '' : 'Media · '}${current.name} (${count.toLocaleString()})`
+  const title = `${open ? '' : 'Video · '}${current.name} (${count.toLocaleString()})`
 
   // Near the end of what's loaded of a library: the next page.
   const onGridFocus = (event: FocusEvent<HTMLDivElement>): void => {
@@ -231,7 +231,7 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       <NavBar active="media" onNavigate={onNavigate} />
       <SideBar
         tab={SCREEN}
-        title="Media"
+        title="Video"
         lists={all}
         selected={current.id}
         open={open}

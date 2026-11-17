@@ -17,7 +17,7 @@ export function MediaPoster({ item, index, isDefault, onFocus }: { item: MediaIt
       if (!window.dispatchEvent(new CustomEvent(MEDIA_SHOW_EVENT, { detail: { source: item.source, id: item.id, title: item.title }, cancelable: true })))
         return
       // Nothing took it: not on the Media tab.
-      toast(`Open ${item.title} from the Media tab`)
+      toast(`Open ${item.title} from the Video tab`)
       return
     }
     window.dispatchEvent(new CustomEvent(MEDIA_PLAY_EVENT, { detail: { source: item.source, id: item.id } }))

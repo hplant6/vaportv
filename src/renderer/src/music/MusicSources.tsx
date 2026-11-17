@@ -5,6 +5,7 @@ import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { toast } from '../components/Toast'
 import { ToggleRow } from '../components/ToggleRow'
 import { PhoneUpload } from './PhoneUpload'
+import { AddShare } from './AddShare'
 
 // Music sources: where the library's music comes from, and how to add more. One screen with
 // two doors (the Music tab's + Add music, and Settings → Music), so there's never a question
@@ -45,6 +46,11 @@ export function MusicSources() {
   const { sources, status, reload } = useSources()
   const [copying, setCopying] = useState(false)
   const [phone, setPhone] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [removing, setRemoving] = useState<string | null>(null)
+  const [signedIn, setSignedIn] = useState<{ name: string; host: string; share: string; mounted: boolean }[]>([])
+  const reloadShares = useCallback(() => void window.steamtv.music.shares.list().then(setSignedIn).catch(() => setSignedIn([])), [])
+  useEffect(() => reloadShares(), [reloadShares])
   const here = sources?.find((s) => s.kind === 'folder')
   const drives = sources?.filter((s) => s.kind === 'drive') ?? []
   const shares = sources?.filter((s) => s.kind === 'network') ?? []
@@ -94,15 +100,31 @@ export function MusicSources() {
           {shares.map((s) => (
             <ToggleRow key={s.path} label={s.name} detail={s.included ? counts(s) : 'Left out'} on={s.included} onToggle={() => include(s)} />
           ))}
-          <ActionRow label="Add a network share" detail="Signing in to a share here is coming next" onSelect={() => toast('Signing in to a network share from here is coming next')} />
+          <ActionRow label="Add a network share" detail="Sign in to a computer or NAS on your network" onSelect={() => setAdding(true)} />
+          {signedIn.map((s) => (
+            <ActionRow
+              key={s.name}
+              label={`Remove ${s.share} on ${s.host}`}
+              detail={removing === s.name ? 'Press again to remove' : s.mounted ? 'Signed in from vaporTV' : "Signed in from vaporTV · can't reach it now"}
+              onSelect={() => {
+                if (removing !== s.name) return setRemoving(s.name)
+                setRemoving(null)
+                void window.steamtv.music.shares.remove(s.name).then(() => {
+                  toast(`Removed ${s.share} on ${s.host}`)
+                  reloadShares()
+                  reload()
+                })
+              }}
+            />
+          ))}
         </>,
         'music-sources-shares'
       )}
       {group(
         'Your media server',
         servers.length
-          ? 'Music from Emby or Jellyfin, signed in to for the Media tab: played from the server, with your own.'
-          : 'Signed in to Emby or Jellyfin (Settings → Media)? Its music shows up here, and in your library, once the server has a music library.',
+          ? 'Music from Emby or Jellyfin, signed in to for the Video tab: played from the server, with your own.'
+          : 'Sign in to Emby or Jellyfin in Settings → General (Connect your media library): its music shows up here, and in your library, once the server has a music library.',
         servers.map((s) =>
           s.libraries === 0 ? (
             <ActionRow key={s.path} label={s.name} detail="No music library on this server yet" onSelect={() => toast(`Add a music library on ${s.name}, then look for new music here`)} />
@@ -117,6 +139,17 @@ export function MusicSources() {
         'vaporTV looks for new music when the Music tab opens, and every so often.',
         <ActionRow label="Look for new music now" detail={reading || 'Reads every source again'} onSelect={() => void window.steamtv.music.rescan()} />,
         'music-sources-rescan'
+      )}
+      {adding && (
+        <AddShare
+          onClose={(added) => {
+            setAdding(false)
+            if (added) {
+              reloadShares()
+              reload()
+            }
+          }}
+        />
       )}
       {phone && (
         <PhoneUpload

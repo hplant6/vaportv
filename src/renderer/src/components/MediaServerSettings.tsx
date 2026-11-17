@@ -114,7 +114,7 @@ export function MediaServerSettings() {
     <div className="settings-group">
       <h3 className="settings-heading display">Connect your media library</h3>
       <p className="settings-help">
-        Sign in to your Emby or Jellyfin server to watch your films and shows in vaporTV. They get their own Media tab, and what you’re
+        Sign in to your Emby or Jellyfin server to watch your films and shows in vaporTV. They get their own Video tab, and what you’re
         part way through shows on Home under Continue watching, ready to pick up where you left off.
       </p>
       <div className="setting-list" data-focus-memory="settings-media-servers">

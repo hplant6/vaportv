@@ -1159,6 +1159,15 @@ export interface SteamTvApi {
     copyMusic(path: string): Promise<string>
     /** Reads every place again now. */
     rescan(): Promise<void>
+    /** Network shares signed in to from vaporTV (rclone mounts, no root). */
+    shares: {
+      list(): Promise<{ name: string; host: string; share: string; user: string; mounted: boolean }[]>
+      /** A computer's shares, signed in to with these (rclone fetched the first time). */
+      find(signIn: { host: string; user: string; password: string }): Promise<string[]>
+      /** Signs in, mounts it under ~/Network; its folder's name. */
+      add(signIn: { host: string; user: string; password: string; share: string }): Promise<string>
+      remove(name: string): Promise<void>
+    }
     /** Send from your phone: the page on (its events follow) or off. */
     phone(on: boolean): void
     onPhone(callback: (event: { phase: 'ready'; url: string } | { phase: 'received'; name: string; count: number } | { phase: 'stopped'; message?: string }) => void): () => void
@@ -1171,6 +1180,8 @@ export interface SteamTvApi {
     moveInPlaylist(id: string, from: number, to: number): Promise<void>
     changePlaylist(id: string, change: { name?: string; home?: boolean; fresh?: boolean }): Promise<void>
     deletePlaylist(id: string): Promise<void>
+    /** Saved as ~/Music/Playlists/<name>.m3u8 for other players; where, and how many songs. */
+    exportPlaylist(id: string): Promise<{ file: string; songs: number }>
     /** Keep it fresh: made again if due (or `now`); true if it changed. */
     freshenPlaylist(id: string, now?: boolean): Promise<boolean>
     /** Whether Claude Code is on this box (radio and spoken requests need it). */

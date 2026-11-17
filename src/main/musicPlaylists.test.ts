@@ -35,3 +35,19 @@ describe('music playlists', () => {
     expect(await m.musicPlaylists()).toEqual([])
   })
 })
+
+describe('saving a playlist as a file', () => {
+  it('writes an m3u8 other players read, relative under ~/Music, and lists it once', async () => {
+    const m = await import('./musicPlaylists')
+    const { readFile } = await import('node:fs/promises')
+    const id = await m.createPlaylist('Road/trip', [join(home, 'Music', 'Album', '01.flac'), '/srv/share/02.mp3', 'builtin:zabriskie-x'])
+    const r = await m.exportPlaylist(id)
+    expect(r.file).toBe(join(home, 'Music', 'Playlists', 'Road trip.m3u8'))
+    expect(r.songs).toBe(2)
+    const text = await readFile(r.file, 'utf8')
+    expect(text).toContain('../Album/01.flac')
+    expect(text).toContain('/srv/share/02.mp3')
+    expect(text).not.toContain('builtin:')
+    expect((await m.musicPlaylists()).filter((p) => p.name.startsWith('Road'))).toHaveLength(1)
+  })
+})

@@ -204,7 +204,7 @@ function MediaDetails({ source, id, start, onClose }: { source: string; id: stri
           onClose()
           // Its page opens on the Media tab; anywhere else there's nothing to open it in.
           if (window.dispatchEvent(new CustomEvent(MEDIA_SHOW_EVENT, { detail: { source, id, title: item.title }, cancelable: true })))
-            toast(`Open ${item.title} from the Media tab`)
+            toast(`Open ${item.title} from the Video tab`)
         })}
       {partWay && row('Resume', item.remainingMinutes ? `${length(item.remainingMinutes)} left` : '', () => playIt(false))}
       {!show && row(partWay ? 'Play from the start' : 'Play', item.runtimeMinutes ? length(item.runtimeMinutes) : '', () => playIt(true))}

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { basename, dirname, extname, join } from 'node:path'
+import { basename, dirname, extname, join, relative } from 'node:path'
 import type { MusicPlaylist, MusicTags } from '../shared/types'
 import { sameSong } from './musicFavorites'
 import { indexedSong, librarySongs } from './musicIndex'
@@ -132,6 +132,8 @@ async function filePlaylists(all: MusicTags[]): Promise<MusicPlaylist[]> {
   const out: MusicPlaylist[] = []
   for (const file of files) {
     const text = await readFile(file, 'utf8').catch(() => '')
+    // One vaporTV wrote from a playlist of yours: that playlist's already listed.
+    if (text.includes(MARK)) continue
     const songs: MusicTags[] = []
     for (const p of parseM3u(text, file)) {
       const s = byPath.get(p) ?? t3.get(tail(p, 3)) ?? t2.get(tail(p, 2)) ?? t1.get(tail(p, 1))
@@ -227,4 +229,30 @@ export async function freshenPlaylist(id: string, make: (source: NonNullable<Sav
   p.updated = Date.now()
   await save()
   return true
+}
+
+/** Written playlist files carry this line, so they aren't listed again as playlist files of their own. */
+const MARK = '#VAPORTV-PLAYLIST:'
+
+/**
+ * A playlist saved as a file other players read (~/Music/Playlists/<name>.m3u8), written again
+ * each time: titles and lengths for each song, paths relative to the file for songs under
+ * ~/Music (the folder can be copied elsewhere), full paths for a share's. Songs that aren't
+ * files (a media server's, the included ones) are left out. Returns where it went and how many.
+ */
+export async function exportPlaylist(id: string): Promise<{ file: string; songs: number }> {
+  const p = (await musicPlaylists()).find((x) => x.id === id && !x.file)
+  if (!p) throw new Error('That playlist is gone')
+  const music = join(homedir(), 'Music')
+  const folder = join(music, 'Playlists')
+  const file = join(folder, `${p.name.replace(/[/\\:*?"<>|]+/g, ' ').trim() || 'Playlist'}.m3u8`)
+  const files = p.songs.filter((s) => s.path.startsWith('/'))
+  const lines = ['#EXTM3U', `${MARK}${p.id}`]
+  for (const s of files) {
+    lines.push(`#EXTINF:${Math.round(s.duration ?? -1)},${s.artist ? `${s.artist} - ` : ''}${s.title}`)
+    lines.push(s.path.startsWith(music + '/') ? relative(folder, s.path) : s.path)
+  }
+  await mkdir(folder, { recursive: true })
+  await writeFile(file, lines.join('\n') + '\n')
+  return { file, songs: files.length }
 }

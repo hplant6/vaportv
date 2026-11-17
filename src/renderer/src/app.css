@@ -6006,3 +6006,12 @@ button {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.add-share .setting-list {
+  margin-bottom: 16px;
+}
+
+.add-share-error {
+  margin: 0 0 12px;
+  color: #ff8a7a;
+}

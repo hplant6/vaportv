@@ -855,6 +855,12 @@ function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
             {p.canFresh && button(p.fresh ? '✓ Keep it fresh' : 'Keep it fresh', () => void window.steamtv.music.changePlaylist(p.id, { fresh: !p.fresh }).then(() => reloadPlaylists()), p.fresh)}
             {button(p.home ? '✓ On Home' : 'Show on Home', () => void window.steamtv.music.changePlaylist(p.id, { home: !p.home }).then(() => reloadPlaylists()), p.home)}
             <BackgroundButton choice={`playlist:${p.id}`} name={p.name} />
+            {button('Save as a playlist file', () =>
+              void window.steamtv.music.exportPlaylist(p.id).then(
+                (r) => toast(`Saved ${r.songs} songs to ${r.file.replace(/^\/home\/[^/]+/, '~')}`),
+                () => toast(`Couldn't save ${p.name} as a file`)
+              )
+            )}
             {button(deleting ? 'Press again to delete' : 'Delete', () => {
               if (!deleting) return setDeleting(true)
               void window.steamtv.music.deletePlaylist(p.id).then(() => {

@@ -86,7 +86,8 @@ import { browseMusic, copyMusic, excludedPlaces, readTags, includePlace, MUSIC_C
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { backgroundSongs } from './backgroundMusic'
 import { startPhoneUpload, stopPhoneUpload } from './phoneUpload'
-import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
+import { addShare, findShares, listShares, mountShares, removeShare, type ShareSignIn } from './shares'
+import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, exportPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
 import { albumSongs, freshenMusic, hasOwnMusic, serverMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
@@ -162,6 +163,8 @@ ipcMain.on('voice:finish', () => finishListening())
 let claudeOpen = false
 // The music index: how its scan goes, to the window; and a first scan a minute after starting, in the background.
 setMusicIndexListener((status) => toWindow('music:index', status))
+// Shares signed in to from vaporTV mounted again first, so the scan finds them.
+void mountShares(logInput).catch(() => {})
 setTimeout(() => freshenMusic(), 60_000)
 /** The Music tab or the Music screen is up (counted: the screen opens over the tab): a remote's Menu searches music (through Claude) instead. */
 let musicOpens = 0
@@ -810,6 +813,18 @@ ipcMain.handle('music:copy', async (_event, path: string) => {
   return to
 })
 ipcMain.handle('music:rescan', () => void scanMusic().catch(() => {}))
+// Network shares signed in to from vaporTV (rclone, no root): find a computer's shares, add one, remove one.
+ipcMain.handle('shares:list', () => listShares())
+ipcMain.handle('shares:find', (_event, s: ShareSignIn) => findShares({ host: String(s.host), user: String(s.user), password: String(s.password) }, logInput))
+ipcMain.handle('shares:add', async (_event, s: ShareSignIn & { share: string }) => {
+  const name = await addShare({ host: String(s.host), user: String(s.user), password: String(s.password), share: String(s.share) }, logInput)
+  void scanMusic().catch(() => {})
+  return name
+})
+ipcMain.handle('shares:remove', async (_event, name: string) => {
+  await removeShare(String(name), logInput)
+  void scanMusic().catch(() => {})
+})
 // Send from your phone: the page runs while its screen is open; songs received are read in a moment after the last.
 let phoneScan: NodeJS.Timeout | null = null
 ipcMain.on('music:phone', (event, on: boolean) => {
@@ -831,6 +846,7 @@ ipcMain.handle('music:changePlaylist', (_event, id: string, change: { name?: str
   changePlaylist(String(id), { name: typeof change?.name === 'string' ? change.name : undefined, home: typeof change?.home === 'boolean' ? change.home : undefined, fresh: typeof change?.fresh === 'boolean' ? change.fresh : undefined })
 )
 ipcMain.handle('music:deletePlaylist', (_event, id: string) => deleteMusicPlaylist(String(id)))
+ipcMain.handle('music:exportPlaylist', (_event, id: string) => exportPlaylist(String(id)))
 // Keep it fresh: a station's made again from its song, Claude's from its request.
 ipcMain.handle('music:freshenPlaylist', (_event, id: string, now?: boolean) =>
   freshenPlaylist(

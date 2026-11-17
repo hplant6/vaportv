@@ -269,6 +269,12 @@ const api: SteamTvApi = {
     includePlace: (path, on) => ipcRenderer.invoke('music:includePlace', path, on),
     copyMusic: (path) => ipcRenderer.invoke('music:copy', path),
     rescan: () => ipcRenderer.invoke('music:rescan'),
+    shares: {
+      list: () => ipcRenderer.invoke('shares:list'),
+      find: (signIn) => ipcRenderer.invoke('shares:find', signIn),
+      add: (signIn) => ipcRenderer.invoke('shares:add', signIn),
+      remove: (name) => ipcRenderer.invoke('shares:remove', name)
+    },
     phone: (on) => ipcRenderer.send('music:phone', on),
     onPhone: (callback) => {
       const listener = (_event: unknown, state: Parameters<typeof callback>[0]): void => callback(state)
@@ -282,6 +288,7 @@ const api: SteamTvApi = {
     moveInPlaylist: (id, from, to) => ipcRenderer.invoke('music:moveInPlaylist', id, from, to),
     changePlaylist: (id, change) => ipcRenderer.invoke('music:changePlaylist', id, change),
     deletePlaylist: (id) => ipcRenderer.invoke('music:deletePlaylist', id),
+    exportPlaylist: (id) => ipcRenderer.invoke('music:exportPlaylist', id),
     freshenPlaylist: (id, now) => ipcRenderer.invoke('music:freshenPlaylist', id, now),
     toggleDislike: (path) => ipcRenderer.invoke('music:toggleDislike', path),
     disliked: () => ipcRenderer.invoke('music:disliked'),

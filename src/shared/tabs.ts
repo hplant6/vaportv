@@ -10,7 +10,8 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'steam', label: 'Steam' },
   { id: 'apps', label: 'Apps' },
-  { id: 'media', label: 'Media' },
+  // Video (its id stays media: saved tab layouts and playlists use it).
+  { id: 'media', label: 'Video' },
   { id: 'music', label: 'Music' },
   { id: 'switch', label: 'Switch' },
   { id: 'ps3', label: 'PS3' },
