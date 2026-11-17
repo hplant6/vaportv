@@ -82,7 +82,9 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags } from './musicLibrary'
+import { browseMusic, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
+import { askMusic } from './claudeMusic'
+import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -154,6 +156,14 @@ ipcMain.on('voice:finish', () => finishListening())
 
 // The Claude app. While its screen is open, replies are spoken and a remote's Menu talks to it.
 let claudeOpen = false
+// The music index: how its scan goes, to the window; and a first scan a minute after starting, in the background.
+setMusicIndexListener((status) => toWindow('music:index', status))
+setTimeout(() => freshenMusic(), 60_000)
+/** The Music app's screen is up: a remote's Menu searches music (through Claude) instead. */
+let musicOpen = false
+ipcMain.on('music:open', (_event, open: boolean) => {
+  musicOpen = open === true
+})
 const toWindow = (channel: string, ...args: unknown[]): void => {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
 }
@@ -744,10 +754,20 @@ ipcMain.handle('files:browse', async (_event, dir: string | null, kind: BrowseKi
   browseFiles(dir, kind, kind === 'all' ? [] : [musicFolder(await loadConfig()), BACKDROP_FOLDER])
 )
 ipcMain.handle('files:open', (_event, path: string) => openFile(path))
-ipcMain.handle('music:places', () => musicPlaces())
+ipcMain.handle('music:places', () => {
+  // Opening the app: start walking the places' names now, for search and Claude, and read new songs' tags into the index.
+  void warmMusicIndex().catch(() => {})
+  freshenMusic()
+  return musicPlaces()
+})
+ipcMain.handle('music:albums', () => libraryAlbums())
+ipcMain.handle('music:albumSongs', (_event, id: string) => albumSongs(String(id)))
+ipcMain.handle('music:indexStatus', () => musicIndexStatus())
 ipcMain.handle('music:browse', (_event, dir: string) => browseMusic(dir))
 ipcMain.handle('music:tags', (_event, paths: string[]) => musicTags(paths))
 ipcMain.handle('music:folders', (_event, paths: string[]) => musicFolders(paths))
+ipcMain.handle('music:search', (_event, query: string) => searchMusic(String(query)))
+ipcMain.handle('music:ask', (_event, heard: string) => askMusic(String(heard)))
 ipcMain.handle('files:paste', (event, source: string, folder: string, move: boolean) =>
   pasteFile(source, folder, move, (percent) => {
     if (!event.sender.isDestroyed()) event.sender.send('files:pasteProgress', percent)
@@ -1113,7 +1133,7 @@ app.whenReady().then(async () => {
       tap: async () => {
         if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
         if (claudeOpen) return send('claude:talk')
-        listen((state, why) => send('voice', state, why), logInput)
+        listen((state, why) => send('voice', state, why), logInput, musicOpen ? 'music' : 'search')
       },
       hold: async () => {
         if (await foreground.ownInFront()) send('menu:held')

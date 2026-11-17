@@ -27,6 +27,8 @@ const MIN_SPEECH_MS = 150
 const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; maxMs: number; overNoiseDb: number }> = {
   // After speaking, endSilenceMs of quiet ends it; nothing said in noSpeechMs gives up.
   search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000, overNoiseDb: 12 },
+  // Searching the Music app: as search.
+  music: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000, overNoiseDb: 12 },
   dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000, overNoiseDb: 12 },
   // Talking to Claude from the sofa: quieter speech counts, and a pause to think mid-sentence shouldn't end it.
   conversation: { endSilenceMs: 2200, noSpeechMs: 10_000, maxMs: 60_000, overNoiseDb: 8 }

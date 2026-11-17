@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ClaudeEvent, ClaudeLoginState, GooglePhotosProgress, SteamTvApi, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
+import type { ClaudeEvent, ClaudeLoginState, GooglePhotosProgress, MusicIndexStatus, SteamTvApi, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
 
 const api: SteamTvApi = {
   getHome: () => ipcRenderer.invoke('home:get'),
@@ -252,7 +252,18 @@ const api: SteamTvApi = {
     places: () => ipcRenderer.invoke('music:places'),
     browse: (dir) => ipcRenderer.invoke('music:browse', dir),
     tags: (paths) => ipcRenderer.invoke('music:tags', paths),
-    folders: (paths) => ipcRenderer.invoke('music:folders', paths)
+    folders: (paths) => ipcRenderer.invoke('music:folders', paths),
+    search: (query) => ipcRenderer.invoke('music:search', query),
+    ask: (heard) => ipcRenderer.invoke('music:ask', heard),
+    setOpen: (open) => ipcRenderer.send('music:open', open),
+    albums: () => ipcRenderer.invoke('music:albums'),
+    albumSongs: (id) => ipcRenderer.invoke('music:albumSongs', id),
+    indexStatus: () => ipcRenderer.invoke('music:indexStatus'),
+    onIndex: (callback) => {
+      const listener = (_event: unknown, status: MusicIndexStatus): void => callback(status)
+      ipcRenderer.on('music:index', listener)
+      return () => void ipcRenderer.removeListener('music:index', listener)
+    }
   },
   claude: {
     status: () => ipcRenderer.invoke('claude:status'),

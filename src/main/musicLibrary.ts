@@ -25,11 +25,10 @@ const SYSTEM_FOLDERS = /^(@|#recycle$|\$recycle\.bin$|system volume information$
 /** Songs read at once: shares are slow to open a file, and the list shows a screenful at a time. */
 const READ_AT_ONCE = 4
 
-/** Where to start: ~/Music, the shares, then the drives. */
+/** Where to look: the shares, the drives, then ~/Music (as "vaporTV Music"). */
 export async function musicPlaces(): Promise<MusicPlace[]> {
   const places: MusicPlace[] = []
   const music = join(homedir(), 'Music')
-  if (existsSync(music)) places.push({ name: 'Music', path: music, kind: 'folder' })
   for (const entry of await readdir(NETWORK_DIR, { withFileTypes: true }).catch(() => [])) {
     if (entry.isDirectory() && !entry.name.startsWith('.')) places.push({ name: entry.name.replace(/[-_]+/g, ' '), path: join(NETWORK_DIR, entry.name), kind: 'network' })
   }
@@ -38,6 +37,8 @@ export async function musicPlaces(): Promise<MusicPlace[]> {
       if (entry.isDirectory() && !entry.name.startsWith('.')) places.push({ name: entry.name, path: join(parent, entry.name), kind: 'drive' })
     }
   }
+  // vaporTV's own music folder goes last, after the shares and drives.
+  if (existsSync(music)) places.push({ name: 'vaporTV Music', path: music, kind: 'folder' })
   return places
 }
 
@@ -103,7 +104,7 @@ function folderCover(dir: string): Promise<string | undefined> {
 }
 
 /** One song's tags (from its file, or its name when it has none), and its cover if it or its folder has one. */
-async function readTags(path: string): Promise<MusicTags> {
+export async function readTags(path: string): Promise<MusicTags> {
   const cached = tagCache.get(path)
   if (cached) return cached
   let tags: MusicTags = { path, title: titleFromName(path) }
@@ -116,7 +117,11 @@ async function readTags(path: string): Promise<MusicTags> {
       title: c.title?.trim() || titleFromName(path),
       artist: c.artist?.trim() || c.albumartist?.trim() || undefined,
       album: c.album?.trim() || undefined,
+      albumArtist: c.albumartist?.trim() || undefined,
       track: c.track?.no ?? undefined,
+      disc: c.disk?.no ?? undefined,
+      year: c.year ?? undefined,
+      genre: c.genre?.map((g) => g.trim()).find(Boolean),
       duration: meta.format.duration && Number.isFinite(meta.format.duration) ? meta.format.duration : undefined
     }
     const picture = c.picture?.[0]
@@ -187,10 +192,16 @@ function readFolder(dir: string): Promise<MusicFolder> {
         const tags = await readTags(song)
         if (tags.album) card.title = tags.album
         if (tags.artist) card.artist = tags.artist
+        if (tags.year) card.year = tags.year
+        if (tags.genre) card.genre = tags.genre
         card.cover = tags.cover
+      } else if (folder) {
+        // An artist's folder: their first album's cover and genre.
+        const first = await readFolder(folder)
+        card.cover = (await folderCover(dir)) ?? first.cover
+        if (first.genre) card.genre = first.genre
       } else {
         card.cover = await folderCover(dir)
-        if (!card.cover && folder) card.cover = (await readFolder(folder)).cover
       }
       return card
     })().catch(() => ({ path: dir, ...splitFolderName(basename(dir)) }))
@@ -205,4 +216,104 @@ export async function musicFolders(paths: string[]): Promise<MusicFolder[]> {
     paths.map((p) => resolve(p)).filter((p) => allowed(p)),
     readFolder
   )
+}
+
+/** Searching walks this deep into a place, and stops at this many folders and songs. */
+const SEARCH_DEPTH = 6
+const SEARCH_MOST = 40_000
+/** A place's names are walked once, and walked again after this long (music gets added). */
+const INDEX_MS = 5 * 60_000
+/** At most this many of each come back. */
+const FOUND_FOLDERS = 60
+const FOUND_SONGS = 100
+
+export interface Indexed {
+  entry: MusicEntry
+  /** Its path from the place, folded for matching. */
+  where: string
+  /** Its own name, folded. */
+  own: string
+  /** A folder: whether songs are right in it (an album, not an artist's folder of them). */
+  album?: boolean
+}
+
+const indexes = new Map<string, { at: number; names: Promise<Indexed[]> }>()
+
+/** "Beyoncé" and "beyonce" match: lower case, accents off. */
+export function fold(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+}
+
+/** Every folder and song name in a place (not their tags: a share would take minutes). */
+async function walk(root: string): Promise<Indexed[]> {
+  const out: Indexed[] = []
+  const visit = async (dir: string, depth: number, self?: Indexed): Promise<void> => {
+    if (out.length >= SEARCH_MOST) return
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+    const inner: Indexed[] = []
+    for (const e of entries) {
+      if (SYSTEM_FOLDERS.test(e.name) || out.length >= SEARCH_MOST) continue
+      const path = join(dir, e.name)
+      let isDir = e.isDirectory()
+      let isFile = e.isFile()
+      if (!isDir && !isFile) {
+        const info = await stat(path).catch(() => null)
+        isDir = !!info?.isDirectory()
+        isFile = !!info?.isFile()
+      }
+      const where = fold(path.slice(root.length + 1))
+      if (isDir) {
+        const folder: Indexed = { entry: { name: e.name, path, kind: 'folder' }, where, own: fold(e.name) }
+        out.push(folder)
+        inner.push(folder)
+      } else if (isFile && AUDIO.test(e.name)) {
+        out.push({ entry: { name: e.name, path, kind: 'track' }, where, own: fold(basename(e.name, extname(e.name))) })
+        if (self) self.album = true
+      }
+    }
+    if (depth < SEARCH_DEPTH) for (const d of inner) await visit(d.entry.path, depth + 1, d)
+  }
+  await visit(root, 1)
+  return out
+}
+
+/** A place's names, walked again when they're older than INDEX_MS. */
+export function indexOf(root: string): Promise<Indexed[]> {
+  let index = indexes.get(root)
+  if (!index || Date.now() - index.at > INDEX_MS) {
+    index = { at: Date.now(), names: walk(root) }
+    indexes.set(root, index)
+  }
+  return index.names
+}
+
+/** Starts walking every place (opening the app does), so the first search doesn't wait for a share. */
+export async function warmMusicIndex(): Promise<void> {
+  for (const place of await musicPlaces()) void indexOf(resolve(place.path))
+}
+
+/**
+ * Folders and songs in every place whose names match: every word somewhere in its path from
+ * the place ("aphex syro" finds Aphex Twin/Syro), and at least one in its own name (so "aphex"
+ * finds the artist's folder, not every song inside it). Folders first, then songs, each in name order.
+ */
+export async function searchMusic(query: string): Promise<MusicEntry[]> {
+  const words = fold(query).split(/\s+/).filter(Boolean)
+  if (!words.length) return []
+  const all = (await Promise.all((await musicPlaces()).map((p) => indexOf(resolve(p.path))))).flat()
+  const found = all.filter((i) => words.every((w) => i.where.includes(w)) && words.some((w) => i.own.includes(w)))
+  const named = (a: Indexed, b: Indexed): number => byName.compare(a.entry.name, b.entry.name)
+  const folders = found.filter((i) => i.entry.kind === 'folder').sort(named).slice(0, FOUND_FOLDERS)
+  const songs = found.filter((i) => i.entry.kind === 'track').sort(named).slice(0, FOUND_SONGS)
+  return [...folders, ...songs].map((i) => i.entry)
+}
+
+/** Every album (a folder with songs right in it) in every place, as "Artist/Album" from its place, for Claude to choose from. */
+export async function musicAlbums(): Promise<{ entry: MusicEntry; where: string }[]> {
+  const out: { entry: MusicEntry; where: string }[] = []
+  for (const place of await musicPlaces()) {
+    const root = resolve(place.path)
+    for (const i of await indexOf(root)) if (i.album) out.push({ entry: i.entry, where: i.entry.path.slice(root.length + 1) })
+  }
+  return out
 }

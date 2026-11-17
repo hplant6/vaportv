@@ -3267,7 +3267,9 @@ button {
 
 .search-apps {
   display: flex;
-  gap: 54px;
+  flex-wrap: wrap;
+  column-gap: 54px;
+  row-gap: 48px;
   padding: 24px 0 48px;
 }
 
@@ -5070,7 +5072,10 @@ button {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 34px;
   row-gap: 40px;
-  padding: 32px 14px 32px;
+  /* The list scrolls, so it clips sideways: room either side for a selected card grown by
+     --focus-scale (a tenth of a card each side) and tipped toward the edge. The list's own 12px
+     makes up the right. */
+  padding: 32px 30px 32px 42px;
 }
 
 .music-card.recent-card {
@@ -5115,8 +5120,10 @@ button {
 /* The grid's order (A–Z, Artist, Recently added): the chosen one lit. */
 .music-sorts {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-  padding: 18px 14px 0;
+  /* Lined up with the grid's first column. */
+  padding: 18px 30px 0 42px;
 }
 
 .files-action.music-sort.on {
@@ -5377,4 +5384,127 @@ button {
   font-family: var(--font-body);
   font-size: var(--text-large);
   opacity: 0.7;
+}
+
+/* ── Music app: hiding the places (L2), search, Genre ─────────── */
+
+/* L2 slides the places away and the pane takes the width: seven covers across instead of five. */
+.music-app .files-sidebar {
+  transition:
+    transform 675ms var(--ease-focus),
+    opacity 675ms var(--ease-focus),
+    visibility 0s;
+}
+
+.music-app.bar-hidden .files-sidebar {
+  transform: translateX(-60px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 675ms var(--ease-focus),
+    opacity 675ms var(--ease-focus),
+    visibility 0s 675ms;
+}
+
+.music-app .files-pane {
+  transition: left 675ms var(--ease-focus);
+}
+
+.music-app.bar-hidden .files-pane {
+  left: 36px;
+}
+
+.music-app.bar-hidden .files-group {
+  border-radius: 18px;
+}
+
+.music-app.bar-hidden .music-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+/* Search, over the filters: the mic, what's typed or heard, Type (and Clear). Smaller than the Search screen's. */
+.music-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 30px 0 42px;
+}
+
+.search-mic.music-mic {
+  width: 72px;
+  height: 72px;
+}
+
+.search-mic.music-mic svg {
+  width: 34px;
+  height: 34px;
+}
+
+.search-field.music-field {
+  height: 72px;
+  padding: 0 28px;
+  border-radius: 36px;
+  font-size: var(--text-large);
+}
+
+.search-type.music-type {
+  height: 72px;
+  padding: 0 34px;
+}
+
+.music-search-status {
+  flex: none;
+  margin: 12px 0 0;
+  padding: 0 30px 0 42px;
+}
+
+/* Claude working out a spoken request: the line breathes. */
+.music-search-status.asking {
+  color: var(--color-accent);
+  animation: music-asking 1s ease-in-out infinite alternate;
+}
+
+@keyframes music-asking {
+  to {
+    opacity: 0.45;
+  }
+}
+
+.music-sorts {
+  align-items: center;
+}
+
+/* Genre: the console tabs' Sort drop-down, in the filter row. */
+.music-genre {
+  position: relative;
+  flex: none;
+}
+
+.side-bar-sort-button.music-genre-button {
+  width: auto;
+  min-width: 260px;
+  gap: 24px;
+}
+
+.side-bar-sort-button.music-genre-button.on {
+  color: var(--color-accent);
+}
+
+.side-bar-sort-menu.music-genre-menu {
+  width: 380px;
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: rgba(30, 22, 10, 0.85);
+}
+
+.music-genre-none {
+  margin: 0;
+  padding: 0 24px;
+}
+
+/* Claude's albums: Play all and Shuffle over them. */
+.music-actions.music-picked-actions {
+  padding: 10px 30px 0 42px;
 }

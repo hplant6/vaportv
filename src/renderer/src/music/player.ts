@@ -98,14 +98,15 @@ async function load(at: number, autoplay = true): Promise<void> {
   musicAnalyser()
   try {
     const url = await window.steamtv.openFile(song.path)
-    if (current() !== song) return
+    // Another song since (its tags filling in doesn't count).
+    if (current()?.path !== song.path) return
     audio.src = url
     if (autoplay) await audio.play()
   } catch (err) {
     console.error('steamtv: music:', err)
     set({ loading: false })
     // One that won't open is skipped (a share that dropped, a file gone).
-    if (current() === song) void next(true)
+    if (current()?.path === song.path) void next(true)
   }
 }
 
@@ -116,6 +117,14 @@ export function playQueue(songs: MusicTags[], start = 0): void {
   const order = state.shuffle ? shuffled(songs.length, start) : songs.map((_, i) => i)
   state = { ...state, queue: songs, order }
   void load(state.shuffle ? 0 : start)
+}
+
+/** Songs' tags read after they were queued (a request through Claude queues names first): the queue keeps its order. */
+export function updateTags(got: MusicTags[]): void {
+  if (!got.length) return
+  const byPath = new Map(got.map((t) => [t.path, t]))
+  if (!state.queue.some((t) => byPath.has(t.path))) return
+  set({ queue: state.queue.map((t) => byPath.get(t.path) ?? t) })
 }
 
 export function toggle(): void {

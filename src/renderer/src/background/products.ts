@@ -78,6 +78,11 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     shiftDown: -0.04,
     bloom: false
   },
+  // The Music tab (to come): Henry's vinyl turntable, its record on the platter. Not tuned yet:
+  // two mirror-bright white metals (Material.004, .011) may need darkening for the floor's reflection.
+  music: {
+    model: 'private/music.vtm'
+  },
   steam: {
     model: 'private/steamdeck.vtm',
     // A Steam Deck: long and thin, so it looks small at the others' distance, and flat, so it sits high.

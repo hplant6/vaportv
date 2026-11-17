@@ -294,7 +294,7 @@ export interface BugReport {
 }
 
 /** What voice is listening for: a search (a few words, the library's names expected) or dictation (sentences). */
-export type VoicePurpose = 'search' | 'dictation' | 'conversation'
+export type VoicePurpose = 'search' | 'dictation' | 'conversation' | 'music'
 
 /** The Claude app's view of what it needs: Claude Code installed, speech built in, a conversation going, a reply on its way. */
 export interface ClaudeStatus {
@@ -337,10 +337,52 @@ export interface MusicTags {
   title: string
   artist?: string
   album?: string
+  /** The album's artist, when its tags name one (a compilation's "Various Artists"). */
+  albumArtist?: string
   track?: number
+  disc?: number
+  /** Release year, when its tags say. */
+  year?: number
+  /** The first genre its tags name. */
+  genre?: string
   /** Seconds, when its headers say. */
   duration?: number
   cover?: string
+}
+
+/** Claude's answer to a spoken request in the Music app: the albums it means, and what to do with them (their songs, to play or shuffle). */
+export interface MusicAnswer {
+  albums: MusicEntry[]
+  songs: MusicEntry[]
+  action: 'play' | 'shuffle' | 'show'
+}
+
+/** An album in the music index (musicIndex.ts): songs grouped by their tags, across folders and places. */
+export interface MusicAlbum {
+  /** Stable while its tags are: album artist and album (or its folder). */
+  id: string
+  title: string
+  artist?: string
+  year?: number
+  genre?: string
+  cover?: string
+  /** Its first song's folder. */
+  folder: string
+  /** Its newest song's file time (ms), for Recently added. */
+  added: number
+  /** Seconds, as far as its songs' headers say. */
+  duration: number
+  songs: number
+}
+
+/** How the music index's scan is going. */
+export interface MusicIndexStatus {
+  scanning: boolean
+  /** Songs whose tags have been read this scan, of `toRead` new or changed. */
+  read: number
+  toRead: number
+  /** Songs in the index. */
+  songs: number
 }
 
 /** A music folder as a card in the grid: its cover, and the album and artist its songs name (or its name). */
@@ -349,6 +391,10 @@ export interface MusicFolder {
   /** The album (from the first song's tags), else the folder's name less an "Artist - " in front. */
   title: string
   artist?: string
+  /** Release year, from the first song's tags. */
+  year?: number
+  /** Genre, from the first song's tags (an artist's folder: their first album's). */
+  genre?: string
   cover?: string
 }
 
@@ -1033,6 +1079,19 @@ export interface SteamTvApi {
     tags(paths: string[]): Promise<MusicTags[]>
     /** Folders' covers and names for the grid, a few at a time; in the order asked. */
     folders(paths: string[]): Promise<MusicFolder[]>
+    /** Folders and songs, in every place, whose names match. */
+    search(query: string): Promise<MusicEntry[]>
+    /** A spoken request through Claude Code: the albums meant, and their songs to play. Null without Claude Code. */
+    ask(heard: string): Promise<MusicAnswer | null>
+    /** The screen opened or closed: a remote's Menu searches music while it's up. */
+    setOpen(open: boolean): void
+    /** Every album in the music index (empty until its first scan has read some). */
+    albums(): Promise<MusicAlbum[]>
+    /** An album's songs from the index, in order. */
+    albumSongs(id: string): Promise<MusicTags[]>
+    indexStatus(): Promise<MusicIndexStatus>
+    /** The index's scan as it goes. */
+    onIndex(callback: (status: MusicIndexStatus) => void): () => void
   }
   /** The Claude app (a spoken conversation with Claude Code). */
   claude: {

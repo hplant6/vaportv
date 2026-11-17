@@ -287,6 +287,8 @@ export const CONTROLS_GUIDE_EVENT = 'steamtv:controls-guide'
 
 /** L2 (by default), L on a keyboard: shows or hides the tab’s left bar. */
 export const SIDE_BAR_EVENT = 'steamtv:side-bar'
+/** L2 over a screen marked data-side-bar (the Music app): its own left column. */
+export const TRAP_SIDE_BAR_EVENT = 'steamtv:trap-side-bar'
 
 /**
  * While a film or episode plays (the media player), the left-bar and button-guide buttons (L2
@@ -302,7 +304,11 @@ export function sideBar(): void {
     window.dispatchEvent(new CustomEvent(PLAYER_SKIP_EVENT, { detail: -10 }))
     return
   }
-  if (trap() || grabbed()) return
+  if (grabbed()) return
+  const open = trap()
+  // A screen with its own left column (the Music app's places) hides and shows that.
+  if (open?.hasAttribute('data-side-bar')) return void window.dispatchEvent(new Event(TRAP_SIDE_BAR_EVENT))
+  if (open) return
   window.steamtv.logInput('side bar')
   window.dispatchEvent(new Event(SIDE_BAR_EVENT))
 }
@@ -357,6 +363,11 @@ export function voiceSearch(): void {
   const open = trap()
   // In the Claude app it's talking to Claude.
   if (open?.classList.contains('claude-app')) return void window.dispatchEvent(new Event(CLAUDE_TALK_EVENT))
+  // In the Music app it searches music (through Claude, when it's set up).
+  if (open?.classList.contains('music-app') && !grabbed()) {
+    window.steamtv.logInput('music voice search (controller)')
+    return window.steamtv.startVoice('music')
+  }
   if (grabbed() || (open && !open.classList.contains('search-app'))) return
   window.steamtv.logInput('voice search (controller)')
   window.steamtv.startVoice()
