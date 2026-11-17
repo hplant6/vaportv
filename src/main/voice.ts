@@ -12,7 +12,7 @@ import { ownHelper } from './helpers'
 // Voice search: a remote's Menu tapped (or the search screen's mic) records from the default
 // microphone until the speaker stops, then whisper.cpp turns it into text, all on this
 // machine. whisper-cli ships with vaporTV (scripts/whisper.sh builds it); its English model
-// (~150 MB) downloads the first time voice search is used.
+// (~490 MB) downloads the first time voice search is used.
 
 const RATE = 16000
 /** Level is judged over this much sound at a time. */
@@ -29,20 +29,28 @@ const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; m
   search: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000, overNoiseDb: 12 },
   dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000, overNoiseDb: 12 },
   // Talking to Claude from the sofa: quieter speech counts, and a pause to think mid-sentence shouldn't end it.
-  conversation: { endSilenceMs: 1300, noSpeechMs: 10_000, maxMs: 60_000, overNoiseDb: 8 }
+  conversation: { endSilenceMs: 2200, noSpeechMs: 10_000, maxMs: 60_000, overNoiseDb: 8 }
 }
 /** Nothing counted as speech, but something this far over the room was there: worth transcribing anyway (talking to Claude). */
 const MAYBE_SPEECH_DB = 4
 /** vaporTV's music fades out as search opens; the room is measured once it has. */
 const MUSIC_FADE_MS = 400
 
-const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin'
-const MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-base.en.bin')
+const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin'
+const MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-small.en.bin')
 /** whisper's prompt is cut at about 224 tokens; titles beyond this many characters wouldn't count. */
 const HINTS_MAX = 600
+/** Words said to Claude that whisper wouldn't otherwise spell right ("paper TV"). */
+const CONVERSATION_HINTS = 'vaporTV, Claude, Claude Code, SteamOS, Steam, Emby, EmuDeck, ES-DE, GitHub.'
+/** parecord holds back about 2 s of sound by default: listening started late, and Send lost the last words. */
+const MIC_LATENCY_MS = 30
+/** How often the Claude app hears the mic's level, for its meter. */
+const LEVEL_EVERY_MS = 60
 
 type Send = (state: VoiceState) => void
 type Log = (line: string) => void
+/** The mic's level as it records (0 the room to 1 loud), and whether speech has been heard yet. */
+export type OnLevel = (level: number, speech: boolean) => void
 
 let recorder: ChildProcess | null = null
 /** Ends the recording now with what's been said (Send), set while recording. */
@@ -111,10 +119,10 @@ export function roomLevel(frames: number[]): number {
 }
 
 /** Records until the speaker stops (or Send); resolves to the sound, or null if nothing was said. `onReady`: sound is coming in, so it's listening. */
-function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<Buffer | null> {
+function record(log: Log, purpose: VoicePurpose, onReady: () => void, onLevel?: OnLevel): Promise<Buffer | null> {
   const { endSilenceMs, noSpeechMs, maxMs, overNoiseDb } = LIMITS[purpose]
   return new Promise((resolve, reject) => {
-    const child = spawn('parecord', ['--raw', `--rate=${RATE}`, '--channels=1', '--format=s16le'], { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn('parecord', ['--raw', `--rate=${RATE}`, '--channels=1', '--format=s16le', `--latency-msec=${MIC_LATENCY_MS}`], { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
     recorder = child
     const frameBytes = (RATE * FRAME_MS * 2) / 1000
@@ -129,6 +137,8 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<B
     let done = false
     let room = SPEECH_FLOOR_DB
     let loudest = -Infinity
+    /** When the wait for speech started: a press before any (talking to Claude) starts it again. */
+    let waitFrom = 0
 
     const finish = (result: Buffer | null): void => {
       if (done) return
@@ -139,6 +149,11 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<B
     }
     // Send: whatever's been said so far (whisper says if it was nothing).
     finishNow = () => {
+      // Talking to Claude, a press before a word's been said is "I'm about to talk", not Send.
+      if (purpose === 'conversation' && !heard) {
+        waitFrom = elapsed
+        return log('voice: pressed before speaking, still listening')
+      }
       log(`voice: sent (${heard ? 'speech heard' : `nothing over ${threshold.toFixed(1)} dB, loudest ${loudest.toFixed(1)} dB`})`)
       finish(elapsed > CALIBRATE_MS ? Buffer.concat(chunks) : null)
     }
@@ -169,6 +184,7 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<B
           continue
         }
         loudest = Math.max(loudest, db)
+        if (onLevel && elapsed % LEVEL_EVERY_MS < FRAME_MS) onLevel(Math.min(1, Math.max(0, (db - room) / 30)), heard)
         if (db > threshold) {
           speech += FRAME_MS
           quiet = 0
@@ -178,7 +194,7 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void): Promise<B
           quiet += FRAME_MS
         }
         if (heard && quiet >= endSilenceMs) return finish(Buffer.concat(chunks))
-        if (!heard && elapsed >= noSpeechMs) return giveUp()
+        if (!heard && elapsed - waitFrom >= noSpeechMs) return giveUp()
         if (elapsed >= maxMs) return heard ? finish(Buffer.concat(chunks)) : giveUp()
       }
     })
@@ -227,6 +243,7 @@ function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<stri
     const args = ['-m', MODEL, '-f', file, '-l', 'en', '-nt', '-np', '-t', '8']
     // Game names help a search; in a description they'd only tempt it to hear them.
     if (hints && purpose === 'search') args.push('--prompt', hints)
+    else if (purpose === 'conversation') args.push('--prompt', CONVERSATION_HINTS)
     const child = spawn(whisperCli(), args, { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
     let out = ''
@@ -245,7 +262,7 @@ function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<stri
 }
 
 /** Listens once (for a search, or dictating a bug report) and reports along the way: listening, thinking, then what was heard (or why not). */
-export async function listen(report: (state: VoiceState, purpose: VoicePurpose) => void, log: Log, purpose: VoicePurpose = 'search'): Promise<void> {
+export async function listen(report: (state: VoiceState, purpose: VoicePurpose) => void, log: Log, purpose: VoicePurpose = 'search', onLevel?: OnLevel): Promise<void> {
   if (busy) {
     log('voice: already listening')
     // The Claude screen waits on an answer; tell it there wasn't one, so it stops waiting.
@@ -277,7 +294,7 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     const pcm = await record(log, purpose, () => {
       log('voice: listening')
       send({ phase: 'listening' })
-    })
+    }, onLevel && ((level, speech) => !cancelled && onLevel(level, speech)))
     if (cancelled) return log('voice: cancelled')
     if (!pcm) {
       send({ phase: 'error', message: "Didn't hear anything" })
@@ -289,6 +306,11 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     const started = performance.now()
     const text = await transcribe(file, log, purpose).finally(() => rm(file, { force: true }))
     log(`voice: heard "${text}" in ${Math.round(performance.now() - started)} ms`)
+    // Near-silence can come back as the prompt itself: that's nothing said.
+    if (purpose === 'conversation' && text && CONVERSATION_HINTS.toLowerCase().includes(text.toLowerCase())) {
+      send({ phase: 'error', message: "Didn't catch that" })
+      return
+    }
     send(text ? { phase: 'heard', text } : { phase: 'error', message: "Didn't catch that" })
   } catch (err) {
     log(`voice: ${err}`)

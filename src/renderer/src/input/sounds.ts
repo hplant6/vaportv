@@ -1,10 +1,12 @@
 import favoriteUrl from '../assets/sounds/favorite.wav'
 import launchUrl from '../assets/sounds/launch.wav'
 import moveUrl from '../assets/sounds/move.wav'
+import talkUrl from '../assets/sounds/voice-click.wav'
 
-export type Sound = 'move' | 'launch' | 'favorite'
+/** talk: the Claude app's talk button (Henry's voice-click). */
+export type Sound = 'move' | 'launch' | 'favorite' | 'talk'
 
-const URLS: Record<Sound, string> = { move: moveUrl, launch: launchUrl, favorite: favoriteUrl }
+const URLS: Record<Sound, string> = { move: moveUrl, launch: launchUrl, favorite: favoriteUrl, talk: talkUrl }
 
 // Web Audio rather than <audio>: decoded buffers start without the element's
 // latency, which matters for a sound on every focus move.

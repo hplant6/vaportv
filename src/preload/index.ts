@@ -109,7 +109,6 @@ const api: SteamTvApi = {
   toggleFavoriteApp: (id) => ipcRenderer.invoke('apps:favorite', id),
   setArcadeRowsHidden: (rows) => ipcRenderer.invoke('settings:arcadeRowsHidden', rows),
   setControls: (controls) => ipcRenderer.invoke('settings:controls', controls),
-  setClaudeAutoApprove: (on) => ipcRenderer.invoke('settings:claudeAutoApprove', on),
   setSleepWarning: (on) => ipcRenderer.invoke('settings:sleepWarning', on),
   art: {
     search: (id, query) => ipcRenderer.invoke('art:search', id, query),
@@ -209,6 +208,7 @@ const api: SteamTvApi = {
     }
   },
   getSwitchTab: () => ipcRenderer.invoke('switch-tab:get'),
+  smartSearch: (heard, library) => ipcRenderer.invoke('search:smart', heard, library),
   getPs3Tab: () => ipcRenderer.invoke('ps3-tab:get'),
   getXbox360Tab: () => ipcRenderer.invoke('xbox360-tab:get'),
   getPs2Tab: () => ipcRenderer.invoke('ps2-tab:get'),
@@ -262,6 +262,7 @@ const api: SteamTvApi = {
     reset: () => ipcRenderer.send('claude:reset'),
     answer: (id, allow) => ipcRenderer.send('claude:answer', id, allow),
     quiet: () => ipcRenderer.send('claude:quiet'),
+    setSpeak: (on) => ipcRenderer.invoke('claude:speak', on),
     onEvent: (callback) => {
       const listener = (_event: unknown, event: ClaudeEvent): void => callback(event)
       ipcRenderer.on('claude:event', listener)
@@ -294,6 +295,11 @@ const api: SteamTvApi = {
     const listener = (_event: unknown, state: VoiceState, purpose: VoicePurpose): void => callback(state, purpose)
     ipcRenderer.on('voice', listener)
     return () => ipcRenderer.removeListener('voice', listener)
+  },
+  onVoiceLevel: (callback) => {
+    const listener = (_event: unknown, level: number, speech: boolean): void => callback(level, speech)
+    ipcRenderer.on('voice:level', listener)
+    return () => ipcRenderer.removeListener('voice:level', listener)
   },
   onMenuHeld: (callback) => {
     const listener = (): void => callback()

@@ -304,6 +304,15 @@ export interface ClaudeStatus {
   speech: boolean
   running: boolean
   busy: boolean
+  /** Replies are spoken aloud (the Claude app's speaker button); off, only written. */
+  speak: boolean
+}
+
+/** Voice search's picks from Claude: library line numbers, best first, and whether to start the first. */
+export interface SmartPicks {
+  picks: number[]
+  /** Asked to play or open one thing, and the first pick is surely it. */
+  start: boolean
 }
 
 /** Where the Music app starts: ~/Music, a network share (mounted under ~/Network) or a drive. */
@@ -615,8 +624,6 @@ export interface Settings {
   sleepOnControllerOff: boolean
   /** With sleepOnControllerOff: a few seconds' warning first, cancelled by switching it back on. */
   sleepWarning: boolean
-  /** The Claude app goes ahead without asking first. */
-  claudeAutoApprove: boolean
   /** What each controller button does. */
   controls: Controls
   /** Screensaver delay in minutes (0 = off), and where it reads photos. */
@@ -964,6 +971,8 @@ export interface SteamTvApi {
   getSteamTab(): Promise<LibraryTab>
   /** The Switch tab: Ryujinx games found on the ROM drive. */
   getSwitchTab(): Promise<LibraryTab>
+  /** Voice search with Claude Code, when it's set up: which of `library` (one line each) was meant by what was heard; null without it. */
+  smartSearch(heard: string, library: string[]): Promise<SmartPicks | null>
   /** The PS3 tab: RPCS3 games, installed and disc. */
   getPs3Tab(): Promise<LibraryTab>
   /** The Xbox 360 tab: Xenia disc images. */
@@ -1015,6 +1024,8 @@ export interface SteamTvApi {
   setVoiceHints(titles: string[]): void
   /** Voice search's progress, whoever started it (a remote's Menu tap, or the search screen). */
   onVoice(callback: (state: VoiceState, purpose: VoicePurpose) => void): () => void
+  /** Talking to Claude: the mic's level as it records (0 to 1), and whether speech has been heard yet. */
+  onVoiceLevel(callback: (level: number, speech: boolean) => void): () => void
   /** The Music app's library: places to start, a folder's contents, songs' tags and covers. */
   music: {
     places(): Promise<MusicPlace[]>
@@ -1035,6 +1046,8 @@ export interface SteamTvApi {
     reset(): void
     /** Stops speaking this reply (it's still written; the next is spoken). */
     quiet(): void
+    /** Speak replies on or off (kept). */
+    setSpeak(on: boolean): Promise<void>
     /** Approves (true) or turns down a permission request. */
     answer(id: string, allow: boolean): void
     onEvent(callback: (event: ClaudeEvent) => void): () => void
@@ -1180,7 +1193,6 @@ export interface SteamTvApi {
   }
   /** Adds an app to Home's Favorite Apps or takes it off; resolves with whether it's now a favorite. */
   toggleFavoriteApp(id: string): Promise<boolean>
-  setClaudeAutoApprove(on: boolean): Promise<void>
   setSleepWarning(on: boolean): Promise<void>
   /** Google Photos add-on (screensaver photos). */
   googlePhotos: {

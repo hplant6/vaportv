@@ -3212,6 +3212,11 @@ button {
   align-items: center;
   font-family: var(--font-body);
   font-size: var(--text-display);
+}
+
+/* A long query (spoken ones run on) ends in "…" inside the field. */
+.search-field-text {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3243,15 +3248,35 @@ button {
   opacity: 0.75;
 }
 
+/* All the results: scrolling, the cursor's row kept mid-way (SearchScreen's follow). Room
+   round the edges for a selected card's grow, the scroll's edge fading out at the top. */
 .search-results {
+  position: relative;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  margin: 0 -48px;
+  padding: 24px 48px 60px;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+}
+
+.search-results::-webkit-scrollbar {
+  display: none;
 }
 
 .search-apps {
   display: flex;
   gap: 54px;
   padding: 24px 0 48px;
+}
+
+/* Searching (what was said, or Claude choosing): the loading animation in the middle of the screen. */
+.search-loading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
 }
 
 /* A key's controller shortcut (X on delete, Y on space…), beside its label as on Steam's keyboard. */
@@ -4466,10 +4491,42 @@ button {
 }
 
 .claude-talk.phase-listening {
+  --level: 0;
+  position: relative;
   background: var(--color-accent);
   border-color: var(--color-accent-line);
   color: var(--color-base);
-  animation: claude-pulse 1.4s ease-out infinite;
+  /* Recording: a ring that grows with the voice it hears (set from the mic's level). */
+  box-shadow:
+    0 0 0 calc(8px + var(--level) * 34px) rgba(238, 150, 13, 0.28),
+    0 0 0 calc(4px + var(--level) * 14px) rgba(238, 150, 13, 0.5);
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    box-shadow 70ms linear;
+}
+
+/* A red recording light on the button while the mic's open. */
+.claude-talk.phase-listening::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e5383b;
+  border: 2px solid var(--color-base);
+  animation: claude-rec 1s ease-in-out infinite alternate;
+}
+
+.claude-talk.phase-listening.mic-starting::after {
+  display: none;
+}
+
+@keyframes claude-rec {
+  to {
+    opacity: 0.35;
+  }
 }
 
 .claude-talk.phase-hearing,
@@ -4479,15 +4536,6 @@ button {
 
 .claude-talk.phase-speaking {
   border-color: var(--color-accent-line);
-}
-
-@keyframes claude-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(238, 150, 13, 0.55);
-  }
-  100% {
-    box-shadow: 0 0 0 36px rgba(238, 150, 13, 0);
-  }
 }
 
 @keyframes claude-breathe {
@@ -4885,9 +4933,10 @@ button {
   text-align: left;
 }
 
-/* The mic's still starting: not pulsing yet, so it's clear when to talk. */
+/* The mic's still starting: no ring or recording light yet, so it's clear when to talk. */
 .claude-talk.phase-listening.mic-starting {
   animation: none;
+  box-shadow: none;
   opacity: 0.6;
 }
 
@@ -4936,6 +4985,18 @@ button {
   transform: scale(1.08);
   border-color: var(--color-accent-line);
   background: var(--color-focus-tint);
+}
+
+/* Speak replies: the speaker's sound waves (or a cross when off) drawn as lines. */
+.claude-speak .claude-speak-waves {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.claude-speak.off {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Text subtitles still coming from the server (the first time can take a minute or two): a note in the corner. */

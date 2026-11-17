@@ -13,8 +13,9 @@ import { speak, speechReady, stopSpeaking } from './speech'
 // the whole conversation, reading what was said (stream-json in) and streaming its reply
 // back (stream-json out), so it remembers what came before. Each finished sentence is
 // spoken while the rest is still arriving. Claude Code has to be installed on this machine
-// and signed in (see the Claude guide). It may search the web and read this machine freely;
-// anything that changes or runs something here asks first, on the TV (approve with A).
+// and signed in (see the Claude guide). It runs in Claude Code's auto mode: it searches, reads,
+// runs commands and edits freely, a safety check stops risky actions, and anything that still
+// needs an OK asks on the TV (approve with A).
 // vaporTV's own code is kept at ~/Projects/vaportv and brought up to date from GitHub each
 // time a conversation starts, so a fix is made to the latest code.
 
@@ -36,7 +37,7 @@ const NODE_BIN = join(homedir(), '.local', 'share', 'vaportv-dev', 'node', 'bin'
 export function workPrompt(source: string): string {
   return `You can also fix problems on this machine (a SteamOS box running vaporTV, a TV front end) and change vaporTV's own code.
 - Look before you change anything: read logs, files and settings first. Reading never needs permission.
-- Anything that changes or runs something asks the user on the TV first. Give every command a short plain description; that is what they see and approve.
+- You run in auto mode: ordinary commands and edits go ahead, and a safety check stops risky ones (if one is blocked, say so and suggest what the user could do instead). Anything that still needs an OK is asked on the TV. Give every command a short plain description; that is what the user sees.
 - The TV shows a working animation while you use tools, so don't narrate each step. When you finish, say in a sentence or two what you changed and whether it worked.
 - SteamOS's system files are read-only and reset by updates: keep changes in the home folder (/home/deck) where you can.
 - vaporTV's code is at ${SOURCE_DIR} (git, branch main). ${source}
@@ -76,7 +77,7 @@ export function claudeBin(): string | null {
   return null
 }
 
-export async function claudeStatus(): Promise<ClaudeStatus> {
+export async function claudeStatus(): Promise<Omit<ClaudeStatus, 'speak'>> {
   const bin = claudeBin()
   return {
     installed: bin !== null,
@@ -224,12 +225,6 @@ function controlResponse(requestId: string, response: Record<string, unknown>): 
   proc?.stdin?.write(`${JSON.stringify({ type: 'control_response', response: { subtype: 'success', request_id: requestId, response } })}\n`)
 }
 
-let autoApprove = false
-/** Whether requests are answered yes without showing them on the TV (a setting, read when a message is sent). */
-export function setClaudeAutoApprove(on: boolean): void {
-  autoApprove = on
-}
-
 /** Claude Code asks before changing or running anything: the TV shows it and waits for A (allow) or B (deny). */
 function askPermission(msg: Record<string, unknown>): void {
   const id = String(msg.request_id ?? '')
@@ -242,11 +237,6 @@ function askPermission(msg: Record<string, unknown>): void {
   pending.set(id, input)
   const { description, detail } = describeRequest(request.tool_name ?? '', input, request.description)
   log(`claude: asks to use ${request.tool_name}: ${description}${detail ? ` (${detail})` : ''}`)
-  if (autoApprove) {
-    log('claude: auto-approved')
-    answerPermission(id, true)
-    return
-  }
   send({ type: 'permission', id, tool: request.tool_name ?? '', description, detail })
   if (voiceOn && !quiet) void speak(`Can I go ahead? ${description}.`).catch(() => {})
 }
@@ -295,7 +285,11 @@ async function start(model: string): Promise<ChildProcess> {
     '--include-partial-messages',
     '--model',
     model,
-    // Searching and reading run freely; everything else (Bash, Edit, Write) asks on the TV.
+    // Auto mode: Claude Code's own safety check lets ordinary commands and edits go ahead and
+    // stops risky ones; searching and reading always run. Anything it still wants an OK for
+    // asks on the TV.
+    '--permission-mode',
+    'auto',
     '--tools',
     'WebSearch,WebFetch,Read,Glob,Grep,Bash,Edit,Write',
     '--allowedTools',
@@ -414,7 +408,7 @@ export function interruptClaude(): void {
   }
 }
 
-/** Whether replies are spoken (the screen is open) or only written. */
+/** Whether replies are spoken (the screen is open and Speak replies is on) or only written. */
 export function setClaudeVoice(on: boolean): void {
   voiceOn = on
   if (!on) {

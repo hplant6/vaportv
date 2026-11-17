@@ -386,7 +386,9 @@ export function activate(): void {
   const label = el?.closest('[data-no-log]') ? 'key' : el?.getAttribute('aria-label') ?? el?.textContent?.slice(0, 40) ?? 'nothing'
   window.steamtv.logInput(`select ${label}`)
   if (!el) return
-  // Launching gets the big sound; toggles and tab switches get the small one.
-  play(el.dataset.selectSound === 'move' ? 'move' : 'launch')
+  // Launching gets the big sound; toggles and tab switches get the small one. "none": the
+  // button plays its own (the Claude app's talk button, which R3 and a remote press too).
+  const sound = el.dataset.selectSound
+  if (sound !== 'none') play(sound === 'move' ? 'move' : 'launch')
   el.click()
 }
