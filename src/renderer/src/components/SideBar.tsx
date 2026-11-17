@@ -29,6 +29,15 @@ export interface SideList<T = RecentItem> {
   section?: string
 }
 
+/** A drop-down in the bar besides Sort: its options (the first is "all", shown as off), the one chosen. */
+export interface SideMenu {
+  id: string
+  label: string
+  value: string
+  options: { id: string; name: string }[]
+  onPick: (id: string) => void
+}
+
 /** How long the bar takes to slide in or out (app.css: .side-bar's transition). */
 export const SLIDE_MS = 675
 
@@ -45,6 +54,7 @@ export function SideBar({
   sort,
   sorts = LIBRARY_SORTS,
   switches = [],
+  menus = [],
   onSwitch,
   onSort,
   onSelect
@@ -61,6 +71,8 @@ export function SideBar({
   sort: string
   /** Sort's orders (default: the games'). */
   sorts?: { id: string; name: string }[]
+  /** More drop-downs under Sort, as it (Music's Genre). */
+  menus?: SideMenu[]
   /** Switches under Sort (Media's Show unwatched only): A turns one on or off. */
   switches?: { id: string; name: string; on: boolean }[]
   onSwitch?: (id: string) => void
@@ -72,6 +84,7 @@ export function SideBar({
   const logoUrl = (logo && LOGOS[logo]) || LOGOS[tab]
   const current = lists.find((list) => list.id === selected)
   const [sorting, setSorting] = useState(false)
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
   // The console stays while the bar slides out (and its space with it), then stops.
   const [spinning, setSpinning] = useState(open)
   useEffect(() => {
@@ -82,7 +95,10 @@ export function SideBar({
 
   // Hidden (L2), the bar takes its drop-down with it.
   useEffect(() => {
-    if (!open) setSorting(false)
+    if (!open) {
+      setSorting(false)
+      setMenuOpen(null)
+    }
   }, [open])
 
   // Keeps the focused list in view when there are more than fit (many playlists), with its
@@ -121,6 +137,7 @@ export function SideBar({
           <SortMenu
             sort={sort}
             sorts={sorts}
+            buttonId="side-bar-sort"
             onPick={(next) => {
               setSorting(false)
               if (next !== sort) onSort(next)
@@ -129,6 +146,38 @@ export function SideBar({
           />
         )}
       </div>
+      {menus.map((m) => (
+        <div className="side-bar-sort" key={m.id}>
+          <button
+            id={`side-bar-menu-${m.id}`}
+            className={`side-bar-sort-button display${menuOpen === m.id ? ' open' : ''}${m.value !== m.options[0]?.id ? ' on' : ''}`}
+            tabIndex={-1}
+            {...(open ? { 'data-focusable': '' } : {})}
+            data-select-sound="move"
+            data-nav-right={SIDE_GRID_CARDS}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen === m.id}
+            onClick={() => setMenuOpen(m.id)}
+          >
+            <span className="side-bar-sort-label">
+              {m.label}: {m.options.find((o) => o.id === m.value)?.name}
+            </span>
+            <span className="side-bar-sort-arrow" aria-hidden="true" />
+          </button>
+          {menuOpen === m.id && (
+            <SortMenu
+              sort={m.value}
+              sorts={m.options}
+              buttonId={`side-bar-menu-${m.id}`}
+              onPick={(next) => {
+                setMenuOpen(null)
+                if (next !== m.value) m.onPick(next)
+              }}
+              onClose={() => setMenuOpen(null)}
+            />
+          )}
+        </div>
+      ))}
       {switches.map((s) => (
         <button
           key={s.id}
@@ -185,10 +234,10 @@ export function SideBar({
  * Sort's drop-down: the orders, opening on the one in use. Up and down and A inside it; B
  * closes it. Either way the cursor goes back to Sort.
  */
-function SortMenu({ sort, sorts, onPick, onClose }: { sort: string; sorts: { id: string; name: string }[]; onPick: (sort: string) => void; onClose: () => void }) {
+function SortMenu({ sort, sorts, buttonId, onPick, onClose }: { sort: string; sorts: { id: string; name: string }[]; buttonId: string; onPick: (sort: string) => void; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null)
   const back = (): void => {
-    const button = document.getElementById('side-bar-sort')
+    const button = document.getElementById(buttonId)
     if (button) focus(button)
   }
 
@@ -209,6 +258,8 @@ function SortMenu({ sort, sorts, onPick, onClose }: { sort: string; sorts: { id:
         <button
           key={s.id}
           className="side-bar-sort-option display"
+          // A long one (Music's genres) scrolls with the cursor.
+          onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'nearest' })}
           role="menuitemradio"
           aria-checked={s.id === sort}
           tabIndex={-1}

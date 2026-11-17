@@ -89,7 +89,10 @@ function vertical(from: DOMRect, candidates: HTMLElement[], sign: 1 | -1): HTMLE
     .filter((c) => c.gap > -1)
   if (!scored.length) return undefined
   const nearestRow = Math.min(...scored.map((c) => c.gap))
-  return scored.filter((c) => c.gap <= nearestRow + ROW_TOLERANCE).sort((a, b) => a.offset - b.offset)[0].el
+  // Lined up best, then nearest: in a scrolled list, the hidden row just above and Sort over the
+  // list can both be within the tolerance, and Sort (first in the page) used to win, so Up
+  // jumped past the rest of the list.
+  return scored.filter((c) => c.gap <= nearestRow + ROW_TOLERANCE).sort((a, b) => a.offset - b.offset || a.gap - b.gap)[0].el
 }
 
 /**

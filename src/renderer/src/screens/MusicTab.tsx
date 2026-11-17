@@ -9,7 +9,7 @@ import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
 // The Music tab: the console tabs' left bar and grid, filled from the music index
 // (musicIndex.ts: every song's tags, across ~/Music, drives and shares). The bar turns Henry's
-// turntable; its lists are Recently played, Albums, Artists, then a list for each genre, and
+// turntable; Genre (a drop-down under Sort) narrows Recently played, Albums and Artists, and
 // Folders (the places, opening the folder browser). A on an album opens its page (Play all,
 // Shuffle, its songs), which plays straight from the index; playing opens Now playing. Voice
 // search here (R3, a remote's Menu) asks Claude for music.
@@ -28,8 +28,8 @@ export const MUSIC_SORTS: { id: MusicSort; name: string }[] = [
 /** When each album was last played on this TV (album id → ms). Losing it just means Recently played starts again. */
 const PLAYED_STORE = 'vaportv.musicPlayedAlbums'
 const PLAYED_KEPT = 500
-/** Genres with their own list in the bar, the biggest first. */
-const MOST_GENRES = 40
+/** Genre's "all" choice. */
+const ALL_GENRES = 'all'
 
 function playedAlbums(): Record<string, number> {
   try {
@@ -91,6 +91,8 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [played, setPlayed] = useState(playedAlbums)
   const [selected, setSelected] = useState(() => remembered().lists[SCREEN] ?? 'recent-played')
   const [sort, setSort] = useState<MusicSort>(() => (remembered().sorts[SCREEN] as MusicSort | undefined) ?? 'played')
+  // Genre: kept with the bar's other choices, as "genre:<key>".
+  const [genre, setGenre] = useState(() => remembered().filters[SCREEN]?.find((f) => f.startsWith('genre:'))?.slice('genre:'.length) ?? ALL_GENRES)
   const [album, setAlbum] = useState<{ album: MusicAlbum; from: HTMLElement | null } | null>(null)
   const [artist, setArtist] = useState<{ artist: Artist; from: HTMLElement | null } | null>(null)
 
@@ -142,51 +144,49 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }, [loaded])
 
   const order = useMemo(() => sorter(sort, played), [sort, played])
-  const { artists, genres } = useMemo(() => {
-    const byArtist = new Map<string, Artist>()
-    const byGenre = new Map<string, { names: Map<string, number>; albums: MusicAlbum[] }>()
+  // Genres, the biggest first ("City pop" and "City Pop" as one); the albums in the one chosen.
+  const genres = useMemo(() => {
+    const byGenre = new Map<string, { names: Map<string, number>; count: number }>()
     for (const a of albums ?? []) {
+      if (!a.genre) continue
+      const g = byGenre.get(genreKey(a.genre)) ?? { names: new Map<string, number>(), count: 0 }
+      g.names.set(a.genre, (g.names.get(a.genre) ?? 0) + 1)
+      g.count++
+      byGenre.set(genreKey(a.genre), g)
+    }
+    return [...byGenre.entries()]
+      .map(([key, g]) => ({ key, name: [...g.names].sort((x, y) => y[1] - x[1])[0][0], count: g.count }))
+      .sort((a, b) => b.count - a.count || byName.compare(a.name, b.name))
+  }, [albums])
+  const genreOn = genre !== ALL_GENRES && genres.some((g) => g.key === genre)
+  const genreName = genres.find((g) => g.key === genre)?.name
+  const shown = useMemo(() => (genreOn ? (albums ?? []).filter((a) => a.genre && genreKey(a.genre) === genre) : (albums ?? [])), [albums, genre, genreOn])
+  const artists = useMemo(() => {
+    const byArtist = new Map<string, Artist>()
+    for (const a of shown) {
       const name = a.artist ?? 'Unknown artist'
       const key = name.toLowerCase()
       const found = byArtist.get(key)
       if (found) found.albums.push(a)
       else byArtist.set(key, { name, albums: [a] })
-      if (a.genre) {
-        const g = byGenre.get(genreKey(a.genre)) ?? { names: new Map<string, number>(), albums: [] as MusicAlbum[] }
-        g.names.set(a.genre, (g.names.get(a.genre) ?? 0) + 1)
-        g.albums.push(a)
-        byGenre.set(genreKey(a.genre), g)
-      }
     }
-    return {
-      artists: [...byArtist.values()].sort((a, b) => byName.compare(a.name, b.name)),
-      genres: [...byGenre.entries()]
-        .map(([key, g]) => ({ key, name: [...g.names].sort((x, y) => y[1] - x[1])[0][0], albums: g.albums }))
-        .sort((a, b) => b.albums.length - a.albums.length || byName.compare(a.name, b.name))
-        .slice(0, MOST_GENRES)
-    }
-  }, [albums])
+    return [...byArtist.values()].sort((a, b) => byName.compare(a.name, b.name))
+  }, [shown])
 
   const scanning = status?.scanning ?? false
   const reading = scanning && status && status.toRead > 0 ? `Reading your music: ${status.read.toLocaleString()} of ${status.toRead.toLocaleString()} new songs…` : ''
   const noneYet = scanning ? 'Reading your music for the first time… albums appear as it goes.' : 'No music found yet: put songs in ~/Music, plug in a drive, or add a network share.'
   const asAlbums = (list: MusicAlbum[]): Card[] => list.map((a) => ({ kind: 'album', album: a }))
+  const inGenre = genreOn ? `No ${genreName} here yet.` : ''
   const all: MusicList[] = [
     {
       id: 'recent-played',
       name: 'Recently played',
-      items: asAlbums((albums ?? []).filter((a) => played[a.id]).sort((a, b) => played[b.id] - played[a.id])),
-      empty: albums?.length ? 'Albums you play show up here.' : noneYet
+      items: asAlbums(shown.filter((a) => played[a.id]).sort((a, b) => played[b.id] - played[a.id])),
+      empty: inGenre || (albums?.length ? 'Albums you play show up here.' : noneYet)
     },
-    { id: 'albums', name: 'Albums', items: asAlbums([...(albums ?? [])].sort(order)), empty: noneYet },
-    { id: 'artists', name: 'Artists', items: artists.map((a) => ({ kind: 'artist', artist: a })), empty: noneYet },
-    ...genres.map((g, i) => ({
-      id: `genre:${g.key}`,
-      name: g.name,
-      items: asAlbums([...g.albums].sort(order)),
-      empty: '',
-      ...(i === 0 ? { section: 'Genres' } : {})
-    })),
+    { id: 'albums', name: 'Albums', items: asAlbums([...shown].sort(order)), empty: inGenre || noneYet },
+    { id: 'artists', name: 'Artists', items: artists.map((a) => ({ kind: 'artist', artist: a })), empty: inGenre || noneYet },
     {
       id: 'folders',
       name: 'Folders',
@@ -203,7 +203,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       saved.lists[SCREEN] = id
     })
   }
-  const title = `${open ? '' : 'Music · '}${current.name} (${current.items.length.toLocaleString()})`
+  const title = `${open ? '' : 'Music · '}${current.name}${genreOn && current.id !== 'folders' ? ` · ${genreName}` : ''} (${current.items.length.toLocaleString()})`
 
   /** Plays songs from the index, and opens Now playing over the tab. */
   const playSongs = (songs: MusicTags[], from: HTMLElement | null, at = 0, shuffle = false): void => {
@@ -243,6 +243,20 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
             saved.sorts[SCREEN] = next
           })
         }}
+        menus={[
+          {
+            id: 'genre',
+            label: 'Genre',
+            value: genreOn ? genre : ALL_GENRES,
+            options: [{ id: ALL_GENRES, name: 'All' }, ...genres.map((g) => ({ id: g.key, name: `${g.name} (${g.count})` }))],
+            onPick: (next) => {
+              setGenre(next)
+              remember((saved) => {
+                saved.filters[SCREEN] = next === ALL_GENRES ? [] : [`genre:${next}`]
+              })
+            }
+          }
+        ]}
         onSelect={select}
       />
       <div className="page-viewport">

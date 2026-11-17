@@ -5631,3 +5631,26 @@ button {
 .music-page-songs .music-row {
   width: 100%;
 }
+
+/* A drop-down besides Sort (Music's Genre): its name cut short with "…" when long, gold while one's chosen. */
+.side-bar-sort-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.side-bar-sort-button.on {
+  color: var(--color-accent);
+}
+
+/* A long drop-down (Music's genres) scrolls inside itself, its options kept their full height, and ends above the screen's foot. */
+.side-bar-sort-menu {
+  max-height: 440px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.side-bar-sort-option {
+  flex: none;
+}
