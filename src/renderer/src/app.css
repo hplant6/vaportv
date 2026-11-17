@@ -5508,3 +5508,126 @@ button {
 .music-actions.music-picked-actions {
   padding: 10px 30px 0 42px;
 }
+
+/* ── Music tab ─────────────────────────────────────────── */
+
+/* Albums (and artists, places): square covers, as many across as fit; four beside the bar, as Media's posters. */
+.album-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--card-w));
+  justify-content: space-between;
+  column-gap: 36px;
+  row-gap: 72px;
+  --card-art-h: var(--card-w);
+}
+
+.side-layout:not(.closed) .album-grid {
+  --card-w: 298px;
+}
+
+.album-card .recent-footer {
+  padding: 0 12px;
+}
+
+.album-card .recent-date {
+  font-size: var(--text-small);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* An artist: a round picture (their first album's cover), as streaming apps show people. */
+.artist-card .recent-art {
+  border-radius: 50%;
+  margin: 12px 12px 0;
+  height: calc(var(--card-w) - 24px);
+}
+
+.music-tab-reading {
+  margin: 4px 0 0;
+  color: var(--color-accent);
+  font-size: var(--text-small);
+  letter-spacing: 0.04em;
+}
+
+/* An album or artist over the tab: the cover blurred behind, the album's cover and names, then its songs. */
+.music-page {
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+}
+
+.music-page-backdrop {
+  filter: blur(40px) saturate(1.2);
+  transform: scale(1.1);
+  opacity: 0.35;
+}
+
+.music-page .page-viewport,
+.music-page .page-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.music-page .page-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.music-page-album {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 48px;
+  padding: 110px 120px 24px;
+}
+
+.music-page-cover {
+  flex: none;
+  width: 340px;
+  height: 340px;
+  border-radius: var(--card-radius);
+  object-fit: cover;
+  box-shadow: var(--shadow-card);
+}
+
+.music-page-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.music-page-text .media-show-title {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.music-page-artist {
+  margin: 0;
+  font-size: var(--text-large);
+}
+
+.music-page-facts {
+  margin: 0;
+  opacity: 0.7;
+}
+
+.music-page-songs {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 8px 120px 40px;
+}
+
+.music-page-songs .music-row {
+  width: 100%;
+}

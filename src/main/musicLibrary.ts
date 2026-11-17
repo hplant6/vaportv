@@ -121,7 +121,7 @@ export async function readTags(path: string): Promise<MusicTags> {
       track: c.track?.no ?? undefined,
       disc: c.disk?.no ?? undefined,
       year: c.year ?? undefined,
-      genre: c.genre?.map((g) => g.trim()).find(Boolean),
+      genre: c.genre?.map((g) => g.split(/\s*[,;/|]\s*/)[0].trim()).find(Boolean),
       duration: meta.format.duration && Number.isFinite(meta.format.duration) ? meta.format.duration : undefined
     }
     const picture = c.picture?.[0]
@@ -244,6 +244,13 @@ export function fold(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 }
 
+/**
+ * Folders a search and the index don't go into: games' and emulators' (a game drive's sound
+ * effects aren't music), Wine prefixes (whose z: is the whole system), and vaporTV's own
+ * Ambience (rain and the like, for the background).
+ */
+export const NOT_MUSIC = /^(gog|lutris|heroic|steam|steamapps|steamlibrary|compatdata|shadercache|dosdevices|drive_c|pfx|prefix|\.?wine|games?|emulation|emudeck|roms|bios|saves|states|retroarch|rpcs3|ryujinx|yuzu|dolphin|pcsx2|ppsspp|duckstation|xemu|xenia|cemu|ambience)$/i
+
 /** Every folder and song name in a place (not their tags: a share would take minutes). */
 async function walk(root: string): Promise<Indexed[]> {
   const out: Indexed[] = []
@@ -253,6 +260,8 @@ async function walk(root: string): Promise<Indexed[]> {
     const inner: Indexed[] = []
     for (const e of entries) {
       if (SYSTEM_FOLDERS.test(e.name) || out.length >= SEARCH_MOST) continue
+      // Links aren't followed: a Wine prefix's z: leads to the whole system.
+      if (e.isSymbolicLink()) continue
       const path = join(dir, e.name)
       let isDir = e.isDirectory()
       let isFile = e.isFile()
@@ -262,6 +271,7 @@ async function walk(root: string): Promise<Indexed[]> {
         isFile = !!info?.isFile()
       }
       const where = fold(path.slice(root.length + 1))
+      if (isDir && NOT_MUSIC.test(e.name)) continue
       if (isDir) {
         const folder: Indexed = { entry: { name: e.name, path, kind: 'folder' }, where, own: fold(e.name) }
         out.push(folder)

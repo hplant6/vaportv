@@ -159,10 +159,10 @@ let claudeOpen = false
 // The music index: how its scan goes, to the window; and a first scan a minute after starting, in the background.
 setMusicIndexListener((status) => toWindow('music:index', status))
 setTimeout(() => freshenMusic(), 60_000)
-/** The Music app's screen is up: a remote's Menu searches music (through Claude) instead. */
-let musicOpen = false
+/** The Music tab or the Music screen is up (counted: the screen opens over the tab): a remote's Menu searches music (through Claude) instead. */
+let musicOpens = 0
 ipcMain.on('music:open', (_event, open: boolean) => {
-  musicOpen = open === true
+  musicOpens = Math.max(0, musicOpens + (open === true ? 1 : -1))
 })
 const toWindow = (channel: string, ...args: unknown[]): void => {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
@@ -310,6 +310,8 @@ async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>
     steam: hasSteam(config),
     // Media: once a media server's signed in to (no asking the server: that's for the tab itself).
     media: (await media.accounts(config)).length > 0,
+    // Music: once there's somewhere with music (~/Music, a drive, a share).
+    music: (await musicPlaces()).length > 0,
     switch: sw && emulatorInstalled(config, 'switch'),
     ps2: ps2 && emulatorInstalled(config, 'ps2'),
     ps3: ps3 && emulatorInstalled(config, 'ps3'),
@@ -1133,7 +1135,7 @@ app.whenReady().then(async () => {
       tap: async () => {
         if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
         if (claudeOpen) return send('claude:talk')
-        listen((state, why) => send('voice', state, why), logInput, musicOpen ? 'music' : 'search')
+        listen((state, why) => send('voice', state, why), logInput, musicOpens > 0 ? 'music' : 'search')
       },
       hold: async () => {
         if (await foreground.ownInFront()) send('menu:held')

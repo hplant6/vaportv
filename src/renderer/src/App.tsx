@@ -19,6 +19,7 @@ import { BackgroundMusic } from './components/BackgroundMusic'
 import { MediaPlayerHost } from './components/MediaPlayer'
 import { MediaDetailsHost } from './components/MediaDetails'
 import { MediaTab } from './screens/MediaTab'
+import { MusicTab } from './screens/MusicTab'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { RepairDialog } from './components/RepairDialog'
@@ -268,6 +269,7 @@ export function App() {
       )}
       {screen === 'apps' && home && <Apps apps={home.allApps} onNavigate={setScreen} />}
       {screen === 'media' && <MediaTab onNavigate={setScreen} />}
+      {screen === 'music' && <MusicTab onNavigate={setScreen} />}
       {screen === 'switch' && home && (
         <Library
           screen="switch"

@@ -135,6 +135,11 @@ export function freshenMusic(): void {
   if (!scanning && Date.now() - lastScan > RESCAN_MS) void scanMusic().catch(() => {})
 }
 
+/** A genre tag that lists several ("Uplifting, Hopeful, Cinematic"; "Rock/Pop"): the first. */
+export function firstGenre(genre: string | undefined): string | undefined {
+  return genre?.split(/\s*[,;/|]\s*/).find(Boolean)?.trim() || undefined
+}
+
 /** "Various Artists" when an album's songs name several and its tags don't say. */
 const VARIOUS = 'Various Artists'
 
@@ -186,7 +191,7 @@ function toAlbum(key: string, list: IndexedSong[]): MusicAlbum {
     title: first.album ?? basename(dirname(first.path)),
     artist,
     year: most((s) => s.year),
-    genre: most((s) => s.genre),
+    genre: most((s) => firstGenre(s.genre)),
     cover: most((s) => s.cover),
     folder: dirname(first.path),
     added: Math.max(...list.map((s) => s.mtime)),

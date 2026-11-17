@@ -77,7 +77,11 @@ export function MusicApp() {
 function Music({ onClose }: { onClose: () => void }) {
   const player = usePlayer()
   // Opening with music on: straight to Now playing.
-  const [view, setView] = useState<'browse' | 'playing'>(() => (playerState().at >= 0 ? 'playing' : 'browse'))
+  const [view, setView] = useState<'browse' | 'playing'>(() => {
+    const browse = browseNext
+    browseNext = false
+    return playerState().at >= 0 && !browse ? 'playing' : 'browse'
+  })
   // Voice search here (the mic, R3, a remote's Menu): what's heard goes to the browser, from Now playing too.
   const [voice, setVoice] = useState<VoiceState | null>(null)
   useEffect(() => {
@@ -102,6 +106,14 @@ function Music({ onClose }: { onClose: () => void }) {
 
 /** Remembered while vaporTV runs: where you were. */
 let lastTrail: MusicEntry[] = []
+/** Set by openMusicAt: open on browsing (not Now playing), at that place. */
+let browseNext = false
+
+/** The Music tab's Folders: the next opening shows this place's folders, even with music playing. */
+export function openMusicAt(place: MusicPlace): void {
+  lastTrail = [{ name: place.name, path: place.path, kind: 'folder' }]
+  browseNext = true
+}
 
 /** How a folder's folders are ordered, as a streaming app's library sorts: the ones you played
  *  last, newest in, by title, by artist, or by release year (newest first). */

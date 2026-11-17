@@ -11,6 +11,7 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
   { id: 'steam', label: 'Steam' },
   { id: 'apps', label: 'Apps' },
   { id: 'media', label: 'Media' },
+  { id: 'music', label: 'Music' },
   { id: 'switch', label: 'Switch' },
   { id: 'ps3', label: 'PS3' },
   { id: 'xbox', label: 'Xbox' },
@@ -34,8 +35,8 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
 
 /** Names the bar holds, Home included. */
 export const BAR_TABS = 11
-/** Names the second row holds (twelve since Media joined, so every console still fits). */
-export const MORE_TABS = 12
+/** Names the second row holds (thirteen since Media and Music joined, so every console still fits). */
+export const MORE_TABS = 13
 
 /**
  * Where the tabs that show go: those with something in them and not switched off. With a
@@ -60,8 +61,8 @@ export function arrangeTabs(available: Iterable<HideableTab>, hidden: Iterable<H
   return { bar, more: more.slice(0, MORE_TABS) }
 }
 
-/** The tabs a game playlist can show on besides Home: every tab with games (all but Apps). */
-export const PLAYLIST_TABS = TAB_LIST.flatMap(({ id }) => (id === 'home' || id === 'apps' ? [] : [id as LayoutTab]))
+/** The tabs a game playlist can show on besides Home: every tab with games or films (not Apps or Music). */
+export const PLAYLIST_TABS = TAB_LIST.flatMap(({ id }) => (id === 'home' || id === 'apps' || id === 'music' ? [] : [id as LayoutTab]))
 
 /**
  * Where a playlist made on `screen` shows to begin with: the left bar of the tab it was made
@@ -94,7 +95,7 @@ export function playlistPlacesLabel(places: PlaylistPlace[]): string {
     .join(', ')
 }
 
-/** Tabs with a left bar (their lists: All games, Recents, Favorites, playlists...): every tab with games. */
+/** Tabs with a left bar (their lists: All games, Recents, Favorites, playlists...): every tab with games, Media and Music. */
 export function hasSideBar(tab: string): tab is LayoutTab {
-  return (PLAYLIST_TABS as string[]).includes(tab)
+  return tab === 'music' || (PLAYLIST_TABS as string[]).includes(tab)
 }

@@ -63,7 +63,7 @@ function canRun(command: string[]): boolean {
 }
 
 /** Whether the emulator a console tab launches is installed (Steam's tab: whether Steam is). */
-export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam' | 'media'>): boolean {
+export function emulatorInstalled(config: Config, tab: Exclude<LayoutTab, 'steam' | 'media' | 'music'>): boolean {
   switch (tab) {
     case 'switch':
       return existsSync(ryujinxPath(config))

@@ -47,3 +47,13 @@ describe('albumLine', () => {
     )
   })
 })
+
+describe('firstGenre', async () => {
+  const { firstGenre } = await import('./musicIndex')
+  it('takes the first of a list crammed into one tag', () => {
+    expect(firstGenre('Uplifting, Hopeful, Cinematic')).toBe('Uplifting')
+    expect(firstGenre('Rock/Pop')).toBe('Rock')
+    expect(firstGenre('Jazz')).toBe('Jazz')
+    expect(firstGenre(undefined)).toBeUndefined()
+  })
+})

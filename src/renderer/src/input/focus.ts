@@ -369,6 +369,11 @@ export function voiceSearch(): void {
     return window.steamtv.startVoice('music')
   }
   if (grabbed() || (open && !open.classList.contains('search-app'))) return
+  // On the Music tab too.
+  if (!open && document.querySelector('.music-tab')) {
+    window.steamtv.logInput('music voice search (controller, tab)')
+    return window.steamtv.startVoice('music')
+  }
   window.steamtv.logInput('voice search (controller)')
   window.steamtv.startVoice()
 }

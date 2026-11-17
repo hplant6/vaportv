@@ -81,7 +81,17 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
   // The Music tab (to come): Henry's vinyl turntable, its record on the platter. Not tuned yet:
   // two mirror-bright white metals (Material.004, .011) may need darkening for the floor's reflection.
   music: {
-    model: 'private/music.vtm'
+    model: 'private/music.vtm',
+    // The dust cover (Material.018) is clear plastic in Blender, but came out solid and hid the
+    // record: smoked and see-through.
+    fix: (material) => {
+      if (material.name === 'Material.018') {
+        material.transparent = true
+        material.opacity = 0.18
+        material.depthWrite = false
+        material.color.setRGB(0.55, 0.6, 0.6)
+      }
+    }
   },
   steam: {
     model: 'private/steamdeck.vtm',
