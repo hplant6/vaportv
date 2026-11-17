@@ -319,7 +319,8 @@ export interface SmartPicks {
 export interface MusicPlace {
   name: string
   path: string
-  kind: 'folder' | 'network' | 'drive'
+  /** A media server's music ("server"): its path is media:<account>. */
+  kind: 'folder' | 'network' | 'drive' | 'server'
 }
 
 /** In a music folder: a subfolder or a song. */
@@ -405,6 +406,8 @@ export interface MusicSource extends MusicPlace {
   included: boolean
   songs: number
   albums: number
+  /** A media server: how many music libraries it has (0: none to bring in). */
+  libraries?: number
 }
 
 /** Liked songs and favorite albums, newest first. */

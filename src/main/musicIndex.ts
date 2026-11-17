@@ -32,6 +32,10 @@ export interface IndexedSong extends MusicTags {
 let songs: Record<string, IndexedSong> = {}
 /** The music included with vaporTV, always in the library (never on disk in the index). */
 const INCLUDED = builtInSongs()
+/** Songs on media servers signed in to (Emby, Jellyfin): fetched each scan, kept with the index so they play before the next. */
+let remote: MusicTags[] = []
+/** Each server's name and how many music libraries and songs it gave last scan (Music sources). */
+let serverInfo: { key: string; name: string; libraries: number; songs: number }[] = []
 /** Bumped whenever `songs` changes, so the albums are worked out again. */
 let changes = 0
 let loaded: Promise<void> | null = null
@@ -57,7 +61,8 @@ export function musicIndexStatus(): MusicIndexStatus {
 function load(): Promise<void> {
   loaded ??= (async () => {
     try {
-      const saved = JSON.parse(await readFile(INDEX_FILE, 'utf8')) as { version?: number; songs?: Record<string, IndexedSong> }
+      const saved = JSON.parse(await readFile(INDEX_FILE, 'utf8')) as { version?: number; songs?: Record<string, IndexedSong>; remote?: MusicTags[] }
+      if (Array.isArray(saved.remote)) remote = saved.remote
       if (saved.version === VERSION && saved.songs && typeof saved.songs === 'object') {
         songs = saved.songs
         changes++
@@ -73,7 +78,7 @@ async function save(): Promise<void> {
   await mkdir(dirname(INDEX_FILE), { recursive: true })
   // Written beside it, then moved over it: a crash mid-write leaves the old one whole.
   const temp = `${INDEX_FILE}.tmp`
-  await writeFile(temp, JSON.stringify({ version: VERSION, songs }))
+  await writeFile(temp, JSON.stringify({ version: VERSION, songs, remote }))
   await rename(temp, INDEX_FILE)
 }
 
@@ -125,6 +130,17 @@ export function scanMusic(): Promise<void> {
         }
       }
       await Promise.all(Array.from({ length: READ_AT_ONCE }, worker))
+      // Media servers' music: asked for again (a server that's down keeps what it had), less any switched out.
+      const { musicFromServers } = await import('./media/servers')
+      const out = await excludedPlaces()
+      const servers = await musicFromServers().catch(() => [])
+      remote = servers.flatMap((sv) => {
+        if (out.has(`media:${sv.key}`)) return []
+        // Didn't answer: what it had stays. Signed out of: it isn't in `servers`, so its songs go.
+        return sv.ok ? sv.songs : remote.filter((s) => s.path.startsWith(`media:${sv.key}:`))
+      })
+      serverInfo = servers.map(({ key, name, libraries, songs: list }) => ({ key, name, libraries, songs: list.length }))
+      changes++
       await save().catch(() => {})
       report({ read })
     } finally {
@@ -156,6 +172,8 @@ const VARIOUS = 'Various Artists'
  */
 /** Which album a song belongs to: album artist and album; without an album artist, its folder too (two "Greatest Hits" stay apart); without an album, its folder. */
 function albumKey(song: MusicTags): string {
+  // A media server's: its album artist and album (no folders there).
+  if (song.path.startsWith('media:')) return `media|${fold(song.albumArtist ?? song.artist ?? '')}|${fold(song.album ?? song.title)}`
   // Included with vaporTV: their own albums, apart from any of yours with the same names.
   if (song.path.startsWith('builtin:')) return `builtin|${fold(song.album ?? '')}`
   const folder = dirname(song.path)
@@ -201,7 +219,7 @@ function toAlbum(key: string, list: IndexedSong[]): MusicAlbum {
     year: most((s) => s.year),
     genre: most((s) => firstGenre(s.genre)),
     cover: most((s) => s.cover),
-    folder: first.path.startsWith('builtin:') ? 'builtin:' : dirname(first.path),
+    folder: first.path.startsWith('builtin:') ? 'builtin:' : first.path.startsWith('media:') ? 'media:' : dirname(first.path),
     ...(first.path.startsWith('builtin:') ? { included: true } : {}),
     added: Math.max(...list.map((s) => s.mtime)),
     duration: list.reduce((sum, s) => sum + (s.duration ?? 0), 0),
@@ -213,7 +231,7 @@ let albumCache: { changes: number; albums: MusicAlbum[]; byId: Map<string, Index
 
 function albumsNow(): { albums: MusicAlbum[]; byId: Map<string, IndexedSong[]> } {
   if (albumCache?.changes === changes) return albumCache
-  const byId = songsByAlbum([...Object.values(songs), ...INCLUDED.map((s) => ({ ...s, size: 0, mtime: 0 }))])
+  const byId = songsByAlbum([...Object.values(songs), ...[...INCLUDED, ...remote].map((s) => ({ ...s, size: 0, mtime: 0 }))])
   albumCache = { changes, albums: [...byId].map(([id, list]) => toAlbum(id, list)), byId }
   return albumCache
 }
@@ -237,13 +255,13 @@ export function hasMusicIndex(): boolean {
 
 /** A song in the index by path (its tags), if it's there. */
 export function indexedSong(path: string): MusicTags | undefined {
-  return songs[path] ?? INCLUDED.find((s) => s.path === path)
+  return songs[path] ?? (path.startsWith('media:') ? remote.find((s) => s.path === path) : INCLUDED.find((s) => s.path === path))
 }
 
 /** Every song in the index. */
 export async function librarySongs(): Promise<MusicTags[]> {
   await load()
-  return [...Object.values(songs), ...INCLUDED]
+  return [...Object.values(songs), ...INCLUDED, ...remote]
 }
 
 /** Songs and albums in the index from under a place (Music sources' counts). */
@@ -285,5 +303,14 @@ export async function songLoudness(path: string): Promise<number | null> {
 export async function hasOwnMusic(): Promise<boolean> {
   await load()
   for (const _ in songs) return true
-  return false
+  return remote.length > 0
+}
+
+/** Media servers' music, as the last scan found it (Music sources' rows). */
+export async function serverMusic(): Promise<{ key: string; name: string; libraries: number; songs: number; albums: number }[]> {
+  await load()
+  return serverInfo.map((s) => {
+    const mine = remote.filter((r) => r.path.startsWith(`media:${s.key}:`))
+    return { ...s, albums: new Set(mine.map(albumKey)).size }
+  })
 }

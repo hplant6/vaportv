@@ -88,7 +88,7 @@ import { backgroundSongs } from './backgroundMusic'
 import { startPhoneUpload, stopPhoneUpload } from './phoneUpload'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
-import { albumSongs, freshenMusic, hasOwnMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
+import { albumSongs, freshenMusic, hasOwnMusic, serverMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -795,7 +795,10 @@ ipcMain.handle('music:loudness', async (_event, path: string) => {
 })
 ipcMain.handle('music:sources', async () => {
   const out = await excludedPlaces()
-  return Promise.all((await musicPlaces()).map(async (p) => ({ ...p, included: !out.has(resolve(p.path)), ...(await placeCounts(resolve(p.path))) })))
+  const places = await Promise.all((await musicPlaces()).map(async (p) => ({ ...p, included: !out.has(resolve(p.path)), ...(await placeCounts(resolve(p.path))) })))
+  // Media servers signed in to, with the music their last scan gave.
+  const servers = (await serverMusic()).map((s) => ({ name: s.name, path: `media:${s.key}`, kind: 'server' as const, included: !out.has(`media:${s.key}`), songs: s.songs, albums: s.albums, libraries: s.libraries }))
+  return [...places, ...servers]
 })
 ipcMain.handle('music:includePlace', async (_event, path: string, on: boolean) => {
   await includePlace(String(path), on === true)

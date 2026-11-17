@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
-import type { MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
+import type { MusicTags, MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
 import { mediaKey, parseMediaKey } from '../../shared/mediaKey'
 
@@ -227,6 +227,25 @@ export function handleMediaScheme(): void {
     if (!a) return new Response('not signed in', { status: 404 })
     const { url, headers } = mediaBrowser.proxied(a, `${from.pathname}${from.search}`, await device(), version())
     const range = request.headers.get('range')
-    return net.fetch(url, { method: request.method, headers: { ...headers, ...(range ? { Range: range } : {}) } })
+    const reply = await net.fetch(url, { method: request.method, headers: { ...headers, ...(range ? { Range: range } : {}) } })
+    // The Music player reads songs through Web Audio (its visualizer), which needs the page allowed to.
+    const allowed = new Headers(reply.headers)
+    allowed.set('Access-Control-Allow-Origin', '*')
+    return new Response(reply.body, { status: reply.status, statusText: reply.statusText, headers: allowed })
   })
+}
+
+/** Each signed-in server's music (its music libraries' songs), for the Music tab's library; a server that fails gives none. */
+export async function musicFromServers(): Promise<{ key: string; name: string; ok: boolean; libraries: number; songs: MusicTags[] }[]> {
+  const all = await accounts()
+  const id = await device()
+  return Promise.all(
+    all.map(async (a) => {
+      const got = await mediaBrowser.musicSongs(a, base(a), id, version()).then(
+        (r) => ({ ...r, ok: true }),
+        () => ({ songs: [] as MusicTags[], libraries: 0, ok: false })
+      )
+      return { key: a.key, name: a.serverName ?? a.url, ok: got.ok, libraries: got.libraries, songs: got.songs }
+    })
+  )
 }

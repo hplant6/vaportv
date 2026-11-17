@@ -10,7 +10,7 @@ import { PhoneUpload } from './PhoneUpload'
 // two doors (the Music tab's + Add music, and Settings → Music), so there's never a question
 // of which is the real one. This TV's own folder (~/Music: copy songs or albums in from a
 // drive), drives (each with Include in library: a games-only drive can be left out), network
-// shares, and what's still to come (from a phone; a share signed in to here; a media server).
+// shares, and media servers signed in to for the Media tab (their music libraries).
 
 /** Counts and the scan's progress, for each source's line. */
 function useSources(): { sources: MusicSource[] | null; status: MusicIndexStatus | null; reload: () => void } {
@@ -48,6 +48,7 @@ export function MusicSources() {
   const here = sources?.find((s) => s.kind === 'folder')
   const drives = sources?.filter((s) => s.kind === 'drive') ?? []
   const shares = sources?.filter((s) => s.kind === 'network') ?? []
+  const servers = sources?.filter((s) => s.kind === 'server') ?? []
   const reading = status?.scanning ? (status.toRead ? `Reading new music: ${status.read.toLocaleString()} of ${status.toRead.toLocaleString()} songs…` : 'Looking for new music…') : ''
 
   const include = (s: MusicSource): void => {
@@ -98,12 +99,18 @@ export function MusicSources() {
         'music-sources-shares'
       )}
       {group(
-        'Coming next',
-        'More ways to add music without leaving the couch.',
-        <>
-          <ActionRow label="Your media server’s music" detail="Emby or Jellyfin, already signed in for Media" onSelect={() => toast('Music from your media server is coming next')} />
-        </>,
-        'music-sources-next'
+        'Your media server',
+        servers.length
+          ? 'Music from Emby or Jellyfin, signed in to for the Media tab: played from the server, with your own.'
+          : 'Signed in to Emby or Jellyfin (Settings → Media)? Its music shows up here, and in your library, once the server has a music library.',
+        servers.map((s) =>
+          s.libraries === 0 ? (
+            <ActionRow key={s.path} label={s.name} detail="No music library on this server yet" onSelect={() => toast(`Add a music library on ${s.name}, then look for new music here`)} />
+          ) : (
+            <ToggleRow key={s.path} label={s.name} detail={s.included ? counts(s) : 'Left out'} on={s.included} onToggle={() => include(s)} />
+          )
+        ),
+        'music-sources-servers'
       )}
       {group(
         'Library',

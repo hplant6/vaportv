@@ -211,7 +211,8 @@ export async function currentMusic(
     const library = kind === 'music' ? (fromLibrary ? { songs: fromLibrary } : choice?.startsWith(PLAYLIST) ? lists.find((p) => PLAYLIST + p.id === choice) : undefined) : undefined
     if (library) {
       return {
-        urls: library.songs.map((s) => songUrl(s.path)),
+        // A media server's song plays from its own address; the rest from the file (or the page's, included).
+        urls: library.songs.map((s) => s.url ?? songUrl(s.path)),
         files: library.songs.map((s) => s.path),
         names: library.songs.map((s) => s.title),
         gains: library.songs.map((s) => (s.loudness === undefined ? null : loudnessGain(s.loudness))),

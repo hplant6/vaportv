@@ -1,5 +1,5 @@
 import { createSocket } from 'node:dgram'
-import type { MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
+import type { MusicTags, MediaChoice, MediaItem, MediaKind, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import type { MediaAccount } from '../config'
 
 // Emby and Jellyfin: one API ("MediaBrowser"), as Jellyfin began as a copy of Emby. vaporTV finds
@@ -550,4 +550,70 @@ export async function report(
   if (event === 'stop' && play.method === 'Transcode') {
     await request(`${root}/Videos/ActiveEncodings?DeviceId=${device}&PlaySessionId=${play.playSessionId}`, { method: 'DELETE', headers }).catch(() => {})
   }
+}
+
+/** A song on a media server, as its API lists it. */
+interface AudioItem {
+  Id: string
+  Name: string
+  Album?: string
+  AlbumId?: string
+  AlbumArtist?: string
+  Artists?: string[]
+  IndexNumber?: number
+  ParentIndexNumber?: number
+  ProductionYear?: number
+  Genres?: string[]
+  RunTimeTicks?: number
+  AlbumPrimaryImageTag?: string
+  DateCreated?: string
+}
+
+/** Songs asked for at a time, and at most in all from one server. */
+const MUSIC_PAGE = 2000
+const MUSIC_MOST = 50_000
+
+/**
+ * Every song in a server's music libraries (a music view: CollectionType "music"), as the
+ * Music tab's library takes them: path media:<account>:<id>, played and pictured through
+ * `base` (steamtv-media://<account>). None without a music library.
+ */
+export async function musicSongs(account: MediaAccount, base: string, device: string, version: string): Promise<{ songs: MusicTags[]; libraries: number }> {
+  const headers = authHeaders(account.kind, device, version, account.token)
+  const root = `${account.url}${prefix(account.kind)}`
+  const viewsPath = account.kind === 'jellyfin' ? `/UserViews?userId=${account.userId}` : `/Users/${account.userId}/Views`
+  const views = (await request<{ Items: { Id: string; CollectionType?: string }[] }>(`${root}${viewsPath}`, { headers })).Items.filter((v) => v.CollectionType === 'music')
+  const songs: MusicTags[] = []
+  for (const view of views) {
+    for (let start = 0; songs.length < MUSIC_MOST; start += MUSIC_PAGE) {
+      const q = new URLSearchParams({
+        ParentId: view.Id,
+        IncludeItemTypes: 'Audio',
+        Recursive: 'true',
+        Fields: 'Genres,ProductionYear,DateCreated',
+        StartIndex: String(start),
+        Limit: String(MUSIC_PAGE)
+      })
+      const page = await request<{ Items: AudioItem[]; TotalRecordCount: number }>(`${root}/Users/${account.userId}/Items?${q}`, { headers })
+      for (const i of page.Items) {
+        songs.push({
+          path: `media:${account.key}:${i.Id}`,
+          title: i.Name,
+          artist: i.Artists?.[0] ?? i.AlbumArtist,
+          album: i.Album,
+          albumArtist: i.AlbumArtist,
+          track: i.IndexNumber,
+          disc: i.ParentIndexNumber,
+          year: i.ProductionYear,
+          genre: i.Genres?.[0],
+          duration: i.RunTimeTicks ? i.RunTimeTicks / 10_000_000 : undefined,
+          cover: i.AlbumId && i.AlbumPrimaryImageTag ? `${base}/Items/${i.AlbumId}/Images/Primary?maxHeight=600&tag=${i.AlbumPrimaryImageTag}` : undefined,
+          // The file as it is (static): FLAC and all, through the proxy with the account's token.
+          url: `${base}/Audio/${i.Id}/stream?static=true`
+        })
+      }
+      if (page.Items.length < MUSIC_PAGE || start + MUSIC_PAGE >= page.TotalRecordCount) break
+    }
+  }
+  return { songs, libraries: views.length }
 }

@@ -62,8 +62,10 @@ export async function excludedPlaces(): Promise<Set<string>> {
 /** A place in or out of the library. */
 export async function includePlace(path: string, on: boolean): Promise<void> {
   const set = await excludedPlaces()
-  if (on) set.delete(resolve(path))
-  else set.add(resolve(path))
+  // A media server's is kept as media:<account>, not a path.
+  const key = path.startsWith('media:') ? path : resolve(path)
+  if (on) set.delete(key)
+  else set.add(key)
   await mkdir(dirname(SOURCES_FILE), { recursive: true })
   await writeFile(SOURCES_FILE, JSON.stringify({ excluded: [...set] }, null, 1))
 }

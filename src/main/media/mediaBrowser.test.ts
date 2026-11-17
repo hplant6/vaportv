@@ -112,3 +112,35 @@ describe('playback subtitles', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('music from a media server', () => {
+  it('lists the songs of its music libraries only, with covers and the file streamed as it is', async () => {
+    const { musicSongs } = await import('./mediaBrowser')
+    const asked: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        asked.push(url)
+        const body = url.includes('/Views')
+          ? { Items: [{ Id: 'm', CollectionType: 'music' }, { Id: 'v', CollectionType: 'movies' }] }
+          : { Items: [{ Id: 's1', Name: 'Plastic Love', Album: 'Variety', AlbumId: 'a1', AlbumArtist: 'Mariya Takeuchi', Artists: ['Mariya Takeuchi'], IndexNumber: 3, ProductionYear: 1984, Genres: ['City Pop'], RunTimeTicks: 4_740_000_000, AlbumPrimaryImageTag: 't' }], TotalRecordCount: 1 }
+        return new Response(JSON.stringify(body))
+      })
+    )
+    const account = { key: 'abc123', kind: 'emby' as const, url: 'http://emby:8096', userId: 'u', token: 'tok' }
+    const got = await musicSongs(account as never, BASE, 'dev', '1.0')
+    expect(got.libraries).toBe(1)
+    expect(asked.some((u) => u.includes('ParentId=v'))).toBe(false)
+    expect(got.songs[0]).toMatchObject({
+      path: 'media:abc123:s1',
+      title: 'Plastic Love',
+      artist: 'Mariya Takeuchi',
+      year: 1984,
+      genre: 'City Pop',
+      duration: 474,
+      cover: `${BASE}/Items/a1/Images/Primary?maxHeight=600&tag=t`,
+      url: `${BASE}/Audio/s1/stream?static=true`
+    })
+    vi.unstubAllGlobals()
+  })
+})
