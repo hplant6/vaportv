@@ -81,14 +81,15 @@ window.addEventListener(FAVORITE_EVENT, (event) => {
   else if (el.dataset.albumId) void toggleFavoriteAlbum(el.dataset.albumId, name)
 })
 
-let claude: Promise<boolean> | null = null
-/** Whether Claude Code is on this box (asked once): radio shows only then. */
+/** Whether radio can be offered: Claude Code on this box, and music of your own (asked as each screen opens: music may have just arrived). */
 export function useClaudeReady(): boolean {
   const [ready, setReady] = useState(false)
   useEffect(() => {
-    claude ??= window.steamtv.music.claudeReady().catch(() => false)
     let live = true
-    void claude.then((r) => live && setReady(r))
+    void window.steamtv.music
+      .claudeReady()
+      .catch(() => false)
+      .then((r) => live && setReady(r))
     return () => {
       live = false
     }

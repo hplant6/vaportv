@@ -280,3 +280,10 @@ export async function songLoudness(path: string): Promise<number | null> {
   }
   return lufs
 }
+
+/** Whether the library has any music of your own (not only the included albums): radio needs something to choose from. */
+export async function hasOwnMusic(): Promise<boolean> {
+  await load()
+  for (const _ in songs) return true
+  return false
+}

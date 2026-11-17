@@ -88,7 +88,7 @@ import { backgroundSongs } from './backgroundMusic'
 import { startPhoneUpload, stopPhoneUpload } from './phoneUpload'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
-import { albumSongs, freshenMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
+import { albumSongs, freshenMusic, hasOwnMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -773,7 +773,8 @@ ipcMain.handle('music:indexStatus', () => musicIndexStatus())
 ipcMain.handle('music:favorites', () => musicFavorites())
 ipcMain.handle('music:toggleSong', (_event, path: string) => toggleFavoriteSong(String(path)))
 ipcMain.handle('music:toggleAlbum', (_event, id: string) => toggleFavoriteAlbum(String(id)))
-ipcMain.handle('music:claudeReady', () => !!claudeBin())
+// Radio and the background station: Claude Code on the box, and music of your own to choose from.
+ipcMain.handle('music:claudeReady', async () => !!claudeBin() && (await hasOwnMusic()))
 ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))
 ipcMain.handle('music:disliked', () => dislikedPaths())
 ipcMain.handle('music:playlists', () => musicPlaylists())

@@ -9,6 +9,9 @@ import { TAB_LIST } from '../../../shared/tabs'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'media' | 'music' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade' | 'settings'
 
+/** Opens a screen by name (detail: the Screen): the Apps tab's Music tile opens the Music tab. App listens. */
+export const OPEN_SCREEN_EVENT = 'steamtv:open-screen'
+
 /** The bar's tabs, in order (Settings and power sit either side of them). */
 export const TABS = TAB_LIST as { id: Screen; label: string }[]
 

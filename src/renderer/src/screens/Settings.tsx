@@ -24,13 +24,11 @@ import { stageHeight } from '../stage'
 import { ToggleRow } from '../components/ToggleRow'
 import { RowLabel } from '../components/RowLabel'
 import { OnScreenKeyboard } from '../components/Keyboard'
-import { songGroups, TrackLine } from '../components/TrackLine'
+import { TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
-import { PlaylistDialog } from '../components/PlaylistDialog'
 import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
-import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { MusicSources } from '../music/MusicSources'
 import { useClaudeReady, useMusicFavorites } from '../music/favorites'
@@ -396,25 +394,6 @@ function ChoiceRow({
 export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [settings, setSettings] = useState<SettingsData | null>(null)
   const [category, setCategory] = useState<Category>('general')
-  /** Music's single songs, folded away under the playlists until opened. */
-  const [songsOpen, setSongsOpen] = useState(false)
-  /** The song being previewed, if any. */
-  const [preview, setPreview] = useState<string | null>(previewing())
-
-  // A preview ends with the Songs list closing or Settings closing.
-  useEffect(() => {
-    const onPreview = (event: Event): void => setPreview((event as CustomEvent<string | null>).detail)
-    window.addEventListener(PREVIEW_EVENT, onPreview)
-    return () => {
-      window.removeEventListener(PREVIEW_EVENT, onPreview)
-      stopPreview()
-    }
-  }, [])
-  useEffect(() => {
-    if (!songsOpen) stopPreview()
-  }, [songsOpen])
-  /** The playlist being edited (null: a new one), and the row to go back to. */
-  const [editing, setEditing] = useState<{ playlist: Playlist | null; from: HTMLElement | null } | null>(null)
 
   useEffect(() => {
     window.steamtv.getSettings().then(setSettings)
@@ -451,21 +430,6 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     const trimmed = key.trim()
     setSettings({ ...settings, braveSearchKeyHint: trimmed ? trimmed.slice(-4) : null })
     window.steamtv.setBraveSearchKey(trimmed)
-  }
-
-  const savePlaylists = (next: Playlist[]): void => {
-    if (!settings) return
-    const stillThere = !settings.music?.startsWith('playlist:') || next.some((p) => `playlist:${p.id}` === settings.music)
-    setSettings({ ...settings, playlists: next, music: stillThere ? settings.music : null })
-    window.steamtv.setPlaylists(next).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
-  }
-
-  const editPlaylist = (playlist: Playlist | null): void => setEditing({ playlist, from: document.activeElement as HTMLElement | null })
-
-  const closePlaylist = (): void => {
-    const from = editing?.from
-    setEditing(null)
-    if (from?.isConnected) focus(from)
   }
 
   const chooseMusic = (kind: MusicKind, choice: string | null): void => {
@@ -1466,23 +1430,6 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           {panes[category]}
         </SettingsPane>
       </section>
-      {editing && settings && (
-        <OverStage>
-          <PlaylistDialog
-            playlist={editing.playlist}
-            tracks={settings.musicTracks.music}
-            onSave={(playlist) => {
-              const i = settings.playlists.findIndex((p) => p.id === playlist.id)
-              savePlaylists(i < 0 ? [...settings.playlists, playlist] : settings.playlists.map((p) => (p.id === playlist.id ? playlist : p)))
-            }}
-            onDelete={(id) => {
-              savePlaylists(settings.playlists.filter((p) => p.id !== id))
-              closePlaylist()
-            }}
-            onClose={closePlaylist}
-          />
-        </OverStage>
-      )}
     </div>
   )
 }

@@ -39,7 +39,7 @@ import { ControlsGuide } from './components/ControlsGuide'
 import { GameDialog } from './components/GameDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
-import { type Screen } from './components/NavBar'
+import { OPEN_SCREEN_EVENT, type Screen } from './components/NavBar'
 import { toast, Toast } from './components/Toast'
 import { VolumeOsd } from './components/VolumeOsd'
 import { Apps } from './screens/Apps'
@@ -211,6 +211,13 @@ export function App() {
     }
     window.addEventListener(TAB_EVENT, onTab)
     return () => window.removeEventListener(TAB_EVENT, onTab)
+  }, [])
+
+  // A screen opened by name (the Apps tab's Music tile: the Music tab).
+  useEffect(() => {
+    const onOpen = (event: Event): void => setScreen((event as CustomEvent<Screen>).detail)
+    window.addEventListener(OPEN_SCREEN_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_SCREEN_EVENT, onOpen)
   }, [])
 
   // A remote's Menu key: Settings, and from Settings back Home.
