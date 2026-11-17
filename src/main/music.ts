@@ -188,13 +188,18 @@ export function trackUrl(config: Config, file: string): string {
  * shuffled, and a volume. Playlists are the Music tab's (`lists`), so a background choice of
  * one plays it from the library.
  */
-export async function currentMusic(config: Config, lists: { id: string; songs: MusicTags[] }[] = []): Promise<Record<MusicKind, MusicLayer>> {
+export async function currentMusic(
+  config: Config,
+  lists: { id: string; songs: MusicTags[] }[] = [],
+  /** A library choice's songs (backgroundMusic.ts): your library, Liked songs, an album, a station. */
+  fromLibrary: MusicTags[] | null = null
+): Promise<Record<MusicKind, MusicLayer>> {
   const tracks = await musicTracks(config)
   const choices = musicChoices(config)
   const url = (file: string): string => trackUrl(config, file)
   const layer = (kind: MusicKind, volume: MusicVolume | undefined): MusicLayer => {
     const choice = choices[kind]
-    const library = kind === 'music' && choice?.startsWith(PLAYLIST) ? lists.find((p) => PLAYLIST + p.id === choice) : undefined
+    const library = kind === 'music' ? (fromLibrary ? { songs: fromLibrary } : choice?.startsWith(PLAYLIST) ? lists.find((p) => PLAYLIST + p.id === choice) : undefined) : undefined
     if (library) {
       return {
         urls: library.songs.map((s) => songUrl(s.path)),

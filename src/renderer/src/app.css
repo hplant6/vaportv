@@ -5908,3 +5908,9 @@ button {
 .music-sources-reading {
   color: var(--color-accent);
 }
+
+/* An album's or playlist's buttons wrap onto a second line when there are many. */
+.music-page .music-actions {
+  flex-wrap: wrap;
+  row-gap: 12px;
+}

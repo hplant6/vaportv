@@ -7,6 +7,8 @@ import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, T
 import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favorites'
 import { pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
 import { MusicSources } from '../music/MusicSources'
+import { setBackground, useBackgroundChoice } from '../music/background'
+import { BG_ALBUM, BG_LIKED } from '../../../shared/backgroundMusic'
 import { PLAYLIST_SONG_EVENT } from '../music/SongMenu'
 import { OnScreenKeyboard } from '../components/Keyboard'
 import { toast } from '../components/Toast'
@@ -333,6 +335,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           songs={favorites.songs}
           liked={favorites.liked}
           showArtist
+          extra={<BackgroundButton choice={BG_LIKED} name="Liked songs" />}
           onPlay={(at, shuffle, el) => playNow(favorites.songs, el, at, shuffle)}
           onBack={() => {
             const from = likedOpen
@@ -570,15 +573,18 @@ function AlbumPage({ album, onPlay, onBack }: { album: MusicAlbum; onPlay: (at: 
         </button>
       }
       extra2={
-        <button
-          className="files-action display"
-          tabIndex={-1}
-          data-focusable=""
-          data-select-sound="move"
-          onClick={(e) => songs && pickPlaylist({ paths: songs.map((s) => s.path), name: album.title, from: e.currentTarget })}
-        >
-          ＋ Playlist
-        </button>
+        <>
+          <button
+            className="files-action display"
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            onClick={(e) => songs && pickPlaylist({ paths: songs.map((s) => s.path), name: album.title, from: e.currentTarget })}
+          >
+            ＋ Playlist
+          </button>
+          <BackgroundButton choice={BG_ALBUM + album.id} name={album.title} />
+        </>
       }
       onPlay={onPlay}
       onBack={onBack}
@@ -838,6 +844,7 @@ function PlaylistPage({ id, onBack }: { id: string; onBack: () => void }) {
             {button('Rename', () => setRenaming(true))}
             {p.canFresh && button(p.fresh ? '✓ Keep it fresh' : 'Keep it fresh', () => void window.steamtv.music.changePlaylist(p.id, { fresh: !p.fresh }).then(() => reloadPlaylists()), p.fresh)}
             {button(p.home ? '✓ On Home' : 'Show on Home', () => void window.steamtv.music.changePlaylist(p.id, { home: !p.home }).then(() => reloadPlaylists()), p.home)}
+            <BackgroundButton choice={`playlist:${p.id}`} name={p.name} />
             {button(deleting ? 'Press again to delete' : 'Delete', () => {
               if (!deleting) return setDeleting(true)
               void window.steamtv.music.deletePlaylist(p.id).then(() => {
@@ -916,5 +923,16 @@ function RenameDialog({ name, onDone }: { name: string; onDone: (name: string | 
         </div>
       )}
     </div>
+  )
+}
+
+/** Set as background music: this album, playlist or Liked songs plays quietly under the menus (Settings → Music & sounds shows the same). */
+function BackgroundButton({ choice, name }: { choice: string; name: string }) {
+  const now = useBackgroundChoice()
+  const on = now === choice
+  return (
+    <button className={`files-action display${on ? ' on' : ''}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => !on && void setBackground(choice, name)}>
+      {on ? '✓ Background music' : 'Set as background music'}
+    </button>
   )
 }

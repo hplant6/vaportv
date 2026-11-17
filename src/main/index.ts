@@ -84,6 +84,7 @@ import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFo
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { browseMusic, copyMusic, excludedPlaces, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
+import { backgroundSongs } from './backgroundMusic'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
 import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
@@ -842,7 +843,10 @@ ipcMain.handle('backdrop:get', async () => {
   const custom = main.custom ?? home?.custom ?? null
   return { style: main.style, homeStyle: home?.style ?? null, custom, time: config.backdropTime ?? 'auto', drift: config.driftPreset ?? DEFAULT_DRIFT_PRESET, driftDirection: config.driftDirection ?? 'vertical', tunnelColors: config.tunnelColors ?? 'nebula', consoleBackdropQuality: config.consoleBackdropQuality ?? 'high', consoleBackdrops: config.consoleBackdrops ?? true }
 })
-ipcMain.handle('music:get', async () => currentMusic(await loadConfig(), await musicPlaylists()))
+ipcMain.handle('music:get', async () => {
+  const config = await loadConfig()
+  return currentMusic(config, await musicPlaylists(), await backgroundSongs(musicChoices(config).music).catch(() => null))
+})
 ipcMain.handle('music:trackUrl', async (_event, file: string) => trackUrl(await loadConfig(), file))
 ipcMain.handle('screensaver:get', async () => screensaverData(await loadConfig()))
 ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTaken(await loadConfig(), url))

@@ -33,6 +33,8 @@ import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../comp
 import { PREVIEW_EVENT, previewing, stopPreview, togglePreview } from '../components/MusicPreview'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { MusicSources } from '../music/MusicSources'
+import { useClaudeReady, useMusicFavorites } from '../music/favorites'
+import { BG_ALBUM, BG_LIBRARY, BG_LIKED, BG_STATION } from '../../../shared/backgroundMusic'
 
 function CollectionRow({
   collection,
@@ -205,6 +207,9 @@ const FAVORITES_LAYOUTS: { id: SteamLayout; name: string; detail: string }[] = [
   { id: 'grid', name: 'Grid', detail: 'Two rows · scroll down' }
 ]
 
+/** The included playlists, in the order Settings lists them before yours. */
+const INCLUDED_ORDER = ['retro', 'zabriskie']
+
 type Category = 'general' | 'tabs' | 'home' | 'steam' | 'consoles' | 'backdrop' | 'music' | 'screensaver' | 'controller' | 'wifi' | 'bluetooth' | 'artwork' | 'help'
 
 const CATEGORIES: { id: Category; name: string }[] = [
@@ -214,7 +219,7 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'steam', name: 'Steam' },
   { id: 'consoles', name: 'Consoles' },
   { id: 'backdrop', name: 'Backdrop' },
-  { id: 'music', name: 'Music' },
+  { id: 'music', name: 'Music & sounds' },
   { id: 'screensaver', name: 'Screensaver' },
   { id: 'controller', name: 'Controller' },
   { id: 'wifi', name: 'Wi-Fi' },
@@ -476,85 +481,63 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setMusicVolume(kind, volume).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
   }
 
-  /** The single song music is set to, if it is (shown on the folded Songs row). */
+  /** The single song music is set to, if it is (an older choice: shown, selected). */
   const playingSong = settings?.musicTracks.music.find((t) => t.file === settings.music)
+  const favoriteSongs = useMusicFavorites().songs.length
+  const claudeReady = useClaudeReady()
+  // An album set from the Music tab: its name.
+  const [backgroundAlbum, setBackgroundAlbum] = useState<string | null>(null)
+  useEffect(() => {
+    const id = settings?.music?.startsWith(BG_ALBUM) ? settings.music.slice(BG_ALBUM.length) : null
+    if (!id) return setBackgroundAlbum(null)
+    window.steamtv.music.albums().then((all) => setBackgroundAlbum(all.find((a) => a.id === id)?.title ?? null))
+  }, [settings?.music])
 
-  /** One layer's choices: none, shuffle (with two or more tracks), music's playlists, and each track (music's folded under Songs). */
+  /**
+   * Background music's choices, all from the library (the Music tab's): none, your whole
+   * library shuffled, Liked songs, a Claude station from your likes, each playlist (the
+   * included Ambient and Retro among them), and an album or a single song when one was set
+   * (from the Music tab, or before). Ambience's: none, shuffle, and each sound.
+   */
   const musicChoices = (kind: MusicKind) =>
-    settings && (
+    settings &&
+    (kind === 'music' ? (
       <>
-        <ChoiceRow label="None" selected={!settings[kind]} onSelect={() => chooseMusic(kind, null)} />
-        {settings.musicTracks[kind].length > 1 && (
+        <ChoiceRow label="None" selected={!settings.music} onSelect={() => chooseMusic('music', null)} />
+        <ChoiceRow
+          label="Shuffle my library"
+          detail="Every song, in random order"
+          selected={settings.music === BG_LIBRARY || settings.music === 'shuffle'}
+          onSelect={() => chooseMusic('music', BG_LIBRARY)}
+        />
+        {favoriteSongs > 0 && <ChoiceRow label="Liked songs" detail={`${favoriteSongs} songs, shuffled`} selected={settings.music === BG_LIKED} onSelect={() => chooseMusic('music', BG_LIKED)} />}
+        {claudeReady && favoriteSongs > 0 && (
+          <ChoiceRow label="A station from your likes" detail="Claude picks songs like one you liked, new each day" selected={settings.music === BG_STATION} onSelect={() => chooseMusic('music', BG_STATION)} />
+        )}
+        {/* The included two first (Ambient, Retro), then yours, newest first. */}
+        {[...settings.playlists].sort((a, b) => INCLUDED_ORDER.indexOf(b.id) - INCLUDED_ORDER.indexOf(a.id)).map((playlist) => (
           <ChoiceRow
-            label="Shuffle"
-            detail={`All ${settings.musicTracks[kind].length}, in random order`}
-            selected={settings[kind] === 'shuffle'}
-            onSelect={() => chooseMusic(kind, 'shuffle')}
+            key={playlist.id}
+            label={playlist.name}
+            detail={`${playlist.id === 'zabriskie' || playlist.id === 'retro' ? 'Included with vaporTV' : 'Playlist'} · ${playlist.files.length} ${playlist.files.length === 1 ? 'song' : 'songs'}`}
+            selected={settings.music === `playlist:${playlist.id}`}
+            onSelect={() => chooseMusic('music', `playlist:${playlist.id}`)}
           />
-        )}
-        {kind === 'music' &&
-          settings.playlists.map((playlist) => (
-            <ChoiceRow
-              key={playlist.id}
-              label={playlist.name}
-              detail={`Playlist · ${playlist.files.length} ${playlist.files.length === 1 ? 'track' : 'tracks'}${playlist.shuffle ? ', shuffled' : ''}`}
-              selected={settings.music === `playlist:${playlist.id}`}
-              onSelect={() => chooseMusic('music', `playlist:${playlist.id}`)}
-            />
-          ))}
-        {kind === 'music' && settings.musicTracks.music.length > 0 && (
-          <button
-            className={`setting-row songs-toggle${songsOpen ? ' open' : ''}`}
-            tabIndex={-1}
-            aria-expanded={songsOpen}
-            data-focusable=""
-            data-select-sound="move"
-            onClick={() => setSongsOpen(!songsOpen)}
-          >
-            <ChevronIcon className="songs-chevron" />
-            <span className="setting-name display">Songs</span>
-            <span className="setting-detail">
-              {playingSong ? `Playing ${playingSong.name}` : `${settings.musicTracks.music.length} songs`}
-            </span>
-          </button>
-        )}
-        {kind === 'music' &&
-          songsOpen &&
-          songGroups(settings.musicTracks.music).map(({ heading, track, i }) =>
-            heading ? (
-              <h4 key={heading} className="song-group-heading display">
-                {heading}
-              </h4>
-            ) : (
-            // A song with a button beside it to hear it first; Left from the button comes back to the song.
-            <div key={track.file} id={`song-${i}`} className="song-row">
-              <ChoiceRow label={track.name} subtitle={<TrackLine track={track} />} selected={settings.music === track.file} onSelect={() => chooseMusic('music', track.file)} />
-              <button
-                className={`song-preview${preview === track.file ? ' playing' : ''}`}
-                tabIndex={-1}
-                aria-label={preview === track.file ? `Stop ${track.name}` : `Preview ${track.name}`}
-                data-focusable=""
-                data-select-sound="move"
-                data-nav-left={`#song-${i} .setting-row`}
-                onClick={() => togglePreview(track.file)}
-              >
-                {preview === track.file ? <StopIcon className="song-preview-icon" /> : <PlayIcon className="song-preview-icon" />}
-              </button>
-            </div>
-            )
-          )}
-        {kind === 'ambience' &&
-          settings.musicTracks.ambience.map((track) => (
-            <ChoiceRow
-              key={track.file}
-              label={track.name}
-              subtitle={<TrackLine track={track} />}
-              selected={settings.ambience === track.file}
-              onSelect={() => chooseMusic('ambience', track.file)}
-            />
-          ))}
+        ))}
+        {settings.music?.startsWith(BG_ALBUM) && <ChoiceRow label={backgroundAlbum ?? 'An album'} detail="Album · set from the Music tab" selected onSelect={() => undefined} />}
+        {playingSong && <ChoiceRow label={playingSong.name} detail="A single song" selected onSelect={() => undefined} />}
       </>
-    )
+    ) : (
+      <>
+        <ChoiceRow label="None" selected={!settings.ambience} onSelect={() => chooseMusic('ambience', null)} />
+        {settings.musicTracks.ambience.length > 1 && (
+          <ChoiceRow label="Shuffle" detail={`All ${settings.musicTracks.ambience.length}, in random order`} selected={settings.ambience === 'shuffle'} onSelect={() => chooseMusic('ambience', 'shuffle')} />
+        )}
+        {settings.musicTracks.ambience.map((track) => (
+          <ChoiceRow key={track.file} label={track.name} subtitle={<TrackLine track={track} />} selected={settings.ambience === track.file} onSelect={() => chooseMusic('ambience', track.file)} />
+        ))}
+      </>
+    ))
 
   const toggleSleepOnControllerOff = (): void => {
     if (!settings) return
@@ -1216,8 +1199,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
         {settings && <NowPlaying tracks={settings.musicTracks.music} />}
 
         <div className="settings-group">
-          <h3 className="settings-heading display">Music</h3>
-          <p className="settings-help">Plays quietly while you browse and pauses during games, over the ambience.</p>
+          <h3 className="settings-heading display">Background music</h3>
+          <p className="settings-help">Your music, played quietly while you browse; it pauses during games and steps aside when you play something in the Music tab. Any album or playlist there can be set as background music too.</p>
           <div className="setting-list" data-focus-memory="settings-music">
             {musicChoices('music')}
           </div>
