@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import type { ClockCorners, ClockWidget, SystemStats, Weather } from '../../../shared/types'
 import { DEFAULT_CLOCK_CORNERS } from '../../../shared/clock'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
@@ -6,7 +6,6 @@ import { useNow } from './useNow'
 import { useBattery } from '../power'
 import { current, playerState, subscribe as subscribeMusic } from '../music/player'
 import { useBackgroundSong } from '../music/backgroundSong'
-import { backgroundNow } from './BackgroundMusic'
 import { AberrationLogo } from './AberrationLogo'
 import charging from '../assets/battery/charg.svg'
 import full from '../assets/battery/full.svg'
@@ -285,12 +284,9 @@ export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-/** "3:07": a song's time. */
-const songClock = (seconds: number): string => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`
-
 /**
  * Song playing: what you hear (the Music player's song, else background music's), its artist
- * and title big over how far in it is, its cover against the screen's edge. Nothing while
+ * and title big, its cover against the screen's edge. Nothing while
  * nothing plays (Settings' preview shows a sample).
  */
 function SongPlaying({ side, preview }: { side: 'left' | 'right'; preview: boolean }) {
@@ -298,16 +294,8 @@ function SongPlaying({ side, preview }: { side: 'left' | 'right'; preview: boole
   const background = useBackgroundSong()
   const listening = current()
   const song = listening ?? background.song
-  // How far in: ticks each second while there's a song.
-  const [, tick] = useState(0)
-  useEffect(() => {
-    if (!song) return
-    const timer = setInterval(() => tick((n) => n + 1), 1000)
-    return () => clearInterval(timer)
-  }, [song?.path])
   const sample = preview && !song
   if (!song && !preview) return null
-  const seconds = listening ? playerState().time : (backgroundNow()?.time ?? 0)
   const artist = sample ? 'Artist' : (song!.artist ?? song!.album ?? '')
   const title = sample ? 'Song playing' : song!.title
   const cover = !sample && song!.cover ? (
@@ -321,7 +309,6 @@ function SongPlaying({ side, preview }: { side: 'left' | 'right'; preview: boole
     <span key="text" className="song-corner-text">
       {artist && <span className="song-corner-line display">{artist}</span>}
       <span className="song-corner-line display">{title}</span>
-      <span className="song-corner-time">{sample ? '3:07' : songClock(seconds)}</span>
     </span>
   )
   return (

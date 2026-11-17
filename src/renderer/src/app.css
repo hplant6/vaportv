@@ -6027,8 +6027,8 @@ button {
   height: 64px;
 }
 
-/* A corner's Song playing (Henry's design): artist and title big, how far in under them in a
-   thin face, the cover square against the screen's edge, as tall as the three lines. */
+/* A corner's Song playing (Henry's design): artist and title big, the cover square against the
+   screen's edge, as tall as the lines. */
 .clock-widget.song-corner {
   align-items: stretch;
   gap: 16px;
@@ -6058,19 +6058,10 @@ button {
   text-transform: uppercase;
 }
 
-.song-corner-time {
-  margin-top: 2px;
-  font-family: var(--font-body);
-  font-weight: 300;
-  font-size: 24px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
 .song-corner-cover {
   flex: none;
-  width: 86px;
-  height: 86px;
+  width: 64px;
+  height: 64px;
   object-fit: cover;
   border-radius: 4px;
   box-shadow: var(--shadow-card);
