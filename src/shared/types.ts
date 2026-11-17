@@ -1154,6 +1154,9 @@ export interface SteamTvApi {
     copyMusic(path: string): Promise<string>
     /** Reads every place again now. */
     rescan(): Promise<void>
+    /** Send from your phone: the page on (its events follow) or off. */
+    phone(on: boolean): void
+    onPhone(callback: (event: { phase: 'ready'; url: string } | { phase: 'received'; name: string; count: number } | { phase: 'stopped'; message?: string }) => void): () => void
     playlists(): Promise<MusicPlaylist[]>
     /** A new playlist (`source`: how it was made, for Keep it fresh); its id. */
     createPlaylist(name: string, paths: string[], source?: { seed?: string; request?: string }): Promise<string>

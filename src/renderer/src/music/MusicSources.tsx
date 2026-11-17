@@ -4,6 +4,7 @@ import { FilePicker } from '../components/FilePicker'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { toast } from '../components/Toast'
 import { ToggleRow } from '../components/ToggleRow'
+import { PhoneUpload } from './PhoneUpload'
 
 // Music sources: where the library's music comes from, and how to add more. One screen with
 // two doors (the Music tab's + Add music, and Settings → Music), so there's never a question
@@ -43,6 +44,7 @@ const counts = (s: MusicSource): string => (s.songs ? `${s.albums.toLocaleString
 export function MusicSources() {
   const { sources, status, reload } = useSources()
   const [copying, setCopying] = useState(false)
+  const [phone, setPhone] = useState(false)
   const here = sources?.find((s) => s.kind === 'folder')
   const drives = sources?.filter((s) => s.kind === 'drive') ?? []
   const shares = sources?.filter((s) => s.kind === 'network') ?? []
@@ -73,6 +75,7 @@ export function MusicSources() {
         'Songs copied to this TV stay when the drive they came from is unplugged. Anything put in ~/Music (in Desktop Mode, or over the network) shows up too.',
         <>
           {here && <ActionRow label="Music on this TV" detail={counts(here)} onSelect={() => setCopying(true)} />}
+          <ActionRow label="Send from your phone" detail="Scan a code, then pick songs on your phone" onSelect={() => setPhone(true)} />
           <ActionRow label="Copy songs or albums to this TV" detail="From a USB drive, SD card or folder: a song, or a whole folder" onSelect={() => setCopying(true)} />
         </>,
         'music-sources-here'
@@ -98,7 +101,6 @@ export function MusicSources() {
         'Coming next',
         'More ways to add music without leaving the couch.',
         <>
-          <ActionRow label="Send from your phone" detail="Scan a code, pick songs on your phone" onSelect={() => toast('Sending music from your phone is coming next')} />
           <ActionRow label="Your media server’s music" detail="Emby or Jellyfin, already signed in for Media" onSelect={() => toast('Music from your media server is coming next')} />
         </>,
         'music-sources-next'
@@ -108,6 +110,14 @@ export function MusicSources() {
         'vaporTV looks for new music when the Music tab opens, and every so often.',
         <ActionRow label="Look for new music now" detail={reading || 'Reads every source again'} onSelect={() => void window.steamtv.music.rescan()} />,
         'music-sources-rescan'
+      )}
+      {phone && (
+        <PhoneUpload
+          onClose={() => {
+            setPhone(false)
+            reload()
+          }}
+        />
       )}
       {copying && (
         <OverStage>

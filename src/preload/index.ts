@@ -269,6 +269,12 @@ const api: SteamTvApi = {
     includePlace: (path, on) => ipcRenderer.invoke('music:includePlace', path, on),
     copyMusic: (path) => ipcRenderer.invoke('music:copy', path),
     rescan: () => ipcRenderer.invoke('music:rescan'),
+    phone: (on) => ipcRenderer.send('music:phone', on),
+    onPhone: (callback) => {
+      const listener = (_event: unknown, state: Parameters<typeof callback>[0]): void => callback(state)
+      ipcRenderer.on('music:phone', listener)
+      return () => void ipcRenderer.removeListener('music:phone', listener)
+    },
     playlists: () => ipcRenderer.invoke('music:playlists'),
     createPlaylist: (name, paths, source) => ipcRenderer.invoke('music:createPlaylist', name, paths, source),
     addToPlaylist: (id, paths) => ipcRenderer.invoke('music:addToPlaylist', id, paths),

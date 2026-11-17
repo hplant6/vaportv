@@ -85,6 +85,7 @@ import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
 import { browseMusic, copyMusic, excludedPlaces, readTags, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { backgroundSongs } from './backgroundMusic'
+import { startPhoneUpload, stopPhoneUpload } from './phoneUpload'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
 import { albumSongs, freshenMusic, indexedSong, songLoudness, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
@@ -805,6 +806,17 @@ ipcMain.handle('music:copy', async (_event, path: string) => {
   return to
 })
 ipcMain.handle('music:rescan', () => void scanMusic().catch(() => {}))
+// Send from your phone: the page runs while its screen is open; songs received are read in a moment after the last.
+let phoneScan: NodeJS.Timeout | null = null
+ipcMain.on('music:phone', (event, on: boolean) => {
+  if (!on) return stopPhoneUpload()
+  startPhoneUpload((state) => {
+    if (!event.sender.isDestroyed()) event.sender.send('music:phone', state)
+    if (state.phase !== 'received') return
+    if (phoneScan) clearTimeout(phoneScan)
+    phoneScan = setTimeout(() => void scanMusic().catch(() => {}), 3000)
+  })
+})
 ipcMain.handle('music:createPlaylist', (_event, name: string, paths: string[], source?: { seed?: string; request?: string }) =>
   createMusicPlaylist(String(name), Array.isArray(paths) ? paths.map(String) : [], source && { seed: source.seed && String(source.seed), request: source.request && String(source.request) })
 )
