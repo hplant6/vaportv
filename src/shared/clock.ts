@@ -1,7 +1,7 @@
 import type { ClockCorners, ClockWidget } from './types'
 
 /** Every layout a corner of the top bar can show, in the order Settings lists them. */
-export const CLOCK_WIDGETS: ClockWidget[] = ['dateTemp', 'time', 'date', 'weather', 'battery', 'cpuUsage', 'cpuTemp', 'gpuUsage', 'gpuTemp']
+export const CLOCK_WIDGETS: ClockWidget[] = ['dateTemp', 'time', 'date', 'weather', 'song', 'logo', 'battery', 'cpuUsage', 'cpuTemp', 'gpuUsage', 'gpuTemp']
 
 /** A corner fits one before it runs into the bar's tabs. */
 export const CORNER_ROOM = 1

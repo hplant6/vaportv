@@ -11,6 +11,8 @@ const NAMES: Record<ClockWidget, string> = {
   time: 'Time',
   date: 'Date',
   weather: 'Weather',
+  song: 'Song playing',
+  logo: 'vaporTV logo',
   battery: 'Battery',
   cpuUsage: 'CPU use',
   cpuTemp: 'CPU temperature',
@@ -83,7 +85,7 @@ export function ClockSettings() {
         ) : (
           id && (
             <span className="clock-preview display" aria-hidden="true">
-              <ClockLayout id={id} side={side} />
+              <ClockLayout id={id} side={side} preview />
             </span>
           )
         )}
@@ -108,7 +110,7 @@ export function ClockSettings() {
       {group('right', 'Top right corner')}
       <div className="settings-group">
         <h3 className="settings-heading display">Now playing</h3>
-        <p className="settings-help">While the Music app plays, the song and its cover show in this corner, in place of what it usually shows.</p>
+        <p className="settings-help">While music plays in the Music tab (and for a few seconds as each background song starts), the song and its cover show in this corner, in place of what it usually shows. For the song there all the time, choose Song playing for a corner above.</p>
         <div className="setting-list" data-focus-memory="settings-clock-now-playing">
           {NOW_PLAYING.map((spot) => (
             <button

@@ -6015,3 +6015,70 @@ button {
   margin: 0 0 12px;
   color: #ff8a7a;
 }
+
+/* A corner's vaporTV logo: its colours drifting, the corner's height. */
+.clock-widget.clock-logo {
+  height: 64px;
+  align-items: center;
+}
+
+.clock-logo-mark {
+  width: 190px;
+  height: 64px;
+}
+
+/* A corner's Song playing (Henry's design): artist and title big, how far in under them in a
+   thin face, the cover square against the screen's edge, as tall as the three lines. */
+.clock-widget.song-corner {
+  align-items: stretch;
+  gap: 16px;
+  max-width: 330px;
+}
+
+.song-corner-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.clock-widget.song-corner.right .song-corner-text {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.song-corner-line {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.song-corner-time {
+  margin-top: 2px;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 24px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.song-corner-cover {
+  flex: none;
+  width: 86px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: var(--shadow-card);
+}
+
+.song-corner-no-cover {
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  background: var(--gradient-empty);
+}

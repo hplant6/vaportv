@@ -255,7 +255,7 @@ export interface Weather {
  * What a corner of the top bar can show (Settings → Home), after Henry's Figma set. Each
  * corner holds a row of them, in order.
  */
-export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp' | 'battery'
+export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp' | 'battery' | 'logo' | 'song'
 
 export interface ClockCorners {
   left: ClockWidget[]
