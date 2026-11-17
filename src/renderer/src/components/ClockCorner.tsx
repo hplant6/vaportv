@@ -5,6 +5,7 @@ import { WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { useNow } from './useNow'
 import { useBattery } from '../power'
 import { current, playerState, subscribe as subscribeMusic } from '../music/player'
+import { useBackgroundSong } from '../music/backgroundSong'
 import charging from '../assets/battery/charg.svg'
 import full from '../assets/battery/full.svg'
 import high from '../assets/battery/high.svg'
@@ -213,9 +214,12 @@ const useMusicNow = (): string => useSyncExternalStore(subscribeMusic, musicNow)
 /** The song playing (or paused): its cover against the screen's edge, its title and artist beside it. */
 export function NowPlayingLayout({ side }: { side: 'left' | 'right' }) {
   useMusicNow()
-  const song = current()
+  const background = useBackgroundSong()
+  // The Music player's song; else background music's, for a few seconds as each starts.
+  const listening = current()
+  const song = listening ?? (background.fresh ? background.song : null)
   if (!song) return null
-  const playing = playerState().playing
+  const playing = listening ? playerState().playing : true
   const cover = song.cover ? (
     <img key="cover" className="now-playing-cover" src={song.cover} alt="" />
   ) : (
@@ -251,7 +255,8 @@ export function NowPlayingLayout({ side }: { side: 'left' | 'right' }) {
 export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   const corners = useCorners()
   const music = useMusicNow()
-  if (corners.nowPlaying === side && music) {
+  const background = useBackgroundSong()
+  if (corners.nowPlaying === side && (music || background.fresh)) {
     return (
       <div className={`clock-corner ${side} display`}>
         <NowPlayingLayout side={side} />

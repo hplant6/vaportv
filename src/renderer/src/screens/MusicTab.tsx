@@ -8,6 +8,8 @@ import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favori
 import { pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
 import { MusicSources } from '../music/MusicSources'
 import { setBackground, useBackgroundChoice } from '../music/background'
+import { turnItUp, useBackgroundSong } from '../music/backgroundSong'
+import { usePlayerNow } from '../music/usePlayerNow'
 import { BG_ALBUM, BG_LIKED } from '../../../shared/backgroundMusic'
 import { PLAYLIST_SONG_EVENT } from '../music/SongMenu'
 import { OnScreenKeyboard } from '../components/Keyboard'
@@ -302,6 +304,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         <SideGrid key={current.id} backTo={open ? `#${sideListId(current.id)}` : undefined}>
           <section className="collection-grid">
             <h2 className="section-label display">{title}</h2>
+            <BackgroundStrip />
             {reading && <p className="music-tab-reading">{reading}</p>}
             {current.id === 'sources' ? (
               <MusicSources />
@@ -934,5 +937,31 @@ function BackgroundButton({ choice, name }: { choice: string; name: string }) {
     <button className={`files-action display${on ? ' on' : ''}`} tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => !on && void setBackground(choice, name)}>
       {on ? '✓ Background music' : 'Set as background music'}
     </button>
+  )
+}
+
+/**
+ * Background music's song while nothing else plays: "In the background: Title, Artist" with
+ * Turn it up, which carries it on in the Music player at full volume (Now playing opens).
+ */
+function BackgroundStrip() {
+  const { song } = useBackgroundSong()
+  const listening = usePlayerNow()
+  if (!song || listening) return null
+  return (
+    <div className="music-bg-strip">
+      <span className="music-now-bars" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="music-bg-text">
+        In the background: <strong>{song.title}</strong>
+        {song.artist ? ` · ${song.artist}` : ''}
+      </span>
+      <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={(e) => void turnItUp(e.currentTarget)}>
+        Turn it up
+      </button>
+    </div>
   )
 }

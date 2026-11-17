@@ -82,12 +82,12 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
-import { browseMusic, copyMusic, excludedPlaces, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
+import { browseMusic, copyMusic, excludedPlaces, readTags, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { backgroundSongs } from './backgroundMusic'
 import { addToPlaylist, changePlaylist, createPlaylist as createMusicPlaylist, deletePlaylist as deleteMusicPlaylist, freshenPlaylist, moveInPlaylist, musicPlaylists, removeFromPlaylist } from './musicPlaylists'
 import { dislikedPaths, musicFavorites, toggleDislike, toggleFavoriteAlbum, toggleFavoriteSong } from './musicFavorites'
-import { albumSongs, freshenMusic, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
+import { albumSongs, freshenMusic, indexedSong, libraryAlbums, musicIndexStatus, placeCounts, scanMusic, setMusicIndexListener } from './musicIndex'
 import { addBackdrop, BACKDROP_FOLDER, customBackdrops, removeBackdrop } from './backdrops'
 import { chooseDriveFolder, driveFolders, driveStatus, forgetDrive, startDriveSync, syncDrive } from './addons/googleDrive'
 import { connectWifi, forgetWifi, rescanWifi, setWifiEnabled, wifiStatus } from './wifi'
@@ -776,6 +776,17 @@ ipcMain.handle('music:claudeReady', () => !!claudeBin())
 ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))
 ipcMain.handle('music:disliked', () => dislikedPaths())
 ipcMain.handle('music:playlists', () => musicPlaylists())
+// Songs by path, for the screens (background music's, Turn it up): from the index (the included
+// ones too), else their tags; an older background choice's file is relative to the music folder.
+ipcMain.handle('music:songs', async (_event, paths: string[]) => {
+  const folder = musicFolder(await loadConfig())
+  return Promise.all(
+    (Array.isArray(paths) ? paths.map(String) : []).map(async (p) => {
+      const path = p.startsWith('builtin:') || p.startsWith('/') ? p : join(folder, p)
+      return indexedSong(path) ?? (await readTags(path).catch(() => ({ path, title: path.split('/').pop() ?? path })))
+    })
+  )
+})
 ipcMain.handle('music:sources', async () => {
   const out = await excludedPlaces()
   return Promise.all((await musicPlaces()).map(async (p) => ({ ...p, included: !out.has(resolve(p.path)), ...(await placeCounts(resolve(p.path))) })))

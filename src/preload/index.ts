@@ -263,6 +263,7 @@ const api: SteamTvApi = {
     toggleSong: (path) => ipcRenderer.invoke('music:toggleSong', path),
     toggleAlbum: (id) => ipcRenderer.invoke('music:toggleAlbum', id),
     claudeReady: () => ipcRenderer.invoke('music:claudeReady'),
+    songs: (paths) => ipcRenderer.invoke('music:songs', paths),
     sources: () => ipcRenderer.invoke('music:sources'),
     includePlace: (path, on) => ipcRenderer.invoke('music:includePlace', path, on),
     copyMusic: (path) => ipcRenderer.invoke('music:copy', path),

@@ -104,6 +104,10 @@ async function load(at: number, autoplay = true): Promise<void> {
     // Another song since (its tags filling in doesn't count).
     if (current()?.path !== song.path) return
     audio.src = url
+    if (startAt > 0) {
+      audio.currentTime = startAt
+      startAt = 0
+    }
     if (autoplay) await audio.play()
   } catch (err) {
     console.error('steamtv: music:', err)
@@ -114,13 +118,18 @@ async function load(at: number, autoplay = true): Promise<void> {
 }
 
 /** Plays `songs` from `start` (shuffled when shuffle's on, `start` first); `station` when they're a radio station. */
-export function playQueue(songs: MusicTags[], start = 0, station: PlayerState['station'] = null): void {
+export function playQueue(songs: MusicTags[], start = 0, station: PlayerState['station'] = null, fromSeconds = 0): void {
   if (!songs.length) return
   hold(true)
   const order = state.shuffle ? shuffled(songs.length, start) : songs.map((_, i) => i)
   state = { ...state, queue: songs, order, station }
+  // Turn it up: the first song carries on from where the background had got to.
+  startAt = fromSeconds
   void load(state.shuffle ? 0 : start)
 }
+
+/** Seconds into the next song loaded to start from (then back to 0). */
+let startAt = 0
 
 /** Jumps to the song at this place in the play order. */
 export function playAt(position: number): void {

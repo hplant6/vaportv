@@ -9,7 +9,13 @@ import { toast } from './Toast'
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
 
 /** Now playing changed on a layer (detail: its kind). */
-const NOW_PLAYING_EVENT = 'steamtv:now-playing'
+export const NOW_PLAYING_EVENT = 'steamtv:now-playing'
+
+/** Background music's songs and where it is in them (Turn it up takes over from there); null with nothing loaded. */
+let musicLayer: (() => { files: string[]; at: number; time: number; playing: boolean } | null) | null = null
+export function backgroundNow(): { files: string[]; at: number; time: number; playing: boolean } | null {
+  return musicLayer?.() ?? null
+}
 /** Settings asks a layer to move on, or back (detail: { kind, step }). */
 const SKIP_EVENT = 'steamtv:music-skip'
 
@@ -232,6 +238,12 @@ function Layer({ kind }: { kind: MusicKind }) {
       if (held && !was) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
       else if (!held && was) start()
     }
+    if (kind === 'music') {
+      musicLayer = () => {
+        const at = playlist.indexOf(el.src)
+        return el.src && at >= 0 ? { files, at, time: el.currentTime, playing: !el.paused } : null
+      }
+    }
     load()
     el.addEventListener('ended', onEnded)
     el.addEventListener('play', onPlay)
@@ -243,6 +255,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     window.addEventListener(MUSIC_HOLD_EVENT, onHold)
     window.addEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
     return () => {
+      if (kind === 'music') musicLayer = null
       window.removeEventListener(MUSIC_HOLD_EVENT, onHold)
       window.removeEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
       clearInterval(fade)

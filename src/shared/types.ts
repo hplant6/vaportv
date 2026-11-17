@@ -1135,6 +1135,8 @@ export interface SteamTvApi {
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */
     disliked(): Promise<string[]>
+    /** Songs by path (the index's, the included ones', else their tags). */
+    songs(paths: string[]): Promise<MusicTags[]>
     /** Music sources: every place, in the library or not, with its counts. */
     sources(): Promise<MusicSource[]>
     /** A place in or out of the library (a rescan follows). */
