@@ -365,20 +365,28 @@ export async function libraryPage(
   return { items: reply.Items.map((item) => card(item, base)), total: reply.TotalRecordCount ?? start + reply.Items.length }
 }
 
+const MAX_STREAMING_BITRATE = 20_000_000
+
 /**
  * What Chromium (vaporTV's player) can play as it is, and how the server should convert the
- * rest: HLS of H.264 and AAC, which hls.js plays. It picks per file, copying what already fits.
+ * rest: HLS of H.264 (or, where this machine can decode it, H.265) and AAC, which hls.js plays.
+ * It picks per file, copying what already fits: an H.265 MKV is only repackaged (fragmented MP4
+ * segments), not re-encoded, which a modest server can't do in real time. `codecs` is what the
+ * player found it can decode beyond H.264 ('hevc').
  */
-const DEVICE_PROFILE = {
+function deviceProfile(codecs: string[]) {
+  const hevc = codecs.includes('hevc')
+  return {
   Name: 'vaporTV',
-  MaxStreamingBitrate: 20_000_000,
+  MaxStreamingBitrate: MAX_STREAMING_BITRATE,
   MaxStaticBitrate: 120_000_000,
   MusicStreamingTranscodingBitrate: 192_000,
   DirectPlayProfiles: [
-    { Container: 'mp4,m4v', Type: 'Video', VideoCodec: 'h264,vp9,av1', AudioCodec: 'aac,mp3,opus,flac' },
+    { Container: 'mp4,m4v', Type: 'Video', VideoCodec: `h264,vp9,av1${hevc ? ',hevc' : ''}`, AudioCodec: 'aac,mp3,opus,flac' },
     { Container: 'webm', Type: 'Video', VideoCodec: 'vp8,vp9,av1', AudioCodec: 'vorbis,opus' }
   ],
   TranscodingProfiles: [
+    ...(hevc ? [{ Container: 'mp4', Type: 'Video', VideoCodec: 'hevc,h264', AudioCodec: 'aac', Context: 'Streaming', Protocol: 'hls', MaxAudioChannels: '2', MinSegments: '1', BreakOnNonKeyFrames: true }] : []),
     { Container: 'ts', Type: 'Video', VideoCodec: 'h264', AudioCodec: 'aac', Context: 'Streaming', Protocol: 'hls', MaxAudioChannels: '2', MinSegments: '1', BreakOnNonKeyFrames: true }
   ],
   ContainerProfiles: [],
@@ -389,6 +397,7 @@ const DEVICE_PROFILE = {
     ...['vtt', 'srt', 'subrip', 'ass', 'ssa', 'sub', 'smi', 'ttml', 'mov_text'].map((Format) => ({ Format, Method: 'External' })),
     ...['pgssub', 'pgs', 'dvdsub', 'vobsub', 'dvbsub', 'sup'].map((Format) => ({ Format, Method: 'Encode' }))
   ]
+  }
 }
 
 interface Stream {
@@ -431,19 +440,20 @@ export async function playback(
   itemId: string,
   choice: MediaChoice,
   device: string,
-  version: string
+  version: string,
+  codecs: string[] = []
 ): Promise<Omit<MediaPlayback, 'source'>> {
   const root = `${account.url}${prefix(account.kind)}`
   const headers = authHeaders(account.kind, device, version, account.token)
   const item = await request<Item>(`${root}${userItem(account, itemId)}`, { headers })
   const ask = async (extra: Record<string, unknown>): Promise<{ PlaySessionId: string; MediaSources: Source[] }> => {
-    const query = new URLSearchParams({ UserId: account.userId, IsPlayback: 'true', AutoOpenLiveStream: 'true', MaxStreamingBitrate: String(DEVICE_PROFILE.MaxStreamingBitrate) })
+    const query = new URLSearchParams({ UserId: account.userId, IsPlayback: 'true', AutoOpenLiveStream: 'true', MaxStreamingBitrate: String(MAX_STREAMING_BITRATE) })
     if (choice.audio !== undefined) query.set('AudioStreamIndex', String(choice.audio))
     if (choice.subtitle !== undefined) query.set('SubtitleStreamIndex', String(choice.subtitle))
     return request(`${root}/Items/${itemId}/PlaybackInfo?${query}`, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ DeviceProfile: DEVICE_PROFILE, ...extra })
+      body: JSON.stringify({ DeviceProfile: deviceProfile(codecs), ...extra })
     })
   }
   let info = await ask({})

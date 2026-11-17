@@ -1006,7 +1006,8 @@ export interface SteamTvApi {
     episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]>
     /** A page of a library, sorted and (unwatched) filtered by the server. */
     libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage>
-    playback(source: string, itemId: string, choice?: MediaChoice): Promise<MediaPlayback>
+    /** `codecs`: what the player can decode beyond H.264 ('hevc'), so the server needn't convert it. */
+    playback(source: string, itemId: string, choice?: MediaChoice, codecs?: string[]): Promise<MediaPlayback>
     report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }
   gamePlaylists: {

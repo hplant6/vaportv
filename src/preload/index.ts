@@ -134,7 +134,7 @@ const api: SteamTvApi = {
     setWatched: (source, id, on) => ipcRenderer.invoke('media:setWatched', source, id, on),
     episodes: (source, seriesId, seasonId) => ipcRenderer.invoke('media:episodes', source, seriesId, seasonId),
     libraryPage: (library, sort, unwatched, start, limit) => ipcRenderer.invoke('media:libraryPage', library, sort, unwatched, start, limit),
-    playback: (source, itemId, choice) => ipcRenderer.invoke('media:playback', source, itemId, choice),
+    playback: (source, itemId, choice, codecs) => ipcRenderer.invoke('media:playback', source, itemId, choice, codecs),
     report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('media:report', event, playback, positionSeconds, paused)
   },
   gamePlaylists: {

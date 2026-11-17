@@ -209,9 +209,9 @@ export async function episodes(source: string, seriesId: string, seasonId: strin
   return (await mediaBrowser.episodes(a, base(a), seriesId, seasonId, await device(), version())).map((item) => ({ ...item, source }))
 }
 
-export async function playback(source: string, itemId: string, choice: MediaChoice = {}): Promise<MediaPlayback> {
+export async function playback(source: string, itemId: string, choice: MediaChoice = {}, codecs: string[] = []): Promise<MediaPlayback> {
   const a = await account(source)
-  return { ...(await mediaBrowser.playback(a, base(a), itemId, choice, await device(), version())), source }
+  return { ...(await mediaBrowser.playback(a, base(a), itemId, choice, await device(), version(), codecs)), source }
 }
 
 export async function report(event: 'start' | 'progress' | 'stop', play: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void> {

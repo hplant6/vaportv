@@ -998,7 +998,7 @@ ipcMain.handle('media:episodes', (_event, source: string, seriesId: string, seas
 ipcMain.handle('media:libraryPage', (_event, library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number) =>
   media.libraryPage(library, sort, unwatched, start, limit)
 )
-ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice) => media.playback(source, itemId, choice))
+ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice, codecs?: string[]) => media.playback(source, itemId, choice, codecs))
 ipcMain.handle('media:report', (_event, kind: 'start' | 'progress' | 'stop', playback: MediaPlayback, position: number, paused: boolean) =>
   media.report(kind, playback, position, paused).catch((err) => logInput(`media: report ${kind} failed: ${err}`))
 )

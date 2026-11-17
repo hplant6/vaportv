@@ -39,6 +39,16 @@ const BAR_MS = 3500
 const BUTTONS_BAR_MS = 8000
 const REPORT_MS = 10_000
 
+/**
+ * Video codecs beyond H.264 this machine's Chromium can decode (Main 10 H.265 on the Deck's GPU), so the
+ * server sends those as they are, repackaged, rather than re-encoding them.
+ */
+function decodableCodecs(): string[] {
+  const found: string[] = []
+  if (MediaSource.isTypeSupported('video/mp4; codecs="hvc1.2.4.L120.B0"') && MediaSource.isTypeSupported('video/mp4; codecs="hvc1.1.6.L120.B0"')) found.push('hevc')
+  return found
+}
+
 /** Mounted once (App): opens when a Continue watching card asks. */
 export function MediaPlayerHost() {
   const [item, setItem] = useState<{ source: string; id: string; fromStart?: boolean } | null>(null)
@@ -133,7 +143,7 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     let hls: Hls | null = null
     let cancelled = false
     window.steamtv.media
-      .playback(source, itemId, choice)
+      .playback(source, itemId, choice, decodableCodecs())
       .then(async (info) => {
         if (cancelled || !video.current) return
         // Where it was left, unless asked to start over (Play from the start); a new track: where it had got to.
