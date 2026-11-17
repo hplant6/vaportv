@@ -225,3 +225,14 @@ export async function albumSongs(id: string): Promise<MusicTags[]> {
 export function hasMusicIndex(): boolean {
   return existsSync(INDEX_FILE)
 }
+
+/** A song in the index by path (its tags), if it's there. */
+export function indexedSong(path: string): MusicTags | undefined {
+  return songs[path]
+}
+
+/** Every song in the index. */
+export async function librarySongs(): Promise<MusicTags[]> {
+  await load()
+  return Object.values(songs)
+}

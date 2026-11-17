@@ -4,6 +4,7 @@ import { AppTile } from '../components/AppTile'
 import { CardRow } from '../components/CardRow'
 import { CollectionGrid } from '../components/CollectionGrid'
 import { ContinueWatching } from '../components/ContinueWatching'
+import { MusicRow } from '../components/MusicRow'
 import { NavBar, type Screen } from '../components/NavBar'
 import { usePageScroll } from './usePageScroll'
 
@@ -21,6 +22,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
               <CollectionGrid title="Recents" items={data.recents} logos={data.platformLogos} memoryKey="recents" hasDefault />
               <FavoriteApps data={data} variant="flow" />
               <ContinueWatching />
+              <MusicRow />
               <Playlists data={data} />
             </div>
           ) : (
@@ -39,6 +41,7 @@ export function Home({ data, onNavigate }: { data: HomeData; onNavigate: (screen
               <div className={`home-lower${data.recents.length ? '' : ' no-recents'}`}>
                 <FavoriteApps data={data} variant={data.recents.length ? undefined : 'no-recents'} />
                 <ContinueWatching />
+                <MusicRow />
                 <Playlists data={data} />
               </div>
             </>

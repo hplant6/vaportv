@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MusicEntry, MusicFolder, MusicPlace, MusicTags, VoiceState } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
-import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, trap, TRAP_CLOSE_EVENT, TRAP_SIDE_BAR_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
+import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, trap, TRAP_CLOSE_EVENT, TRAP_SIDE_BAR_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { play } from '../input/sounds'
 import { cycleRepeat, current, next, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
 import { FloatingCover } from '../music/FloatingCover'
+import { isLiked, startRadio, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
@@ -754,6 +755,8 @@ function Browser({
                         data-focusable=""
                         data-select-sound="move"
                         data-path={e.path}
+                        data-song-path={e.path}
+                        data-title={t?.title ?? fileTitle(e)}
                         onFocus={(event) => centre(list.current, event.currentTarget)}
                         onClick={() => start(i)}
                       >
@@ -881,6 +884,21 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   const family = useControllerFamily()
   const song = current()
+  // The heart (liked or not) and radio (with Claude Code on the box).
+  useMusicFavorites()
+  const liked = isLiked(song?.path)
+  const claudeReady = useClaudeReady()
+  const like = useCallback((): void => {
+    const now = current()
+    if (now) void toggleLiked(now.path, now.title)
+  }, [])
+
+  // The Favorite button (Y by default) likes or unlikes the song playing.
+  useEffect(() => {
+    const onFavorite = (): void => (showBar(), like())
+    window.addEventListener(PLAYER_TRACKS_EVENT, onFavorite)
+    return () => window.removeEventListener(PLAYER_TRACKS_EVENT, onFavorite)
+  }, [like])
 
   const setOnButtons = (on: boolean): void => {
     onButtonsRef.current = on
@@ -1024,6 +1042,14 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
             <PlayerButton label={player.repeat === 'off' ? 'Repeat: off' : player.repeat === 'all' ? 'Repeat: all' : 'Repeat: this song'} pressed={player.repeat !== 'off'} onClick={() => (showBar(), cycleRepeat())}>
               {player.repeat === 'one' ? ICONS.repeatOne : ICONS.repeat}
             </PlayerButton>
+            <PlayerButton label={liked ? 'Liked: unlike this song' : 'Like this song'} pressed={liked} onClick={() => (showBar(), like())}>
+              <path d="M12 19.5s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 6.6a4.2 4.2 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" className={liked ? 'fill' : undefined} />
+            </PlayerButton>
+            {claudeReady && song && (
+              <PlayerButton label={`Radio: songs like ${song.title} (Claude picks them)`} onClick={() => (showBar(), void startRadio(song, null))}>
+                <path d="M4.5 9.5h15v9.5h-15zM7.5 9.5l9.5-4.5M8 14.25h4M15.5 14.25m-1.75 0a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0-3.5 0" />
+              </PlayerButton>
+            )}
             <PlayerButton
               label="Controller shortcuts"
               pressed={keysShown}
@@ -1052,6 +1078,9 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
           </span>
           <span className="files-hint">
             <DpadIcon /> Down to these buttons, up to the seek bar
+          </span>
+          <span className="files-hint">
+            <ButtonIcon button={controls.favorite} family={family} /> Like this song (Liked songs)
           </span>
           <span className="files-hint">
             <ButtonIcon button={controls.back} family={family} /> Back to your music (it keeps playing)

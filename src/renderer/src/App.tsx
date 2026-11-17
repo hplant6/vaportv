@@ -20,6 +20,7 @@ import { MediaPlayerHost } from './components/MediaPlayer'
 import { MediaDetailsHost } from './components/MediaDetails'
 import { MediaTab } from './screens/MediaTab'
 import { MusicTab } from './screens/MusicTab'
+import { SongMenu } from './music/SongMenu'
 import { LaunchOverlay } from './components/LaunchOverlay'
 import { ArtworkDialog } from './components/ArtworkDialog'
 import { RepairDialog } from './components/RepairDialog'
@@ -464,6 +465,7 @@ export function App() {
       <FilesApp />
       <ClaudeApp />
       <MusicApp />
+      <SongMenu />
       <SearchScreen apps={home?.allApps ?? []} logos={home?.platformLogos ?? {}} />
       <LaunchOverlay />
       <SleepPrompt />

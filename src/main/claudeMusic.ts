@@ -5,9 +5,10 @@ import { homedir, tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { claudeBin, toolEnv } from './claude'
 import { ownHelper } from './helpers'
-import { albumSongs, libraryAlbums } from './musicIndex'
+import { albumSongs, indexedSong, libraryAlbums } from './musicIndex'
 import { browseMusic, musicAlbums } from './musicLibrary'
-import type { MusicAlbum, MusicAnswer, MusicEntry } from '../shared/types'
+import type { MusicAlbum, MusicAnswer, MusicEntry, MusicTags } from '../shared/types'
+import { readTags } from './musicLibrary'
 
 // The Music app's voice search, through Claude Code: what was heard goes to Claude with every
 // album in the library (its folder path, "Artist/Album", one numbered line each), and Claude
@@ -120,4 +121,43 @@ export async function askMusic(heard: string): Promise<MusicAnswer | null> {
   // The same folder twice (two albums in one): once.
   const unique = [...new Map(picked.map((p) => [p.path, p])).values()]
   return { albums: unique, songs: songs.slice(0, MOST_SONGS), action: answer.action }
+}
+
+/** A radio station holds about this many songs, at most this many from any one album. */
+const RADIO_SONGS = 60
+const RADIO_PER_ALBUM = 3
+
+/** Shuffled in place (Fisher–Yates). */
+function shuffle<T>(list: T[]): T[] {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[list[i], list[j]] = [list[j], list[i]]
+  }
+  return list
+}
+
+/**
+ * Radio from a song, as Google Play Music's was: Claude picks the albums in the library that
+ * sound like it (the same prompt and library as spoken requests, so its cache serves both), and
+ * the station is the song, then a few songs from each of those albums, shuffled. Null without
+ * Claude Code, before the index has albums, or if Claude fails or finds nothing.
+ */
+export async function musicRadio(path: string): Promise<MusicTags[] | null> {
+  const bin = claudeBin()
+  if (!bin) return null
+  const seed = indexedSong(path) ?? (await readTags(path).catch(() => null))
+  const albums = (await libraryAlbums()).slice(0, MOST_ALBUMS)
+  if (!seed || !albums.length) return null
+  await writePrompt(albums.map(albumLine))
+  const facts = [seed.album && `from ${seed.album}`, seed.year, seed.genre].filter(Boolean).join(', ')
+  const request = `Make a radio station from the song "${seed.title}"${seed.artist ? ` by ${seed.artist}` : ''}${facts ? ` (${facts})` : ''}: pick 15 to 25 albums in the library that sound like it (similar artists, era, style and mood), best first, the song's own album included if it's there. Action: shuffle.`
+  const reply = await ask(bin, request)
+  const answer = reply === null ? null : readAnswer(reply, albums.length)
+  if (!answer?.picks.length) return null
+  const picked: MusicTags[] = []
+  for (const n of answer.picks) {
+    const songs = (await albumSongs(albums[n].id)).filter((s) => s.path !== seed.path)
+    picked.push(...shuffle(songs).slice(0, RADIO_PER_ALBUM))
+  }
+  return [seed, ...shuffle(picked).slice(0, RADIO_SONGS - 1)]
 }

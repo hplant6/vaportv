@@ -375,6 +375,12 @@ export interface MusicAlbum {
   songs: number
 }
 
+/** Liked songs and favorite albums, newest first. */
+export interface MusicFavorites {
+  songs: MusicTags[]
+  albums: MusicAlbum[]
+}
+
 /** How the music index's scan is going. */
 export interface MusicIndexStatus {
   scanning: boolean
@@ -1092,6 +1098,15 @@ export interface SteamTvApi {
     indexStatus(): Promise<MusicIndexStatus>
     /** The index's scan as it goes. */
     onIndex(callback: (status: MusicIndexStatus) => void): () => void
+    favorites(): Promise<MusicFavorites>
+    /** Likes or unlikes a song; true if liked now. */
+    toggleSong(path: string): Promise<boolean>
+    /** Favorites or unfavorites an album (by index id); true if a favorite now. */
+    toggleAlbum(id: string): Promise<boolean>
+    /** Whether Claude Code is on this box (radio and spoken requests need it). */
+    claudeReady(): Promise<boolean>
+    /** A radio station from a song, through Claude: the song, then songs like it from the library. Null without Claude, or if it fails. */
+    radio(path: string): Promise<MusicTags[] | null>
   }
   /** The Claude app (a spoken conversation with Claude Code). */
   claude: {

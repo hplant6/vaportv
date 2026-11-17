@@ -345,6 +345,9 @@ export const MEDIA_FAVORITE_EVENT = 'steamtv:media-favorite'
 /** X on one: its playlists. MediaDetails listens; detail is the card. */
 export const MEDIA_PLAYLIST_EVENT = 'steamtv:media-playlist'
 
+/** The game-options button on a song: SongMenu opens (detail: the song's row). */
+export const SONG_MENU_EVENT = 'steamtv:song-menu'
+
 export function gameMenu(): void {
   const open = trap()
   if (open?.classList.contains('game-panel')) window.dispatchEvent(new Event(GAME_MENU_CLOSE_EVENT))
@@ -352,6 +355,11 @@ export function gameMenu(): void {
   // A film, show or episode: its details, on a tab or over a show's page (itself a trap).
   if (el?.dataset.mediaSource && (!open || open.classList.contains('media-show'))) {
     window.dispatchEvent(new CustomEvent(MEDIA_DETAILS_EVENT, { detail: el }))
+    return
+  }
+  // A song (the Music tab's pages, the folder browser): its menu (Like, Start radio).
+  if (el?.dataset.songPath && !open?.classList.contains('music-song-menu')) {
+    window.dispatchEvent(new CustomEvent(SONG_MENU_EVENT, { detail: el }))
     return
   }
   if (open) return
