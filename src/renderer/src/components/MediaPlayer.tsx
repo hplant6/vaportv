@@ -571,7 +571,7 @@ function TrackMenu({ playback, onPick }: { playback: MediaPlayback; onPick: (cho
     </button>
   )
   return (
-    <div className="media-tracks" role="menu">
+    <div className="media-tracks" role="menu" onFocus={(e) => e.target.scrollIntoView({ block: 'nearest' })}>
       {playback.audioTracks.length > 0 && (
         <div className="media-tracks-column" data-nav-scope="">
           <h3 className="settings-heading display">Audio</h3>
