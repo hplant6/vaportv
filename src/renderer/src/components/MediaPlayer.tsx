@@ -52,12 +52,36 @@ function decodableCodecs(): string[] {
 /** Mounted once (App): opens when a Continue watching card asks. */
 export function MediaPlayerHost() {
   const [item, setItem] = useState<{ source: string; id: string; fromStart?: boolean } | null>(null)
+  // 'mpv': playing in mpv over vaporTV; 'page': mpv couldn't run, so the page plays it.
+  const [where, setWhere] = useState<'mpv' | 'page'>('mpv')
   useEffect(() => {
-    const open = (event: Event): void => setItem((event as CustomEvent<{ source: string; id: string; fromStart?: boolean }>).detail)
+    const open = (event: Event): void => {
+      const detail = (event as CustomEvent<{ source: string; id: string; fromStart?: boolean }>).detail
+      setWhere('mpv')
+      setItem(detail)
+      window.steamtv.media
+        .playExternal(detail.source, detail.id, detail.fromStart)
+        .then((played) => {
+          if (played) {
+            setItem(null)
+            window.dispatchEvent(new Event(MEDIA_WATCHED_EVENT))
+          } else setWhere('page')
+        })
+        .catch((err) => {
+          console.error('steamtv: mpv:', err)
+          setWhere('page')
+        })
+    }
     window.addEventListener(MEDIA_PLAY_EVENT, open)
     return () => window.removeEventListener(MEDIA_PLAY_EVENT, open)
   }, [])
   if (!item) return null
+  if (where === 'mpv')
+    return (
+      <div className="media-loading-spin" style={{ position: 'fixed', inset: 0, zIndex: 50, background: '#000', display: 'grid', placeItems: 'center' }}>
+        <Spinner />
+      </div>
+    )
   return (
     <MediaPlayer
       key={`${item.source}:${item.id}`}

@@ -1008,6 +1008,8 @@ export interface SteamTvApi {
     libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage>
     /** `codecs`: what the player can decode beyond H.264 ('hevc'), so the server needn't convert it. */
     playback(source: string, itemId: string, choice?: MediaChoice, codecs?: string[]): Promise<MediaPlayback>
+    /** Plays it in mpv, over vaporTV; true once it's been watched and closed, false if mpv couldn't run (play it in the page then). */
+    playExternal(source: string, itemId: string, fromStart?: boolean): Promise<boolean>
     report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }
   gamePlaylists: {

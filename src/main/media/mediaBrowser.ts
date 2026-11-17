@@ -515,6 +515,12 @@ export async function playback(
   return { ...common, url: url.toString(), hls: true, method: 'Transcode' }
 }
 
+/** The file itself, straight from the server (for a player outside vaporTV, which plays any format). */
+export function directUrl(account: MediaAccount, play: Pick<MediaPlayback, 'itemId' | 'mediaSourceId' | 'playSessionId'>): string {
+  const query = new URLSearchParams({ Static: 'true', MediaSourceId: play.mediaSourceId, PlaySessionId: play.playSessionId, api_key: account.token })
+  return `${account.url}${prefix(account.kind)}/Videos/${play.itemId}/stream?${query}`
+}
+
 /** Subtitle files already asked for (by address), so playing a film again doesn't ask twice. */
 const warmed = new Set<string>()
 

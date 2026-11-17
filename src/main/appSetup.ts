@@ -115,7 +115,7 @@ export function directCommand(id: string): { command: string; args: string[] } |
 type Report = (line: string) => void
 
 /** `flatpak install` for this user, from Flathub, reporting its progress. */
-async function installFlatpak(id: string, name: string, report: Report): Promise<void> {
+export async function installFlatpak(id: string, name: string, report: Report): Promise<void> {
   if (flatpakInstalled(id)) return
   await exec('flatpak', ['remote-add', '--user', '--if-not-exists', 'flathub', FLATHUB])
   report(`Installing ${name}…`)
