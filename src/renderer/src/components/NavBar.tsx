@@ -6,7 +6,7 @@ import { ClockCorner } from './ClockCorner'
 import { PowerMenu } from './PowerMenu'
 import { keepCursorInBar, takeBarCursor } from '../input/focus'
 import { MORE_LABEL, TAB_LIST } from '../../../shared/tabs'
-import { NOW_PLAYING_ROW, NowPlayingRow, useNowPlayingOpen } from './NowPlayingRow'
+import { NOW_PLAYING_BUTTON, NowPlayingRow, useNowPlayingOpen } from './NowPlayingRow'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'media' | 'music' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade' | 'more' | 'settings'
 
@@ -20,8 +20,8 @@ export const TABS = TAB_LIST as { id: Screen; label: string }[]
 /** Whether the last bar had its second row open, for the next screen's bar to start from. */
 let rowWasOpen = false
 
-/** Down from the bar (a tab, Settings or power) goes to the second row, which opens it. */
-const INTO_SECOND_ROW = `.${NOW_PLAYING_ROW}`
+/** Down from the bar (a tab, Settings or power) goes to the second row's button nearest it, which opens the row. */
+const INTO_SECOND_ROW = `nearest:.${NOW_PLAYING_BUTTON}`
 
 export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) {
   const [powerOpen, setPowerOpen] = useState(false)

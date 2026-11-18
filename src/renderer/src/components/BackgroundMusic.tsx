@@ -11,9 +11,9 @@ export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
 /** Now playing changed on a layer (detail: its kind). */
 export const NOW_PLAYING_EVENT = 'steamtv:now-playing'
 
-/** Background music's songs and where it is in them (Turn it up takes over from there); null with nothing loaded. */
-let musicLayer: (() => { files: string[]; at: number; time: number; playing: boolean } | null) | null = null
-export function backgroundNow(): { files: string[]; at: number; time: number; playing: boolean } | null {
+/** Background music's songs and where it is in them (Turn it up takes over from there; the bar's second row shows the time); null with nothing loaded. */
+let musicLayer: (() => { files: string[]; at: number; time: number; duration: number; playing: boolean } | null) | null = null
+export function backgroundNow(): { files: string[]; at: number; time: number; duration: number; playing: boolean } | null {
   return musicLayer?.() ?? null
 }
 /** Settings asks a layer to move on, or back (detail: { kind, step }). */
@@ -270,7 +270,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     if (kind === 'music') {
       musicLayer = () => {
         const at = playlist.indexOf(el.src)
-        return el.src && at >= 0 ? { files, at, time: el.currentTime, playing: !el.paused } : null
+        return el.src && at >= 0 ? { files, at, time: el.currentTime, duration: Number.isFinite(el.duration) ? el.duration : 0, playing: !el.paused } : null
       }
     }
     load()
