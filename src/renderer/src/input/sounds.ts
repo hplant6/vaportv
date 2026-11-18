@@ -24,6 +24,8 @@ for (const [name, url] of Object.entries(URLS) as [Sound, string][]) {
 
 export function play(name: Sound): void {
   const buffer = buffers.get(name)
+  // The launch and talk sounds in the input log, to tell which one a press made (move is too frequent to log).
+  if (name !== 'move') window.steamtv.logInput(`sound: ${name}${buffer ? '' : ' (not loaded)'}`)
   if (!buffer) return
   if (context.state === 'suspended') context.resume()
   // Restart rather than layer, so holding a direction doesn't pile sounds up.
