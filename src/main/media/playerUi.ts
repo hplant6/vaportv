@@ -1,3 +1,5 @@
+import type { ButtonIconName } from '../../shared/buttonIcons'
+
 // What the mpv player's on-screen controls do, apart from drawing them (playerOsd.ts) and from mpv
 // (externalPlayer.ts): the same controls as the page's player (MediaPlayer.tsx). The bar has two
 // rows the cursor moves between: the seek bar, where it starts (A plays or pauses, D-pad left and
@@ -60,7 +62,13 @@ export interface PlayerState {
   note: { text: string; until: number } | null
   /** The controller button's panel: every shortcut, by the buttons' names on the controller in use. */
   keysShown: boolean
-  shortcuts: { keys: string; what: string }[]
+  shortcuts: PlayerShortcut[]
+}
+
+/** A line of the shortcuts panel: the buttons' pictures (or their names, without one), and what they do. */
+export interface PlayerShortcut {
+  icons: ({ name: ButtonIconName; wide?: boolean; mark?: string } | { text: string })[]
+  what: string
 }
 
 export const SKIP_S = 10

@@ -4,6 +4,8 @@ import { padDecoder, padId } from './padInput'
 import { matchTracks, shortcutList } from './externalPlayer'
 import { DEFAULT_CONTROLS } from '../../shared/controls'
 import { assText, fit, renderOsd } from './playerOsd'
+import { assDrawing, parsePath, parseSvg, parseTransform } from './svgToAss'
+import { glyphDrawing } from './buttonGlyphs'
 
 const fonts = { display: 'Tilt Warp', body: 'Bricolage Grotesque 96pt ExtraBold', bodyBold: 'Bricolage Grotesque 96pt ExtraBold ExtraBold' }
 
@@ -145,7 +147,7 @@ describe('drawing', () => {
     const state = playing()
     expect(renderOsd(state, 0, fonts)).toContain('Bugonia')
     expect(renderOsd({ ...state, barUntil: 0 }, 10_000, fonts)).toBe('')
-    expect(renderOsd({ ...state, keysShown: true, shortcuts: [{ keys: 'A', what: 'Play / pause' }] }, 0, fonts)).toContain('Shortcuts')
+    expect(renderOsd({ ...state, keysShown: true, shortcuts: [{ icons: [{ name: 'a_XBOX' }], what: 'Play / pause' }] }, 0, fonts)).toContain('Shortcuts')
   })
 })
 
@@ -161,11 +163,11 @@ describe('controller shortcuts', () => {
     expect(commands).toEqual([])
   })
 
-  it('names the buttons as the controller in use marks them', () => {
+  it("shows the controller in use's own button pictures", () => {
     const xbox = shortcutList(DEFAULT_CONTROLS, 'xbox')
-    expect(xbox[0]).toEqual({ keys: 'A', what: 'Play / pause' })
-    expect(xbox.find((s) => s.what === '10 seconds back / on')?.keys).toBe('L2 / R2')
-    expect(shortcutList(DEFAULT_CONTROLS, 'ps5')[0].keys).toBe('Cross')
+    expect(xbox[0]).toEqual({ icons: [{ name: 'a_XBOX', wide: undefined, mark: undefined }], what: 'Play / pause' })
+    expect(xbox.find((s) => s.what === '10 seconds back / on')?.icons.map((i) => ('name' in i ? i.name : i.text))).toEqual(['lt', 'rt'])
+    expect(shortcutList(DEFAULT_CONTROLS, 'ps5')[0].icons[0]).toMatchObject({ name: 'a_PS' })
   })
 
   it("finds the first real controller, not Steam's copy", () => {
@@ -174,5 +176,54 @@ describe('controller shortcuts', () => {
       'I: Bus=0003 Vendor=054c Product=0ce6 Version=8111\nN: Name="DualSense Wireless Controller"\nH: Handlers=event18 js2'
     ].join('\n\n')
     expect(padId(devices)).toBe('DualSense Wireless Controller (Vendor: 054c Product: 0ce6)')
+  })
+})
+
+describe('SVG to ASS', () => {
+  it('reads relative and absolute commands, H/V, S and Z', () => {
+    const c = parsePath('M10,10h5v5H10Zm20,0c1,0,2,1,2,2s-1,2-2,2')
+    expect(c[0]).toEqual({ op: 'm', to: [10, 10] })
+    expect(c[1]).toEqual({ op: 'l', to: [15, 10] })
+    expect(c[2]).toEqual({ op: 'l', to: [15, 15] })
+    expect(c[4]).toEqual({ op: 'l', to: [10, 10] })
+    // m after Z is relative to where Z left it (the subpath's start).
+    expect(c[5]).toEqual({ op: 'm', to: [30, 10] })
+    // S reflects the last control point (32, 11) about the end (32, 12).
+    expect(c[7]).toMatchObject({ op: 'b', c1: [32, 13], to: [30, 14] })
+  })
+
+  it("turns an arc into cubics that end where it does", () => {
+    const c = parsePath('M0,10 A10,10 0 0 1 20,10')
+    const end = c[c.length - 1]
+    expect(end.op).toBe('b')
+    expect(end.to[0]).toBeCloseTo(20)
+    expect(end.to[1]).toBeCloseTo(10)
+  })
+
+  it('applies a rotate about a point', () => {
+    const [x, y] = ((m) => [m[0] * 1 + m[4], m[1] * 1 + m[5]])(parseTransform('rotate(90 0 0)'))
+    expect(x).toBeCloseTo(0)
+    expect(y).toBeCloseTo(1)
+  })
+
+  it('draws a rounded rect scaled from its viewBox', () => {
+    const shape = parseSvg('<svg viewBox="0 0 240 240"><rect x="0" y="0" width="240" height="120" rx="10" ry="10"/></svg>')
+    expect(assDrawing(shape, 100, 50, 40)).toMatch(/^m 101\.7 50 l 138\.3 50 b /)
+  })
+
+  it('has every button picture the page has', () => {
+    for (const name of ['a_XBOX', 'y_PS', 'lt', 'rt', 'dpad_all', 'dpad_leftright', 'back_XBOX', 'start_XBOX', 'a_PS'] as const) {
+      expect(glyphDrawing(name, 0, 0, 40)?.fill).toMatch(/^m /)
+    }
+  })
+
+  it("strokes what its style strokes (RT's outline), and fills the rest", () => {
+    const rt = glyphDrawing('rt', 0, 0, 240)!
+    expect(rt.strokes).toHaveLength(1)
+    expect(rt.strokes[0].width).toBeCloseTo(6)
+    const shape = parseSvg('<svg viewBox="0 0 10 10"><style>.a{fill:none;stroke:#fff;stroke-width:2px}</style><path class="a" d="M0,0L5,0L5,5"/></svg>')
+    expect(shape.commands).toHaveLength(0)
+    // Along and back: m, two lines, then the same two lines reversed.
+    expect(shape.strokes[0].commands.map((c) => c.to)).toEqual([[0, 0], [5, 0], [5, 5], [5, 0], [0, 0]])
   })
 })

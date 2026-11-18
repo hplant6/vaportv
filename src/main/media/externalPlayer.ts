@@ -7,11 +7,12 @@ import { flatpakInstalled } from '../library/emulators'
 import { installFlatpak } from '../appSetup'
 import { STEAMTV_APPID } from '../hotkey'
 import { buttonName, type Controls } from '../../shared/controls'
+import { buttonIcon } from '../../shared/buttonIcons'
 import { controllerFamily, type ControllerFamily } from '../../shared/controllers'
 import { readFile } from 'node:fs/promises'
 import { MpvIpc, type MpvEvent } from './mpvIpc'
 import { padId, readPads, type PadDirection } from './padInput'
-import { handle, initialState, tick, type PlayerCommand, type PlayerInput, type PlayerState, type PlayerTrack } from './playerUi'
+import { handle, initialState, tick, type PlayerCommand, type PlayerInput, type PlayerShortcut, type PlayerState, type PlayerTrack } from './playerUi'
 import { OSD_H, OSD_W, renderOsd, type OsdFonts } from './playerOsd'
 
 // Movies and shows play in mpv (a Flatpak, installed from Flathub the first time): it plays the
@@ -174,17 +175,20 @@ export function matchTracks(
   }
 }
 
-/** The controller button's panel: each shortcut, by the buttons' names on `family`'s controllers. */
-export function shortcutList(controls: Controls, family: ControllerFamily): { keys: string; what: string }[] {
-  const b = (index: number): string => buttonName(index, family)
+/** The controller button's panel: each shortcut, as the pictures of `family`'s buttons (their names where there's no picture). */
+export function shortcutList(controls: Controls, family: ControllerFamily): PlayerShortcut[] {
+  const button = (index: number): PlayerShortcut['icons'][number] => {
+    const icon = buttonIcon(index, family)
+    return icon ? { name: icon.name, wide: icon.wide, mark: icon.mark } : { text: buttonName(index, family) }
+  }
   return [
-    { keys: b(controls.select), what: 'Play / pause' },
-    { keys: 'D-pad ← →', what: 'Scrub (on the seek bar)' },
-    { keys: 'D-pad ↓ ↑', what: 'To these buttons, and back to the seek bar' },
-    { keys: `${b(controls.sideBar)} / ${b(controls.controlsGuide)}`, what: '10 seconds back / on' },
-    { keys: b(controls.favorite), what: 'Audio & subtitles' },
-    { keys: b(controls.back), what: 'Stop' },
-    { keys: `${b(8)} + ${b(9)}`, what: 'Held: stop and go back to vaporTV' }
+    { icons: [button(controls.select)], what: 'Play / pause' },
+    { icons: [{ name: 'dpad_leftright' }], what: 'Scrub (on the seek bar)' },
+    { icons: [{ name: 'dpad_all' }], what: 'Down to these buttons, up to the seek bar' },
+    { icons: [button(controls.sideBar), button(controls.controlsGuide)], what: '10 seconds back / on' },
+    { icons: [button(controls.favorite)], what: 'Audio & subtitles' },
+    { icons: [button(controls.back)], what: 'Stop' },
+    { icons: [button(8), button(9)], what: 'Held: stop, back to vaporTV' }
   ]
 }
 

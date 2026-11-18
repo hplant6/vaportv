@@ -1,4 +1,5 @@
-import { barShown, buttonsOf, menuColumns, menuRows, SKIP_S, type PlayerButtonId, type PlayerState } from './playerUi'
+import { barShown, buttonsOf, menuColumns, menuRows, SKIP_S, type PlayerButtonId, type PlayerShortcut, type PlayerState } from './playerUi'
+import { glyphDrawing } from './buttonGlyphs'
 
 // Draws the mpv player's controls (playerUi.ts) as ASS for mpv's osd-overlay, on a 1920×1080
 // canvas mpv scales to the screen: the page player's look (MediaPlayer.tsx and app.css) redrawn
@@ -360,25 +361,49 @@ function menu(state: PlayerState, fonts: OsdFonts): string[] {
   return lines
 }
 
-/** The controller button's panel: every shortcut, over the video's lower right, on the menus' glass. */
+/** The pictures' size in the shortcuts, as the page's hints (.files-hint .control-icon); the bumpers' band is wider. */
+const KEY_ICON = 40
+const KEY_ICON_WIDE = 60
+
+/** The controller button's panel: every shortcut (the buttons' pictures, then what they do), over the video's lower right, on the menus' glass. */
 function shortcuts(state: PlayerState, fonts: OsdFonts): string[] {
   if (!state.keysShown || !state.shortcuts.length) return []
   const lines: string[] = []
-  const rowH = 38
-  const keyW = Math.max(...state.shortcuts.map((s) => s.keys.length)) * 13 + 28
-  const w = 36 * 2 + keyW + 16 + Math.max(...state.shortcuts.map((s) => s.what.length)) * 11
-  const h = 28 * 2 + 52 + state.shortcuts.length * rowH
+  const rowH = KEY_ICON
+  const gap = 18
+  const iconWidth = (icon: PlayerShortcut['icons'][number]): number => ('text' in icon ? icon.text.length * 13 + 16 : icon.wide ? KEY_ICON_WIDE : KEY_ICON)
+  const iconsWidth = (s: PlayerShortcut): number => s.icons.reduce((w, icon) => w + iconWidth(icon), 0) + (s.icons.length - 1) * 4
+  const keysW = Math.max(...state.shortcuts.map(iconsWidth))
+  const textW = Math.max(...state.shortcuts.map((s) => s.what.length)) * 20 * 0.52
+  const w = 36 * 2 + keysW + 10 + textW
+  const h = 28 * 2 + 40 + 4 + gap + state.shortcuts.length * (rowH + gap) - gap
   const x = OSD_W - PAD_X - w
   const y = OSD_H - 340 - h
   lines.push(shape(roundRect(x + 4, y + 30, w - 8, h, 28), BLACK, 0.5, '\\blur30'))
   lines.push(shape(roundRect(x, y, w, h, 28), PANEL, 0.92))
   lines.push(text(x + 36, y + 28 + 20, 4, fonts.display, 32, WHITE, 'Shortcuts', '\\fsp1'))
   state.shortcuts.forEach((s, i) => {
-    const cy = y + 28 + 52 + i * rowH + rowH / 2
-    // The buttons in a pill, then what they do.
-    lines.push(shape(roundRect(x + 36, cy - 15, keyW, 30, 15), WHITE, 0.14))
-    lines.push(text(x + 36 + keyW / 2, cy, 5, fonts.bodyBold, 18, WHITE, s.keys))
-    lines.push(text(x + 36 + keyW + 16, cy, 4, fonts.body, 20, WHITE, s.what))
+    const top = y + 28 + 40 + 4 + gap + i * (rowH + gap)
+    let ix = x + 36
+    for (const icon of s.icons) {
+      const iw = iconWidth(icon)
+      if ('text' in icon) {
+        lines.push(shape(roundRect(ix, top + 6, iw, rowH - 12, (rowH - 12) / 2), WHITE, 0.14))
+        lines.push(text(ix + iw / 2, top + rowH / 2, 5, fonts.bodyBold, 18, WHITE, icon.text))
+      } else {
+        // A bumper's picture is a band across a square: drawn square, cut to the band.
+        const size = icon.wide ? iw : KEY_ICON
+        const drawn = glyphDrawing(icon.name, ix, top + rowH / 2 - size / 2, size)
+        const clip = icon.wide ? `\\clip(${n(ix)},${n(top)},${n(ix + iw)},${n(top + rowH)})` : ''
+        if (drawn?.fill) lines.push(shape(drawn.fill, WHITE, 1, clip))
+        for (const stroke of drawn?.strokes ?? []) {
+          lines.push(`{\\an7\\pos(0,0)${BASE}\\bord${n(stroke.width / 2)}\\1a&HFF&\\3c${colour(WHITE)}\\3a&H00&${clip}\\p1}${stroke.path}{\\p0}`)
+        }
+        if (icon.mark) lines.push(text(ix + iw + 4, top + rowH + 2, 3, fonts.bodyBold, 16, WHITE, icon.mark))
+      }
+      ix += iw + 4
+    }
+    lines.push(text(x + 36 + keysW + 10, top + rowH / 2, 4, fonts.body, 20, WHITE, s.what))
   })
   return lines
 }
