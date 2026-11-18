@@ -22,3 +22,18 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* The player's cursor (the extension moves it over Netflix's buttons with the arrows): vaporTV's gold
+   ring, round on the round buttons, a rounded box on a panel's choices with a faint gold tint. */
+[data-vaportv-cursor] {
+  outline: 4px solid #fca10f !important;
+  outline-offset: 4px !important;
+  border-radius: 10px;
+  background-color: rgba(238, 150, 13, 0.18) !important;
+}
+
+[data-uia^='control-'][data-vaportv-cursor],
+[data-uia='control-nav-back'][data-vaportv-cursor] {
+  border-radius: 50%;
+  background-color: transparent !important;
+}

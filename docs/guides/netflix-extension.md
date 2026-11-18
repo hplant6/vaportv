@@ -10,7 +10,12 @@ vaporTV opens Netflix as its website, in Google Chrome. The website is made for 
 - **Up and down** go to the nearest title in the row above or below, with the big banner's buttons and the top menu above the first row.
 - **Enter (A)** opens a title's info panel. While it's open the arrows stay inside it, and closing it brings you back to the title you were on.
 - **"Who's watching?"** works too: the arrows move between profiles.
-- **The video player** keeps Netflix's own keys: Space pauses, left and right skip.
+- **The video player** works like vaporTV's own:
+  - **OK (A)** plays and pauses.
+  - **Left and right** skip 10 seconds back and on (so do a controller's **triggers**).
+  - **Down or up** brings up Netflix's buttons with a gold ring on one. The arrows move the ring and OK presses the button: Audio & Subtitles, Next Episode, Episodes, Skip Intro, Back to Browse.
+  - In **Audio & Subtitles** the arrows move between tracks and OK picks one. A controller's **Y** opens it straight away.
+  - **Back (B)** closes a panel, then the buttons, then the player.
 
 It only runs on netflix.com. It reads nothing and sends nothing anywhere.
 
@@ -28,9 +33,7 @@ Then close Netflix if it's open, and open it again. Chrome installs the extensio
 
 ## The controller in Netflix
 
-A remote sends arrow keys, so it works straight away. A controller works through Steam's layout for the Netflix shortcut: its **D-pad** needs to send the **arrow keys**, **A** Enter and **B** Escape.
-
-To check or change it, open Netflix, press the **Steam** button (the Xbox button on an Xbox controller), open the **Controller** settings and edit the layout: set each D-pad direction to the matching arrow key. Steam keeps it for Netflix from then on.
+A remote sends arrow keys, so it works straight away. A controller works too: the extension reads it itself (the **D-pad** or left stick moves, **A** chooses, **B** goes back), as long as Steam's layout for the Netflix shortcut passes it through as a controller, which is Steam's default. A layout that sends the arrow keys, Enter and Escape instead works as well.
 
 ## Updates
 
@@ -39,5 +42,5 @@ The extension comes inside vaporTV. When vaporTV updates, it hands Chrome the ne
 ## If it stops working
 
 - **The arrows do nothing in Netflix:** a SteamOS update may have removed the policy (SteamOS 3.9.5 did). Restart vaporTV: it checks, and offers **Repair** if so (if you chose **Later** last time, run setup again in Desktop Mode instead). See [When an update breaks something](updates.md).
-- **The D-pad moves a mouse pointer instead:** the Netflix shortcut's controller layout isn't sending arrow keys. See **The controller in Netflix** above.
+- **The D-pad moves a mouse pointer instead:** the Netflix shortcut's controller layout turns the controller into a mouse. In Netflix, press the **Steam** button, open the **Controller** settings and choose the default gamepad layout. See **The controller in Netflix** above.
 - **It worked, then Netflix changed:** Netflix sometimes redesigns its pages, which can confuse the extension. Use **Settings → Help → Report a problem**, saying which page it was on.
