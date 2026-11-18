@@ -365,7 +365,12 @@ export async function libraryPage(
   return { items: reply.Items.map((item) => card(item, base)), total: reply.TotalRecordCount ?? start + reply.Items.length }
 }
 
-const MAX_STREAMING_BITRATE = 20_000_000
+/**
+ * The page's player (mpv's fallback): high enough that a file the server only has to repackage is
+ * never re-encoded to fit (a 20 Mbps cap had it re-encoding high-bitrate H.265, which the NAS can't
+ * do in real time).
+ */
+const MAX_STREAMING_BITRATE = 80_000_000
 
 /**
  * What Chromium (vaporTV's player) can play as it is, and how the server should convert the
@@ -409,6 +414,8 @@ interface Stream {
   Title?: string
   IsDefault?: boolean
   IsTextSubtitleStream?: boolean
+  /** A subtitle file beside the video rather than in it. */
+  IsExternal?: boolean
 }
 
 interface Source {
@@ -515,10 +522,83 @@ export async function playback(
   return { ...common, url: url.toString(), hls: true, method: 'Transcode' }
 }
 
-/** The file itself, straight from the server (for a player outside vaporTV, which plays any format). */
-export function directUrl(account: MediaAccount, play: Pick<MediaPlayback, 'itemId' | 'mediaSourceId' | 'playSessionId'>): string {
-  const query = new URLSearchParams({ Static: 'true', MediaSourceId: play.mediaSourceId, PlaySessionId: play.playSessionId, api_key: account.token })
-  return `${account.url}${prefix(account.kind)}/Videos/${play.itemId}/stream?${query}`
+/** A track for a player outside vaporTV (mpv): the server's name for it, and a subtitle file's address. */
+export interface NativeTrack {
+  /** Emby's stream index. */
+  index: number
+  name: string
+  /** A subtitle that's a file beside the video (mpv loads it from here); unset, it's in the video. */
+  url?: string
+}
+
+/** Formats a native player draws itself: every subtitle stays as it is, never burned in. */
+const NATIVE_SUBTITLES = ['srt', 'subrip', 'ass', 'ssa', 'vtt', 'webvtt', 'sub', 'smi', 'ttml', 'mov_text', 'pgssub', 'pgs', 'dvdsub', 'vobsub', 'dvbsub', 'sup']
+const NATIVE_PROFILE = {
+  Name: 'vaporTV (mpv)',
+  MaxStreamingBitrate: 400_000_000,
+  MaxStaticBitrate: 400_000_000,
+  // No container or codec listed: everything plays as it is.
+  DirectPlayProfiles: [{ Type: 'Video' }, { Type: 'Audio' }],
+  TranscodingProfiles: [],
+  ContainerProfiles: [],
+  CodecProfiles: [],
+  SubtitleProfiles: NATIVE_SUBTITLES.flatMap((Format) => [
+    { Format, Method: 'Embed' },
+    { Format, Method: 'External' }
+  ])
+}
+
+/**
+ * How mpv plays `itemId`: the file itself (nothing converted), its tracks with the server's names,
+ * and the ones the server would pick (the user's language preferences; subtitle -1: none).
+ */
+export async function nativePlayback(
+  account: MediaAccount,
+  base: string,
+  itemId: string,
+  device: string,
+  version: string
+): Promise<Omit<MediaPlayback, 'source' | 'audioTracks' | 'subtitleTracks' | 'subtitleUrl'> & { audioStreams: NativeTrack[]; subtitleStreams: NativeTrack[] }> {
+  const root = `${account.url}${prefix(account.kind)}`
+  const headers = authHeaders(account.kind, device, version, account.token)
+  const item = await request<Item>(`${root}${userItem(account, itemId)}`, { headers })
+  const query = new URLSearchParams({ UserId: account.userId, IsPlayback: 'true', AutoOpenLiveStream: 'true', MaxStreamingBitrate: String(NATIVE_PROFILE.MaxStreamingBitrate) })
+  const info = await request<{ PlaySessionId: string; MediaSources: Source[] }>(`${root}/Items/${itemId}/PlaybackInfo?${query}`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ DeviceProfile: NATIVE_PROFILE })
+  })
+  const source = info.MediaSources[0]
+  if (!source) throw new Error('The server has nothing to play for this')
+  const streams = source.MediaStreams ?? []
+  const audio = source.DefaultAudioStreamIndex ?? streams.find((s) => s.Type === 'Audio' && s.IsDefault)?.Index
+  const subtitle = source.DefaultSubtitleStreamIndex ?? -1
+  const key = new URLSearchParams({ api_key: account.token })
+  const subtitleFile = (s: Stream): string => {
+    const format = s.Codec === 'subrip' || !s.Codec ? 'srt' : s.Codec
+    return `${root}/Videos/${itemId}/${source.Id}/Subtitles/${s.Index}/Stream.${format}?${key}`
+  }
+  const shown = card(item, base)
+  const play = new URLSearchParams({ Static: 'true', MediaSourceId: source.Id, PlaySessionId: info.PlaySessionId, ...Object.fromEntries(key) })
+  return {
+    itemId,
+    mediaSourceId: source.Id,
+    playSessionId: info.PlaySessionId,
+    method: 'DirectPlay',
+    url: `${root}/Videos/${itemId}/stream.${source.Container ?? 'mkv'}?${play}`,
+    hls: false,
+    title: shown.title,
+    subtitle: shown.subtitle,
+    backdrop: shown.wide,
+    startSeconds: (item.UserData?.PlaybackPositionTicks ?? 0) / TICKS,
+    durationSeconds: item.RunTimeTicks ? item.RunTimeTicks / TICKS : undefined,
+    audio,
+    subtitleIndex: subtitle,
+    audioStreams: streams.filter((s) => s.Type === 'Audio').map((s, i) => ({ index: s.Index, name: trackName(s, `Track ${i + 1}`) })),
+    subtitleStreams: streams
+      .filter((s) => s.Type === 'Subtitle')
+      .map((s, i) => ({ index: s.Index, name: trackName(s, `Subtitles ${i + 1}`), ...(s.IsExternal ? { url: subtitleFile(s) } : {}) }))
+  }
 }
 
 /** Subtitle files already asked for (by address), so playing a film again doesn't ask twice. */

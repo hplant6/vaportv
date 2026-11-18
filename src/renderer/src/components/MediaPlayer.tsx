@@ -75,6 +75,18 @@ export function MediaPlayerHost() {
     window.addEventListener(MEDIA_PLAY_EVENT, open)
     return () => window.removeEventListener(MEDIA_PLAY_EVENT, open)
   }, [])
+  // While mpv plays over vaporTV: the music waits and the screensaver stays off (the page's player does this itself).
+  const inMpv = !!item && where === 'mpv'
+  useEffect(() => {
+    if (!inMpv) return
+    const holder = {}
+    window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: true }))
+    keepAwake(holder, true)
+    return () => {
+      window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: false }))
+      keepAwake(holder, false)
+    }
+  }, [inMpv])
   if (!item) return null
   if (where === 'mpv')
     return (

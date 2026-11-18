@@ -3,7 +3,7 @@ import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
 import type { MusicTags, MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
-import { playInMpv } from './externalPlayer'
+import { playInMpv, type PlayerHooks } from './externalPlayer'
 import { mediaKey, parseMediaKey } from '../../shared/mediaKey'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
@@ -219,23 +219,33 @@ export async function playback(source: string, itemId: string, choice: MediaChoi
  * Plays it in mpv, reporting to the server as it goes. Resolves true when it played and was closed,
  * false when mpv couldn't be run (the page's own player is then used).
  */
-export async function playExternal(source: string, itemId: string, fromStart = false, onStatus: (line: string) => void = () => undefined): Promise<boolean> {
+export async function playExternal(
+  source: string,
+  itemId: string,
+  fromStart: boolean,
+  hooks: Pick<PlayerHooks, 'controls' | 'log'>
+): Promise<boolean> {
   const a = await account(source)
-  const info = await mediaBrowser.playback(a, base(a), itemId, {}, await device(), version(), ['hevc'])
-  const play: MediaPlayback = { ...info, source }
   const dev = await device()
+  const info = await mediaBrowser.nativePlayback(a, base(a), itemId, dev, version())
   const send = (event: 'start' | 'progress' | 'stop', at: number, paused: boolean): void => {
-    mediaBrowser.report(a, event, { ...play, method: 'DirectPlay' }, at, paused, dev, version()).catch((err) => console.warn(`steamtv: media report ${event}:`, err))
+    mediaBrowser.report(a, event, info, at, paused, dev, version()).catch((err) => hooks.log(`player: media report ${event} failed: ${err}`))
   }
-  const start = fromStart ? 0 : info.startSeconds
-  send('start', start, false)
-  const stoppedAt = await playInMpv({ title: info.title, url: mediaBrowser.directUrl(a, info), startSeconds: start }, (at, paused) => send('progress', at, paused), onStatus)
-  if (stoppedAt === null) {
-    send('stop', start, false)
-    return false
-  }
-  send('stop', stoppedAt, false)
-  return true
+  const stoppedAt = await playInMpv(
+    {
+      title: info.title,
+      subtitle: info.subtitle,
+      url: info.url,
+      startSeconds: fromStart ? 0 : info.startSeconds,
+      durationSeconds: info.durationSeconds,
+      audioStreams: info.audioStreams,
+      subtitleStreams: info.subtitleStreams,
+      audio: info.audio,
+      subtitleTrack: info.subtitleIndex
+    },
+    { ...hooks, onPosition: send }
+  )
+  return stoppedAt !== null
 }
 
 export async function report(event: 'start' | 'progress' | 'stop', play: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void> {
