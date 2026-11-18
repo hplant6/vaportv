@@ -4077,14 +4077,8 @@ button {
 }
 
 .poster-bar-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.poster-bar-icon {
-  width: 15px;
-  height: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* A switch under Sort in the left bar (Media's Show unwatched only): its name, and the

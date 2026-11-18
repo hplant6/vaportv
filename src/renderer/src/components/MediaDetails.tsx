@@ -165,7 +165,9 @@ function MediaDetails({ source, id, start, onClose }: { source: string; id: stri
     ...(item.runtimeMinutes ? [[clock, 'Runtime', length(item.runtimeMinutes)] as Fact] : []),
     ...(item.rating || item.officialRating
       ? [[trophy, 'Rating', [item.rating ? `${item.rating.toFixed(1)} ★` : '', item.officialRating].filter(Boolean).join(' · ')] as Fact]
-      : [])
+      : []),
+    // The critics' score, where the server has it (Emby and Jellyfin get it from OMDb).
+    ...(item.criticRating !== undefined ? [[trophy, 'Rotten Tomatoes', `${Math.round(item.criticRating)}%`] as Fact] : [])
   ]
   const partWay = !show && !item.watched && item.progress > 0
   const markWatched = async (): Promise<void> => {
