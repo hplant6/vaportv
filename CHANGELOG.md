@@ -9,6 +9,23 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+## 0.17.0
+
+### Added
+- **More**: the top bar holds Home and up to nine tabs, and the rest go on the **More** screen, its last tab, with room for as many as you have. Each is a tile with the console's logo over a picture of the console, which turns when you rest on it. B from a console you opened there brings you back to it. **Settings → Tabs** chooses which tabs sit in the bar and which go in More.
+- **Now playing** under the top bar: as each song starts, a row drops down for a few seconds with what's playing and how far in it is. Down from the bar brings it back, with **Stop** and **Skip**. **Settings → Music & sounds → Now playing bar** keeps it open while music plays, or switches it off.
+- Films and shows play in **mpv** (installed the first time), which plays your server's file as it is with the GPU decoding it, so your server no longer has to convert it. vaporTV draws its own controls on it, as before: the seek bar, Audio & subtitles, and a panel of controller shortcuts showing your controller's buttons. If mpv can't start, the old player takes over.
+- The **Video** tab shows just the art: rest on a poster or a Continue watching still and its name, length and score slide up over it, while the gold part-watched line stays in sight. Where your server has the **Rotten Tomatoes** score (Emby and Jellyfin get it from OMDb), it shows there and in a film's details (Start).
+- **vaporTV for Netflix** works from a remote or controller in Netflix's player: OK plays and pauses, left and right skip 10 seconds, up or down reach its buttons (Audio & Subtitles, Next Episode, Skip Intro), and Back closes them. Netflix and the other streaming apps now start with sound.
+
+### Changed
+- The **Claude** app speaks with a new, much more natural voice (Kokoro). It downloads the first time it's used.
+- The song playing has moved from the top corners to the bar's new row: the corners' **Song playing** layout and **Now playing** setting are gone, and a corner that showed the song goes back to the date or the time.
+- The Music tab no longer shows background music's song above its rows (the bar does), and the Apps tab's Music tile is gone (the Music tab plays your music directly).
+
+### Fixed
+- Films that stalled on a slower server: H.265 films are passed to the TV as they are instead of being converted, and the player keeps two minutes ahead.
+
 ## 0.16.0
 
 ### Added
