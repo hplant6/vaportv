@@ -336,61 +336,62 @@ button {
 }
 
 .nav-now {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
+  column-gap: 32px;
+  width: 100%;
   height: 100%;
+  padding: 0 12px;
+  border-radius: 16px;
+  transition: background-color var(--dur-focus) var(--ease-focus);
 }
 
-.nav-now-part {
+/* The cursor on it (Down from the bar): a faint tint, as Settings' rows have. */
+.nav-now:focus {
+  background-color: var(--color-focus-tint);
+}
+
+.nav-now-side,
+.nav-now-middle {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   white-space: nowrap;
 }
 
-.nav-now-part + .nav-now-part {
-  margin-left: 32px;
+.nav-now-side.right {
+  justify-content: flex-end;
 }
 
 .nav-now-label {
+  flex: none;
   font-size: var(--text-body);
   font-weight: var(--nav-weight);
   color: var(--color-text);
 }
 
-.nav-now-song,
-.nav-now-time {
+.nav-now-song {
+  min-width: 0;
   font-family: var(--font-body);
   font-size: var(--text-body);
   color: var(--color-text);
   opacity: 0.85;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
 }
 
-.nav-now-time {
-  font-variant-numeric: tabular-nums;
+/* The song playing: brighter, and room for a long name (the sides give way first). */
+.nav-now-song.now {
+  max-width: 520px;
+  opacity: 1;
 }
 
-/* Back and next: small circled icons. */
-.nav-tab.nav-now-button {
+/* The Next song button's picture, at the row's size. */
+.nav-now .control-icon {
   width: 30px;
   height: 30px;
-  justify-content: center;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-}
-
-.nav-now-button + .nav-now-button {
-  margin-left: -4px;
-}
-
-.nav-now-icon {
-  width: 14px;
-  height: 14px;
 }
 
 .nav-tabs {

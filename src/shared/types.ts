@@ -588,6 +588,8 @@ export interface MusicTrack {
 }
 
 export type MusicVolume = 'low' | 'medium' | 'high'
+/** The bar's second row, the song playing: drops down as each starts then folds away, stays open, or never shows. */
+export type MusicBar = 'auto' | 'always' | 'off'
 
 /** Background sound plays in two layers at once: music, and ambience under it. */
 export type MusicKind = 'music' | 'ambience'
@@ -688,6 +690,7 @@ export interface Settings {
   ambience: string | null
   musicVolume: MusicVolume
   ambienceVolume: MusicVolume
+  musicBar: MusicBar
   backdrop: BackdropStyle
   /** Home's own backdrop, or null when it shows the same as the other screens. */
   homeBackdrop: BackdropStyle | null
@@ -1232,6 +1235,7 @@ export interface SteamTvApi {
   /** Saves every playlist (new, changed, or without the ones deleted). */
   setPlaylists(playlists: Playlist[]): Promise<void>
   setMusicVolume(kind: MusicKind, volume: MusicVolume): Promise<void>
+  setMusicBar(bar: MusicBar): Promise<void>
   /** Adding your own: browse home folders and drives (null for the places to start), then copy a file in as music or ambience. */
   musicFiles: {
     add(path: string, kind: MusicKind): Promise<string>

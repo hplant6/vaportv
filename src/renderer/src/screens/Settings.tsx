@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT, skipTrack, useNowPlaying } from '../components/BackgroundMusic'
+import { MUSIC_BAR_EVENT } from '../components/NowPlayingRow'
 import { AddMusicRow } from '../components/AddMusic'
 import { AddBackdropRow } from '../components/AddBackdrop'
 import { RemoveBackdropRow } from '../components/RemoveBackdrop'
@@ -190,6 +191,12 @@ function LayoutChoice({
     </div>
   )
 }
+
+const MUSIC_BARS: { id: MusicBar; name: string; detail: string }[] = [
+  { id: 'auto', name: 'Shows as each song starts', detail: 'Drops down for a few seconds, then folds away. Down from the top bar brings it back' },
+  { id: 'always', name: 'Always open', detail: 'Stays down under the top bar while music plays' },
+  { id: 'off', name: 'Never', detail: "Doesn't show" }
+]
 
 const VOLUMES: { id: MusicVolume; name: string }[] = [
   { id: 'low', name: 'Low' },
@@ -436,6 +443,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings[kind] === choice) return
     setSettings({ ...settings, [kind]: choice })
     window.steamtv.setMusic(kind, choice).then(() => window.dispatchEvent(new Event(MUSIC_CHANGED_EVENT)))
+  }
+
+  const chooseMusicBar = (bar: MusicBar): void => {
+    if (!settings || settings.musicBar === bar) return
+    setSettings({ ...settings, musicBar: bar })
+    window.steamtv.setMusicBar(bar).then(() => window.dispatchEvent(new Event(MUSIC_BAR_EVENT)))
   }
 
   const chooseVolume = (kind: MusicKind, volume: MusicVolume): void => {
@@ -1213,6 +1226,17 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             </div>
           </div>
         ))}
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Now playing bar</h3>
+          <p className="settings-help">The song playing and what's up next, in a row under the top bar.</p>
+          <div className="setting-list" data-focus-memory="settings-music-bar">
+            {settings &&
+              MUSIC_BARS.map((b) => (
+                <ChoiceRow key={b.id} label={b.name} subtitle={b.detail} selected={settings.musicBar === b.id} onSelect={() => chooseMusicBar(b.id)} />
+              ))}
+          </div>
+        </div>
       </>
     ),
     screensaver: (

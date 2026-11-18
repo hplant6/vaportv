@@ -1166,8 +1166,8 @@ describe('tab arrangement', () => {
 
   it('fills the bar in bar order, then More', async () => {
     const { arrangeTabs } = await import('../../shared/tabs')
-    // Eight fill the bar (with Home and More, ten); the rest go in More.
-    expect(arrangeTabs(all, [])).toEqual({ bar: all.slice(0, 8), more: ['wii', 'dreamcast', 'saturn', 'arcade'] })
+    // Nine fill the bar (with Home and More, eleven); the rest go in More.
+    expect(arrangeTabs(all, [])).toEqual({ bar: all.slice(0, 9), more: ['dreamcast', 'saturn', 'arcade'] })
     // More has no limit.
     expect(arrangeTabs(all, [], { bar: [], more: [...all] }).more).toEqual([...all])
     // Room for everything: nothing in More.
@@ -1176,7 +1176,7 @@ describe('tab arrangement', () => {
     expect(arrangeTabs(['apps', 'switch'], ['switch'])).toEqual({ bar: ['apps'], more: [] })
   })
 
-  it('follows a saved arrangement, placing new tabs and keeping the bar within its eight', async () => {
+  it('follows a saved arrangement, placing new tabs and keeping the bar within its nine', async () => {
     const { arrangeTabs } = await import('../../shared/tabs')
     const saved = { bar: ['switch', 'apps'] as const, more: ['steam'] as const }
     // Saved order kept; PS3 isn't in it yet, so it joins the bar (there's room).
@@ -1186,8 +1186,8 @@ describe('tab arrangement', () => {
     })
     // A bar saved too full: what doesn't fit goes to the front of More.
     const crowded = arrangeTabs(all, [], { bar: [...all], more: [] })
-    expect(crowded.bar).toHaveLength(8)
-    expect(crowded.more).toEqual(['wii', 'dreamcast', 'saturn', 'arcade'])
+    expect(crowded.bar).toHaveLength(9)
+    expect(crowded.more).toEqual(['dreamcast', 'saturn', 'arcade'])
   })
 })
 

@@ -3,7 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Controls } from '../shared/controls'
-import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicBar, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 /** A media server signed in to (media/servers.ts). */
 export interface MediaAccount {
@@ -195,6 +195,8 @@ export interface Config {
   /** Background music: a file in the music folder (relative), 'shuffle' for all of it at random, or unset for none. Set from Settings. */
   music?: string
   musicVolume?: MusicVolume
+  /** The bar's second row (the song playing): 'auto' when unset. */
+  musicBar?: MusicBar
   /** Ambience, the layer under the music: as `music`, from the Ambience folder and the built-in rain. */
   ambience?: string
   ambienceVolume?: MusicVolume

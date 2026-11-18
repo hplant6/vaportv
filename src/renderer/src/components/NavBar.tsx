@@ -6,7 +6,7 @@ import { ClockCorner } from './ClockCorner'
 import { PowerMenu } from './PowerMenu'
 import { keepCursorInBar, takeBarCursor } from '../input/focus'
 import { MORE_LABEL, TAB_LIST } from '../../../shared/tabs'
-import { NOW_PLAYING_BUTTON, NowPlayingRow, useNowPlayingShown } from './NowPlayingRow'
+import { NOW_PLAYING_ROW, NowPlayingRow, useNowPlayingOpen } from './NowPlayingRow'
 
 export type Screen = 'home' | 'steam' | 'apps' | 'media' | 'music' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade' | 'more' | 'settings'
 
@@ -20,8 +20,8 @@ export const TABS = TAB_LIST as { id: Screen; label: string }[]
 /** Whether the last bar had its second row open, for the next screen's bar to start from. */
 let rowWasOpen = false
 
-/** Down from the bar (a tab, Settings or power) goes to the second row's button nearest it. */
-const INTO_SECOND_ROW = `nearest:.${NOW_PLAYING_BUTTON}`
+/** Down from the bar (a tab, Settings or power) goes to the second row, which opens it. */
+const INTO_SECOND_ROW = `.${NOW_PLAYING_ROW}`
 
 export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) {
   const [powerOpen, setPowerOpen] = useState(false)
@@ -33,9 +33,15 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
   const bar = ['home' as const, ...arrangement.bar].map(label)
   if (arrangement.more.length) bar.push({ id: 'more', label: MORE_LABEL })
   const lit: Screen = inMore(active) ? 'more' : active
-  // The second row opens while music plays. Each screen has its own bar, so a new one starts
-  // as the last was, then opens or closes (animating the line, as when a song starts).
-  const shown = useNowPlayingShown()
+  // The second row: the song playing, when Settings → Music & sounds says (as each song starts,
+  // always, or never), and while the cursor's on it. Each screen has its own bar, so a new one
+  // starts as the last was, then opens or closes (animating the line).
+  const [rowFocused, setRowFocused] = useState(false)
+  const { open: shown, reachable } = useNowPlayingOpen(rowFocused)
+  // A row taken away while the cursor was on it never says it lost it.
+  useEffect(() => {
+    if (!reachable) setRowFocused(false)
+  }, [reachable])
   const [open, setOpen] = useState(rowWasOpen)
   useEffect(() => {
     // Two frames, so the starting state is drawn before the change.
@@ -54,8 +60,8 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
     onNavigate(id)
   }
 
-  // With the second row up, Down from the bar steps into it.
-  const down = shown ? { 'data-nav-down': INTO_SECOND_ROW } : {}
+  // While music plays, Down from the bar steps onto the second row (opening it).
+  const down = reachable ? { 'data-nav-down': INTO_SECOND_ROW } : {}
 
   const tab = (id: Screen, content: React.ReactNode, label: string, icon = false) => (
     <button
@@ -116,7 +122,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
         {/* After the bar's tabs, so a screen with nothing in it starts on Settings, not here.
             B from it goes up to the bar's tab you're on. */}
         <div className="nav-more-list" data-focus-memory="nav-more" data-back-focus=".nav-tab-list .nav-tab.active" aria-hidden={!open}>
-          <NowPlayingRow />
+          {reachable && <NowPlayingRow onFocusChange={setRowFocused} />}
         </div>
       </nav>
       <ClockCorner side="right" />

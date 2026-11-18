@@ -1,7 +1,7 @@
 import type { HideableTab, LayoutTab, PlaylistPlace, TabArrangement } from './types'
 
 // The top bar's tabs, their labels and default order, and how many the bar holds. Past
-// Home and eight more, the rest go in the More screen, opened by the bar's More tab (last,
+// Home and nine more, the rest go in the More screen, opened by the bar's More tab (last,
 // once anything's in it), which holds any number. Settings → Tabs can move any tab (but
 // Home, always first) between the bar and More, reorder them, or switch them off. (More is
 // `more` in code and config; for a while it was a second row under the bar, which now shows
@@ -36,7 +36,7 @@ export const TAB_LIST: { id: 'home' | HideableTab; label: string }[] = [
 ]
 
 /** Names the bar holds, Home and More included. */
-export const BAR_TABS = 10
+export const BAR_TABS = 11
 /** Tabs Settings can put in the bar: all but Home and More. */
 export const BAR_ROOM = BAR_TABS - 2
 /** The bar's tab for the More screen. */
