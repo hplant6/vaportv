@@ -21,7 +21,18 @@ export function useSpinningConsoles(): boolean | null {
  * the More screen's tile under the cursor (`className` sizes it). Nothing if it has no model (or
  * not in this build), WebGL fails, or Spinning consoles is off.
  */
-export function ConsoleSpin({ tab, className = 'side-bar-model', onReady }: { tab: string; className?: string; onReady?: () => void }) {
+export function ConsoleSpin({
+  tab,
+  className = 'side-bar-model',
+  onReady,
+  turnSeconds
+}: {
+  tab: string
+  className?: string
+  onReady?: () => void
+  /** Seconds for one turn (spin.ts's own, unhurried, by default). */
+  turnSeconds?: number
+}) {
   const product = PRODUCTS[tab]
   const on = useSpinningConsoles()
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -46,7 +57,9 @@ export function ConsoleSpin({ tab, className = 'side-bar-model', onReady }: { ta
             setReady(true)
             onReady?.()
           },
-          fail
+          fail,
+          undefined,
+          turnSeconds
         )
       })
       .catch(fail)

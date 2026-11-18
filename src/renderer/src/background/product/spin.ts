@@ -10,7 +10,7 @@ import { addRig, buildConsole, environment } from './scene'
 // shows round it. It's small, so drawn plainly: at most the screen's own pixels, 30 frames a
 // second, and not at all while vaporTV's in the background (a game's running).
 
-/** One turn every this many seconds. */
+/** One turn every this many seconds (the left bar's; the More screen's tiles pass their own). */
 const TURN_SECONDS = 24
 /** How far above the console the camera looks down (a product's spin.elevation instead, if it has one). */
 const ELEVATION = 18
@@ -45,7 +45,8 @@ export function startSpin(
   product: Product,
   onReady: () => void,
   onError: (err: unknown) => void,
-  still?: { width: number; height: number; scale: number }
+  still?: { width: number; height: number; scale: number },
+  turnSeconds = TURN_SECONDS
 ): () => void {
   const elevation = THREE.MathUtils.degToRad(product.spin?.elevation ?? ELEVATION)
   const margin = product.spin?.margin ?? MARGIN
@@ -134,7 +135,7 @@ export function startSpin(
       return
     }
     if (!pace(now)) return
-    angle += last === null ? 0 : (Math.min((now - last) / 1000, 0.1) / TURN_SECONDS) * Math.PI * 2
+    angle += last === null ? 0 : (Math.min((now - last) / 1000, 0.1) / turnSeconds) * Math.PI * 2
     last = now
     turntable.rotation.y = angle
     renderer.render(scene, camera)

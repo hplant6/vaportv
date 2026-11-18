@@ -16,6 +16,8 @@ export function pickedFromMore(screen: Screen): void {
 
 /** The cursor must rest on a tile this long before its console starts turning (passing over them doesn't load each one). */
 const SPIN_AFTER_MS = 350
+/** One turn every this many seconds: brisker than the left bar's, as it's only while the tile's picked. */
+const TURN_SECONDS = 8
 
 /**
  * One of More's tiles: the tab's logo (or name, for those without one: Apps, Video, Music) over
@@ -53,7 +55,7 @@ function MoreTile({ id, label, isDefault, onOpen }: { id: Screen; label: string;
       {hasModel && (
         <span className="more-tile-console">
           {still && <img className={`more-tile-still${turning && drawn ? ' hidden' : ''}`} src={still} alt="" />}
-          {turning && <ConsoleSpin tab={id} className="more-tile-spin" onReady={() => setDrawn(true)} />}
+          {turning && <ConsoleSpin tab={id} className="more-tile-spin" turnSeconds={TURN_SECONDS} onReady={() => setDrawn(true)} />}
         </span>
       )}
     </button>
