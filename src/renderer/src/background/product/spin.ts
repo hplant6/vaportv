@@ -35,14 +35,24 @@ function fits(camera: THREE.PerspectiveCamera, radius: number, height: number, m
   return true
 }
 
-/** Starts `product` turning on `canvas` (sized by CSS); onReady once its first frame is drawn. Returns a stop function. */
-export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: () => void, onError: (err: unknown) => void): () => void {
+/**
+ * Starts `product` turning on `canvas` (sized by CSS); onReady once its first frame is drawn. Returns a stop function.
+ * `still`: a canvas that isn't on the page (`width` by `height` stage pixels, drawn at `scale`), drawn once, at the angle
+ * the turning one starts at; onReady comes straight after, while the picture's still there to copy (toDataURL).
+ */
+export function startSpin(
+  canvas: HTMLCanvasElement,
+  product: Product,
+  onReady: () => void,
+  onError: (err: unknown) => void,
+  still?: { width: number; height: number; scale: number }
+): () => void {
   const elevation = THREE.MathUtils.degToRad(product.spin?.elevation ?? ELEVATION)
   const margin = product.spin?.margin ?? MARGIN
-  const width = canvas.clientWidth
-  const height = canvas.clientHeight
+  const width = still?.width ?? canvas.clientWidth
+  const height = still?.height ?? canvas.clientHeight
   // The stage is scaled to the screen: draw at the screen's pixels, but never more than one per stage pixel.
-  const scale = canvas.getBoundingClientRect().width / width || 1
+  const scale = still?.scale ?? (canvas.getBoundingClientRect().width / width || 1)
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' })
   renderer.setPixelRatio(Math.min(1, scale * window.devicePixelRatio))
   renderer.setSize(width, height, false)
@@ -119,7 +129,7 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
   const pace = pacer(FPS)
   const frame = (now: number): void => {
     raf = requestAnimationFrame(frame)
-    if (!ready || document.hidden || (away && shown)) {
+    if (!ready || (!still && (document.hidden || (away && shown)))) {
       last = null
       return
     }
@@ -128,6 +138,11 @@ export function startSpin(canvas: HTMLCanvasElement, product: Product, onReady: 
     last = now
     turntable.rotation.y = angle
     renderer.render(scene, camera)
+    if (still) {
+      cancelAnimationFrame(raf)
+      onReady()
+      return
+    }
     if (!shown) {
       shown = true
       onReady()

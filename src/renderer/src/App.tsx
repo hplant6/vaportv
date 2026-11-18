@@ -285,7 +285,7 @@ export function App() {
         />
       )}
       {screen === 'apps' && home && <Apps apps={home.allApps} onNavigate={setScreen} />}
-      {screen === 'more' && <More logos={home?.platformLogos ?? {}} onNavigate={setScreen} />}
+      {screen === 'more' && <More onNavigate={setScreen} />}
       {screen === 'media' && <MediaTab onNavigate={setScreen} />}
       {screen === 'music' && <MusicTab onNavigate={setScreen} />}
       {screen === 'switch' && home && (

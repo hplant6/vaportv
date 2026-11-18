@@ -4,8 +4,8 @@ import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 
-/** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id. */
-const LOGOS = Object.fromEntries(
+/** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id (the More screen's tiles use them too). */
+export const LOGOS = Object.fromEntries(
   Object.entries(import.meta.glob<string>('../assets/logos/*.svg', { query: '?url', import: 'default', eager: true })).map(([path, url]) => [
     path.slice(path.lastIndexOf('/') + 1, -'.svg'.length),
     url

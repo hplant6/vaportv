@@ -19,7 +19,8 @@ export default defineConfig({
   main: { define },
   preload: {},
   renderer: {
-    define: { ...define, __MODEL_KEY__: JSON.stringify(modelKey) },
+    // __BUILD_ID__: the More screen's console pictures are drawn again for a new build (its models may have changed).
+    define: { ...define, __MODEL_KEY__: JSON.stringify(modelKey), __BUILD_ID__: JSON.stringify(String(Date.now())) },
     plugins: [react()]
   }
 })
