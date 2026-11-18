@@ -61,6 +61,21 @@ export function padDevices(devices: string): string[] {
 }
 
 /**
+ * The first real controller's ids, as the page's Gamepad API gives them ("... Vendor: 054c
+ * Product: 0ce6"), for controllerFamily; Steam's own virtual pads (vendor 28de) don't count.
+ */
+export function padId(devices: string): string | null {
+  for (const block of devices.split('\n\n')) {
+    if (!/^H: Handlers=.*\bjs\d+\b/m.test(block)) continue
+    const ids = /^I: Bus=\w+ Vendor=(\w+) Product=(\w+)/m.exec(block)
+    if (!ids || ids[1].toLowerCase() === '28de') continue
+    const name = /^N: Name="(.*)"$/m.exec(block)?.[1] ?? 'Controller'
+    return `${name} (Vendor: ${ids[1]} Product: ${ids[2]})`
+  }
+  return null
+}
+
+/**
  * Turns one device's raw events into presses: `press(kind, value)`. Pure apart from the
  * callbacks, so the hat and trigger handling can be tested.
  */

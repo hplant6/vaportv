@@ -31,7 +31,7 @@ export interface PlayerTrack {
   name: string
 }
 
-export type PlayerButtonId = 'stop' | 'back' | 'playPause' | 'on' | 'tracks'
+export type PlayerButtonId = 'stop' | 'back' | 'playPause' | 'on' | 'tracks' | 'keys'
 
 export interface PlayerState {
   title: string
@@ -58,6 +58,9 @@ export interface PlayerState {
   skipped: { by: number; until: number } | null
   /** A short line in the middle ("This has no other audio or subtitles"). */
   note: { text: string; until: number } | null
+  /** The controller button's panel: every shortcut, by the buttons' names on the controller in use. */
+  keysShown: boolean
+  shortcuts: { keys: string; what: string }[]
 }
 
 export const SKIP_S = 10
@@ -90,13 +93,15 @@ export function initialState(title: string, subtitle: string, now: number): Play
     menu: null,
     scrub: null,
     skipped: null,
-    note: null
+    note: null,
+    keysShown: false,
+    shortcuts: []
   }
 }
 
 /** The buttons along the bottom row, in order. */
 export function buttonsOf(state: PlayerState): PlayerButtonId[] {
-  return hasTracks(state) ? ['stop', 'back', 'playPause', 'on', 'tracks'] : ['stop', 'back', 'playPause', 'on']
+  return hasTracks(state) ? ['stop', 'back', 'playPause', 'on', 'tracks', 'keys'] : ['stop', 'back', 'playPause', 'on', 'keys']
 }
 
 export function hasTracks(state: PlayerState): boolean {
@@ -150,7 +155,9 @@ function press(state: PlayerState, button: PlayerButtonId, now: number): [Player
     case 'playPause':
       return [showBar({ ...state, paused: !state.paused }, now), [{ pause: !state.paused }]]
     case 'tracks':
-      return [openMenu(state, now), []]
+      return [openMenu({ ...state, keysShown: false }, now), []]
+    case 'keys':
+      return [showBar({ ...state, keysShown: !state.keysShown }, now), []]
   }
 }
 
@@ -196,12 +203,13 @@ export function handle(state: PlayerState, input: PlayerInput, now: number): [Pl
   }
 
   const hidden = !barShown(state, now)
+  if (input === 'back' && state.keysShown) return [{ ...state, keysShown: false }, []]
   switch (input) {
     case 'back':
     case 'stop':
       return [state, [{ stop: true }]]
     case 'tracks':
-      return [openMenu(state, now), []]
+      return [openMenu({ ...state, keysShown: false }, now), []]
     case 'skipBack':
       return skip(state, -SKIP_S, now)
     case 'skipOn':
@@ -248,6 +256,7 @@ export function tick(state: PlayerState, now: number): [PlayerState, PlayerComma
     next = { ...showBar(next, now), position: next.scrub.to, scrub: null }
   }
   if (next.row === 'buttons' && !next.paused && !next.menu && now >= next.barUntil) next = { ...next, row: 'seek' }
+  if (next.keysShown && !barShown(next, now)) next = { ...next, keysShown: false }
   if (next.skipped && now >= next.skipped.until) next = { ...next, skipped: null }
   if (next.note && now >= next.note.until) next = { ...next, note: null }
   return [next, commands]

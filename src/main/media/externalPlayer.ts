@@ -6,9 +6,11 @@ import { join } from 'node:path'
 import { flatpakInstalled } from '../library/emulators'
 import { installFlatpak } from '../appSetup'
 import { STEAMTV_APPID } from '../hotkey'
-import type { Controls } from '../../shared/controls'
+import { buttonName, type Controls } from '../../shared/controls'
+import { controllerFamily, type ControllerFamily } from '../../shared/controllers'
+import { readFile } from 'node:fs/promises'
 import { MpvIpc, type MpvEvent } from './mpvIpc'
-import { readPads, type PadDirection } from './padInput'
+import { padId, readPads, type PadDirection } from './padInput'
 import { handle, initialState, tick, type PlayerCommand, type PlayerInput, type PlayerState, type PlayerTrack } from './playerUi'
 import { OSD_H, OSD_W, renderOsd, type OsdFonts } from './playerOsd'
 
@@ -172,6 +174,20 @@ export function matchTracks(
   }
 }
 
+/** The controller button's panel: each shortcut, by the buttons' names on `family`'s controllers. */
+export function shortcutList(controls: Controls, family: ControllerFamily): { keys: string; what: string }[] {
+  const b = (index: number): string => buttonName(index, family)
+  return [
+    { keys: b(controls.select), what: 'Play / pause' },
+    { keys: 'D-pad ← →', what: 'Scrub (on the seek bar)' },
+    { keys: 'D-pad ↓ ↑', what: 'To these buttons, and back to the seek bar' },
+    { keys: `${b(controls.sideBar)} / ${b(controls.controlsGuide)}`, what: '10 seconds back / on' },
+    { keys: b(controls.favorite), what: 'Audio & subtitles' },
+    { keys: b(controls.back), what: 'Stop' },
+    { keys: `${b(8)} + ${b(9)}`, what: 'Held: stop and go back to vaporTV' }
+  ]
+}
+
 /** A controller button (standard index) → what it does in the player, from Settings → Controller. */
 function padInput(controls: Controls, button: number): PlayerInput | null {
   if (button === controls.select) return 'select'
@@ -237,7 +253,8 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
     `--sub-fonts-dir=${FONTS_DIR}`,
     `--sub-font=${fonts.body}`,
     '--sub-bold=no',
-    '--sub-font-size=31',
+    // The page's 46 px subtitles: mpv's size is in 720p units, of the font's whole line height (Bricolage's is 1.56 em).
+    '--sub-font-size=48',
     '--sub-border-style=background-box',
     '--sub-back-color=#9E000000',
     '--sub-margin-y=40',
@@ -268,6 +285,8 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
   void exited.then(() => (running = false))
 
   let state: PlayerState = initialState(play.title, play.subtitle, Date.now())
+  const pad = padId(await readFile('/proc/bus/input/devices', 'utf8').catch(() => ''))
+  state.shortcuts = shortcutList(hooks.controls, pad ? controllerFamily(pad) : 'xbox')
   if (play.durationSeconds) state.duration = play.durationSeconds
   state.position = start
   let started = false

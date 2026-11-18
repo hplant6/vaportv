@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { handle, initialState, tick, type PlayerState } from './playerUi'
-import { padDecoder } from './padInput'
-import { matchTracks } from './externalPlayer'
+import { padDecoder, padId } from './padInput'
+import { matchTracks, shortcutList } from './externalPlayer'
+import { DEFAULT_CONTROLS } from '../../shared/controls'
 import { assText, fit, renderOsd } from './playerOsd'
 
 const fonts = { display: 'Tilt Warp', body: 'Bricolage Grotesque 96pt ExtraBold', bodyBold: 'Bricolage Grotesque 96pt ExtraBold ExtraBold' }
@@ -144,5 +145,34 @@ describe('drawing', () => {
     const state = playing()
     expect(renderOsd(state, 0, fonts)).toContain('Bugonia')
     expect(renderOsd({ ...state, barUntil: 0 }, 10_000, fonts)).toBe('')
+    expect(renderOsd({ ...state, keysShown: true, shortcuts: [{ keys: 'A', what: 'Play / pause' }] }, 0, fonts)).toContain('Shortcuts')
+  })
+})
+
+describe('controller shortcuts', () => {
+  it('the controller button opens the panel and B closes it before stopping', () => {
+    let [state] = handle(playing(), 'down', 100)
+    for (let i = 0; i < 3; i++) [state] = handle(state, 'right', 200 + i)
+    expect(state.button).toBe('keys')
+    ;[state] = handle(state, 'select', 300)
+    expect(state.keysShown).toBe(true)
+    const [closed, commands] = handle(state, 'back', 400)
+    expect(closed.keysShown).toBe(false)
+    expect(commands).toEqual([])
+  })
+
+  it('names the buttons as the controller in use marks them', () => {
+    const xbox = shortcutList(DEFAULT_CONTROLS, 'xbox')
+    expect(xbox[0]).toEqual({ keys: 'A', what: 'Play / pause' })
+    expect(xbox.find((s) => s.what === '10 seconds back / on')?.keys).toBe('L2 / R2')
+    expect(shortcutList(DEFAULT_CONTROLS, 'ps5')[0].keys).toBe('Cross')
+  })
+
+  it("finds the first real controller, not Steam's copy", () => {
+    const devices = [
+      'I: Bus=0003 Vendor=28de Product=11ff Version=0001\nN: Name="Microsoft X-Box 360 pad 0"\nH: Handlers=event17 js1',
+      'I: Bus=0003 Vendor=054c Product=0ce6 Version=8111\nN: Name="DualSense Wireless Controller"\nH: Handlers=event18 js2'
+    ].join('\n\n')
+    expect(padId(devices)).toBe('DualSense Wireless Controller (Vendor: 054c Product: 0ce6)')
   })
 })

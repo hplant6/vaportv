@@ -63,6 +63,23 @@ export function fit(text: string, width: number, size: number, perChar = 0.56): 
 
 const BASE = '\\bord0\\shad0\\blur0\\fsp0\\frz0'
 
+/**
+ * Each font's full line height (OS/2 winAscent + winDescent) in ems. libass makes that, not the em,
+ * the size asked for, so the same number comes out smaller than the page's CSS px: Bricolage by
+ * 1.56 (text meant to be 22 px was 14). Sizes here are the page's px, converted with this.
+ */
+const LINE_HEIGHT: Record<string, number> = {
+  'Marvin Visions Big Bold': 1.2,
+  'Tilt Warp': 1.608,
+  'Bricolage Grotesque 96pt ExtraBold': 1.56,
+  'Bricolage Grotesque 96pt ExtraBold ExtraBold': 1.56
+}
+
+/** The ASS \\fs for a font at the page's `px`. */
+export function assSize(font: string, px: number): number {
+  return Math.round(px * (LINE_HEIGHT[font] ?? 1))
+}
+
 /** A filled shape: `path` in ASS drawing commands, at absolute canvas positions. */
 function shape(path: string, rgb: number, opacity: number, extra = ''): string {
   return `{\\an7\\pos(0,0)${BASE}\\1c${colour(rgb)}\\1a${alpha(opacity)}${extra}\\p1}${path}{\\p0}`
@@ -86,8 +103,15 @@ function roundRect(x: number, y: number, w: number, h: number, r: number): strin
 
 const circle = (cx: number, cy: number, r: number): string => roundRect(cx - r, cy - r, r * 2, r * 2, r)
 
+/** A ring `width` px wide, its middle on radius `r`: the outline of a path round and back, so nothing inside is filled. */
+function ring(cx: number, cy: number, r: number, width: number, rgb: number): string {
+  const points = Array.from({ length: 49 }, (_, i) => `${n(cx + r * Math.cos((i * Math.PI) / 24))} ${n(cy + r * Math.sin((i * Math.PI) / 24))}`)
+  const path = `m ${points[0]} l ${[...points.slice(1), ...points.slice(0, -1).reverse()].join(' ')}`
+  return `{\\an7\\pos(0,0)${BASE}\\bord${n(width / 2)}\\1a&HFF&\\3c${colour(rgb)}\\3a&H00&\\p1}${path}{\\p0}`
+}
+
 function text(x: number, y: number, align: number, font: string, size: number, rgb: number, body: string, extra = ''): string {
-  return `{\\an${align}\\pos(${n(x)},${n(y)})${BASE}\\fn${font}\\fs${size}\\1c${colour(rgb)}\\1a&H00&${extra}}${assText(body)}`
+  return `{\\an${align}\\pos(${n(x)},${n(y)})${BASE}\\fn${font}\\fs${assSize(font, size)}\\1c${colour(rgb)}\\1a&H00&${extra}}${assText(body)}`
 }
 
 // ── Icons: the page player's (PlayerControls ICONS), on the same 24-unit box. ──
@@ -119,7 +143,11 @@ function roundRectPoints(x: number, y: number, w: number, h: number, r: number):
   return [...corner(x + w - r, y + r, -90), ...corner(x + w - r, y + h - r, 0), ...corner(x + r, y + h - r, 90), ...corner(x + r, y + r, 180), [x + w - r, y]]
 }
 
-export const ICONS: Record<'stop' | 'play' | 'pause' | 'back' | 'on' | 'subtitles' | 'check', Icon> = {
+function circlePoints(cx: number, cy: number, r: number): Point[] {
+  return Array.from({ length: 12 }, (_, i) => [cx + r * Math.cos((i * Math.PI) / 6), cy + r * Math.sin((i * Math.PI) / 6)] as Point)
+}
+
+export const ICONS: Record<'stop' | 'play' | 'pause' | 'back' | 'on' | 'subtitles' | 'check' | 'controller', Icon> = {
   stop: { fills: [roundRectPoints(6, 6, 12, 12, 1.5)], strokes: [] },
   play: { fills: [[[8, 5.5], [8, 18.5], [18.5, 12]]], strokes: [] },
   pause: {
@@ -142,7 +170,16 @@ export const ICONS: Record<'stop' | 'play' | 'pause' | 'back' | 'on' | 'subtitle
       [[11, 11], [17, 11]]
     ]
   },
-  check: { fills: [], strokes: [[[5, 12.5], [10, 17], [19, 7]]] }
+  check: { fills: [], strokes: [[[5, 12.5], [10, 17], [19, 7]]] },
+  // The page's controller icon, simplified: the body, the D-pad's cross, two face buttons.
+  controller: {
+    fills: [circlePoints(15.6, 11.8, 0.7), circlePoints(17, 13.2, 0.7)],
+    strokes: [
+      roundRectPoints(3, 8.5, 18, 9.5, 4),
+      [[8, 11.2], [8, 13.8]],
+      [[6.7, 12.5], [9.3, 12.5]]
+    ]
+  }
 }
 
 /** An icon centred on (cx, cy), `size` px across. */
@@ -167,7 +204,8 @@ const BUTTON_ICON: Record<PlayerButtonId, (paused: boolean) => Icon> = {
   back: () => ICONS.back,
   playPause: (paused) => (paused ? ICONS.play : ICONS.pause),
   on: () => ICONS.on,
-  tracks: () => ICONS.subtitles
+  tracks: () => ICONS.subtitles,
+  keys: () => ICONS.controller
 }
 
 const BUTTON_LABEL: Record<PlayerButtonId, (paused: boolean) => string> = {
@@ -175,7 +213,8 @@ const BUTTON_LABEL: Record<PlayerButtonId, (paused: boolean) => string> = {
   back: () => `Back ${SKIP_S} seconds`,
   playPause: (paused) => (paused ? 'Play' : 'Pause'),
   on: () => `On ${SKIP_S} seconds`,
-  tracks: () => 'Audio & subtitles'
+  tracks: () => 'Audio & subtitles',
+  keys: () => 'Controller shortcuts'
 }
 
 /** "1:02:05", "4:09". */
@@ -194,7 +233,9 @@ function buttonLayout(buttons: PlayerButtonId[]): Map<PlayerButtonId, { x: numbe
   at.set('back', { x: OSD_W / 2 - 56 - 32 - 42, r: 42 })
   at.set('playPause', { x: OSD_W / 2, r: 56 })
   at.set('on', { x: OSD_W / 2 + 56 + 32 + 42, r: 42 })
-  if (buttons.includes('tracks')) at.set('tracks', { x: OSD_W - PAD_X - 42, r: 42 })
+  // The controller button at the right end, Audio & subtitles beside it.
+  at.set('keys', { x: OSD_W - PAD_X - 42, r: 42 })
+  if (buttons.includes('tracks')) at.set('tracks', { x: OSD_W - PAD_X - 42 - 84 - 24, r: 42 })
   return at
 }
 
@@ -259,13 +300,13 @@ function bar(state: PlayerState, now: number, fonts: OsdFonts): string[] {
     const focused = state.row === 'buttons' && state.button === id && !state.menu
     const r = place.r * (focused ? 1.1 : 1)
     if (focused) {
-      lines.push(shape(circle(place.x, BUTTONS_Y, r), ACCENT_LINE, 1))
-      lines.push(shape(circle(place.x, BUTTONS_Y, r - 3), BLACK, 0.55))
+      // The page's focus: a 3 px gold ring round a faint gold tint (the video shows through).
       lines.push(shape(circle(place.x, BUTTONS_Y, r - 3), ACCENT, 0.15))
+      lines.push(ring(place.x, BUTTONS_Y, r - 1.5, 3, ACCENT_LINE))
     } else lines.push(shape(circle(place.x, BUTTONS_Y, r), WHITE, 0.1))
     const size = (place.r === 56 ? 56 : 44) * (focused ? 1.1 : 1)
-    const pressedTracks = id === 'tracks' && state.menu !== null
-    lines.push(...icon(BUTTON_ICON[id](state.paused), place.x, BUTTONS_Y, size, pressedTracks ? ACCENT : WHITE, fonts))
+    const pressed = (id === 'tracks' && state.menu !== null) || (id === 'keys' && state.keysShown)
+    lines.push(...icon(BUTTON_ICON[id](state.paused), place.x, BUTTONS_Y, size, pressed ? ACCENT : WHITE, fonts))
     if (focused) {
       // Its name under it; the end buttons' names line up with the screen edge.
       const label = BUTTON_LABEL[id](state.paused)
@@ -280,11 +321,11 @@ function bar(state: PlayerState, now: number, fonts: OsdFonts): string[] {
   return lines
 }
 
-const MENU_COLUMN_W = 440
+const MENU_COLUMN_W = 480
 const MENU_ROW_H = 64
 const MENU_GAP = 8
 const MENU_PAD = 28
-const MENU_HEADING_H = 40
+const MENU_HEADING_H = 56
 const MENU_VISIBLE = 7
 
 function menu(state: PlayerState, fonts: OsdFonts): string[] {
@@ -300,7 +341,7 @@ function menu(state: PlayerState, fonts: OsdFonts): string[] {
   lines.push(shape(roundRect(x, y, w, h, 28), PANEL, 0.92))
   columns.forEach((column, c) => {
     const cx = x + MENU_PAD + c * (MENU_COLUMN_W + 24)
-    lines.push(text(cx + 24, y + MENU_PAD + 16, 4, fonts.display, 24, WHITE, column === 'audio' ? 'Audio' : 'Subtitles', '\\fsp1'))
+    lines.push(text(cx + 24, y + MENU_PAD + 20, 4, fonts.display, 32, WHITE, column === 'audio' ? 'Audio' : 'Subtitles', '\\fsp1'))
     const rows = menuRows(state, column)
     const focusedRow = state.menu!.column === column ? state.menu!.row : -1
     // Scrolled so the row with the cursor (or the one ticked) is in view.
@@ -310,11 +351,34 @@ function menu(state: PlayerState, fonts: OsdFonts): string[] {
       const ry = y + MENU_PAD + MENU_HEADING_H + i * (MENU_ROW_H + MENU_GAP)
       const focused = first + i === focusedRow
       if (focused) lines.push(shape(roundRect(cx, ry, MENU_COLUMN_W, MENU_ROW_H, 16), ACCENT, 0.4))
-      lines.push(text(cx + 24, ry + MENU_ROW_H / 2, 4, fonts.bodyBold, 22, WHITE, fit(row.name, MENU_COLUMN_W - 24 - 64, 22)))
+      lines.push(text(cx + 24, ry + MENU_ROW_H / 2, 4, fonts.bodyBold, 24, WHITE, fit(row.name, MENU_COLUMN_W - 24 - 64, 24)))
       if (row.checked) lines.push(...icon(ICONS.check, cx + MENU_COLUMN_W - 36, ry + MENU_ROW_H / 2, 30, focused ? WHITE : ACCENT, fonts))
     })
     if (first > 0) lines.push(text(cx + MENU_COLUMN_W / 2, y + MENU_PAD + MENU_HEADING_H - 6, 2, fonts.body, 18, WHITE, '▲', '\\1a&H60&'))
     if (first + MENU_VISIBLE < rows.length) lines.push(text(cx + MENU_COLUMN_W / 2, y + h - 6, 2, fonts.body, 18, WHITE, '▼', '\\1a&H60&'))
+  })
+  return lines
+}
+
+/** The controller button's panel: every shortcut, over the video's lower right, on the menus' glass. */
+function shortcuts(state: PlayerState, fonts: OsdFonts): string[] {
+  if (!state.keysShown || !state.shortcuts.length) return []
+  const lines: string[] = []
+  const rowH = 38
+  const keyW = Math.max(...state.shortcuts.map((s) => s.keys.length)) * 13 + 28
+  const w = 36 * 2 + keyW + 16 + Math.max(...state.shortcuts.map((s) => s.what.length)) * 11
+  const h = 28 * 2 + 52 + state.shortcuts.length * rowH
+  const x = OSD_W - PAD_X - w
+  const y = OSD_H - 340 - h
+  lines.push(shape(roundRect(x + 4, y + 30, w - 8, h, 28), BLACK, 0.5, '\\blur30'))
+  lines.push(shape(roundRect(x, y, w, h, 28), PANEL, 0.92))
+  lines.push(text(x + 36, y + 28 + 20, 4, fonts.display, 32, WHITE, 'Shortcuts', '\\fsp1'))
+  state.shortcuts.forEach((s, i) => {
+    const cy = y + 28 + 52 + i * rowH + rowH / 2
+    // The buttons in a pill, then what they do.
+    lines.push(shape(roundRect(x + 36, cy - 15, keyW, 30, 15), WHITE, 0.14))
+    lines.push(text(x + 36 + keyW / 2, cy, 5, fonts.bodyBold, 18, WHITE, s.keys))
+    lines.push(text(x + 36 + keyW + 16, cy, 4, fonts.body, 20, WHITE, s.what))
   })
   return lines
 }
@@ -343,6 +407,7 @@ export function renderOsd(state: PlayerState, now: number, fonts: OsdFonts): str
     ? `${state.skipped.by < 0 ? 'Rewinding' : 'Fast-forwarding'} ${Math.abs(state.skipped.by)} seconds`
     : state.note?.text
   if (middle) lines.push(text(OSD_W / 2, OSD_H / 2 + (state.loading ? 80 : 0), 5, fonts.display, 36, WHITE, middle, '\\bord2\\3c&H000000&\\3a&H80&\\blur4\\fsp1'))
+  lines.push(...shortcuts(state, fonts))
   lines.push(...menu(state, fonts))
   return lines.join('\n')
 }
