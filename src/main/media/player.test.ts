@@ -227,3 +227,13 @@ describe('SVG to ASS', () => {
     expect(shape.strokes[0].commands.map((c) => c.to)).toEqual([[0, 0], [5, 0], [5, 5], [5, 0], [0, 0]])
   })
 })
+
+describe("Chrome's flags", () => {
+  it('adds what is missing and keeps what is there', async () => {
+    const { withFlags } = await import('../chromeFlags')
+    expect(withFlags('--enable-spatial-navigation\n')).toBe('--enable-spatial-navigation\n--autoplay-policy=no-user-gesture-required\n')
+    expect(withFlags('--enable-spatial-navigation\n--autoplay-policy=no-user-gesture-required\n')).toBeNull()
+    expect(withFlags('--autoplay-policy=user-gesture-required\n')).toBe('--autoplay-policy=no-user-gesture-required\n')
+    expect(withFlags('')).toBe('--autoplay-policy=no-user-gesture-required\n')
+  })
+})

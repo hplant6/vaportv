@@ -317,14 +317,14 @@ requestAnimationFrame(pollPad)
 //   OK / A            play or pause
 //   left / right      10 seconds back / on (the triggers too)
 //   down / up         the buttons, a gold ring on the one with the cursor: the arrows move it, OK
-//                     presses it (Audio & Subtitles, Next Episode, Skip Intro...); in a panel they
+//                     presses it (volume, Audio & Subtitles, Next Episode, Skip Intro...); in a panel they
 //                     open the arrows move along its choices
 //   Y                 Audio & Subtitles
 //   Back / B          closes a panel, then the buttons, then the player
 
 const PLAYER = '[data-uia="watch-video"]'
-/** Not worth a stop: the TV does the volume, the player's always full screen, a mistaken "report a problem", and the timeline (left and right scrub it). */
-const NOT_A_STOP = /^(control-(volume|flag|fullscreen)|timeline-knob)/
+/** Not worth a stop: the player's always full screen, a mistaken "report a problem", and the timeline (left and right scrub it). */
+const NOT_A_STOP = /^(control-(flag|fullscreen)|timeline-knob)/
 /** Panels a button opens (Audio & Subtitles, Episodes, Speed). */
 const PLAYER_PANEL = '[data-uia^="selector-"], [data-uia*="episode-selector"], [data-uia*="playback-speed"]'
 /** A panel's choices. */

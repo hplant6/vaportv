@@ -13,7 +13,7 @@ vaporTV opens Netflix as its website, in Google Chrome. The website is made for 
 - **The video player** works like vaporTV's own:
   - **OK (A)** plays and pauses.
   - **Left and right** skip 10 seconds back and on (so do a controller's **triggers**).
-  - **Down or up** brings up Netflix's buttons with a gold ring on one. The arrows move the ring and OK presses the button: Audio & Subtitles, Next Episode, Episodes, Skip Intro, Back to Browse.
+  - **Down or up** brings up Netflix's buttons with a gold ring on one. The arrows move the ring and OK presses the button: volume (mute and unmute), Audio & Subtitles, Next Episode, Episodes, Skip Intro, Back to Browse.
   - In **Audio & Subtitles** the arrows move between tracks and OK picks one. A controller's **Y** opens it straight away.
   - **Back (B)** closes a panel, then the buttons, then the player.
 

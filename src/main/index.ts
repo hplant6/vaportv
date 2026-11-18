@@ -39,6 +39,7 @@ import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
 import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSteam, shortcutGameId } from './launch'
 import { stageNetflixExtension } from './netflixExtension'
+import { ensureChromeFlags } from './chromeFlags'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
 import { bootVideoSelected, refreshBootVideo, steamJustStarted } from './bootVideo'
@@ -649,6 +650,8 @@ ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
 ipcMain.handle('launch', async (_event, kind: LaunchKind, id: string, name?: string) => {
   // Netflix: a Chrome that has closed since vaporTV started gets the extension's newest version now.
   if (kind === 'app' && id === 'netflix') await stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
+  // The streaming websites' Chrome: its flags (sound without a click first) in place before it starts.
+  if (kind === 'app') await ensureChromeFlags().catch((err) => logInput(`chrome flags: ${err}`))
   return launch(await loadConfig(), kind, id, name)
 })
 
@@ -1263,6 +1266,7 @@ app.whenReady().then(async () => {
     }, BEHIND_CHECK_MS)
     // This version's Netflix extension, for Chrome to pick up (see netflixExtension.ts).
     stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
+    ensureChromeFlags().catch((err) => logInput(`chrome flags: ${err}`))
     setTimeout(checkUpdates, 60_000)
     setInterval(checkUpdates, UPDATE_EVERY_MS)
   }
