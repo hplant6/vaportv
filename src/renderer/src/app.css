@@ -5943,21 +5943,13 @@ button {
 /* ── More ───────────────────────────────────────────── */
 
 /* A tab's tile on the More screen: its logo (or name) at the top, its console under it, on
-   the console tabs' left bar's panel (its colour and blur), darker under the cursor as that is. */
+   the console tabs' left bar's panel (its blur, and its darker shade, from under the cursor). */
 .app-tile.more-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(16, 12, 9, 0.55);
-  backdrop-filter: blur(12px);
-  transition:
-    scale var(--dur-focus) var(--ease-focus),
-    box-shadow var(--dur-focus) var(--ease-focus),
-    background-color var(--dur-focus) var(--ease-focus);
-}
-
-.app-tile.more-tile:focus {
   background: rgba(16, 12, 9, 0.72);
+  backdrop-filter: blur(12px);
 }
 
 .more-tile-head {
