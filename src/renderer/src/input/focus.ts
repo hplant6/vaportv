@@ -51,9 +51,14 @@ export function takeBarCursor(): void {
   stayInBar = false
   const tab = document.querySelector<HTMLElement>('.nav .nav-tab.active')
   if (!tab) return
-  tab.dataset.stay = ''
-  tab.addEventListener('blur', () => delete tab.dataset.stay, { once: true })
+  markStay(tab)
   focus(tab)
+}
+
+/** The cursor stays here when the screen's content loads (it was put in the bar on purpose). */
+function markStay(el: HTMLElement): void {
+  el.dataset.stay = ''
+  el.addEventListener('blur', () => delete el.dataset.stay, { once: true })
 }
 
 export function focusDefault(): void {
@@ -202,6 +207,9 @@ export function move(direction: Direction, source: InputSource): void {
   const arrived = target
   arrived.dataset.arrive = direction
   arrived.addEventListener('blur', () => delete arrived.dataset.arrive, { once: true })
+  // Moved along the bar (or down into its second row, the music) before the screen's content
+  // has loaded: the cursor's still there on purpose, so the content doesn't take it when it comes.
+  if (from.hasAttribute('data-stay') && target.closest('.nav')) markStay(target)
   focus(target)
   play('move')
 }

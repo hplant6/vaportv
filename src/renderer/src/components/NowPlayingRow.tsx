@@ -3,12 +3,11 @@ import type { MusicBar, MusicTags } from '../../../shared/types'
 import { useBackgroundSong } from '../music/backgroundSong'
 import { current, next, playerState, subscribe, toggle } from '../music/player'
 import { backgroundNow, skipTrack } from './BackgroundMusic'
-import { NextIcon, PlayIcon, StopIcon } from './icons'
 
-// The bar's second row: the song playing, centred, with what's up next on the left and, on
-// the right, how far into it you are and its buttons (play / stop and next). The Music
-// player's queue when it has one (it knows what's next), else background music's song (which
-// can skip on, but not stop: it fades in and out with the screens by itself).
+// The bar's second row: the song playing on the left; on the right, how far into it you are
+// and Skip and Stop (Play when stopped), as words, which the cursor moves between. The Music
+// player's song when it has one, else background music's (which can skip on, but not stop:
+// it fades in and out with the screens by itself).
 //
 // When it shows is Settings → Music & sounds: 'auto' drops it down for a few seconds as each
 // song starts, and while the cursor's on its buttons (Down from the bar); 'always' keeps it
@@ -116,13 +115,10 @@ export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: bool
   const queued = state.at >= 0
   const background = useBackgroundTime(!queued && !!song)
   if (!song) return null
-  // After this one: the next in play order, or with repeat all, round to the first.
-  const after = queued ? (state.order[state.at + 1] ?? (state.repeat === 'all' ? state.order[0] : undefined)) : undefined
-  const upNext = after !== undefined ? state.queue[after] : null
   const { time, duration } = queued ? state : background
-  const button = (label: string, onClick: () => void, icon: React.ReactNode) => (
-    <button className={`nav-tab nav-icon-tab ${NOW_PLAYING_BUTTON}`} tabIndex={-1} aria-label={label} data-focusable="" data-select-sound="move" onClick={onClick}>
-      {icon}
+  const button = (label: string, onClick: () => void) => (
+    <button className={`nav-tab display ${NOW_PLAYING_BUTTON}`} tabIndex={-1} aria-label={label} data-focusable="" data-select-sound="move" onClick={onClick}>
+      {label}
     </button>
   )
   return (
@@ -134,26 +130,18 @@ export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: bool
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onFocusChange(false)
       }}
     >
-      <span className="nav-now-side left">
-        {upNext && (
-          <>
-            <span className="nav-now-label display">Up next:</span>
-            <span className="nav-now-song">{name(upNext)}</span>
-          </>
-        )}
-      </span>
-      <span className="nav-now-middle">
+      <span className="nav-now-song-part">
         <span className="nav-now-label display">Now playing:</span>
-        <span className="nav-now-song now">{name(song)}</span>
+        <span className="nav-now-song">{name(song)}</span>
       </span>
-      <span className="nav-now-side right">
+      <span className="nav-now-controls">
         {duration > 0 && (
           <span className="nav-now-time">
             {clock(time)}/{clock(duration)}
           </span>
         )}
-        {queued && button(state.playing ? 'Stop' : 'Play', toggle, state.playing ? <StopIcon className="nav-now-icon" /> : <PlayIcon className="nav-now-icon" />)}
-        {button('Next song', () => (queued ? void next() : skipTrack('music', 1, true)), <NextIcon className="nav-now-icon" />)}
+        {button('Skip', () => (queued ? void next() : skipTrack('music', 1, true)))}
+        {queued && button(state.playing ? 'Stop' : 'Play', toggle)}
       </span>
     </div>
   )
