@@ -136,6 +136,7 @@ interface Item {
   Overview?: string
   SeasonId?: string
   CommunityRating?: number
+  CriticRating?: number
   Genres?: string[]
   OfficialRating?: string
   UserData?: { PlaybackPositionTicks?: number; PlayedPercentage?: number; LastPlayedDate?: string; Played?: boolean; UnplayedItemCount?: number; IsFavorite?: boolean }
@@ -180,6 +181,7 @@ export function card(item: Item, base: string): Omit<MediaItem, 'source'> {
     added: item.DateCreated,
     released: item.PremiereDate,
     rating: item.CommunityRating,
+    criticRating: item.CriticRating,
     favorite: item.UserData?.IsFavorite || undefined,
     overview: item.Overview,
     genres: item.Genres?.length ? item.Genres : undefined,

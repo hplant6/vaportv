@@ -93,6 +93,8 @@ export interface MediaItem {
   added?: string
   released?: string
   rating?: number
+  /** The critics' score, Rotten Tomatoes' Tomatometer (0–100), where the server has it (Emby and Jellyfin get it from OMDb). */
+  criticRating?: number
   /** Marked favourite on the server (Y). */
   favorite?: boolean
   /** The details panel's (Start): its summary, genres and age rating. */

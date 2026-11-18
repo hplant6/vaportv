@@ -266,13 +266,13 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
             ) : current.wide ? (
               <div className="wide-grid" data-focus-memory={`media:${current.id}`}>
                 {current.items.map((item, index) => (
-                  <WatchCard key={`${item.source}:${item.id}`} item={item} isDefault={index === 0} />
+                  <WatchCard key={`${item.source}:${item.id}`} item={item} isDefault={index === 0} barOnHold />
                 ))}
               </div>
             ) : (
               <div className="poster-grid" data-focus-memory={`media:${current.id}:${view}`} onFocus={onGridFocus}>
                 {current.items.map((item, index) => (
-                  <MediaPoster key={`${item.source}:${item.id}`} item={item} index={index} isDefault={index === 0} />
+                  <MediaPoster key={`${item.source}:${item.id}`} item={item} index={index} isDefault={index === 0} barOnHold />
                 ))}
               </div>
             )}

@@ -80,10 +80,14 @@ export function ContinueWatching() {
  * the bottom, and a gold line for how far in. A plays it (MediaPlayer). Home's Continue watching
  * and the Media tab's wide lists.
  */
-export function WatchCard({ item, isDefault, onFocus }: { item: MediaItem; isDefault?: boolean; onFocus?: () => void }) {
+/**
+ * `barOnHold` (the Video tab's grids): only the picture, its name and how much is left sliding up
+ * once the cursor's rested on it a moment, as Steam's grid's bar does; the gold line stays in sight.
+ */
+export function WatchCard({ item, isDefault, onFocus, barOnHold = false }: { item: MediaItem; isDefault?: boolean; onFocus?: () => void; barOnHold?: boolean }) {
   return (
     <button
-      className="wide-card watch-card"
+      className={`wide-card watch-card${barOnHold ? ' bar-on-hold' : ''}`}
       tabIndex={-1}
       data-focusable=""
       data-select-sound="move"

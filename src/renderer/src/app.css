@@ -3883,6 +3883,23 @@ button {
   font-family: var(--font-body);
 }
 
+/* The Video tab's: away, the name's out of sight below (the gold line stays, over it); it slides
+   up once the cursor's rested on the card a moment, as Steam's grid's bar does. */
+.watch-card .watch-progress {
+  z-index: 3;
+}
+
+.watch-card.bar-on-hold .watch-card-info {
+  z-index: 2;
+  transform: translateY(calc(100% + 6px));
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.watch-card.bar-on-hold:focus .watch-card-info {
+  transform: none;
+  transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .watch-card-title {
   font-size: var(--text-label);
   font-weight: 700;
@@ -4020,6 +4037,54 @@ button {
 
 .media-poster .watch-progress {
   z-index: 1;
+}
+
+/* The Video tab's grid: only the poster; its bar slides up over the bottom of it once the
+   cursor has rested a moment, as Steam's grid's does. The part-watched line stays on top. */
+.media-poster.bar-on-hold .watch-progress {
+  z-index: 3;
+}
+
+.poster-bar {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* --color-card-footer (#060408) at 89%, as Steam's grid's bar. */
+  background: rgba(6, 4, 8, 0.89);
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.media-poster.bar-on-hold:focus .poster-bar {
+  transform: none;
+  transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* With a line along the bottom, the bar sits just above it so it never covers it (and, away,
+   goes that much further down, out of sight). */
+.media-poster.bar-on-hold .watch-progress ~ .poster-bar {
+  bottom: 6px;
+}
+
+.media-poster.bar-on-hold .watch-progress ~ .poster-bar:not(:focus *) {
+  transform: translateY(calc(100% + 6px));
+}
+
+.poster-bar .recent-date {
+  gap: 10px;
+}
+
+.poster-bar-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.poster-bar-icon {
+  width: 15px;
+  height: 15px;
 }
 
 /* A switch under Sort in the left bar (Media's Show unwatched only): its name, and the
