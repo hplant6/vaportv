@@ -255,15 +255,13 @@ export interface Weather {
  * What a corner of the top bar can show (Settings → Home), after Henry's Figma set. Each
  * corner holds a row of them, in order.
  */
-export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp' | 'battery' | 'logo' | 'song'
+export type ClockWidget = 'dateTemp' | 'time' | 'date' | 'weather' | 'cpuUsage' | 'cpuTemp' | 'gpuUsage' | 'gpuTemp' | 'battery' | 'logo'
 
 export interface ClockCorners {
   left: ClockWidget[]
   right: ClockWidget[]
   /** The CPU and GPU temperatures' unit, apart from the weather's. */
   sensorUnit: 'celsius' | 'fahrenheit'
-  /** While the Music app plays, the song in this corner (in place of what it shows), or nowhere. */
-  nowPlaying: 'off' | 'left' | 'right'
 }
 
 /** The box's load and temperatures (°C); null where it can't be read (e.g. not on Linux). */
@@ -498,7 +496,7 @@ export type SteamLayout = 'rows' | 'grid'
 export type LayoutTab = 'steam' | 'media' | 'music' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
 /** Tabs that can be switched off in Settings (Home always shows). */
 export type HideableTab = LayoutTab | 'apps'
-/** Where the tabs go, in order: the top bar (after Home) and More's row. */
+/** Where the tabs go, in order: the top bar (after Home) and the More screen. */
 export type TabArrangement = { bar: HideableTab[]; more: HideableTab[] }
 
 /** Screens with a recently played row, which can be laid out apart from the rest. */

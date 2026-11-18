@@ -227,83 +227,6 @@ button {
   font-size: var(--text-body);
 }
 
-/* Now playing (Settings → Home): the song's cover against the screen's edge, its title and
-   artist beside it, kept short of the bar's tabs. */
-.clock-widget.now-playing {
-  align-items: center;
-  gap: 14px;
-  max-width: 296px;
-}
-
-.now-playing-cover {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-}
-
-.now-playing-no-cover {
-  display: grid;
-  place-items: center;
-  font-size: 28px;
-  background: var(--gradient-empty);
-}
-
-.now-playing-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.clock-widget.now-playing.right .now-playing-text {
-  align-items: flex-end;
-}
-
-.now-playing-title {
-  max-width: 100%;
-  font-size: var(--text-large);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* The artist (or Paused) in the body font, small, with the bars bouncing while it plays. */
-.now-playing-artist {
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: -2px;
-  font-family: var(--font-body);
-  font-size: var(--text-small);
-  font-weight: 700;
-  font-variation-settings: normal;
-  -webkit-text-stroke: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.now-playing-artist .music-now-bars {
-  flex: none;
-  width: 16px;
-  height: 14px;
-  gap: 2px;
-}
-
-.now-playing-artist-name {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0.8;
-}
-
-.now-playing-paused {
-  flex: none;
-  color: var(--color-accent);
-}
-
 /* The bar as it always was: a small temperature, then the date. */
 .clock-widget.date-temp {
   gap: 13.45px;
@@ -368,7 +291,7 @@ button {
   top: 0;
 }
 
-/* The lower line, inline so its dip can deepen for More's row; the band fades in after. */
+/* The lower line, inline so its dip can deepen for the second row (the music); the row fades in after. */
 .nav .nav-line-lower {
   position: absolute;
   left: 5.5px;
@@ -379,7 +302,7 @@ button {
 
 .nav-line-lower path {
   d: path('M0 9.48108H239.76C252.43 9.48108 264.681 14.0203 274.293 22.276L298.344 42.9346C307.956 51.1904 320.207 55.7296 332.878 55.7296H1508.67C1521.45 55.7296 1533.81 51.1099 1543.45 42.7219L1566.72 22.4888C1576.36 14.1007 1588.71 9.48108 1601.5 9.48108H1846.43');
-  /* Closing: the band fades first, then the line rises. */
+  /* Closing: the row fades first, then the line rises. */
   transition: d var(--dur-more) var(--ease-focus) var(--dur-more-fade);
 }
 
@@ -388,74 +311,86 @@ button {
   transition-delay: 0ms;
 }
 
-/* Closed, the row is see-through and untouchable, but still takes focus: Down from the bar
-   or Up from the page moves into it, and that opens it. */
-.nav-more-band,
+/* Closed, the row is see-through and untouchable. */
 .nav-more-list {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-more-fade) ease;
 }
 
-/* Opening: the line drops first, then the band and its tabs fade in. */
-.nav.more-open .nav-more-band,
+/* Opening: the line drops first, then the row fades in. */
 .nav.more-open .nav-more-list {
   opacity: 1;
+  pointer-events: auto;
   transition: opacity var(--dur-more-fade) ease calc(var(--dur-more) * 0.7);
 }
 
-.nav.more-open .nav-more-list {
-  pointer-events: auto;
-}
-
-/* Inside the lower line's dip: its flat run centred on the line's (both ~1160px), and
-   midway between the lines like the row's text. */
-.nav .nav-more-band {
-  position: absolute;
-  left: 263.55px;
-  top: 10.74px;
-}
-
-/* More's row: under the bar's tabs, centred on them. */
+/* The second row, in the lower line's dip: Up next under Settings, Now playing ending under power. */
 .nav-more-list {
-  /* How far the selected tab's underline sits below the bottom of its name's line (negative: above). */
-  --more-underline-drop: 2px;
   position: absolute;
   left: 340.82px;
   top: 49.8px;
   width: 1177px;
   height: 32px;
+  padding: 0 0 0 4px;
+}
+
+.nav-now {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 37px;
+  height: 100%;
 }
 
-.nav-tab.nav-more-tab {
-  height: auto;
-  /* The same size as the bar's tabs. */
-  font-size: var(--text-label);
+.nav-now-part {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
-/* The tab you're on, in the second row: gold and underlined like the bar's, glowing less (the row is smaller). */
-.nav-tab.nav-more-tab.active {
-  color: var(--color-accent-line);
-  text-shadow: 0 0 10px var(--color-accent-line);
+.nav-now-part + .nav-now-part {
+  margin-left: 32px;
 }
 
-/* Its underline is drawn over the row, not added to the tab, so the name stays level with the others. */
-.nav-tab.nav-more-tab {
-  position: relative;
+.nav-now-label {
+  font-size: var(--text-body);
+  font-weight: var(--nav-weight);
+  color: var(--color-text);
 }
 
-.nav-tab.nav-more-tab.active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(-1 * var(--more-underline-drop));
-  height: 2px;
-  background: var(--color-accent-line);
+.nav-now-song,
+.nav-now-time {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.nav-now-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Back and next: small circled icons. */
+.nav-tab.nav-now-button {
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.nav-now-button + .nav-now-button {
+  margin-left: -4px;
+}
+
+.nav-now-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .nav-tabs {
@@ -506,7 +441,7 @@ button {
 }
 
 /* The tab you're on: gold, glowing and underlined. */
-.nav-tab.active:not(.nav-icon-tab, .nav-more-tab) {
+.nav-tab.active:not(.nav-icon-tab) {
   height: 40px;
   border-bottom: 3px solid var(--color-accent-line);
 }
@@ -6027,49 +5962,28 @@ button {
   height: 64px;
 }
 
-/* A corner's Song playing (Henry's design): artist and title big, the cover square against the
-   screen's edge, as tall as the lines. */
-.clock-widget.song-corner {
-  align-items: stretch;
-  gap: 16px;
-  max-width: 330px;
-}
+/* ── More ───────────────────────────────────────────── */
 
-.song-corner-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.clock-widget.song-corner.right .song-corner-text {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.song-corner-line {
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+/* A tab's tile on the More screen: its name big, in the menu's type (not a game's). */
+.app-tile-name.more-tile-name.display {
   font-family: var(--font-display);
-  font-size: 30px;
-  line-height: 0.95;
+  font-weight: var(--display-weight);
+  font-size: var(--text-display);
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
-.song-corner-cover {
-  flex: none;
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 4px;
-  box-shadow: var(--shadow-card);
+/* Its emulator's icon, small in the corner (the tiles read by name). */
+.app-tile img.more-tile-logo {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  opacity: 0.8;
 }
 
-.song-corner-no-cover {
-  display: grid;
-  place-items: center;
-  font-size: 40px;
-  background: var(--gradient-empty);
+.app-tile.more-tile:focus .app-tile-name {
+  color: var(--color-nav-hover);
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { ConsoleBackdropQuality } from '../../../shared/types'
 import { ProductBackground } from '../background/ProductBackground'
 import { PRODUCTS, type Product } from '../background/products'
-import { tabOrder, useTabArrangement } from '../availableTabs'
+import { allTabs, useTabArrangement } from '../availableTabs'
 
 /** How long one console fades into the next; the one underneath goes once the new one is fully up. */
 const FADE_MS = 2000
@@ -26,7 +26,7 @@ let shotKeys = 0
 /** The consoles you have tabs for, in the bar's order, each once (the 32X shares the Genesis). */
 function yourConsoles(): string[] {
   const seen = new Set<Product>()
-  return tabOrder().filter((id) => {
+  return allTabs().filter((id) => {
     const product = PRODUCTS[id]
     if (!product || NOT_CONSOLES.has(id) || seen.has(product)) return false
     seen.add(product)
@@ -42,7 +42,7 @@ export function ConsoleShow() {
   const arrangement = useTabArrangement()
   const [quality, setQuality] = useState<ConsoleBackdropQuality | null>(null)
   const [down, setDown] = useState<string[]>([])
-  // `arrangement` changes when the tabs do; tabOrder() reads it.
+  // `arrangement` changes when the tabs do; allTabs() reads it.
   const consoles = useMemo(() => yourConsoles().filter((id) => !down.includes(id)), [arrangement, down])
   const [shots, setShots] = useState<Shot[]>([])
   const [ready, setReady] = useState<number[]>([])

@@ -307,7 +307,7 @@ const TABS_TTL = 60 * 1000
 let tabsCache: { at: number; tabs: Record<LayoutTab, boolean> } | null = null
 
 async function availableTabs(config: Config): Promise<Record<LayoutTab, boolean>> {
-  // Dev aid: STEAMTV_ALL_TABS=1 shows every tab, e.g. to see More's row on a PC without the games.
+  // Dev aid: STEAMTV_ALL_TABS=1 shows every tab, e.g. to see the More screen on a PC without the games.
   if (process.env.STEAMTV_ALL_TABS) return Object.fromEntries(TAB_LIST.filter((t) => t.id !== 'home' && t.id !== 'apps').map((t) => [t.id, true])) as Record<LayoutTab, boolean>
   if (tabsCache && Date.now() - tabsCache.at < TABS_TTL) return tabsCache.tabs
   const has = (load: (c: Config) => Promise<unknown[]>): Promise<boolean> =>

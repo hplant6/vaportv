@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import type { HideableTab, TabArrangement } from '../../shared/types'
 import { arrangeTabs, TAB_LIST } from '../../shared/tabs'
 
-// Which tabs show, and where: the bar (after Home) or its second row. Those with something in
-// them, less any switched off, arranged as in Settings → Tabs. Shared by the nav bar and
-// L1/R1 (which steps through them in that order); refreshed now and then as games are added
+// Which tabs show, and where: the bar (after Home) or the More screen. Those with something in
+// them, less any switched off, arranged as in Settings → Tabs. Shared by the nav bar, More and
+// L1/R1 (which steps through the bar in that order); refreshed now and then as games are added
 // or removed, and at once when Settings changes them.
 
 const REFRESH_MS = 5 * 60 * 1000
@@ -36,9 +36,22 @@ function start(): void {
   setInterval(load, REFRESH_MS)
 }
 
-/** The screens in the order L1/R1 step through them: Settings, Home, the bar's tabs, then the second row's. */
+/**
+ * The screens in the order L1/R1 step through them: Settings, Home, the bar's tabs, then More
+ * (one stop: its tabs are picked from its grid, not stepped through).
+ */
 export function tabOrder(): string[] {
-  return ['settings', 'home', ...arrangement.bar, ...arrangement.more]
+  return ['settings', 'home', ...arrangement.bar, ...(arrangement.more.length ? ['more'] : [])]
+}
+
+/** Every tab on show, the bar's then More's (the Consoles screensaver shows them all). */
+export function allTabs(): string[] {
+  return ['home', ...arrangement.bar, ...arrangement.more]
+}
+
+/** Whether a screen is one of More's tabs: the bar lights More for it, and B goes back to More. */
+export function inMore(screen: string): boolean {
+  return (arrangement.more as string[]).includes(screen)
 }
 
 /** Re-renders when the tabs change; returns where they go now. */

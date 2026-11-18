@@ -14,7 +14,7 @@ import { BACKDROP_CHANGED_EVENT, SeaBackground } from './background/SeaBackgroun
 import { BACK_EVENT, FAVORITE_EVENT, focus, focusDefault, keepCursorInBar, SETTINGS_EVENT, TAB_EVENT } from './input/focus'
 import { play } from './input/sounds'
 import { HOME_CHANGED_EVENT } from './screens/Settings'
-import { tabOrder } from './availableTabs'
+import { inMore, tabOrder } from './availableTabs'
 import { BackgroundMusic } from './components/BackgroundMusic'
 import { MediaPlayerHost } from './components/MediaPlayer'
 import { MediaDetailsHost } from './components/MediaDetails'
@@ -46,6 +46,7 @@ import { Apps } from './screens/Apps'
 import { Home } from './screens/Home'
 import { Settings } from './screens/Settings'
 import { Library } from './screens/Library'
+import { More, pickedFromMore } from './screens/More'
 import { STAGE_W, stageHeight } from './stage'
 import { setCurrentScreen } from './currentScreen'
 import { hasSideBar } from '../../shared/tabs'
@@ -176,7 +177,8 @@ export function App() {
       const backTo = document.activeElement?.closest<HTMLElement>('[data-back-focus]')?.dataset.backFocus
       const target = backTo ? document.querySelector<HTMLElement>(backTo) : null
       if (target) focus(target)
-      else setScreen('home')
+      // From one of More's tabs, back to More (onto its tile); from anywhere else, Home.
+      else setScreen((current) => (inMore(current) ? 'more' : 'home'))
     }
     window.addEventListener(BACK_EVENT, onBack)
     return () => window.removeEventListener(BACK_EVENT, onBack)
@@ -188,11 +190,12 @@ export function App() {
     const onTab = (event: Event): void => {
       const step = (event as CustomEvent<number>).detail
       const current = screenRef.current
-      // Only the tabs on show, in the bar's order then the second row's, so L1/R1 skips empty ones.
+      // Only the tabs on show, in the bar's order then More, so L1/R1 skips empty ones. On one
+      // of More's tabs, it steps on from More.
       const order = tabOrder() as Screen[]
       const power = document.getElementById('power-button')
       const onPower = !!power && document.activeElement === power
-      const i = onPower ? (step > 0 ? -1 : order.length) : order.indexOf(current)
+      const i = onPower ? (step > 0 ? -1 : order.length) : order.indexOf(inMore(current) ? 'more' : current)
       const next = i + step
       if (power && !onPower && (next < 0 || next >= order.length)) {
         focus(power)
@@ -215,7 +218,12 @@ export function App() {
 
   // A screen opened by name (the Apps tab's Music tile: the Music tab).
   useEffect(() => {
-    const onOpen = (event: Event): void => setScreen((event as CustomEvent<Screen>).detail)
+    const onOpen = (event: Event): void => {
+      const target = (event as CustomEvent<Screen>).detail
+      // Opened by name (the Music tile) into one of More's tabs: B comes back via More, onto it.
+      if (inMore(target)) pickedFromMore(target)
+      setScreen(target)
+    }
     window.addEventListener(OPEN_SCREEN_EVENT, onOpen)
     return () => window.removeEventListener(OPEN_SCREEN_EVENT, onOpen)
   }, [])
@@ -277,6 +285,7 @@ export function App() {
         />
       )}
       {screen === 'apps' && home && <Apps apps={home.allApps} onNavigate={setScreen} />}
+      {screen === 'more' && <More logos={home?.platformLogos ?? {}} onNavigate={setScreen} />}
       {screen === 'media' && <MediaTab onNavigate={setScreen} />}
       {screen === 'music' && <MusicTab onNavigate={setScreen} />}
       {screen === 'switch' && home && (

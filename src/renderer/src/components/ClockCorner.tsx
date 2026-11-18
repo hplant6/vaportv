@@ -4,8 +4,6 @@ import { DEFAULT_CLOCK_CORNERS } from '../../../shared/clock'
 import { WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { useNow } from './useNow'
 import { useBattery } from '../power'
-import { current, playerState, subscribe as subscribeMusic } from '../music/player'
-import { useBackgroundSong } from '../music/backgroundSong'
 import { AberrationLogo } from './AberrationLogo'
 import charging from '../assets/battery/charg.svg'
 import full from '../assets/battery/full.svg'
@@ -182,8 +180,6 @@ export function ClockLayout({ id, side, preview = false }: { id: ClockWidget; si
           <AberrationLogo className="clock-logo-mark" />
         </span>
       )
-    case 'song':
-      return <SongPlaying side={side} preview={preview} />
     default:
       return stats
   }
@@ -214,65 +210,9 @@ const cornersStore = store<ClockCorners>(DEFAULT_CLOCK_CORNERS, (set) => {
 
 const useCorners = (): ClockCorners => useSyncExternalStore(cornersStore.subscribe, cornersStore.get)
 
-// The Music app's player, for the song in a corner: redrawn as it changes song or pauses, not as it plays on.
-const musicNow = (): string => {
-  const song = current()
-  return song ? `${song.path}|${playerState().playing}|${song.title}|${song.artist ?? ''}|${song.cover ?? ''}` : ''
-}
-const useMusicNow = (): string => useSyncExternalStore(subscribeMusic, musicNow)
-
-/** The song playing (or paused): its cover against the screen's edge, its title and artist beside it. */
-export function NowPlayingLayout({ side }: { side: 'left' | 'right' }) {
-  useMusicNow()
-  const background = useBackgroundSong()
-  // The Music player's song; else background music's, for a few seconds as each starts.
-  const listening = current()
-  const song = listening ?? (background.fresh ? background.song : null)
-  if (!song) return null
-  const playing = listening ? playerState().playing : true
-  const cover = song.cover ? (
-    <img key="cover" className="now-playing-cover" src={song.cover} alt="" />
-  ) : (
-    <span key="cover" className="now-playing-cover now-playing-no-cover" aria-hidden="true">
-      ♪
-    </span>
-  )
-  const text = (
-    <span key="text" className="now-playing-text">
-      <span className="now-playing-title">{song.title}</span>
-      <span className="now-playing-artist">
-        {playing ? (
-          <span className="music-now-bars" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-        ) : (
-          <span className="now-playing-paused">Paused</span>
-        )}
-        {song.artist && <span className="now-playing-artist-name">{song.artist}</span>}
-      </span>
-    </span>
-  )
-  return (
-    <span className={`clock-widget now-playing ${side}`} aria-label={`${playing ? 'Playing' : 'Paused'}: ${song.title}${song.artist ? `, ${song.artist}` : ''}`}>
-      {side === 'right' ? [text, cover] : [cover, text]}
-    </span>
-  )
-}
-
-/** One corner of the top bar: its layout, or the song while music plays if Settings puts it here. */
+/** One corner of the top bar: its layout (the song playing is in the bar's second row). */
 export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   const corners = useCorners()
-  const music = useMusicNow()
-  const background = useBackgroundSong()
-  if (corners.nowPlaying === side && (music || background.fresh)) {
-    return (
-      <div className={`clock-corner ${side} display`}>
-        <NowPlayingLayout side={side} />
-      </div>
-    )
-  }
   const widgets = corners[side]
   if (!widgets.length) return null
   return (
@@ -284,36 +224,3 @@ export function ClockCorner({ side }: { side: 'left' | 'right' }) {
   )
 }
 
-/**
- * Song playing: what you hear (the Music player's song, else background music's), its artist
- * and title big, its cover against the screen's edge. Nothing while
- * nothing plays (Settings' preview shows a sample).
- */
-function SongPlaying({ side, preview }: { side: 'left' | 'right'; preview: boolean }) {
-  useMusicNow()
-  const background = useBackgroundSong()
-  const listening = current()
-  const song = listening ?? background.song
-  const sample = preview && !song
-  if (!song && !preview) return null
-  const artist = sample ? 'Artist' : (song!.artist ?? song!.album ?? '')
-  const title = sample ? 'Song playing' : song!.title
-  const cover = !sample && song!.cover ? (
-    <img key="cover" className="song-corner-cover" src={song!.cover} alt="" />
-  ) : (
-    <span key="cover" className="song-corner-cover song-corner-no-cover" aria-hidden="true">
-      ♪
-    </span>
-  )
-  const text = (
-    <span key="text" className="song-corner-text">
-      {artist && <span className="song-corner-line display">{artist}</span>}
-      <span className="song-corner-line display">{title}</span>
-    </span>
-  )
-  return (
-    <span className={`clock-widget song-corner ${side}`} aria-label={sample ? 'Song playing' : `Playing: ${title}${artist ? `, ${artist}` : ''}`}>
-      {side === 'right' ? [text, cover] : [cover, text]}
-    </span>
-  )
-}

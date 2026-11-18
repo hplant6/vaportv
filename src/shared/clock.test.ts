@@ -27,9 +27,11 @@ describe('cleanClockCorners', () => {
     expect(cleanClockCorners({ left: [], sensorUnit: 'fahrenheit' }).sensorUnit).toBe('fahrenheit')
   })
 
-  it('shows the song playing in the corner chosen, or nowhere', () => {
-    expect(cleanClockCorners({ left: [] }).nowPlaying).toBe('off')
-    expect(cleanClockCorners({ left: [], nowPlaying: 'right' }).nowPlaying).toBe('right')
-    expect(cleanClockCorners({ left: [], nowPlaying: 'middle' as never }).nowPlaying).toBe('off')
+  it('puts a corner saved showing the song back to its usual layout', () => {
+    expect(cleanClockCorners({ left: ['song' as never], right: ['song' as never] })).toMatchObject({ left: ['dateTemp'], right: ['time'] })
+    // Left empty on purpose: stays empty.
+    expect(cleanClockCorners({ left: [], right: ['song' as never] })).toMatchObject({ left: [], right: ['time'] })
+    // The old Now playing corner setting is dropped.
+    expect(cleanClockCorners({ left: [], nowPlaying: 'right' } as never)).not.toHaveProperty('nowPlaying')
   })
 })

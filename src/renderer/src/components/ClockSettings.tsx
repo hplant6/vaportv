@@ -11,7 +11,6 @@ const NAMES: Record<ClockWidget, string> = {
   time: 'Time',
   date: 'Date',
   weather: 'Weather',
-  song: 'Song playing',
   logo: 'vaporTV logo',
   battery: 'Battery',
   cpuUsage: 'CPU use',
@@ -19,12 +18,6 @@ const NAMES: Record<ClockWidget, string> = {
   gpuUsage: 'GPU use',
   gpuTemp: 'GPU temperature'
 }
-
-const NOW_PLAYING: { id: ClockCorners['nowPlaying']; name: string }[] = [
-  { id: 'left', name: 'Top left corner' },
-  { id: 'right', name: 'Top right corner' },
-  { id: 'off', name: 'Off' }
-]
 
 const UNITS: { id: ClockCorners['sensorUnit']; name: string; detail: string }[] = [
   { id: 'celsius', name: 'Celsius', detail: '°C' },
@@ -57,10 +50,6 @@ export function ClockSettings() {
 
   const chooseUnit = (unit: ClockCorners['sensorUnit']): void => {
     if (corners && corners.sensorUnit !== unit) save({ ...corners, sensorUnit: unit })
-  }
-
-  const chooseNowPlaying = (spot: ClockCorners['nowPlaying']): void => {
-    if (corners && corners.nowPlaying !== spot) save({ ...corners, nowPlaying: spot })
   }
 
   const row = (side: Side, id: ClockWidget | null) => {
@@ -108,28 +97,6 @@ export function ClockSettings() {
     <>
       {group('left', 'Top left corner')}
       {group('right', 'Top right corner')}
-      <div className="settings-group">
-        <h3 className="settings-heading display">Now playing</h3>
-        <p className="settings-help">While music plays in the Music tab (and for a few seconds as each background song starts), the song and its cover show in this corner, in place of what it usually shows. For the song there all the time, choose Song playing for a corner above.</p>
-        <div className="setting-list" data-focus-memory="settings-clock-now-playing">
-          {NOW_PLAYING.map((spot) => (
-            <button
-              key={spot.id}
-              className={`setting-row${corners.nowPlaying === spot.id ? ' on' : ''}`}
-              tabIndex={-1}
-              role="radio"
-              aria-checked={corners.nowPlaying === spot.id}
-              aria-label={spot.name}
-              data-focusable=""
-              data-select-sound="move"
-              onClick={() => chooseNowPlaying(spot.id)}
-            >
-              <span className="radio" aria-hidden="true" />
-              <span className="setting-name display">{spot.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
       <div className="settings-group">
         <h3 className="settings-heading display">CPU & GPU temperature</h3>
         <p className="settings-help">Apart from the weather's, which is in General.</p>

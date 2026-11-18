@@ -87,7 +87,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 - **Consoles:** Switch, PS3, Xbox, Xbox 360, PS2, PSX, PSP, GameCube, Wii, Wii U, Dreamcast, Saturn, N64, NES, SNES, Genesis, 32X and Neo Geo, each opening its games in the right emulator; a tab only shows when its emulator and games are there. Cards show the icon of the emulator a game opens in
 - **Arcade:** Atomiswave, NAOMI, NAOMI 2, CPS1, CPS2, CPS3 and MAME sets, named from MAME's list (and Capcom's sorted by board from it), each in RetroArch with the right core (and a choice of core per game)
 - **Apps:** streaming services and media apps, with setup for anything missing, and **Files**, for browsing your folders, USB drives and SD cards, and copying games onto the box. **Netflix** works with a controller or a TV remote through vaporTV's own extension, with its pop-ups and scrollbars out of the way
-- **The top bar:** up to eleven tabs, with the rest in a second row that opens when you press down from it; **Settings → Tabs** puts each tab where you want it, or switches it off
+- **The top bar:** Home and up to eight tabs, with the rest as tiles on the **More** screen (any number); **Settings → Tabs** puts each tab where you want it, or switches it off. While music plays, a second row under the bar shows what's playing and what's up next, with back and next buttons
 
 **Games**
 - **Game options** (Start on any game or app): its cover, how long and when you last played, its size; rename it, choose its emulator, replace its art, or delete it from the drive
@@ -121,7 +121,7 @@ PSX, PSP, Xbox 360, Wii U, N64, NES, SNES, Saturn and 32X have theirs too, and t
 
 | Button | Does |
 |---|---|
-| D-pad / left stick | Move. Down from the top bar opens its second row |
+| D-pad / left stick | Move. While music plays, Down from the top bar reaches its back / next buttons |
 | A | Open what's highlighted |
 | B | Back |
 | L1 / R1 | Previous / next tab |
