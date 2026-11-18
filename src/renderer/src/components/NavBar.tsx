@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { inMore, useTabArrangement } from '../availableTabs'
 import navLine from '../assets/nav-line.svg'
 import { GearIcon, PowerIcon } from './icons'
@@ -53,6 +53,28 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
   useEffect(() => {
     rowWasOpen = open
   }, [open])
+  // The second row runs from Home's left edge to the last tab's right edge (More's), which move
+  // as tabs come and go (the tabs are centred): measured in the bar's own units, so the stage's
+  // scaling doesn't matter, and again whenever the tabs' widths change (fonts loading).
+  const tabList = useRef<HTMLDivElement>(null)
+  const [rowSpan, setRowSpan] = useState<{ left: number; width: number } | null>(null)
+  useLayoutEffect(() => {
+    const list = tabList.current
+    if (!list) return
+    const measure = (): void => {
+      const first = list.firstElementChild as HTMLElement | null
+      const last = list.lastElementChild as HTMLElement | null
+      const tabs = list.parentElement
+      if (!first || !last || !tabs) return
+      const left = tabs.offsetLeft + first.offsetLeft
+      const right = tabs.offsetLeft + last.offsetLeft + last.offsetWidth
+      setRowSpan((was) => (was && was.left === left && was.width === right - left ? was : { left, width: right - left }))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [])
   // Picked from the bar, a screen keeps the cursor on its tab (before the screen's own default focus runs).
   useEffect(takeBarCursor, [])
   const pick = (id: Screen): void => {
@@ -98,7 +120,7 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
         </svg>
         <div className="nav-tabs" data-focus-memory="nav">
           {tab('settings', <GearIcon />, 'Settings', true)}
-          <div className="nav-tab-list">
+          <div className="nav-tab-list" ref={tabList}>
             {bar.map((t) => tab(t.id, t.label, t.label))}
           </div>
           <span className="nav-power">
@@ -121,7 +143,13 @@ export function NavBar({ active, onNavigate }: { active: Screen; onNavigate: (sc
         </div>
         {/* After the bar's tabs, so a screen with nothing in it starts on Settings, not here.
             B from it goes up to the bar's tab you're on. */}
-        <div className="nav-more-list" data-focus-memory="nav-more" data-back-focus=".nav-tab-list .nav-tab.active" aria-hidden={!open}>
+        <div
+          className="nav-more-list"
+          style={rowSpan ? { left: rowSpan.left, width: rowSpan.width } : undefined}
+          data-focus-memory="nav-more"
+          data-back-focus=".nav-tab-list .nav-tab.active"
+          aria-hidden={!open}
+        >
           {reachable && <NowPlayingRow onFocusChange={setRowFocused} />}
         </div>
       </nav>

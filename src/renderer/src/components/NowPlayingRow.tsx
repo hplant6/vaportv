@@ -4,8 +4,8 @@ import { useBackgroundSong } from '../music/backgroundSong'
 import { current, next, playerState, subscribe, toggle } from '../music/player'
 import { backgroundNow, skipTrack } from './BackgroundMusic'
 
-// The bar's second row: the song playing on the left; on the right, how far into it you are
-// and Skip and Stop (Play when stopped), as words, which the cursor moves between. The Music
+// The bar's second row: the song playing on the left (under Home); on the right, how far into it
+// you are and Stop (Play when stopped) and Skip (ending under More), as words, which the cursor moves between. The Music
 // player's song when it has one, else background music's (which can skip on, but not stop:
 // it fades in and out with the screens by itself).
 //
@@ -140,8 +140,8 @@ export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: bool
             {clock(time)}/{clock(duration)}
           </span>
         )}
-        {button('Skip', () => (queued ? void next() : skipTrack('music', 1, true)))}
         {queued && button(state.playing ? 'Stop' : 'Play', toggle)}
+        {button('Skip', () => (queued ? void next() : skipTrack('music', 1, true)))}
       </span>
     </div>
   )
