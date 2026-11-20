@@ -64,13 +64,17 @@ const GENESIS: Product = {
 
 export const PRODUCTS: Partial<Record<string, Product>> = {
   apps: {
-    // A pile of VHS tapes: it sits low, so in closer and lifted a little. Bloom blurs the sleeves' bright art.
-    model: 'private/apps.vtm',
-    zoom: 1.12,
-    shiftDown: -0.04,
-    bloom: false
+    // Henry's TV scene from his unreleased ES-DE theme: a plasma TV on a walnut stand, a KAWS figure holding a controller beside it.
+    model: 'private/apps-tv.vtm',
+    elevation: 15,
+    // The TV shows vaporTV's Home screen, taken on the box (its screen is mapped properly, 16:9).
+    screen: { image: 'private/screen-apps.jpg', material: 'Material.011', modelUv: true },
+    // The controller's light-up texture glows at 10× in Blender: a white blob here.
+    fix: (material) => {
+      if (material.name === 'Controle.001') material.emissiveIntensity = 0.3
+    }
   },
-  // The Media tab's bar turns the same pile of tapes.
+  // The Video tab's bar turns a pile of VHS tapes.
   media: {
     // A pile of VHS tapes: it sits low, so in closer and lifted a little. Bloom blurs the sleeves' bright art.
     model: 'private/apps.vtm',

@@ -9,6 +9,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Changed
+- **Apps** has its own backdrop: a TV on a walnut stand showing vaporTV's Home screen, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
+
 ## 0.17.0
 
 ### Added
