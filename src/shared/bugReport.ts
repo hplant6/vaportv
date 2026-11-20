@@ -45,7 +45,7 @@ export function pickLogLines(raw: string[], latest: number, home: string): strin
 
 export function issueBody(system: string[], log: string[]): string {
   const parts = ['### What happened', '', '<!-- What went wrong, and what were you doing? -->', '', '', '### System', '', ...system.map((s) => `- ${s}`)]
-  parts.push('', '### Full details', '', '<!-- Attach vaportv-details.txt here: Report a problem’s second code on the TV downloads it. -->')
+  parts.push('', '### Full details', '', '<!-- Optional, but it helps most: on the TV, choose Add details, scan its code, and attach the vaportv-details.txt it downloads here. -->')
   if (log.length) parts.push('', '### Recent log', '', '```', ...log, '```')
   parts.push('', '_Sent from vaporTV’s Report a problem._')
   return parts.join('\n')

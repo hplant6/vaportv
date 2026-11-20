@@ -54,6 +54,8 @@ function Report({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [report, setReport] = useState<BugReport | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Two steps: the report itself, then (optional, but the most help) the full details to attach.
+  const [step, setStep] = useState<'report' | 'details'>('report')
 
   useEffect(() => {
     // The snapshot first, before anything here moves: what every part of the page is doing now.
@@ -70,36 +72,56 @@ function Report({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener(TRAP_CLOSE_EVENT, onClose)
   }, [onClose])
 
+  // The cursor on each step's first button (Add details on the first, once it's there).
+  const canAddDetails = !!report?.detailsQr
   useEffect(() => {
-    const done = panel.current?.querySelector<HTMLElement>('[data-focusable]')
-    if (done) focus(done)
-  }, [])
+    const first = panel.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (first) focus(first)
+  }, [step, canAddDetails])
 
+  const button = (label: string, onClick: () => void) => (
+    <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClick}>
+      {label}
+    </button>
+  )
+
+  const details = step === 'details' && report?.detailsQr
   return (
     <div className="dialog-backdrop">
       <div className="dialog-panel bug-panel" ref={panel} data-focus-trap="">
         <div className="bug-text">
-          <h2 className="bug-title display">Report a problem</h2>
-          <p className="dialog-message">
-            {error ?? 'Scan the report\u2019s code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in (with what you pressed and said taken out): describe what went wrong. Then scan the second code and attach the full details it downloads, before you press Submit. Reports are public, so check them over first.'}
-          </p>
-          <p className="dialog-message bug-account">You need a GitHub account to send it.</p>
-          <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClose}>
-            Done
-          </button>
-        </div>
-        <div className="bug-codes">
-          <figure className="bug-code">
-            {report ? <img className="bug-qr" src={report.qr} alt="" /> : <div className="bug-qr bug-qr-waiting" />}
-            <figcaption className="bug-code-label">The report</figcaption>
-          </figure>
-          {report?.detailsQr && (
-            <figure className="bug-code details">
-              <img className="bug-qr" src={report.detailsQr} alt="" />
-              <figcaption className="bug-code-label">Full details to attach (phone on the same Wi-Fi)</figcaption>
-            </figure>
+          {details ? (
+            <>
+              <p className="bug-step">Step 2 of 2 · optional</p>
+              <h2 className="bug-title display">Add details</h2>
+              <p className="dialog-message">This helps us find the problem much faster.</p>
+              <p className="dialog-message">Scan to download a file of what vaporTV was doing, then attach it to your report on GitHub.</p>
+              <p className="dialog-message bug-note">Your phone needs to be on the same Wi-Fi as the TV.</p>
+              <div className="bug-buttons">
+                {button('Done', onClose)}
+                {button('Back', () => setStep('report'))}
+              </div>
+            </>
+          ) : (
+            <>
+              {canAddDetails && <p className="bug-step">Step 1 of 2</p>}
+              <h2 className="bug-title display">Report a problem</h2>
+              <p className="dialog-message">{error ?? 'Scan with your phone to open a report on GitHub, then say what went wrong.'}</p>
+              <p className="dialog-message bug-note">Reports are public, and need a GitHub account.</p>
+              <div className="bug-buttons">
+                {canAddDetails && button('Add details', () => setStep('details'))}
+                {button('Done', onClose)}
+              </div>
+            </>
           )}
         </div>
+        {details ? (
+          <img className="bug-qr" src={report.detailsQr} alt="" />
+        ) : report ? (
+          <img className="bug-qr" src={report.qr} alt="" />
+        ) : (
+          <div className="bug-qr bug-qr-waiting" />
+        )}
       </div>
     </div>
   )
