@@ -14,7 +14,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - Moving quickly across the tiles on **More** could raise an error behind the scenes.
 
 ### Changed
-- **Apps** has its own backdrop: a TV on a walnut stand showing vaporTV's Home screen, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
+- **Apps** has its own backdrop: a TV on a walnut stand showing the vaporTV logo, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
 
 ## 0.17.0
 

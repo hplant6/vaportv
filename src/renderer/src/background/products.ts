@@ -67,7 +67,7 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     // Henry's TV scene from his unreleased ES-DE theme: a plasma TV on a walnut stand, a KAWS figure holding a controller beside it.
     model: 'private/apps-tv.vtm',
     elevation: 15,
-    // The TV shows vaporTV's Home screen, taken on the box (its screen is mapped properly, 16:9).
+    // The TV shows the vaporTV logo (its screen is mapped properly, 16:9).
     screen: { image: 'private/screen-apps.jpg', material: 'Material.011', modelUv: true },
     // The controller's light-up texture glows at 10× in Blender: a white blob here.
     fix: (material) => {
