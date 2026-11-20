@@ -49,7 +49,7 @@ New games show up the next time you open their tab, or when you come back to vap
 | Genesis | genesis | RetroArch (Genesis Plus GX) | .md, .gen, .smd, .bin, .zip, .7z |
 | 32X | sega32x | RetroArch (PicoDrive) | .32x, .bin, .zip, .7z |
 | Neo Geo | neogeo | RetroArch (FinalBurn Neo, MAME) | .zip, .7z |
-| Arcade | atomiswave, naomi, naomi2, cps1–3, arcade, mame, fbneo | RetroArch (Flycast, FinalBurn Neo, MAME) | .zip, .7z |
+| Arcade | atomiswave, naomi, naomigd, naomi2, cps, cps1–3, arcade, mame, fbneo | RetroArch (Flycast, FinalBurn Neo, MAME) | .zip, .7z |
 
 On a TV, this table is easier to read on your phone: scan the QR code beside this guide.
 
@@ -67,7 +67,7 @@ On a TV, this table is easier to read on your phone: scan the QR code beside thi
 
 **Games on several discs.** Keep all of a game's discs in one folder named after the game. vaporTV shows it once and hands the emulator the whole set, so you can change discs from the emulator's menu.
 
-**Arcade.** vaporTV names arcade games from MAME's list, so keep the original set names (sf2.zip, not Street Fighter II.zip). Each board family opens in the RetroArch core that suits it; press **Start** on a game to choose a different one.
+**Arcade.** vaporTV names arcade games from MAME's list, so keep the original set names (sf2.zip, not Street Fighter II.zip). Each board family opens in the RetroArch core that suits it; press **Start** on a game, then **Change emulator**, to choose a different one. The Arcade tab lists each board on its own under **Systems** (Atomiswave, NAOMI, NAOMI 2, CPS1, CPS2, CPS3 and MAME), and Capcom's games are sorted by the board they ran on, whatever folder they're in. Neo Geo sets go in the neogeo folder and get a tab of their own.
 
 ## Playing
 
@@ -79,21 +79,26 @@ On a TV, this table is easier to read on your phone: scan the QR code beside thi
 
 Press **Start** on a console game for its options:
 
-- **Name:** rename it, if the file name reads badly.
-- **Emulator:** pick a different RetroArch core for it, where there's more than one.
-- **Artwork:** pick its cover from SteamGridDB, RetroArch's box art, or a web image search.
-- **Delete:** remove it from the drive. Press A twice; it can't be undone.
+- **Playlists:** add it to a playlist or take it out.
+- **Change name:** rename it, if the file name reads badly.
+- **Change emulator:** open it in a different emulator or RetroArch core, where there's more than one installed.
+- **Change artwork:** pick its cover from SteamGridDB, RetroArch's box art, or a web image search.
+- **Delete files:** remove it from the drive. Press A twice; it can't be undone.
 
 ## Covers
 
 vaporTV finds covers on its own: from RetroArch's thumbnail collection, and from [SteamGridDB](https://www.steamgriddb.com/) once you add a free SteamGridDB key in **Settings → Artwork**. A game without a cover shows its name until it has one.
 
+## Finding your games
+
+Each console's tab has a list down the left: **All games**, **Recents**, **Favorites** and your playlists, with **Sort by** at the top and **L2** to hide the list. **Y** on a game makes it a favourite and **X** puts it in a playlist. The **Arcade** tab also lists each board under **Systems**; hide any you don't want in **Settings → Consoles → Arcade tab systems**. Neo Geo games have a tab of their own. See [Finding and organising your games](games.md) for all of it.
+
 ## Arranging the tabs
 
-With many consoles, the top bar fills up: past Home and nine more, the rest go on the **More** screen (the last tab in the bar), as a grid of tiles with room for any number. B from a console you opened there takes you back to More. In **Settings → Tabs** you can choose which tabs sit in the bar and which go in More, put them in any order, or switch off the ones you don't use. **Settings → Consoles** sets how each console's tab shows its games.
+With many consoles, the top bar fills up: past Home and nine more, the rest go on the **More** screen (the last tab in the bar), as tiles with room for any number. Rest on a tile and its console turns; B from a console you opened there takes you back to More. In **Settings → Tabs** you can choose which tabs sit in the **Top bar** and which go in **More**, put them in any order, or move the ones you don't use to **Off**. **Settings → Consoles** sets how each console's tab lays out its games. See [Finding and organising your games](games.md).
 
 ## If something's wrong
 
-- **A tab doesn't appear:** check that the emulator is installed (open it once in Desktop Mode) and that its folder has at least one game in a format from the table above.
+- **A tab doesn't appear:** check that the emulator is installed (open it once in Desktop Mode) and that its folder has at least one game in a format from the table above. If both are there, it may be on the **More** screen, or under **Off** in **Settings → Tabs**.
 - **A game is missing:** check its file type against the table. Files in an unusual format, or still compressed in a way the emulator can't open, are skipped.
 - **A game opens to a black screen or an error:** open the same game in the emulator in Desktop Mode. If it fails there too, the emulator needs setting up (BIOS, firmware or keys). If it only fails from vaporTV, use **Settings → Help → Report a problem**.

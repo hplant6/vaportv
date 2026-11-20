@@ -909,7 +909,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Arcade tab systems</h3>
-          <p className="settings-help">Which systems the Arcade tab lists on its left. A system switched off still has its games in All games, Genres and Years.</p>
+          <p className="settings-help">Which systems the Arcade tab lists on its left. A system switched off still has its games in All games.</p>
           <div className="setting-list" data-focus-memory="settings-arcade-rows">
             {settings &&
               ARCADE_LISTS.map((row) => (
@@ -960,7 +960,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings && (
               <ChoiceRow
                 label="Consoles"
-                detail="Apps shows a pile of VHS tapes in 3D · the other tabs and Settings show Home’s backdrop"
+                detail="Apps shows a TV on a walnut stand in 3D · the other tabs and Settings show Home’s backdrop"
                 selected={settings.consoleBackdrops}
                 onSelect={chooseConsoles}
               />
@@ -1155,7 +1155,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
 
         <div className="settings-group">
           <h3 className="settings-heading display">Console backdrops</h3>
-          <p className="settings-help">Apps shows a pile of VHS tapes when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
+          <p className="settings-help">Apps shows a TV on a walnut stand when Tabs backdrop is set to Consoles, and the Consoles screensaver shows every console. How sharp they're drawn:</p>
           <div className="setting-list" data-focus-memory="settings-console-backdrop">
             {settings &&
               CONSOLE_BACKDROP_QUALITIES.map((q) => (

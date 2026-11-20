@@ -9,6 +9,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Added
+- Seven new guides in **Settings → Help → Guides**: The Video tab, The Music tab, Finding and organising your games, The controller, Claude on vaporTV, Making it yours (backdrops, screensavers, Home) and The Files app. The Privacy guide now covers Claude, media servers and network shares, and the Emulators, Streaming apps and TV remotes guides are up to date.
+
 ### Fixed
 - The backdrop went black after the box woke from sleep, until vaporTV was restarted. It now starts again by itself (the turning consoles too).
 - Moving quickly across the tiles on **More** could raise an error behind the scenes.

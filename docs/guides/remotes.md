@@ -20,7 +20,7 @@ For Bluetooth, put the remote (or its hub) in pairing mode, then in vaporTV open
 
 ## What the buttons do
 
-| Button | Does |
+| Button | What it does |
 |---|---|
 | Arrows | Move |
 | OK / Enter | Open what's highlighted |
@@ -30,8 +30,11 @@ For Bluetooth, put the remote (or its hub) in pairing mode, then in vaporTV open
 | Menu | Tap: voice search. Hold: Settings |
 | Power | Put the box to sleep |
 | F11 | Steam's menu, as a controller's Steam button |
+| F2 | Start the screensaver now (map a remote's Guide button to it) |
 
-On a keyboard, a few letter keys also work: **F** adds to Favorites, **X** fixes a game's art, **G** opens Game options and **H** shows what each button does.
+**Menu** does more in two places. On the **Music** tab it searches your music instead, and in the **Claude** app it talks to Claude. Tapped over a game or another app it does nothing for now; voice search only works with vaporTV on screen.
+
+On a keyboard, a few letter keys also work: **F** adds to Favorites, **X** puts a game in a playlist, **G** opens Game options, **L** shows or hides a tab's list on the left and **H** shows what each button does. A keyboard's own **Menu** key opens Settings. See [The controller](controller.md) for the controller's buttons.
 
 Back also works in YouTube, which on its own only goes back on Escape.
 
@@ -51,7 +54,9 @@ The box can sleep and wake like a TV box: **Power** on the remote sleeps it, and
 
 Waking over Bluetooth needs a system setting that vaporTV's setup writes (with the admin password) when you tick **Let my controller wake the box from sleep**. It covers the Bluetooth adapter as well as controller receivers. If the remote doesn't wake the box, run setup again in Desktop Mode with that ticked.
 
-> **Tip:** if the box falls asleep and wakes straight back up, that's the hub reconnecting. vaporTV notices and puts it back to sleep once by itself.
+**Power** doesn't sleep the box while another program is keeping it awake. For a few seconds after waking, Power and Home are ignored, so the press that woke the box doesn't also send it back to sleep or close something.
+
+> **Tip:** if the box falls asleep and wakes straight back up, that's the hub reconnecting. vaporTV notices and puts it back to sleep by itself, a few times in a row if it keeps bouncing. Press any button, or switch a controller on, and it stays awake.
 
 ## If it doesn't work
 

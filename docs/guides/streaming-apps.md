@@ -9,6 +9,10 @@ vaporTV opens apps in two ways, and that changes how they're set up:
 - **Streaming websites** (Netflix, Disney+, Prime Video, Max, Hulu, Paramount+, Peacock and Tubi) open in Google Chrome, full screen. Each one is a Steam shortcut, so that Steam can turn your controller into a mouse and keyboard for the site.
 - **Apps of their own** (YouTube, Emby, Jellyfin, Plex and Kodi) are real programs made for a TV. vaporTV installs them from Flathub and opens them directly, with no Steam shortcut. YouTube opens in VacuumTube, a YouTube app made for TVs.
 
+You don't need the Emby or Jellyfin app to watch your own server: vaporTV's **Video** tab plays its films and shows itself, with the controller. See [The Video tab](video.md). Music from your server, and anywhere else, plays in the **Music** tab: see [Music](music.md).
+
+The **Files** and **Claude** tiles are part of vaporTV, so they need no setting up. (Claude needs Claude Code on the box: see [Claude](claude.md).)
+
 ## The quickest way: at install
 
 When you first run vaporTV's setup in Desktop Mode, tick the apps you want under **Apps**. Setup installs what they need and adds the Steam shortcuts in one go. If you've done this already, skip to **Signing in**.
@@ -51,7 +55,7 @@ Many apps also let you sign in from your phone with a code: that's usually quick
 
 Home shows your favourite apps. In the **Apps** tab, pick an app and press **Y** to put it on Home or take it off.
 
-Press **Start** on an app to see what it opens in, when you last used it and how much space it takes. For the apps from Flathub there's also **Update**.
+Press **Start** on an app to see what it opens in, when you last used it and how much space it takes. **Show on Home** puts it on Home or takes it off there too, and for the apps from Flathub there's also **Update**.
 
 ## Tiles without pictures
 
