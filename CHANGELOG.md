@@ -16,6 +16,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - An album played from **Music** that ended, or was paused by opening an app, left the background music silent until you pressed Stop. It comes back when the album ends, and the album carries on when you come back from an app.
 
 ### Changed
+- The music row under the top bar has Previous, Stop and Next as icons in a pill sitting between the bar's lines, beside the time, in place of the Stop and Skip words. Previous is new.
 - **Apps** has its own backdrop: a TV on a walnut stand showing the vaporTV logo, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
 
 ## 0.17.0

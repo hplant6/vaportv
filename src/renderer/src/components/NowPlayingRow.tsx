@@ -1,13 +1,14 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactElement } from 'react'
 import type { MusicBar, MusicTags } from '../../../shared/types'
 import { useBackgroundSong } from '../music/backgroundSong'
-import { current, next, playerState, subscribe, toggle } from '../music/player'
+import { current, next, playerState, previous, subscribe, toggle } from '../music/player'
 import { backgroundNow, skipTrack } from './BackgroundMusic'
 
 // The bar's second row: the song playing on the left (under Home); on the right, how far into it
-// you are and Stop (Play when stopped) and Skip (ending under More), as words, which the cursor moves between. The Music
-// player's song when it has one, else background music's (which can skip on, but not stop:
-// it fades in and out with the screens by itself).
+// you are, then Previous, Stop (Play when stopped) and Next as icons in a pill sitting between the
+// bar's two lines (ending under More), which the cursor moves between. The Music player's song when
+// it has one, else background music's (which can move back and on, but not stop: it fades in and
+// out with the screens by itself).
 //
 // When it shows is Settings → Music & sounds: 'auto' drops it down for a few seconds as each
 // song starts, and while the cursor's on its buttons (Down from the bar); 'always' keeps it
@@ -109,6 +110,32 @@ function useBackgroundTime(on: boolean): { time: number; duration: number } {
   return time
 }
 
+/** The pill's icons, drawn in the text's colour (lit with it under the cursor). */
+const ICONS = {
+  previous: (
+    <svg className="nav-now-glyph" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1.5" y="2" width="2.5" height="12" />
+      <path d="M14.5 2v12L5 8z" />
+    </svg>
+  ),
+  next: (
+    <svg className="nav-now-glyph" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M1.5 2v12L11 8z" />
+      <rect x="12" y="2" width="2.5" height="12" />
+    </svg>
+  ),
+  stop: (
+    <svg className="nav-now-glyph" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="2" y="2" width="12" height="12" rx="1" />
+    </svg>
+  ),
+  play: (
+    <svg className="nav-now-glyph" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M3 1.5v13L14.5 8z" />
+    </svg>
+  )
+}
+
 export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: boolean) => void }) {
   const state = usePlayer()
   const song = useSong()
@@ -116,9 +143,9 @@ export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: bool
   const background = useBackgroundTime(!queued && !!song)
   if (!song) return null
   const { time, duration } = queued ? state : background
-  const button = (label: string, onClick: () => void) => (
-    <button className={`nav-tab display ${NOW_PLAYING_BUTTON}`} tabIndex={-1} aria-label={label} data-focusable="" data-select-sound="move" onClick={onClick}>
-      {label}
+  const button = (label: string, icon: ReactElement, onClick: () => void) => (
+    <button className={`nav-now-icon ${NOW_PLAYING_BUTTON}`} tabIndex={-1} aria-label={label} data-focusable="" data-select-sound="move" onClick={onClick}>
+      {icon}
     </button>
   )
   return (
@@ -140,8 +167,11 @@ export function NowPlayingRow({ onFocusChange }: { onFocusChange: (focused: bool
             {clock(time)}/{clock(duration)}
           </span>
         )}
-        {queued && button(state.playing ? 'Stop' : 'Play', toggle)}
-        {button('Skip', () => (queued ? void next() : skipTrack('music', 1, true)))}
+        <span className="nav-now-pill">
+          {button('Previous', ICONS.previous, () => (queued ? previous() : skipTrack('music', -1, true)))}
+          {queued && button(state.playing ? 'Stop' : 'Play', state.playing ? ICONS.stop : ICONS.play, toggle)}
+          {button('Next', ICONS.next, () => (queued ? void next() : skipTrack('music', 1, true)))}
+        </span>
       </span>
     </div>
   )
