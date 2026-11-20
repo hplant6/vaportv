@@ -22,6 +22,7 @@ This guide uses Xbox names. vaporTV shows your own controller's buttons on scree
 | **R3** (click the right stick) | Voice search |
 | **Both sticks clicked in** | Sound off, or back on |
 | **Hold Select + Start** | Close the game or app in front and come back to vaporTV |
+| **Hold R3 + RT** (right stick in, right trigger) | Report a problem, from wherever you are |
 | **Steam button** (the Xbox or PS button) | Steam's menu |
 
 A few notes on these:
@@ -31,6 +32,7 @@ A few notes on these:
 - **Both sticks** turn off the background music and ambience, and anything playing in Files. Do it again to bring the music back.
 - **Hold Select + Start** for about a second. It works whatever is in front: a game, a streaming app or an emulator.
 - **R2** shows your buttons as they're set now, so a button you've moved shows in its new place.
+- **Hold R3 + RT** for about a second to open **Report a problem** straight over the screen you're on, so its details show where the problem is. It works while vaporTV is on screen: from a game or app, close it first.
 
 ## In a game or app
 
@@ -99,7 +101,7 @@ That's it. If another action had that button, the two swap, and a note at the bo
 
 What can be moved: **Select**, **Back**, **Favorite**, **Playlist**, **Game options**, **Previous tab**, **Next tab**, **Voice search**, **Next song**, **Left bar**, **Show the buttons** and **Settings**. They can go on A, B, X, Y, L1, R1, L2, R2, Select, Start, L3 or R3.
 
-What can't: the **D-pad** and **sticks** always move, the **Steam** button is Steam's, and the two-button presses (**Hold Select + Start** and **both sticks**) stay as they are. They're listed at the end of **Controls** so you can find them.
+What can't: the **D-pad** and **sticks** always move, the **Steam** button is Steam's, and the two-button presses (**Hold Select + Start**, **both sticks** and **Hold R3 + RT**) stay as they are. They're listed at the end of **Controls** so you can find them.
 
 **Reset to defaults** appears at the end of the list once you've moved something.
 

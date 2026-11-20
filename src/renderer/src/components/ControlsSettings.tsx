@@ -7,7 +7,8 @@ import { toast } from './Toast'
 /** Pressed together, and the same whatever the buttons above are set to. */
 const FIXED: { name: string; detail: string; buttons: [number, number]; hold?: true }[] = [
   { name: 'Close a game or app', detail: 'Hold both while it’s playing', buttons: [8, 9], hold: true },
-  { name: 'Sound off or on', detail: 'Click both sticks in', buttons: [10, 11] }
+  { name: 'Sound off or on', detail: 'Click both sticks in', buttons: [10, 11] },
+  { name: 'Report a problem', detail: 'Hold the right stick in and the right trigger for a second, wherever you are', buttons: [11, 7], hold: true }
 ]
 
 /**

@@ -37,7 +37,7 @@ The pages your phone opens to sign Claude in or send music are on your home netw
 
 ## Report a problem
 
-**Settings → Help → Report a problem** puts together a bug report for GitHub. Nothing is sent from the TV: the QR code opens the report on your phone, and it goes only if you press **Submit** there.
+**Settings → Help → Report a problem** (or holding **R3 + RT** anywhere) puts together a bug report for GitHub. Nothing is sent from the TV: the QR code opens the report on your phone, and it goes only if you press **Submit** there.
 
 GitHub reports are **public**. A report holds:
 

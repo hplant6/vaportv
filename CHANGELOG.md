@@ -10,6 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- Hold **R3 + RT** (right stick in, right trigger) for a second to open **Report a problem** from any screen, so its details catch the screen the problem is on. It's in R2's button guide and Settings → Controller.
 - **Report a problem** has a second code, **Full details**: it opens a page on your phone (on the same Wi-Fi) to download or copy what vaporTV was doing when you opened the report, and its recent log, to attach to the report on GitHub. It's gathered only when you open Report a problem, the page closes with it, and what's personal is taken out, as in the report.
 - Seven new guides in **Settings → Help → Guides**: The Video tab, The Music tab, Finding and organising your games, The controller, Claude on vaporTV, Making it yours (backdrops, screensavers, Home) and The Files app. The Privacy guide now covers Claude, media servers and network shares, and the Emulators, Streaming apps and TV remotes guides are up to date.
 

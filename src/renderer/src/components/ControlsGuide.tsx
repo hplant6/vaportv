@@ -57,7 +57,8 @@ export function ControlsGuide() {
     [icon(c.voiceSearch), 'Voice search'],
     [icon(c.nextSong), 'Next song'],
     [both(10, 11), 'Sound off'],
-    [both(8, 9), 'Close game (hold)']
+    [both(8, 9), 'Close game (hold)'],
+    [both(11, 7), 'Report a problem (hold)']
   ]
 
   // Halved, so the two lines are about as long as each other.

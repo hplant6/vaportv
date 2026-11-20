@@ -5,6 +5,7 @@ import { keepAwake, noteActivity, noteInput } from './idle'
 import { skipTrack } from '../components/BackgroundMusic'
 import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
 import { registerDiagnostics } from '../diagnostics'
+import { OPEN_BUG_REPORT_EVENT } from '../components/BugReportDialog'
 
 /** Settings fires this after the buttons change. */
 export const CONTROLS_CHANGED_EVENT = 'steamtv:controls-changed'
@@ -66,6 +67,17 @@ const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
 const STICKS = [10, 11]
 /** Stick actions pressed and waiting for their release. */
 const stickWaiting = new Set<ControlAction>()
+/**
+ * Report a problem from anywhere: the right stick clicked in and the right trigger, held
+ * together for a second. Fixed to those buttons, like both sticks. While the stick's in, the
+ * trigger's own action waits, and the stick's (it acts on letting go) is dropped once both are down.
+ */
+const REPORT_COMBO = [11, 7]
+const REPORT_HOLD_MS = 1000
+/** When both went down (0: not both), and whether this hold has opened the report already. */
+let reportSince = 0
+let reportOpened = false
+
 /** Both sticks went in, and haven't both come out yet. */
 let sticksTogether = false
 /** Actions whose buttons were held last time round, to tell a new press. */
@@ -221,14 +233,34 @@ function poll(now: number): void {
   } else if (sticksTogether && !pads().some((pad) => STICKS.some((b) => stickDown(pad, b)))) {
     sticksTogether = false
   }
+  // The report's combo: the trigger doesn't act while the stick's in (it's the combo coming).
+  const comboPartner = (button: number): number | null => (button === REPORT_COMBO[1] ? REPORT_COMBO[0] : null)
+  const partnerDown = (button: number): boolean => {
+    const partner = comboPartner(button)
+    return partner !== null && pads().some((pad) => stickDown(pad, partner))
+  }
   for (const { id } of CONTROL_ACTIONS) {
     if (!STICKS.includes(controls[id])) {
-      if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
+      if (pressed.has(id) && !wasDown.has(id) && !partnerDown(controls[id])) ON_PRESS[id]?.()
     } else if (pressed.has(id) && !wasDown.has(id)) {
       if (!sticksTogether) stickWaiting.add(id)
     } else if (!pressed.has(id) && stickWaiting.delete(id)) {
       ON_PRESS[id]?.()
     }
+  }
+
+  if (pads().some((pad) => REPORT_COMBO.every((b) => stickDown(pad, b)))) {
+    reportSince ||= now
+    // Letting go of the stick afterwards mustn't also do its own action.
+    for (const { id } of CONTROL_ACTIONS) if (controls[id] === REPORT_COMBO[0]) stickWaiting.delete(id)
+    if (!reportOpened && now - reportSince >= REPORT_HOLD_MS) {
+      reportOpened = true
+      window.steamtv.logInput('report: opened with R3 + RT')
+      window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail: document.activeElement instanceof HTMLElement ? document.activeElement : null }))
+    }
+  } else {
+    reportSince = 0
+    reportOpened = false
   }
 }
 
