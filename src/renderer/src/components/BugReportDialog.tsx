@@ -110,7 +110,7 @@ function Report({ onClose }: { onClose: () => void }) {
               <p className="dialog-message bug-note">Reports are public, and need a GitHub account.</p>
               <div className="bug-buttons">
                 {canAddDetails && button('Add details', () => setStep('details'))}
-                {button('Done', onClose)}
+                {button('Close', onClose)}
               </div>
             </>
           )}
