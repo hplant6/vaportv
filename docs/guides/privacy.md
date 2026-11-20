@@ -44,6 +44,8 @@ GitHub reports are **public**. A report holds:
 - vaporTV's version, the SteamOS version, your graphics card, screen size and controllers.
 - The end of vaporTV's log: which buttons were pressed and errors. Before it goes in, vaporTV takes out what's personal: the names on the buttons you pressed (files, folders, Wi-Fi networks, Bluetooth devices, playlists), what voice search heard, what the Claude app asked to run or change (only the kind of thing, such as a command or an edit, is kept), the names of network shares, and the box's address on your network. What you type on the on-screen keyboard is never logged at all.
 
+The second code, **Full details**, opens a page on your phone, over your home network only, with more: what each part of vaporTV was doing when you opened Report a problem (states and counts, such as whether the music is playing, not what it is), a summary of your settings (choices only: no place, keys, names or sign-ins) and the log of recent days, scrubbed the same way. It's made when you open Report a problem, and the page closes with it. It goes on GitHub only if you download it and attach it yourself.
+
 Read the report over on your phone before you submit, and delete anything you'd rather not share.
 
 ## What vaporTV keeps on the box

@@ -4,6 +4,7 @@ import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, 
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { skipTrack } from '../components/BackgroundMusic'
 import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
+import { registerDiagnostics } from '../diagnostics'
 
 /** Settings fires this after the buttons change. */
 export const CONTROLS_CHANGED_EVENT = 'steamtv:controls-changed'
@@ -69,6 +70,16 @@ const stickWaiting = new Set<ControlAction>()
 let sticksTogether = false
 /** Actions whose buttons were held last time round, to tell a new press. */
 let actionsDown = new Set<ControlAction>()
+
+// Report a problem's snapshot: whether the controller is being listened to, and why not.
+registerDiagnostics('controller', () => ({
+  paused,
+  windowBlurred: blurred,
+  steamMenuOpen: steamAway,
+  waitingForRelease: waitForRelease,
+  capturingAButton: !!capture,
+  controllers: navigator.getGamepads().filter((p): p is Gamepad => !!p?.connected).map((p) => `${p.id} (${p.mapping || 'no mapping'})`)
+}))
 // After a pause, and at startup, ignore the pad until everything is released, so
 // the press that closed a game (or anything already held) doesn't act here.
 let waitForRelease = true

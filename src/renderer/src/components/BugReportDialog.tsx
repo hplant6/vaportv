@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { BugReport } from '../../../shared/types'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
 import { OverStage } from './GooglePhotos'
+import { collectDiagnostics } from '../diagnostics'
 
 // Settings → Help → Report a problem: a QR code that opens a GitHub issue on a phone,
 // filled in with vaporTV's version, the system and recent log lines. What went wrong is
@@ -55,10 +56,13 @@ function Report({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // The snapshot first, before anything here moves: what every part of the page is doing now.
     window.steamtv
-      .makeBugReport(pageDetails())
+      .makeBugReport({ ...pageDetails(), snapshot: collectDiagnostics() })
       .then(setReport)
       .catch((err) => setError(String(err?.message ?? err)))
+    // Closed: the full details' page stops.
+    return () => window.steamtv.closeBugReport()
   }, [])
 
   useEffect(() => {
@@ -77,14 +81,25 @@ function Report({ onClose }: { onClose: () => void }) {
         <div className="bug-text">
           <h2 className="bug-title display">Report a problem</h2>
           <p className="dialog-message">
-            {error ?? 'Scan the code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in (with what you pressed and said taken out): describe what went wrong, then press Submit. Reports are public, so check it over first.'}
+            {error ?? 'Scan the report\u2019s code with your phone. It opens a bug report on GitHub with vaporTV\u2019s details and recent log filled in (with what you pressed and said taken out): describe what went wrong. Then scan the second code and attach the full details it downloads, before you press Submit. Reports are public, so check them over first.'}
           </p>
           <p className="dialog-message bug-account">You need a GitHub account to send it.</p>
           <button className="dialog-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onClose}>
             Done
           </button>
         </div>
-        {report ? <img className="bug-qr" src={report.qr} alt="" /> : <div className="bug-qr bug-qr-waiting" />}
+        <div className="bug-codes">
+          <figure className="bug-code">
+            {report ? <img className="bug-qr" src={report.qr} alt="" /> : <div className="bug-qr bug-qr-waiting" />}
+            <figcaption className="bug-code-label">The report</figcaption>
+          </figure>
+          {report?.detailsQr && (
+            <figure className="bug-code details">
+              <img className="bug-qr" src={report.detailsQr} alt="" />
+              <figcaption className="bug-code-label">Full details to attach (phone on the same Wi-Fi)</figcaption>
+            </figure>
+          )}
+        </div>
       </div>
     </div>
   )

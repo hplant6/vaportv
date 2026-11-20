@@ -284,6 +284,8 @@ export interface BugReportInput {
   controllers: string[]
   /** e.g. "3840×2160" */
   display: string
+  /** What each part of the page is doing right now (diagnostics.ts), for the full details. */
+  snapshot?: Record<string, unknown>
 }
 
 /** The report as a GitHub new-issue link and its QR code; logLines says how many log lines fit. */
@@ -291,6 +293,9 @@ export interface BugReport {
   url: string
   qr: string
   logLines: number
+  /** The full details' page on the home network, and its QR code (absent off a network). */
+  detailsUrl?: string
+  detailsQr?: string
 }
 
 /** What voice is listening for: a search (a few words, the library's names expected) or dictation (sentences). */
@@ -1223,6 +1228,8 @@ export interface SteamTvApi {
   }
   /** A GitHub issue link (and its QR code) for a bug report. */
   makeBugReport(input: BugReportInput): Promise<BugReport>
+  /** Report a problem closed: its details page stops. */
+  closeBugReport(): void
   /** A remote's Menu held: open Settings. */
   onMenuHeld(callback: () => void): () => void
   setSteamCollections(ids: string[]): Promise<void>

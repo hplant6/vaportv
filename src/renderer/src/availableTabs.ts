@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { HideableTab, TabArrangement } from '../../shared/types'
 import { arrangeTabs, TAB_LIST } from '../../shared/tabs'
+import { registerDiagnostics } from './diagnostics'
 
 // Which tabs show, and where: the bar (after Home) or the More screen. Those with something in
 // them, less any switched off, arranged as in Settings → Tabs. Shared by the nav bar, More and
@@ -15,6 +16,7 @@ let arrangement: TabArrangement = arrangeTabs(
   []
 )
 const listeners = new Set<() => void>()
+registerDiagnostics('tabs', () => arrangement)
 
 function load(): void {
   window.steamtv.getAvailableTabs().then((next) => {

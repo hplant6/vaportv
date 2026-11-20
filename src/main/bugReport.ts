@@ -5,6 +5,7 @@ import QRCode from 'qrcode'
 import type { BugReport, BugReportInput } from '../shared/types'
 import { EXTRAS } from '../shared/build'
 import { fitLog, pickLogLines } from '../shared/bugReport'
+import { makeDiagnostics, startDiagnosticsPage } from './diagnostics'
 
 // Settings → General → Report a problem: a GitHub "new issue" link with the report filled in,
 // shown as a QR code to open on a phone, check, and submit there (vaporTV holds no GitHub
@@ -50,6 +51,11 @@ export async function makeBugReport(input: BugReportInput, logPath: string): Pro
   ].filter((line): line is string => !!line)
   const lines = pickLogLines(await tail(logPath, LOG_TAIL_BYTES), LATEST_LINES, homedir())
   const { url, logLines } = fitLog(system, lines)
-  const qr = await QRCode.toDataURL(url, { margin: 1, width: 560, errorCorrectionLevel: 'L', color: { dark: '#000000', light: '#ffffff' } })
-  return { url, qr, logLines }
+  const code = (link: string): Promise<string> => QRCode.toDataURL(link, { margin: 1, width: 560, errorCorrectionLevel: 'L', color: { dark: '#000000', light: '#ffffff' } })
+  const qr = await code(url)
+  // The full details (what each part of vaporTV is doing now, and the whole recent log), on a
+  // page on the home network for the phone to download and attach. Without a network, just the report.
+  const details = await makeDiagnostics(system, input.snapshot ?? {}, logPath)
+  const detailsUrl = await startDiagnosticsPage(details, url)
+  return { url, qr, logLines, ...(detailsUrl ? { detailsUrl, detailsQr: await code(detailsUrl) } : {}) }
 }

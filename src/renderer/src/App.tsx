@@ -8,6 +8,7 @@ import { ForestBackground } from './background/ForestBackground'
 import { CityRainBackground } from './background/CityRainBackground'
 import { ProductBackground } from './background/ProductBackground'
 import { useGpuGeneration } from './background/gpuRecovery'
+import { describeElement, registerDiagnostics } from './diagnostics'
 import { PRODUCTS } from './background/products'
 import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
@@ -248,6 +249,28 @@ export function App() {
 
   // After the GPU's reset (waking from sleep), the backdrop starts again on a fresh canvas.
   const gpuGeneration = useGpuGeneration()
+
+  // Report a problem's snapshot: the screen, what's drawn behind it, and where the cursor is.
+  const latest = useRef({ screen, shownBackdrop, product: !!product, webgl, consolesOn, productQuality, custom: !!custom })
+  latest.current = { screen, shownBackdrop, product: !!product, webgl, consolesOn, productQuality, custom: !!custom }
+  // Reports are opened from Settings, so the screens before it say where the trouble was.
+  const visited = useRef<string[]>([])
+  useEffect(() => {
+    visited.current = [...visited.current, `${new Date().toISOString().slice(11, 19)} ${screen}`].slice(-8)
+  }, [screen])
+  useEffect(
+    () =>
+      registerDiagnostics('screen', () => ({
+        ...latest.current,
+        recentScreens: visited.current,
+        canvases: document.querySelectorAll('.stage canvas').length,
+        focused: describeElement(document.activeElement),
+        overlaysOpen: document.querySelectorAll('.dialog-backdrop, [data-focus-trap]').length,
+        pageHidden: document.hidden,
+        stageScale: document.querySelector<HTMLElement>('.stage')?.style.transform ?? null
+      })),
+    []
+  )
 
   // Set inline so the URL resolves against the page, not the bundled stylesheet.
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }

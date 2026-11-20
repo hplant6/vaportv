@@ -3272,13 +3272,45 @@ button {
   opacity: 0.85;
 }
 
-/* Report a problem (Settings → Help): what to do on the left, the QR code that opens the issue on a phone on the right. */
+/* Report a problem (Settings → Help): what to do on the left; on the right the QR code that opens the issue on a phone, and the full details' code beside it. */
 .bug-panel {
   flex-direction: row;
   align-items: center;
-  gap: 64px;
-  width: 1360px;
+  gap: 56px;
+  width: 1760px;
   padding: 56px;
+}
+
+.bug-codes {
+  flex: none;
+  display: flex;
+  gap: 32px;
+}
+
+.bug-code {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 480px;
+}
+
+/* The details' code holds only a short address, so it scans well smaller: the report's dense one gets the room. */
+.bug-code.details {
+  width: 300px;
+}
+
+.bug-code.details .bug-qr {
+  width: 300px;
+  height: 300px;
+}
+
+.bug-code-label {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  text-align: center;
+  opacity: 0.85;
 }
 
 .bug-text {
@@ -3309,8 +3341,8 @@ button {
 
 .bug-qr {
   flex: none;
-  width: 520px;
-  height: 520px;
+  width: 480px;
+  height: 480px;
   border-radius: 12px;
   image-rendering: pixelated;
 }

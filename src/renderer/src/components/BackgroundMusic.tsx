@@ -5,6 +5,7 @@ import { MUSIC_HOLD_EVENT } from './MusicPreview'
 import { SOUND_OFF_EVENT } from '../input/focus'
 import { toast } from './Toast'
 import { isFront, onFrontChange } from '../front'
+import { registerDiagnostics } from '../diagnostics'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -287,6 +288,28 @@ function Layer({ kind }: { kind: MusicKind }) {
       }
     }
     load()
+    // Report a problem's snapshot: why it is or isn't sounding. The song only as its kind.
+    const stopDiagnostics = registerDiagnostics(`music.${kind}`, () => {
+      const file = files[playlist.indexOf(el.src)] ?? null
+      return {
+        sounding: !el.paused,
+        track: file === null ? null : file.startsWith('builtin:') ? file : file.startsWith('media:') ? '(from a media server)' : '(your own)',
+        tracks: playlist.length,
+        shuffle: random,
+        volume: Number(el.volume.toFixed(2)),
+        target: Number(target.current.toFixed(2)),
+        introOver,
+        held,
+        holders,
+        soundOff,
+        front: isFront(),
+        failedToPlay: failed !== '',
+        readyState: el.readyState,
+        networkState: el.networkState,
+        mediaError: el.error?.code ?? null,
+        seconds: Math.round(el.currentTime)
+      }
+    })
     // vaporTV on screen again (or gone behind a game or app).
     const stopFront = onFrontChange((front) => (front ? start() : onBlur()))
     // Should be sounding but isn't: started again.
@@ -316,6 +339,7 @@ function Layer({ kind }: { kind: MusicKind }) {
       window.removeEventListener(MUSIC_CHANGED_EVENT, load)
       stopFront()
       stopResume()
+      stopDiagnostics()
       clearInterval(watch)
     }
   }, [kind])

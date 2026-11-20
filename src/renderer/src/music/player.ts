@@ -1,6 +1,7 @@
 import type { MusicTags } from '../../../shared/types'
 import { MUSIC_HOLD_EVENT } from '../components/MusicPreview'
 import { onFrontChange } from '../front'
+import { registerDiagnostics } from '../diagnostics'
 
 // The Music app's player: one audio element for the whole of vaporTV, so a queue keeps playing
 // when the Music screen closes. It holds the background music while there's a queue, plays
@@ -38,6 +39,22 @@ audio.preload = 'auto'
 let state: PlayerState = { queue: [], at: -1, order: [], playing: false, loading: false, shuffle: false, repeat: 'off', time: 0, duration: 0, station: null }
 const listeners = new Set<(s: PlayerState) => void>()
 let holding = false
+
+// Report a problem's snapshot: the Music tab's player, without the songs' names.
+registerDiagnostics('music.player', () => ({
+  queued: state.queue.length,
+  at: state.at,
+  playing: state.playing,
+  loading: state.loading,
+  holdingBackgroundMusic: holding,
+  pausedForApp: pausedForFront,
+  station: !!state.station,
+  shuffle: state.shuffle,
+  repeat: state.repeat,
+  audioPaused: audio.paused,
+  readyState: audio.readyState,
+  mediaError: audio.error?.code ?? null
+}))
 let context: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 

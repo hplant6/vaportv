@@ -34,6 +34,7 @@ import { setSpeechListeners } from './speech'
 import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
+import { registerDiagnostics, stopDiagnosticsPage } from './diagnostics'
 import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
@@ -212,6 +213,27 @@ ipcMain.on('claude:signIn', () => {
 })
 ipcMain.on('claude:cancelSignIn', () => stopClaudeLogin())
 ipcMain.handle('bugReport:make', (_event, input: BugReportInput) => makeBugReport(input, INPUT_LOG))
+ipcMain.on('bugReport:close', () => stopDiagnosticsPage())
+
+// Report a problem's snapshot: main's side (diagnostics.ts). Asked only when a report opens.
+let lastWake: string | null = null
+let lastSleep: string | null = null
+registerDiagnostics('process', () => ({
+  version: app.getVersion(),
+  electron: process.versions.electron,
+  chrome: process.versions.chrome,
+  uptimeMinutes: Math.round(process.uptime() / 60),
+  memoryMB: Math.round(process.memoryUsage().rss / 1048576),
+  lastSleep,
+  lastWake
+}))
+registerDiagnostics('window', () =>
+  win && !win.isDestroyed()
+    ? { focused: win.isFocused(), visible: win.isVisible(), minimized: win.isMinimized(), fullScreen: win.isFullScreen(), pageCrashed: win.webContents.isCrashed(), size: win.getSize() }
+    : { exists: false }
+)
+registerDiagnostics('tabs', () => tabsCache?.tabs ?? null)
+registerDiagnostics('settings', async () => settingsSummary(await loadConfig()))
 ipcMain.on('voice:hints', (_event, titles: string[]) => setVoiceHints(titles))
 
 const windowSize = (): [number, number] | undefined => {
@@ -1197,13 +1219,48 @@ ipcMain.handle('power', (_event, action: PowerAction) => power(action))
 ipcMain.handle('power:sleepBlocker', () => sleepBlocker())
 ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(direction === 1 ? 1 : -1))
 
+/**
+ * The settings that explain how vaporTV behaves, for Report a problem's details: choices as
+ * they are, lists as counts, and keys, paths and sign-ins only as whether they're set. Nothing
+ * personal (no place, names, files, keys or accounts).
+ */
+function settingsSummary(c: Config): Record<string, unknown> {
+  const choice = (v: unknown): unknown =>
+    typeof v === 'string' ? (/^[\w :.,-]{0,48}$/.test(v) ? v : '(set)') : typeof v === 'number' || typeof v === 'boolean' || v == null ? v : '(set)'
+  const record = c as unknown as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  const CHOICES = [
+    'backdrop', 'homeBackdrop', 'backdropTime', 'driftPreset', 'driftDirection', 'tunnelColors', 'consoleBackdropQuality', 'consoleBackdrops', 'spinningConsoles',
+    'music', 'musicVolume', 'musicBar', 'ambience', 'ambienceVolume', 'screensaverDelay', 'screensaverStyle', 'screensaverClock', 'introVideo',
+    'claudeModel', 'claudeSpeak', 'sleepOnControllerOff', 'sleepWarning', 'recentDays', 'recentLimit', 'welcomeSeen', 'favoritesLayout'
+  ]
+  for (const key of CHOICES) if (key in record) out[key] = choice(record[key])
+  for (const [key, value] of Object.entries(record)) if (key.endsWith('Layout') && !(key in out)) out[key] = choice(value)
+  out.tabLayout = c.tabLayout ?? null
+  out.tabsHidden = c.tabsHidden ?? []
+  out.controlsMoved = c.controls ? Object.keys(c.controls).length : 0
+  const COUNTS = ['favoriteApps', 'favorites', 'playlists', 'customApps', 'steamCollections', 'gameEmulators', 'gameTitles', 'backdropShuffleOff', 'clockCorners']
+  for (const key of COUNTS) {
+    const v = record[key]
+    if (v != null) out[`${key}Count`] = Array.isArray(v) ? v.length : typeof v === 'object' ? Object.keys(v as object).length : 1
+  }
+  out.mediaServers = (c.mediaServers ?? []).map((s) => (s as { kind?: string }).kind ?? '?')
+  const SET = ['steamGridDbKey', 'braveSearchKey', 'weather', 'googlePhotos', 'googleDrive', 'musicFolder', 'steamRoot', 'romRoot', 'retroarch', 'dolphin', 'pcsx2', 'rpcs3', 'cemu', 'duckstation', 'ppsspp', 'xemu', 'xenia', 'ryujinx', 'updateFeed']
+  out.set = SET.filter((key) => record[key] != null && record[key] !== '')
+  return out
+}
+
 /** How often gamescope's asked whether vaporTV is on screen. */
 const FRONT_CHECK_MS = 2000
 
 app.whenReady().then(async () => {
   // Waking from sleep resets the GPU, which can leave the page's WebGL backdrops drawing
   // nothing (black): the page starts them again (gpuRecovery.ts).
+  powerMonitor.on('suspend', () => {
+    lastSleep = new Date().toISOString()
+  })
   powerMonitor.on('resume', () => {
+    lastWake = new Date().toISOString()
     logInput('power: woke from sleep')
     win?.webContents.send('power:resume')
   })
@@ -1264,6 +1321,12 @@ app.whenReady().then(async () => {
     // gamescope switching back to it (from an app, or on waking), which left the music paused.
     // Sent every check (the page decides what's news); logged when it changes.
     let front: boolean | null = null
+    registerDiagnostics('gamescope', async () => ({
+      vaporTVInFront: front,
+      inFrontNow: await foreground.frontState(),
+      inFront: await foreground.kind(),
+      openedAppSeconds: directAppAge() === null ? null : Math.round(directAppAge()! / 1000)
+    }))
     setInterval(async () => {
       const now = await foreground.frontState()
       if (now === null) return
