@@ -52,6 +52,8 @@ const RECIPES: Record<string, Recipe> = {
   paramount: { kind: 'web', shortcut: 'Paramount+', url: 'https://www.paramountplus.com/home/' },
   peacock: { kind: 'web', shortcut: 'Peacock', url: 'https://www.peacocktv.com/watch/home' },
   tubi: { kind: 'web', shortcut: 'Tubi', url: 'https://tubitv.com/home' },
+  // Twitch has no TV app on Linux (its old TV site is gone): the website, as the others.
+  twitch: { kind: 'web', shortcut: 'Twitch', url: 'https://www.twitch.tv/' },
   youtube: { kind: 'flatpak', flatpak: 'rocks.shy.VacuumTube', program: 'VacuumTube' },
   // Emby Theater's Flatpak ignores gamepads whatever its sandbox allows: Steam Input's
   // keyboard layout (arrows, Enter, Escape) is what drives it.

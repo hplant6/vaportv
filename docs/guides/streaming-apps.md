@@ -6,7 +6,7 @@ Set up Netflix, Disney+, YouTube, Plex, Kodi and the other apps so they open fro
 
 vaporTV opens apps in two ways, and that changes how they're set up:
 
-- **Streaming websites** (Netflix, Disney+, Prime Video, Max, Hulu, Paramount+, Peacock and Tubi) open in Google Chrome, full screen. Each one is a Steam shortcut, so that Steam can turn your controller into a mouse and keyboard for the site.
+- **Streaming websites** (Netflix, Disney+, Prime Video, Max, Hulu, Paramount+, Peacock, Tubi and Twitch) open in Google Chrome, full screen. Each one is a Steam shortcut, so that Steam can turn your controller into a mouse and keyboard for the site.
 - **Apps of their own** (YouTube, Emby, Jellyfin, Plex and Kodi) are real programs made for a TV. vaporTV installs them from Flathub and opens them directly, with no Steam shortcut. YouTube opens in VacuumTube, a YouTube app made for TVs.
 
 You don't need the Emby or Jellyfin app to watch your own server: vaporTV's **Video** tab plays its films and shows itself, with the controller. See [The Video tab](video.md). Music from your server, and anywhere else, plays in the **Music** tab: see [Music](music.md).

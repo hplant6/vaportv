@@ -58,6 +58,11 @@
       "tile": ""
     },
     {
+      "id": "twitch",
+      "name": "Twitch",
+      "tile": ""
+    },
+    {
       "id": "jellyfin",
       "name": "Jellyfin",
       "tile": ""

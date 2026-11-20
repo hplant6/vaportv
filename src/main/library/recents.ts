@@ -48,6 +48,7 @@ const SERVICE_ART: Record<string, string> = {
   paramount: 'Paramount+',
   peacock: 'Peacock TV',
   tubi: 'Tubi (Website)',
+  twitch: 'Twitch',
   jellyfin: 'Jellyfin',
   plex: 'Plex',
   kodi: 'Kodi'

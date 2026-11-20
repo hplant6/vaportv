@@ -48,6 +48,7 @@ const DEFAULT_FAVORITES: Record<string, string | string[]> = {
   paramount: 'Paramount+',
   peacock: 'Peacock',
   tubi: 'Tubi',
+  twitch: 'Twitch',
   jellyfin: 'Jellyfin',
   plex: ['Plex HTPC', 'Plex'],
   kodi: 'Kodi',

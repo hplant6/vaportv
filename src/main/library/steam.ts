@@ -223,6 +223,7 @@ const SERVICES: [RegExp, string][] = [
   [/^paramount\+?$/i, 'paramount'],
   [/^peacock$/i, 'peacock'],
   [/^tubi$/i, 'tubi'],
+  [/^twitch$/i, 'twitch'],
   [/^jellyfin$/i, 'jellyfin'],
   [/^plex( htpc)?$/i, 'plex'],
   [/^kodi$/i, 'kodi']
