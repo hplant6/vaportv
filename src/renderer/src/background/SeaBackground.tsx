@@ -6,6 +6,7 @@ import { heldMinutes, minutesOfDay, pinnedMinutes, sceneAt } from './timeOfDay'
 import type { BackdropTime } from '../../../shared/types'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
+import { markReleased } from './gpuRecovery'
 
 /** Fired by Settings after the backdrop time changes. */
 export const BACKDROP_CHANGED_EVENT = 'steamtv:backdrop-changed'
@@ -160,6 +161,7 @@ function start(canvas: HTMLCanvasElement): () => void {
     clearInterval(sunTimer)
     window.removeEventListener(WEATHER_CHANGED_EVENT, loadSun)
     window.removeEventListener(BACKDROP_CHANGED_EVENT, loadHeld)
+    markReleased(gl.canvas)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

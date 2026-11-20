@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { BackdropStyle, ConsoleBackdropQuality, CustomBackdrop } from '../../shared/types'
 import { CustomBackground } from './background/CustomBackground'
 import type { HomeData } from '../../shared/types'
@@ -7,6 +7,7 @@ import { StarTunnelBackground, type TunnelColors } from './background/StarTunnel
 import { ForestBackground } from './background/ForestBackground'
 import { CityRainBackground } from './background/CityRainBackground'
 import { ProductBackground } from './background/ProductBackground'
+import { useGpuGeneration } from './background/gpuRecovery'
 import { PRODUCTS } from './background/products'
 import { AuroraBackground } from './background/AuroraBackground'
 import { WavesBackground } from './background/WavesBackground'
@@ -245,33 +246,38 @@ export function App() {
     if (home && !document.activeElement?.matches('[data-focusable]')) focusDefault()
   }, [home, screen])
 
+  // After the GPU's reset (waking from sleep), the backdrop starts again on a fresh canvas.
+  const gpuGeneration = useGpuGeneration()
+
   // Set inline so the URL resolves against the page, not the bundled stylesheet.
   const fallback: CSSProperties = { backgroundImage: `url("${FALLBACK_BACKGROUND}")` }
 
   return (
     <div className="stage" style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
-      {product && webgl ? (
-        <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />
-      ) : shownBackdrop === 'custom' && custom ? (
-        // Your own picture or video needs no WebGL.
-        <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
-      ) : !webgl ? (
-        <div className="stage-bg" style={fallback} />
-      ) : shownBackdrop === 'cityrain' ? (
-        <CityRainBackground onUnavailable={backdropUnavailable} />
-      ) : shownBackdrop === 'forest' ? (
-        <ForestBackground onUnavailable={backdropUnavailable} />
-      ) : shownBackdrop === 'aurora' ? (
-        <AuroraBackground onUnavailable={backdropUnavailable} />
-      ) : shownBackdrop === 'waves' ? (
-        <WavesBackground onUnavailable={backdropUnavailable} />
-      ) : shownBackdrop === 'tunnel' ? (
-        <StarTunnelBackground colors={tunnelColors} onUnavailable={backdropUnavailable} />
-      ) : shownBackdrop === 'drift' ? (
-        <DriftBackground preset={driftPreset} direction={driftDirection} onUnavailable={backdropUnavailable} />
-      ) : (
-        shownBackdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
-      )}
+      <Fragment key={gpuGeneration}>
+        {product && webgl ? (
+          <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />
+        ) : shownBackdrop === 'custom' && custom ? (
+          // Your own picture or video needs no WebGL.
+          <CustomBackground items={custom.items} start={custom.start} shuffle={custom.shuffle} />
+        ) : !webgl ? (
+          <div className="stage-bg" style={fallback} />
+        ) : shownBackdrop === 'cityrain' ? (
+          <CityRainBackground onUnavailable={backdropUnavailable} />
+        ) : shownBackdrop === 'forest' ? (
+          <ForestBackground onUnavailable={backdropUnavailable} />
+        ) : shownBackdrop === 'aurora' ? (
+          <AuroraBackground onUnavailable={backdropUnavailable} />
+        ) : shownBackdrop === 'waves' ? (
+          <WavesBackground onUnavailable={backdropUnavailable} />
+        ) : shownBackdrop === 'tunnel' ? (
+          <StarTunnelBackground colors={tunnelColors} onUnavailable={backdropUnavailable} />
+        ) : shownBackdrop === 'drift' ? (
+          <DriftBackground preset={driftPreset} direction={driftDirection} onUnavailable={backdropUnavailable} />
+        ) : (
+          shownBackdrop === 'sea' && <SeaBackground onUnavailable={disableWebgl} />
+        )}
+      </Fragment>
       <div className="stage-scrim" />
       {screen === 'home' && home && <Home data={home} onNavigate={setScreen} />}
       {screen === 'steam' && home && (

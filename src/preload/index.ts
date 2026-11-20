@@ -34,6 +34,11 @@ const api: SteamTvApi = {
     ipcRenderer.on('files:pasteProgress', listener)
     return () => ipcRenderer.removeListener('files:pasteProgress', listener)
   },
+  onResume: (callback) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('power:resume', listener)
+    return () => ipcRenderer.removeListener('power:resume', listener)
+  },
   addBackdrop: (path) => ipcRenderer.invoke('backdrops:add', path),
   removeBackdrop: (file) => ipcRenderer.invoke('backdrops:remove', file),
   setBackdropShuffleOff: (files) => ipcRenderer.invoke('backdrops:shuffleOff', files),

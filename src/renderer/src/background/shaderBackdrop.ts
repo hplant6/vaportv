@@ -5,6 +5,7 @@ import { BACKDROP_CHANGED_EVENT } from './SeaBackground'
 import { heldMinutes, minutesOfDay, pinnedMinutes, sceneAt } from './timeOfDay'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
+import { markReleased } from './gpuRecovery'
 
 // Runs a backdrop that is one full-screen fragment shader (Northern Lights):
 // one draw call a frame, so it's about as light as the sea. The shader gets the time of
@@ -236,6 +237,7 @@ export function startShaderBackdrop(
     clearInterval(sunTimer)
     window.removeEventListener(WEATHER_CHANGED_EVENT, loadSun)
     window.removeEventListener(BACKDROP_CHANGED_EVENT, loadHeld)
+    markReleased(gl.canvas)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

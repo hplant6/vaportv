@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { compileScene } from '../compileScene'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
@@ -10,6 +11,7 @@ import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
 import type { ConsoleBackdropQuality } from '../../../../shared/types'
 import type { Product, Screen } from '../products'
+import { markReleased } from '../gpuRecovery'
 
 // A console's backdrop: the console in black on a black mirror floor, lit at its edges by a
 // magenta tube on one side and a cyan one on the other, the camera slowly swinging round it
@@ -299,7 +301,7 @@ export function startProduct(
       target.set(0, size.y / 2, 0)
       aim.copy(target).setY(target.y + AIM_ABOVE * scale)
       addRig(scene, scale, target, product.white ?? 1)
-      return renderer.compileAsync(scene, camera).then(() => {
+      return compileScene(renderer, scene, camera, () => stopped).then(() => {
         if (!stopped) ready = true
       })
     })
@@ -355,6 +357,7 @@ export function startProduct(
     scene.environment?.dispose()
     composer?.dispose()
     renderer.dispose()
+    markReleased(renderer.domElement)
     renderer.forceContextLoss()
   }
 }

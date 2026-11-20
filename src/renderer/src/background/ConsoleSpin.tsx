@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useGpuGeneration } from './gpuRecovery'
 import { PRODUCTS } from './products'
 import { BACKDROP_CHANGED_EVENT } from './SeaBackground'
 
@@ -38,6 +39,8 @@ export function ConsoleSpin({
   const canvas = useRef<HTMLCanvasElement>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  // After the GPU's reset (waking from sleep), it starts again on a fresh canvas.
+  const gpuGeneration = useGpuGeneration()
 
   useEffect(() => {
     if (!product || !on) return
@@ -68,11 +71,11 @@ export function ConsoleSpin({
       stop?.()
       setReady(false)
     }
-  }, [product, on])
+  }, [product, on, gpuGeneration])
 
   // Still reading the setting: its space is kept, so the lists under it don't jump down when it's read.
   if (!product || on === false || failed) return null
-  return <canvas className={`${className}${product.spin?.tall ? ' tall' : ''}${ready ? ' ready' : ''}`} ref={canvas} aria-hidden="true" />
+  return <canvas key={gpuGeneration} className={`${className}${product.spin?.tall ? ' tall' : ''}${ready ? ' ready' : ''}`} ref={canvas} aria-hidden="true" />
 }
 
 // ── Stills: each console as it first stands in the turning view, for the More screen's tiles ──

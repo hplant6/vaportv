@@ -1,8 +1,10 @@
 import * as THREE from 'three'
+import { compileScene } from '../compileScene'
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js'
 import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
 import { GROUND_COLOUR, GROUND_LIGHT, GROUND_NORMALS, GROUND_PARS, GROUND_ROUGHNESS, MIST_FRAGMENT, MIST_VERTEX, RAIN_FRAGMENT, RAIN_VERTEX } from './shaders'
+import { markReleased } from '../gpuRecovery'
 
 // City Rain: down on a wet street at night, slowly circling a puddle that mirrors the
 // city's lights, with rain falling and rings spreading across the water. The city is
@@ -157,7 +159,7 @@ export function startCityRain(canvas: HTMLCanvasElement, onReady: () => void, on
       if (stopped) return
       buildRain(scene, time, centre)
       buildMist(scene, centre)
-      return renderer.compileAsync(scene, camera).then(() => {
+      return compileScene(renderer, scene, camera, () => stopped).then(() => {
         if (!stopped) ready = true
       })
     })
@@ -200,6 +202,7 @@ export function startCityRain(canvas: HTMLCanvasElement, onReady: () => void, on
     })
     pmrem.dispose()
     renderer.dispose()
+    markReleased(renderer.domElement)
     renderer.forceContextLoss()
   }
 }

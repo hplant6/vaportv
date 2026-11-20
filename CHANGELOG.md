@@ -9,6 +9,10 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Fixed
+- The backdrop went black after the box woke from sleep, until vaporTV was restarted. It now starts again by itself (the turning consoles too).
+- Moving quickly across the tiles on **More** could raise an error behind the scenes.
+
 ### Changed
 - **Apps** has its own backdrop: a TV on a walnut stand showing vaporTV's Home screen, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
 

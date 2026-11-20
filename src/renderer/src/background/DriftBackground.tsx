@@ -3,6 +3,7 @@ import { presets, withDirection, type DistortLayerConfig, type DriftConfig, type
 import { blurFrag, circlesFrag, distortFrag, fullscreenVert, MAX_CIRCLES } from './drift/shaders'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
+import { markReleased } from './gpuRecovery'
 
 // Gradient Drift (Liam Egan's pen, MIT): soft colour circles drifting behind a
 // gaussian blur and two panes of reeded glass. Plain WebGL2, four fullscreen passes:
@@ -260,6 +261,7 @@ function start(canvas: HTMLCanvasElement, config: DriftConfig): () => void {
 
   return () => {
     cancelAnimationFrame(raf)
+    markReleased(gl.canvas)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

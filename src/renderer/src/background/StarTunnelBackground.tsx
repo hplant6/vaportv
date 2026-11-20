@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
+import { markReleased } from './gpuRecovery'
 
 // Star Tunnel: flying slowly down a tube of glowing dots, the tube turning as it
 // goes. A port of the CodePen "Star Tunnel" by alphardex (pen XWZKzjE, MIT), with
@@ -177,6 +178,7 @@ function start(canvas: HTMLCanvasElement, colors: TunnelColors): () => void {
 
   return () => {
     cancelAnimationFrame(raf)
+    markReleased(gl.canvas)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

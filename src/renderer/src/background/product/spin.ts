@@ -1,8 +1,10 @@
 import * as THREE from 'three'
+import { compileScene } from '../compileScene'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { pacer } from '../pace'
 import type { Product } from '../products'
 import { addRig, buildConsole, environment } from './scene'
+import { markReleased } from '../gpuRecovery'
 
 // A console turning slowly on the spot, as in the early PlayStation's menus: the left bar's
 // (SideBar.tsx). The same model, fixes and neon rig as the tab backdrop's product shot
@@ -106,7 +108,7 @@ export function startSpin(
       place(fit)
       for (let tries = 0; tries < 40 && !fits(camera, across, size.y, margin); tries++) place((fit *= 1.04))
       addRig(scene, Math.max(size.x, size.z) / 0.29, target, product.white ?? 1)
-      return renderer.compileAsync(scene, camera).then(() => {
+      return compileScene(renderer, scene, camera, () => stopped).then(() => {
         if (!stopped) ready = true
       })
     })
@@ -167,6 +169,7 @@ export function startSpin(
     })
     scene.environment?.dispose()
     renderer.dispose()
+    markReleased(renderer.domElement)
     renderer.forceContextLoss()
   }
 }

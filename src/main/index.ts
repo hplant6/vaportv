@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, powerMonitor } from 'electron'
 import { appendFile, chmod, mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -1198,6 +1198,12 @@ ipcMain.handle('power:sleepBlocker', () => sleepBlocker())
 ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(direction === 1 ? 1 : -1))
 
 app.whenReady().then(async () => {
+  // Waking from sleep resets the GPU, which can leave the page's WebGL backdrops drawing
+  // nothing (black): the page starts them again (gpuRecovery.ts).
+  powerMonitor.on('resume', () => {
+    logInput('power: woke from sleep')
+    win?.webContents.send('power:resume')
+  })
   // A new intro in this version: Steam's startup movie copy follows it.
   void loadConfig()
     .then(refreshBootVideo)

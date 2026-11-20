@@ -1250,6 +1250,8 @@ export interface SteamTvApi {
   pasteFile(source: string, folder: string, move: boolean): Promise<string>
   /** A paste's progress, in whole percents. */
   onPasteProgress(callback: (percent: number) => void): () => void
+  /** The system woke from sleep (its GPU was reset): WebGL drawing may need starting again. */
+  onResume(callback: () => void): () => void
   /** Copies a picture or video in as one of your own backdrops; returns its file name. */
   addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{

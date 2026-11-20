@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { stageHeight } from '../stage'
 import { pacer } from './pace'
+import { markReleased } from './gpuRecovery'
 
 // Chromatic Waves: RGB-split sine lines on black, each colour sampling the wave at a
 // slightly shifted x, so the lines fringe red and blue as they curve. A port of the
@@ -104,6 +105,7 @@ function start(canvas: HTMLCanvasElement): () => void {
 
   return () => {
     cancelAnimationFrame(raf)
+    markReleased(gl.canvas)
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 }

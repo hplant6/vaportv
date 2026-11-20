@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { compileScene } from '../compileScene'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { Tree } from '@dgreenheck/ez-tree'
@@ -11,6 +12,7 @@ import { stageHeight } from '../../stage'
 import { pacer } from '../pace'
 import { simplex2d } from './noise'
 import { GROUND_FRAGMENT, SKY_FRAGMENT, SKY_VERTEX, WIND_NOISE } from './shaders'
+import { markReleased } from '../gpuRecovery'
 
 // Forest: a slow walk along a trail through a thick pine forest, lit by the time of day.
 // The trees are Daniel Greenheck's EZ-Tree (MIT); the grass, flowers and ground are
@@ -465,7 +467,7 @@ export function startForest(canvas: HTMLCanvasElement, onReady: () => void, onEr
     .then(() => {
       if (stopped) return
       // Compile everything before the first frame shows, so it doesn't stutter in.
-      return renderer.compileAsync(scene, camera).then(() => {
+      return compileScene(renderer, scene, camera, () => stopped).then(() => {
         if (!stopped) ready = true
       })
     })
@@ -563,6 +565,7 @@ export function startForest(canvas: HTMLCanvasElement, onReady: () => void, onEr
       for (const mat of [m.material].flat()) mat.dispose()
     })
     renderer.dispose()
+    markReleased(renderer.domElement)
     renderer.forceContextLoss()
   }
 }
