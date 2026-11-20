@@ -115,3 +115,57 @@ export function assignButton(controls: Controls, action: ControlAction, button: 
   next[action] = button
   return next
 }
+
+// ── Two-button presses ──
+//
+// Three actions take two buttons pressed together: closing the game or app in front (held),
+// turning vaporTV's sound off or on, and Report a problem (held). Settings → Controller can
+// put each on any two buttons. A button that's part of one acts on letting go rather than on
+// pressing, so pressing a pair doesn't also do what each button does alone.
+
+export type ControlCombo = 'closeApp' | 'soundOff' | 'report'
+
+/** Combo → its two standard-mapping buttons. */
+export type Combos = Record<ControlCombo, [number, number]>
+
+export const CONTROL_COMBOS: { id: ControlCombo; name: string; detail: string; hold: boolean }[] = [
+  { id: 'closeApp', name: 'Close a game or app', detail: 'Hold both while it’s playing', hold: true },
+  { id: 'soundOff', name: 'Sound off or on', detail: 'Press both together', hold: false },
+  { id: 'report', name: 'Report a problem', detail: 'Hold both for a second, wherever you are', hold: true }
+]
+
+export const DEFAULT_COMBOS: Combos = {
+  closeApp: [8, 9],
+  soundOff: [10, 11],
+  report: [11, 7]
+}
+
+const samePair = (a: [number, number], b: [number, number]): boolean => (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0])
+
+/** Two different buttons an action can be given. */
+function validPair(value: unknown): value is [number, number] {
+  return Array.isArray(value) && value.length === 2 && value[0] !== value[1] && value.every((b) => ASSIGNABLE_BUTTONS.includes(b as number))
+}
+
+/** The saved combos, each checked: one that's missing, broken or the same pair as an earlier one goes back to its default. */
+export function resolveCombos(saved: Partial<Record<ControlCombo, unknown>> | undefined): Combos {
+  const combos = { ...DEFAULT_COMBOS }
+  const taken: [number, number][] = []
+  for (const { id } of CONTROL_COMBOS) {
+    const value = saved?.[id]
+    const pair = validPair(value) && !taken.some((t) => samePair(t, value)) ? ([value[0], value[1]] as [number, number]) : DEFAULT_COMBOS[id]
+    combos[id] = pair
+    taken.push(pair)
+  }
+  return combos
+}
+
+/** The combo already on this pair of buttons, other than `combo` itself. */
+export function comboHolder(combos: Combos, combo: ControlCombo, pair: [number, number]): ControlCombo | undefined {
+  return CONTROL_COMBOS.find((c) => c.id !== combo && samePair(combos[c.id], pair))?.id
+}
+
+/** Every button that's part of a combo. */
+export function comboButtons(combos: Combos): Set<number> {
+  return new Set(Object.values(combos).flat())
+}

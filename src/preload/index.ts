@@ -115,6 +115,7 @@ const api: SteamTvApi = {
   toggleFavoriteApp: (id) => ipcRenderer.invoke('apps:favorite', id),
   setArcadeRowsHidden: (rows) => ipcRenderer.invoke('settings:arcadeRowsHidden', rows),
   setControls: (controls) => ipcRenderer.invoke('settings:controls', controls),
+  setCombos: (combos) => ipcRenderer.invoke('settings:combos', combos),
   setSleepWarning: (on) => ipcRenderer.invoke('settings:sleepWarning', on),
   art: {
     search: (id, query) => ipcRenderer.invoke('art:search', id, query),

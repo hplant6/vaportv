@@ -1385,7 +1385,14 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
           </div>
         </div>
 
-        {settings && <ControlsSettings controls={settings.controls} onChange={(controls) => setSettings({ ...settings, controls })} />}
+        {settings && (
+          <ControlsSettings
+            controls={settings.controls}
+            combos={settings.combos}
+            onChange={(controls) => setSettings({ ...settings, controls })}
+            onCombosChange={(combos) => setSettings({ ...settings, combos })}
+          />
+        )}
       </>
     ),
     wifi: <WifiSettings />,

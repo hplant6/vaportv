@@ -28,7 +28,7 @@ This guide uses Xbox names. vaporTV shows your own controller's buttons on scree
 A few notes on these:
 
 - **L3** skips the song you're hearing: the Music tab's when it's playing an album or playlist, otherwise the background music. The song's name comes up at the bottom.
-- **L3** and **R3** act as you let go, not as you press. That's so clicking both sticks together can turn the sound off without also skipping a song or starting voice search.
+- A button that's part of a two-button press (**L3**, **R3**, **Select**, **Start** and **RT** at first) acts as you let go, not as you press. That's so pressing a pair doesn't also do what each button does alone: clicking both sticks turns the sound off without also skipping a song or starting voice search.
 - **Both sticks** turn off the background music and ambience, and anything playing in Files. Do it again to bring the music back.
 - **Hold Select + Start** for about a second. It works whatever is in front: a game, a streaming app or an emulator.
 - **R2** shows your buttons as they're set now, so a button you've moved shows in its new place.
@@ -101,9 +101,11 @@ That's it. If another action had that button, the two swap, and a note at the bo
 
 What can be moved: **Select**, **Back**, **Favorite**, **Playlist**, **Game options**, **Previous tab**, **Next tab**, **Voice search**, **Next song**, **Left bar**, **Show the buttons** and **Settings**. They can go on A, B, X, Y, L1, R1, L2, R2, Select, Start, L3 or R3.
 
-What can't: the **D-pad** and **sticks** always move, the **Steam** button is Steam's, and the two-button presses (**Hold Select + Start**, **both sticks** and **Hold R3 + RT**) stay as they are. They're listed at the end of **Controls** so you can find them.
+The two-button presses are at the end of **Controls**: **Close a game or app**, **Sound off or on** and **Report a problem**. Choose one, then hold the two buttons you want together. A pair that another of them already has is refused, with a note saying which. Close and Report still need holding for about a second; Sound off is a press.
 
-**Reset to defaults** appears at the end of the list once you've moved something.
+What can't be moved: the **D-pad** and **sticks** always move, and the **Steam** button is Steam's.
+
+**Reset to defaults** appears at the end of the list once you've moved something. It puts the two-button presses back too.
 
 Your buttons are kept when vaporTV updates. If an update adds a new action, it goes on a free button and yours stay where you put them.
 

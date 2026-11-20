@@ -223,7 +223,7 @@ export async function playExternal(
   source: string,
   itemId: string,
   fromStart: boolean,
-  hooks: Pick<PlayerHooks, 'controls' | 'log'>
+  hooks: Pick<PlayerHooks, 'controls' | 'combos' | 'log'>
 ): Promise<boolean> {
   const a = await account(source)
   const dev = await device()

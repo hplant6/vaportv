@@ -333,7 +333,7 @@ export function controlsGuide(): void {
   window.dispatchEvent(new Event(CONTROLS_GUIDE_EVENT))
 }
 
-/** Both sticks clicked in at once: vaporTV's sound off, or back on. BackgroundMusic listens. */
+/** The sound-off press (both sticks, unless moved): vaporTV's sound off, or back on. BackgroundMusic listens. */
 export const SOUND_OFF_EVENT = 'steamtv:sound-off'
 
 export function toggleSound(): void {

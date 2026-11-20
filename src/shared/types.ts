@@ -1,5 +1,5 @@
 import type { ArcadeRow } from './arcade'
-import type { Controls } from './controls'
+import type { Combos, Controls } from './controls'
 import type { SunTimes } from './sun'
 
 export interface RecentItem {
@@ -726,6 +726,8 @@ export interface Settings {
   sleepWarning: boolean
   /** What each controller button does. */
   controls: Controls
+  /** The two-button presses: close, sound off, Report a problem. */
+  combos: Combos
   /** Screensaver delay in minutes (0 = off), and where it reads photos. */
   screensaverDelay: number
   screensaverStyle: ScreensaverStyle
@@ -1309,6 +1311,7 @@ export interface SteamTvApi {
   setSleepOnControllerOff(on: boolean): Promise<void>
   /** Saves the button for each action (Settings → Controller). */
   setControls(controls: Controls): Promise<void>
+  setCombos(combos: Combos): Promise<void>
   /** Saves which Arcade tab carousels are turned off. */
   setArcadeRowsHidden(rows: ArcadeRow[]): Promise<void>
   location: {

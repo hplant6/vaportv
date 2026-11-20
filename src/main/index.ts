@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import home from '../../fixtures/home.json'
 import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
-import { resolveControls, type Controls } from '../shared/controls'
+import { DEFAULT_COMBOS, resolveCombos, resolveControls, type Combos, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
 import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicBar, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
@@ -748,6 +748,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     sleepOnControllerOff: config.sleepOnControllerOff ?? false,
     sleepWarning: config.sleepWarning ?? true,
     controls: resolveControls(config.controls),
+    combos: resolveCombos(config.combos),
     screensaverDelay: config.screensaverDelay ?? DEFAULT_SCREENSAVER_DELAY,
     screensaverStyle: screensaverStyle(config),
     screensaverClock: config.screensaverClock ?? 'moving',
@@ -938,6 +939,13 @@ ipcMain.handle('screensaver:photoTaken', async (_event, url: string) => photoTak
 ipcMain.handle('settings:sleepOnControllerOff', (_event, on: boolean) => saveConfig({ sleepOnControllerOff: on }))
 ipcMain.handle('settings:arcadeRowsHidden', (_event, rows: ArcadeRow[]) => saveConfig({ arcadeRowsHidden: rows }))
 ipcMain.handle('settings:controls', (_event, controls: Controls) => saveConfig({ controls: resolveControls(controls) }))
+ipcMain.handle('settings:combos', async (_event, combos: Combos) => {
+  closeCombo = resolveCombos(combos).closeApp
+  await saveConfig({ combos: resolveCombos(combos) })
+})
+/** The close combo's buttons, for the watcher over games (hotkey.ts): kept current as Settings changes it. */
+let closeCombo = DEFAULT_COMBOS.closeApp
+void loadConfig().then((config) => (closeCombo = resolveCombos(config.combos).closeApp))
 ipcMain.handle('settings:sleepWarning', (_event, on: boolean) => saveConfig({ sleepWarning: on }))
 ipcMain.handle('settings:screensaverStyle', (_event, style: ScreensaverStyle) => saveConfig({ screensaverStyle: style }))
 ipcMain.handle('settings:screensaverClock', (_event, spot: ScreensaverClockSpot) => saveConfig({ screensaverClock: spot }))
@@ -1038,7 +1046,7 @@ ipcMain.handle('media:libraryPage', (_event, library: Pick<MediaLibrary, 'source
 )
 ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice, codecs?: string[]) => media.playback(source, itemId, choice, codecs))
 ipcMain.handle('media:playExternal', async (_event, source: string, itemId: string, fromStart?: boolean) =>
-  media.playExternal(source, itemId, !!fromStart, { controls: resolveControls((await loadConfig()).controls), log: logInput })
+  media.playExternal(source, itemId, !!fromStart, { controls: resolveControls((await loadConfig()).controls), combos: resolveCombos((await loadConfig()).combos), log: logInput })
 )
 ipcMain.handle('media:report', (_event, kind: 'start' | 'progress' | 'stop', playback: MediaPlayback, position: number, paused: boolean) =>
   media.report(kind, playback, position, paused).catch((err) => logInput(`media: report ${kind} failed: ${err}`))
@@ -1308,6 +1316,7 @@ app.whenReady().then(async () => {
       onClosing: (name) => send('closing', { active: true, name }),
       onClosed: () => send('closing', { active: false }),
       onOwnInFront: () => send('hotkey:in-app'),
+      closeCombo: () => closeCombo,
       log: logInput
     })
     // A remote's power button (sleep) and Home (back to vaporTV, as Select + Start).

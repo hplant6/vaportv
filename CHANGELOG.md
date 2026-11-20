@@ -10,6 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
+- The two-button presses can be moved in **Settings → Controller**, like the other buttons: **Close a game or app** (Select + Start), **Sound off or on** (both sticks) and **Report a problem** (R3 + RT). Choose one and hold the two buttons you want. A button that's part of one now acts as you let go of it, so pressing a pair never also does what each button does alone.
 - Hold **R3 + RT** (right stick in, right trigger) for a second to open **Report a problem** from any screen, so its details catch the screen the problem is on. It's in R2's button guide and Settings → Controller.
 - **Add details** also offers a screenshot of the screen as it was when you opened Report a problem, to attach if it shows the problem.
 - **Report a problem** is two steps: the report's code, then (optional, but the most help) **Add details**, whose code opens a page on your phone (on the same Wi-Fi) to download or copy what vaporTV was doing when you opened the report, and its recent log, to attach to the report on GitHub, with the last few minutes of activity (screens, cursor, music, and vaporTV's own requests and how long each took). The activity is kept in memory only; the rest is gathered only when you open Report a problem, the page closes with it, and what's personal is taken out, as in the report.

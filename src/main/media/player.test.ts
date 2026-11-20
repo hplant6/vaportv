@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { handle, initialState, tick, type PlayerState } from './playerUi'
-import { padDecoder, padId } from './padInput'
+import { padDecoder, padId, heldDecoder } from './padInput'
 import { matchTracks, shortcutList } from './externalPlayer'
 import { DEFAULT_CONTROLS } from '../../shared/controls'
 import { assText, fit, renderOsd } from './playerOsd'
@@ -235,5 +235,20 @@ describe("Chrome's flags", () => {
     expect(withFlags('--enable-spatial-navigation\n--autoplay-policy=no-user-gesture-required\n')).toBeNull()
     expect(withFlags('--autoplay-policy=user-gesture-required\n')).toBe('--autoplay-policy=no-user-gesture-required\n')
     expect(withFlags('')).toBe('--autoplay-policy=no-user-gesture-required\n')
+  })
+})
+
+describe('heldDecoder (two-button presses over a game)', () => {
+  it('knows which buttons are down, triggers included, and lets them go', () => {
+    const seen: number[][] = []
+    const d = heldDecoder((held) => seen.push([...held].sort((a, b) => a - b)))
+    d.key(0x13a, 1) // Select down
+    d.key(0x13b, 1) // Start down
+    d.key(0x13b, 2) // Start repeating: no change
+    d.abs(0x05, 200) // right trigger past the press point
+    d.abs(0x05, 70) // between the two points: still down
+    d.abs(0x05, 10) // let go
+    d.key(0x13a, 0)
+    expect(seen).toEqual([[8], [8, 9], [7, 8, 9], [8, 9], [9]])
   })
 })

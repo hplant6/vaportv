@@ -74,7 +74,7 @@ const HOLD_FADE_MS = 300
 const WATCH_MS = 3000
 
 /**
- * Both sticks clicked in turn vaporTV's sound off: the music and ambience fade out, and
+ * Sound off (both sticks clicked in, unless moved in Settings → Controller) turns vaporTV's sound off: the music and ambience fade out, and
  * whatever else is playing (a song or video in Files, a preview) stops. Again, and the
  * music and ambience come back. Until then, nothing starts them (coming back from a game).
  */
@@ -86,7 +86,7 @@ function toggleSoundOff(): void {
     // Everything with its own sound; a backdrop's video is muted, and stays playing.
     for (const media of document.querySelectorAll<HTMLMediaElement>('audio, video')) if (!media.muted) media.pause()
   }
-  toast(soundOff ? 'Sound off. Click both sticks again to turn it back on' : 'Sound on')
+  toast(soundOff ? 'Sound off. Press the same two buttons again to turn it back on' : 'Sound on')
   window.dispatchEvent(new Event(SOUND_TOGGLED_EVENT))
 }
 const SOUND_TOGGLED_EVENT = 'steamtv:sound-toggled'

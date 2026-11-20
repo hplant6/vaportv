@@ -115,6 +115,37 @@ export function padDecoder(press: (what: { button: number } | { direction: PadDi
   }
 }
 
+/**
+ * Which buttons are down on one device, by their standard-mapping numbers, triggers included
+ * (analogue on most pads): `onChange` after each change. For two-button presses held over a game
+ * (hotkey.ts), which need to know what's held rather than what was pressed.
+ */
+export function heldDecoder(onChange: (held: ReadonlySet<number>) => void): {
+  key: (code: number, value: number) => void
+  abs: (code: number, value: number) => void
+} {
+  const held = new Set<number>()
+  const set = (button: number, down: boolean): void => {
+    if (down === held.has(button)) return
+    if (down) held.add(button)
+    else held.delete(button)
+    onChange(held)
+  }
+  return {
+    key: (code, value) => {
+      const button = KEY_TO_BUTTON[code]
+      // 2 is a key repeating while held: still down.
+      if (button !== undefined) set(button, value !== 0)
+    },
+    abs: (code, value) => {
+      if (code !== ABS_Z && code !== ABS_RZ) return
+      const button = code === ABS_Z ? 6 : 7
+      if (value > TRIGGER_ON) set(button, true)
+      else if (value < TRIGGER_OFF) set(button, false)
+    }
+  }
+}
+
 /** Reads every controller until the returned stop is called. */
 export function readPads(events: PadEvents, log: (line: string) => void = () => undefined): () => void {
   const stops = new Map<string, () => void>()

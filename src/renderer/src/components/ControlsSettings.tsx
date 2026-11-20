@@ -1,27 +1,49 @@
 import { useEffect, useState } from 'react'
-import { assignButton, buttonName, CONTROL_ACTIONS, DEFAULT_CONTROLS, holderOf, type ControlAction, type Controls } from '../../../shared/controls'
-import { cancelCapture, captureButton, CONTROLS_CHANGED_EVENT } from '../input/gamepad'
+import { assignButton, buttonName, comboHolder, CONTROL_ACTIONS, CONTROL_COMBOS, DEFAULT_COMBOS, DEFAULT_CONTROLS, holderOf, type Combos, type ControlAction, type ControlCombo, type Controls } from '../../../shared/controls'
+import { cancelCapture, captureButton, captureCombo, CONTROLS_CHANGED_EVENT } from '../input/gamepad'
 import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { toast } from './Toast'
 
-/** Pressed together, and the same whatever the buttons above are set to. */
-const FIXED: { name: string; detail: string; buttons: [number, number]; hold?: true }[] = [
-  { name: 'Close a game or app', detail: 'Hold both while it’s playing', buttons: [8, 9], hold: true },
-  { name: 'Sound off or on', detail: 'Click both sticks in', buttons: [10, 11] },
-  { name: 'Report a problem', detail: 'Hold the right stick in and the right trigger for a second, wherever you are', buttons: [11, 7], hold: true }
-]
 
 /**
  * Settings → Controller → Controls: a row per action showing its button. Choosing a row
  * waits for the next button pressed; a button another action had is swapped.
  */
-export function ControlsSettings({ controls, onChange }: { controls: Controls; onChange: (controls: Controls) => void }) {
-  const [waiting, setWaiting] = useState<ControlAction | null>(null)
+export function ControlsSettings({
+  controls,
+  combos,
+  onChange,
+  onCombosChange
+}: {
+  controls: Controls
+  combos: Combos
+  onChange: (controls: Controls) => void
+  onCombosChange: (combos: Combos) => void
+}) {
+  const [waiting, setWaiting] = useState<ControlAction | ControlCombo | null>(null)
   const family = useControllerFamily()
 
   const save = (next: Controls): void => {
     onChange(next)
     window.steamtv.setControls(next).then(() => window.dispatchEvent(new Event(CONTROLS_CHANGED_EVENT)))
+  }
+  const saveCombos = (next: Combos): void => {
+    onCombosChange(next)
+    window.steamtv.setCombos(next).then(() => window.dispatchEvent(new Event(CONTROLS_CHANGED_EVENT)))
+  }
+  const pairName = (pair: [number, number]): string => pair.map((b) => buttonName(b, family)).join(' + ')
+
+  // A two-button press: the next two buttons held together. A pair another one has is refused (they'd both go off).
+  const listenCombo = (combo: ControlCombo): void => {
+    setWaiting(combo)
+    captureCombo((pair) => {
+      setWaiting(null)
+      if (!pair) return
+      const holder = CONTROL_COMBOS.find((c) => c.id === comboHolder(combos, combo, pair))
+      if (holder) return toast(`${pairName(pair)} is already ${holder.name}`)
+      saveCombos({ ...combos, [combo]: pair })
+      toast(`${CONTROL_COMBOS.find((c) => c.id === combo)!.name}: ${pairName(pair)}`)
+    })
   }
 
   const listen = (action: ControlAction): void => {
@@ -48,13 +70,15 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
   }, [waiting])
   useEffect(() => () => cancelCapture(), [])
 
-  const isDefault = CONTROL_ACTIONS.every((a) => controls[a.id] === DEFAULT_CONTROLS[a.id])
+  const isDefault =
+    CONTROL_ACTIONS.every((a) => controls[a.id] === DEFAULT_CONTROLS[a.id]) &&
+    CONTROL_COMBOS.every((c) => combos[c.id].join() === DEFAULT_COMBOS[c.id].join())
 
   return (
     <div className="settings-group">
       <h3 className="settings-heading display">Controls</h3>
       <p className="settings-help">
-        Choose an action, then press the button you want for it. The D-pad and sticks always move around, and the two-button presses at the end can’t be changed.
+        Choose an action, then press the button you want for it. For the two-button presses at the end, hold the two you want together. The D-pad and sticks always move around.
       </p>
       <div className="setting-list" data-focus-memory="settings-controls">
         {CONTROL_ACTIONS.map((a) => (
@@ -78,24 +102,30 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             )}
           </button>
         ))}
-        {/* Two-button presses that are always the same: listed so they can be found, not changed. */}
-        {FIXED.map((f) => (
+        {/* Two-button presses: choose one, then hold the two buttons wanted. */}
+        {CONTROL_COMBOS.map((c) => (
           <button
-            key={f.name}
-            className="setting-row"
+            key={c.id}
+            className={`setting-row${waiting === c.id ? ' waiting' : ''}`}
             tabIndex={-1}
-            aria-label={`${f.name}: ${f.buttons.map((b) => buttonName(b, family)).join(' and ')}${f.hold ? ', held' : ''}`}
+            aria-label={`${c.name}: ${combos[c.id].map((b) => buttonName(b, family)).join(' and ')}${c.hold ? ', held' : ''}`}
             data-focusable=""
             data-select-sound="move"
-            onClick={() => toast(`${f.name} is always ${f.buttons.map((b) => buttonName(b, family)).join(' + ')}${f.hold ? ', held' : ''}`)}
+            onClick={() => listenCombo(c.id)}
           >
-            <span className="setting-name display">{f.name}</span>
-            <span className="setting-detail">{f.detail}</span>
-            <span className="control-combo">
-              <ButtonIcon button={f.buttons[0]} family={family} />
-              <span className="controls-guide-plus">+</span>
-              <ButtonIcon button={f.buttons[1]} family={family} />
-            </span>
+            <span className="setting-name display">{c.name}</span>
+            {waiting === c.id ? (
+              <span className="setting-detail">Hold two buttons together…</span>
+            ) : (
+              <>
+                <span className="setting-detail">{c.detail}</span>
+                <span className="control-combo">
+                  <ButtonIcon button={combos[c.id][0]} family={family} />
+                  <span className="controls-guide-plus">+</span>
+                  <ButtonIcon button={combos[c.id][1]} family={family} />
+                </span>
+              </>
+            )}
           </button>
         ))}
         {!isDefault && (
@@ -106,6 +136,7 @@ export function ControlsSettings({ controls, onChange }: { controls: Controls; o
             data-select-sound="move"
             onClick={() => {
               save(DEFAULT_CONTROLS)
+              saveCombos(DEFAULT_COMBOS)
               toast('Controls set back to the defaults')
             }}
           >

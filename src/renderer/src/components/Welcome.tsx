@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { buttonName, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
+import { buttonName, DEFAULT_CONTROLS, type ControlAction, type Controls, DEFAULT_COMBOS, type Combos } from '../../../shared/controls'
 import type { LocationSettings } from '../../../shared/types'
 import { focus, focusDefault, TRAP_CLOSE_EVENT } from '../input/focus'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
@@ -45,12 +45,16 @@ function Tour({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState(0)
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
+  const [combos, setCombos] = useState<Combos>(DEFAULT_COMBOS)
   const [location, setLocation] = useState<LocationSettings | null>(null)
   const [picking, setPicking] = useState(false)
   const family = useControllerFamily()
 
   useEffect(() => {
-    window.steamtv.getSettings().then((s) => setControls(s.controls))
+    window.steamtv.getSettings().then((s) => {
+      setControls(s.controls)
+      setCombos(s.combos ?? DEFAULT_COMBOS)
+    })
     const load = (): void => {
       window.steamtv.location.get().then(setLocation)
     }
@@ -82,7 +86,7 @@ function Tour({ onClose }: { onClose: () => void }) {
           <Row keys={key('sideBar')}>Show or hide a tab’s list of games</Row>
           <Row keys={key('controlsGuide')}>What each button does</Row>
           <Row keys={key('settings')}>Settings</Row>
-          <Row keys={<><ButtonIcon button={10} family={family} /><ButtonIcon button={11} family={family} /></>}>Click both sticks in to turn the sound off or on</Row>
+          <Row keys={<><ButtonIcon button={combos.soundOff[0]} family={family} /><ButtonIcon button={combos.soundOff[1]} family={family} /></>}>Press both together to turn the sound off or on</Row>
         </ul>
       )
     },
@@ -92,7 +96,7 @@ function Tour({ onClose }: { onClose: () => void }) {
         <ul className="welcome-list">
           <Row keys={key('favorite')}>Add it to Favorites, or take it off</Row>
           <Row keys={key('playlist')}>Add it to a playlist, or take it out</Row>
-          <Row keys={<><ButtonIcon button={8} family={family} /><ButtonIcon button={9} family={family} /></>}>
+          <Row keys={<><ButtonIcon button={combos.closeApp[0]} family={family} /><ButtonIcon button={combos.closeApp[1]} family={family} /></>}>
             Hold both while playing to close it and come back here
           </Row>
         </ul>

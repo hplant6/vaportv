@@ -3,7 +3,7 @@ import { toast } from '../components/Toast'
 import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, toggleSound, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
 import { skipTrack } from '../components/BackgroundMusic'
-import { ASSIGNABLE_BUTTONS, CONTROL_ACTIONS, DEFAULT_CONTROLS, type ControlAction, type Controls } from '../../../shared/controls'
+import { ASSIGNABLE_BUTTONS, comboButtons, CONTROL_ACTIONS, CONTROL_COMBOS, DEFAULT_COMBOS, DEFAULT_CONTROLS, type Combos, type ControlAction, type ControlCombo, type Controls } from '../../../shared/controls'
 import { registerDiagnostics } from '../diagnostics'
 import { OPEN_BUG_REPORT_EVENT } from '../components/BugReportDialog'
 
@@ -26,7 +26,15 @@ let steamAway = false
 const STEAM_MENU = {}
 let controls: Controls = DEFAULT_CONTROLS
 /** Waiting for "press a button" in Settings: called with the next button pressed, or null if cancelled. */
-let capture: { onButton: (button: number | null) => void; until: number; released: boolean } | null = null
+let capture: {
+  onButton: (button: number | null) => void
+  /** Waiting for two buttons together (a two-button press), rather than one. */
+  onPair?: (pair: [number, number] | null) => void
+  until: number
+  released: boolean
+  /** The pair so far, in the order they went down. */
+  order: number[]
+} | null = null
 const CAPTURE_TIMEOUT_MS = 6000
 let held: Direction | null = null
 let nextRepeat = 0
@@ -60,26 +68,19 @@ const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
   nextTab: () => switchTab(1)
 }
 /**
- * Both sticks clicked in at once turn the sound off or on (whatever actions the sticks have
- * alone). So an action on a stick happens when it's let go, not pressed, and not at all if
- * the other stick went in meanwhile.
+ * The two-button presses (Settings → Controller): sound off or on (both buttons pressed),
+ * Report a problem (held a second), and closing a game or app (held; main watches that one,
+ * as it works over games too). An action on a button that's part of one happens when the
+ * button's let go, not pressed, and not at all if a two-button press went down meanwhile, so
+ * pressing a pair doesn't also do what each button does alone.
  */
-const STICKS = [10, 11]
-/** Stick actions pressed and waiting for their release. */
-const stickWaiting = new Set<ControlAction>()
-/**
- * Report a problem from anywhere: the right stick clicked in and the right trigger, held
- * together for a second. Fixed to those buttons, like both sticks. While the stick's in, the
- * trigger's own action waits, and the stick's (it acts on letting go) is dropped once both are down.
- */
-const REPORT_COMBO = [11, 7]
-const REPORT_HOLD_MS = 1000
-/** When both went down (0: not both), and whether this hold has opened the report already. */
-let reportSince = 0
-let reportOpened = false
-
-/** Both sticks went in, and haven't both come out yet. */
-let sticksTogether = false
+let combos: Combos = DEFAULT_COMBOS
+const COMBO_HOLD_MS = 1000
+/** Actions on a combo's button, pressed and waiting for their release. */
+const releaseWaiting = new Set<ControlAction>()
+/** Combos whose two buttons are both down, since when; and the held ones that have acted already. */
+const comboSince = new Map<ControlCombo, number>()
+const comboDone = new Set<ControlCombo>()
 /** Actions whose buttons were held last time round, to tell a new press. */
 let actionsDown = new Set<ControlAction>()
 
@@ -196,8 +197,9 @@ function poll(now: number): void {
     waitForRelease = false
     // What was down before doesn't count as let go now.
     actionsDown = new Set()
-    stickWaiting.clear()
-    sticksTogether = false
+    releaseWaiting.clear()
+    comboSince.clear()
+    comboDone.clear()
   }
 
   // Any button at all counts as activity; one that wakes the screensaver does nothing else.
@@ -225,42 +227,43 @@ function poll(now: number): void {
 
   const wasDown = actionsDown
   actionsDown = pressed
-  const stickDown = (pad: Gamepad, button: number): boolean => !hooked.has(button) && !!pad.buttons[button]?.pressed
-  if (!sticksTogether && pads().some((pad) => STICKS.every((b) => stickDown(pad, b)))) {
-    sticksTogether = true
-    stickWaiting.clear()
-    toggleSound()
-  } else if (sticksTogether && !pads().some((pad) => STICKS.some((b) => stickDown(pad, b)))) {
-    sticksTogether = false
-  }
-  // The report's combo: the trigger doesn't act while the stick's in (it's the combo coming).
-  const comboPartner = (button: number): number | null => (button === REPORT_COMBO[1] ? REPORT_COMBO[0] : null)
-  const partnerDown = (button: number): boolean => {
-    const partner = comboPartner(button)
-    return partner !== null && pads().some((pad) => stickDown(pad, partner))
-  }
+  const buttonDown = (button: number): boolean => pads().some((pad) => !hooked.has(button) && !!pad.buttons[button]?.pressed)
+  const onCombo = comboButtons(combos)
+  const comboActive = comboSince.size > 0
   for (const { id } of CONTROL_ACTIONS) {
-    if (!STICKS.includes(controls[id])) {
-      if (pressed.has(id) && !wasDown.has(id) && !partnerDown(controls[id])) ON_PRESS[id]?.()
+    if (!onCombo.has(controls[id])) {
+      if (pressed.has(id) && !wasDown.has(id)) ON_PRESS[id]?.()
     } else if (pressed.has(id) && !wasDown.has(id)) {
-      if (!sticksTogether) stickWaiting.add(id)
-    } else if (!pressed.has(id) && stickWaiting.delete(id)) {
+      if (!comboActive) releaseWaiting.add(id)
+    } else if (!pressed.has(id) && releaseWaiting.delete(id)) {
       ON_PRESS[id]?.()
     }
   }
-
-  if (pads().some((pad) => REPORT_COMBO.every((b) => stickDown(pad, b)))) {
-    reportSince ||= now
-    // Letting go of the stick afterwards mustn't also do its own action.
-    for (const { id } of CONTROL_ACTIONS) if (controls[id] === REPORT_COMBO[0]) stickWaiting.delete(id)
-    if (!reportOpened && now - reportSince >= REPORT_HOLD_MS) {
-      reportOpened = true
-      window.steamtv.logInput('report: opened with R3 + RT')
-      window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail: document.activeElement instanceof HTMLElement ? document.activeElement : null }))
+  for (const { id, hold } of CONTROL_COMBOS) {
+    const [a, b] = combos[id]
+    if (!buttonDown(a) || !buttonDown(b)) {
+      comboSince.delete(id)
+      comboDone.delete(id)
+      continue
     }
-  } else {
-    reportSince = 0
-    reportOpened = false
+    if (!comboSince.has(id)) {
+      comboSince.set(id, now)
+      // Letting go of the two afterwards mustn't also do their own actions.
+      for (const { id: action } of CONTROL_ACTIONS) if (controls[action] === a || controls[action] === b) releaseWaiting.delete(action)
+    }
+    if (comboDone.has(id) || (hold && now - comboSince.get(id)! < COMBO_HOLD_MS)) continue
+    comboDone.add(id)
+    COMBO_ACTS[id]()
+  }
+}
+
+/** What each two-button press does here (closing is main's: it watches over games too). */
+const COMBO_ACTS: Record<ControlCombo, () => void> = {
+  closeApp: () => undefined,
+  soundOff: () => toggleSound(),
+  report: () => {
+    window.steamtv.logInput('report: opened with its two-button press')
+    window.dispatchEvent(new CustomEvent(OPEN_BUG_REPORT_EVENT, { detail: document.activeElement instanceof HTMLElement ? document.activeElement : null }))
   }
 }
 
@@ -271,20 +274,21 @@ function poll(now: number): void {
  */
 export function captureButton(onButton: (button: number | null) => void): void {
   capture?.onButton(null)
-  capture = { onButton, until: performance.now() + CAPTURE_TIMEOUT_MS, released: false }
+  capture = { onButton, until: performance.now() + CAPTURE_TIMEOUT_MS, released: false, order: [] }
 }
 
 export function cancelCapture(): void {
   finishCapture(null)
 }
 
-function finishCapture(button: number | null): void {
+function finishCapture(button: number | null, pair: [number, number] | null = null): void {
   const done = capture
   capture = null
   // The press that was captured must not also act once normal reading resumes.
   waitForRelease = true
   held = null
-  done?.onButton(button)
+  if (done?.onPair) done.onPair(pair)
+  else done?.onButton(button)
 }
 
 function pollCapture(now: number): void {
@@ -295,15 +299,36 @@ function pollCapture(now: number): void {
     if (!anyHeld) capture!.released = true
     return
   }
+  if (all.some((pad) => Object.values(DPAD).some((i) => pad.buttons[i]?.pressed))) return finishCapture(null)
+  if (capture!.onPair) {
+    // Two held together: the order they went down in. One let go before the other came is dropped.
+    const down = ASSIGNABLE_BUTTONS.filter((i) => all.some((pad) => pad.buttons[i]?.pressed))
+    capture!.order = [...capture!.order.filter((b) => down.includes(b)), ...down.filter((b) => !capture!.order.includes(b))]
+    if (capture!.order.length >= 2) return finishCapture(null, [capture!.order[0], capture!.order[1]])
+    return
+  }
   for (const pad of all) {
-    if (Object.values(DPAD).some((i) => pad.buttons[i]?.pressed)) return finishCapture(null)
     const button = ASSIGNABLE_BUTTONS.find((i) => pad.buttons[i]?.pressed)
     if (button !== undefined) return finishCapture(button)
   }
 }
 
+/**
+ * Settings' "press two buttons": once everything is let go, the first two assignable buttons
+ * held down together are reported, in the order they went down. The D-pad, or nothing for a
+ * while, cancels with null.
+ */
+export function captureCombo(onPair: (pair: [number, number] | null) => void): void {
+  cancelCapture()
+  capture = { onButton: () => undefined, onPair, until: performance.now() + COMBO_CAPTURE_TIMEOUT_MS, released: false, order: [] }
+}
+const COMBO_CAPTURE_TIMEOUT_MS = 8000
+
 function loadControls(): void {
-  window.steamtv.getSettings().then((s) => (controls = s.controls))
+  window.steamtv.getSettings().then((s) => {
+    controls = s.controls
+    combos = s.combos ?? DEFAULT_COMBOS
+  })
 }
 
 export function startGamepad(): void {

@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { readdir, readFile, readlink } from 'node:fs/promises'
 import { readKeys } from './evdev'
+import { heldDecoder } from './media/padInput'
 import { isOwnHelper } from './helpers'
 
 // Hold Select + Start to always get back to steamtv: it closes whatever is in front
@@ -8,8 +9,6 @@ import { isOwnHelper } from './helpers'
 // Steam's own UI. Read straight from the controllers' evdev
 // devices, so it works while another app has focus.
 
-const BTN_SELECT = 0x13a
-const BTN_START = 0x13b
 const HOLD_MS = 1000
 const RESCAN_MS = 5000
 const KILL_GRACE_MS = 5000
@@ -34,7 +33,8 @@ export const STEAMTV_APPID: number | null = process.env.SteamAppId && process.en
 type Log = (line: string) => void
 
 interface Watched {
-  held: Set<number>
+  /** Buttons down, by standard-mapping number (triggers included). */
+  held: ReadonlySet<number>
 }
 
 /** Controllers (devices with a joystick handler) by event node, from the kernel's list. */
@@ -230,6 +230,8 @@ export interface HotkeyOptions {
   onClosed: () => void
   /** The combo held with vaporTV itself in front (nothing else to close): it closes its own video, if one's playing. */
   onOwnInFront?: () => void
+  /** The close combo's two buttons (standard-mapping numbers; Settings → Controller), Select + Start unless changed. */
+  closeCombo?: () => [number, number]
   log: Log
 }
 
@@ -336,8 +338,10 @@ export function startHotkey(options: HotkeyOptions): Foreground {
   const watched = new Map<string, Watched>()
   let timer: ReturnType<typeof setTimeout> | undefined
 
-  const anyComboHeld = (): boolean =>
-    [...watched.values()].some((w) => w.held.has(BTN_SELECT) && w.held.has(BTN_START))
+  const anyComboHeld = (): boolean => {
+    const [a, b] = options.closeCombo?.() ?? [8, 9]
+    return [...watched.values()].some((w) => w.held.has(a) && w.held.has(b))
+  }
 
   const update = (): void => {
     if (anyComboHeld()) {
@@ -353,18 +357,19 @@ export function startHotkey(options: HotkeyOptions): Foreground {
 
   const watch = (path: string): void => {
     const device: Watched = { held: new Set() }
+    // Any two buttons can be the combo (Settings → Controller), the triggers too, so every button's tracked.
+    const decoder = heldDecoder((held) => {
+      device.held = held
+      update()
+    })
     readKeys(
       path,
-      (code, value) => {
-        if (code !== BTN_SELECT && code !== BTN_START) return
-        if (value) device.held.add(code)
-        else device.held.delete(code)
-        update()
-      },
+      decoder.key,
       () => {
         watched.delete(path)
         update()
-      }
+      },
+      decoder.abs
     )
     watched.set(path, device)
     options.log(`hotkey: watching ${path}`)

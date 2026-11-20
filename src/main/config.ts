@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
-import type { Controls } from '../shared/controls'
+import type { Combos, Controls } from '../shared/controls'
 import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicBar, MusicVolume, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 /** A media server signed in to (media/servers.ts). */
@@ -29,6 +29,8 @@ export interface Config {
   sleepWarning?: boolean
   /** Buttons moved from their defaults in Settings → Controller (action → button index). */
   controls?: Partial<Controls>
+  /** The two-button presses (Settings → Controller), each a pair of buttons. */
+  combos?: Partial<Combos>
   /** Home's Favorite Apps, by app id, in the order added (unset: the built-in eight). */
   favoriteApps?: string[]
   /**

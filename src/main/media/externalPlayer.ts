@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { flatpakInstalled } from '../library/emulators'
 import { installFlatpak } from '../appSetup'
 import { STEAMTV_APPID } from '../hotkey'
-import { buttonName, type Controls } from '../../shared/controls'
+import { buttonName, DEFAULT_COMBOS, type Combos, type Controls } from '../../shared/controls'
 import { buttonIcon } from '../../shared/buttonIcons'
 import { controllerFamily, type ControllerFamily } from '../../shared/controllers'
 import { readFile } from 'node:fs/promises'
@@ -84,6 +84,8 @@ export interface PlayerHooks {
   /** Where it's got to (seconds), as it plays, on pausing, and as it stops. */
   onPosition: (event: 'start' | 'progress' | 'stop', seconds: number, paused: boolean) => void
   controls: Controls
+  /** The two-button presses: the close one stops the film, as over a game. */
+  combos?: Combos
   log: (line: string) => void
   report?: (line: string) => void
 }
@@ -176,7 +178,7 @@ export function matchTracks(
 }
 
 /** The controller button's panel: each shortcut, as the pictures of `family`'s buttons (their names where there's no picture). */
-export function shortcutList(controls: Controls, family: ControllerFamily): PlayerShortcut[] {
+export function shortcutList(controls: Controls, family: ControllerFamily, combos: Combos = DEFAULT_COMBOS): PlayerShortcut[] {
   const button = (index: number): PlayerShortcut['icons'][number] => {
     const icon = buttonIcon(index, family)
     return icon ? { name: icon.name, wide: icon.wide, mark: icon.mark } : { text: buttonName(index, family) }
@@ -188,7 +190,7 @@ export function shortcutList(controls: Controls, family: ControllerFamily): Play
     { icons: [button(controls.sideBar), button(controls.controlsGuide)], what: '10 seconds back / on' },
     { icons: [button(controls.favorite)], what: 'Audio & subtitles' },
     { icons: [button(controls.back)], what: 'Stop' },
-    { icons: [button(8), button(9)], what: 'Held: stop, back to vaporTV' }
+    { icons: [button(combos.closeApp[0]), button(combos.closeApp[1])], what: 'Held: stop, back to vaporTV' }
   ]
 }
 
@@ -290,7 +292,7 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
 
   let state: PlayerState = initialState(play.title, play.subtitle, Date.now())
   const pad = padId(await readFile('/proc/bus/input/devices', 'utf8').catch(() => ''))
-  state.shortcuts = shortcutList(hooks.controls, pad ? controllerFamily(pad) : 'xbox')
+  state.shortcuts = shortcutList(hooks.controls, pad ? controllerFamily(pad) : 'xbox', hooks.combos)
   if (play.durationSeconds) state.duration = play.durationSeconds
   state.position = start
   let started = false

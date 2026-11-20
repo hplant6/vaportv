@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
+import { DEFAULT_CONTROLS, type Controls, DEFAULT_COMBOS, type Combos } from '../../../shared/controls'
 import { CONTROLS_GUIDE_EVENT } from '../input/focus'
 import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 
@@ -12,6 +12,7 @@ const SHOW_MS = 8000
 export function ControlsGuide() {
   const family = useControllerFamily()
   const [controls, setControls] = useState<Controls | null>(null)
+  const [combos, setCombos] = useState<Combos>(DEFAULT_COMBOS)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -28,7 +29,10 @@ export function ControlsGuide() {
         return true
       })
       // Read each time, so a button just moved in Settings shows where it is now.
-      window.steamtv.getSettings().then((s) => setControls(s.controls))
+      window.steamtv.getSettings().then((s) => {
+        setControls(s.controls)
+        setCombos(s.combos ?? DEFAULT_COMBOS)
+      })
     }
     window.addEventListener(CONTROLS_GUIDE_EVENT, toggle)
     window.addEventListener('blur', hide)
@@ -56,9 +60,9 @@ export function ControlsGuide() {
     [icon(c.settings), 'Settings'],
     [icon(c.voiceSearch), 'Voice search'],
     [icon(c.nextSong), 'Next song'],
-    [both(10, 11), 'Sound off'],
-    [both(8, 9), 'Close game (hold)'],
-    [both(11, 7), 'Report a problem (hold)']
+    [both(...combos.soundOff), 'Sound off'],
+    [both(...combos.closeApp), 'Close game (hold)'],
+    [both(...combos.report), 'Report a problem (hold)']
   ]
 
   // Halved, so the two lines are about as long as each other.
