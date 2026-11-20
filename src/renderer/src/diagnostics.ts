@@ -35,6 +35,7 @@ export function describeElement(el: Element | null): string | null {
   const marks = [...el.attributes]
     .filter((a) => a.name.startsWith('data-') && a.name !== 'data-focusable' && a.value.length <= 24 && /^[\w:-]*$/.test(a.value))
     .slice(0, 4)
-    .map((a) => (a.value ? `${a.name}=${a.value}` : a.name))
+    // An id says which game or film it is (as a title would): only its kind ("steam:…") is kept.
+    .map((a) => (!a.value ? a.name : a.name.endsWith('-id') && a.value.includes(':') ? `${a.name}=${a.value.split(':')[0]}:…` : `${a.name}=${a.value}`))
   return [el.tagName.toLowerCase() + (classes ? `.${classes}` : ''), ...marks].join(' ')
 }

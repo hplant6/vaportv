@@ -35,6 +35,7 @@ import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
 import { registerDiagnostics, stopDiagnosticsPage } from './diagnostics'
+import { traceIpc } from './trail'
 import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
@@ -111,6 +112,9 @@ import { captureAndQuit, screenshotMode } from './screenshot'
 import { stepVolume } from './volume'
 import { getWeather } from './weather'
 import { arrangeTabs, TAB_LIST } from '../shared/tabs'
+
+// Every call the page makes to main goes in Report a problem's activity trail (trail.ts): before any handler is registered.
+traceIpc(ipcMain)
 
 const devUrl = process.env.ELECTRON_RENDERER_URL
 /**

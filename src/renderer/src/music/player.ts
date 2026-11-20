@@ -2,6 +2,7 @@ import type { MusicTags } from '../../../shared/types'
 import { MUSIC_HOLD_EVENT } from '../components/MusicPreview'
 import { onFrontChange } from '../front'
 import { registerDiagnostics } from '../diagnostics'
+import { trail } from '../trail'
 
 // The Music app's player: one audio element for the whole of vaporTV, so a queue keeps playing
 // when the Music screen closes. It holds the background music while there's a queue, plays
@@ -99,6 +100,7 @@ export function musicAnalyser(): AnalyserNode | null {
 function hold(on: boolean): void {
   if (holding === on) return
   holding = on
+  trail(`music player: ${on ? 'holding' : 'letting go of'} the background music`)
   window.dispatchEvent(new CustomEvent(MUSIC_HOLD_EVENT, { detail: on }))
 }
 
@@ -138,6 +140,7 @@ async function load(at: number, autoplay = true): Promise<void> {
 /** Plays `songs` from `start` (shuffled when shuffle's on, `start` first); `station` when they're a radio station. */
 export function playQueue(songs: MusicTags[], start = 0, station: PlayerState['station'] = null, fromSeconds = 0): void {
   if (!songs.length) return
+  trail(`music player: playing ${songs.length} songs${station ? ' (a station)' : ''}`)
   hold(true)
   const order = state.shuffle ? shuffled(songs.length, start) : songs.map((_, i) => i)
   state = { ...state, queue: songs, order, station }
@@ -263,9 +266,11 @@ let pausedForFront = false
 onFrontChange((front) => {
   if (!front) {
     pausedForFront = !audio.paused
+    if (pausedForFront) trail('music player: paused (vaporTV behind something)')
     audio.pause()
   } else if (pausedForFront) {
     pausedForFront = false
+    trail('music player: carrying on')
     if (state.at >= 0) void audio.play().catch(() => undefined)
   }
 })

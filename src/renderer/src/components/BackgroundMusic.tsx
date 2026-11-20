@@ -6,6 +6,7 @@ import { SOUND_OFF_EVENT } from '../input/focus'
 import { toast } from './Toast'
 import { isFront, onFrontChange } from '../front'
 import { registerDiagnostics } from '../diagnostics'
+import { trail } from '../trail'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -179,7 +180,10 @@ function Layer({ kind }: { kind: MusicKind }) {
     const start = (): void => {
       if (!introOver || held || soundOff || !el.src || !isFront()) return
       el.play()
-        .then(() => fadeTo(target.current))
+        .then(() => {
+          trail(`music ${kind}: playing`)
+          fadeTo(target.current)
+        })
         .catch((err: unknown) => {
           // Paused again before it began (an app opening) isn't a failure.
           if ((err as Error)?.name === 'AbortError' || failed === el.src) return
@@ -210,6 +214,7 @@ function Layer({ kind }: { kind: MusicKind }) {
         playlist = urls.map(absolute)
         files = layers[kind].files
         names = layers[kind].names
+        trail(`music ${kind}: loaded ${playlist.length} tracks${shuffle ? ', shuffled' : ''}`)
         if (playlist.length === 0) {
           history = []
           fadeTo(0, () => {
@@ -270,7 +275,10 @@ function Layer({ kind }: { kind: MusicKind }) {
       else fadeTo(0, swap, SKIP_FADE_MS)
     }
 
-    const onBlur = (): void => fadeTo(0, () => el.pause())
+    const onBlur = (): void => {
+      if (!el.paused) trail(`music ${kind}: pausing (vaporTV behind something)`)
+      fadeTo(0, () => el.pause())
+    }
     const onSoundToggled = (): void => (soundOff ? fadeTo(0, () => el.pause(), HOLD_FADE_MS) : start())
     // Counted: the Music app can hold it while a video or Claude holds it too, and it comes back once all let go.
     let holders = 0
@@ -278,6 +286,7 @@ function Layer({ kind }: { kind: MusicKind }) {
       holders = Math.max(0, holders + ((event as CustomEvent<boolean>).detail ? 1 : -1))
       const was = held
       held = holders > 0
+      trail(`music ${kind}: ${(event as CustomEvent<boolean>).detail ? 'held' : 'let go'} (holders ${holders})`)
       if (held && !was) fadeTo(0, () => el.pause(), HOLD_FADE_MS)
       else if (!held && was) start()
     }
@@ -318,6 +327,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     }, WATCH_MS)
     // Waking from sleep: the sound output may have gone with it; paused, then the watch starts it afresh.
     const stopResume = window.steamtv.onResume(() => {
+      trail(`music ${kind}: woke from sleep${el.paused ? '' : ', restarting'}`)
       if (!el.paused) el.pause()
     })
     el.addEventListener('ended', onEnded)

@@ -12,7 +12,7 @@ function fakeWindow(focused: boolean) {
     }
   })
   vi.stubGlobal('window', win)
-  vi.stubGlobal('document', { hasFocus: () => focused })
+  vi.stubGlobal('document', Object.assign(new EventTarget(), { hasFocus: () => focused, hidden: false }))
   return {
     focus: () => target.dispatchEvent(new Event('focus')),
     blur: () => target.dispatchEvent(new Event('blur')),

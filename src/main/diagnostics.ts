@@ -4,6 +4,7 @@ import { createServer, type Server } from 'node:http'
 import { homedir } from 'node:os'
 import { scrub } from '../shared/bugReport'
 import { lanAddress } from './claudeLogin'
+import { trailEntries } from './trail'
 
 // Report a problem's full details: a snapshot of what each part of vaporTV is doing at the
 // moment the report is opened (main's parts registered here, the page's sent with the
@@ -62,6 +63,11 @@ export async function makeDiagnostics(system: string[], page: Record<string, unk
   const json = (value: unknown): string => JSON.stringify(value, null, 2).split(home).join('~')
   const main = await collectMainDiagnostics()
   const log = (await logTail(logPath)).map((line) => scrub(line, home))
+  // The page's trail comes in its snapshot; the two are merged by time.
+  const { trail: pageTrail, ...pageState } = page as { trail?: unknown }
+  const activity = [...trailEntries(), ...(Array.isArray(pageTrail) ? (pageTrail as string[]) : [])]
+    .sort()
+    .map((line) => scrub(line, home))
   return [
     `vaporTV details, ${new Date().toISOString()}`,
     'Attach this file to your GitHub report. It has what vaporTV was doing when you opened Report a problem, and its recent log, with what you pressed, said and named taken out.',
@@ -73,7 +79,10 @@ export async function makeDiagnostics(system: string[], page: Record<string, unk
     json(main),
     '',
     '## vaporTV (screen)',
-    json(page),
+    json(pageState),
+    '',
+    `## Recent activity (last ${activity.length})`,
+    ...activity,
     '',
     `## Log (last ${log.length} lines)`,
     ...log,

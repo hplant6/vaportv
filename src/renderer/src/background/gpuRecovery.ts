@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { registerDiagnostics } from '../diagnostics'
+import { trail } from '../trail'
 
 // Waking the box from sleep resets its GPU, and every WebGL context drawing then is lost: the
 // backdrops (and the turning consoles) went on drawing into nothing, black until vaporTV was
@@ -29,6 +30,7 @@ registerDiagnostics('gpuRecovery', () => ({ generation, restartPending: !!pendin
 function restart(why: string): void {
   if (pending) return
   restarts.push(`${new Date().toISOString()} ${why}`)
+  trail(`WebGL views restarting (${why})`)
   if (restarts.length > 10) restarts.shift()
   console.error(`steamtv: WebGL views restarting (${why})`)
   pending = setTimeout(() => {

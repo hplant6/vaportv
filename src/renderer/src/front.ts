@@ -1,4 +1,5 @@
 import { registerDiagnostics } from './diagnostics'
+import { trail } from './trail'
 
 // Whether vaporTV is what's on screen, for what pauses while a game or app is in front (the
 // music). The window's focus events alone aren't enough on the box: gamescope can switch back
@@ -19,9 +20,10 @@ let blurredAt = 0
 let lastFromMain: { front: boolean; at: number } | null = null
 const listeners = new Set<(front: boolean) => void>()
 
-function set(next: boolean): void {
+function set(next: boolean, why: string): void {
   if (next === front) return
   front = next
+  trail(`vaporTV ${front ? 'in front' : 'behind something'} (${why})`)
   for (const listener of listeners) listener(front)
 }
 
@@ -29,21 +31,21 @@ function set(next: boolean): void {
 {
   window.addEventListener('focus', () => {
     blurredAt = 0
-    set(true)
+    set(true, 'window focused')
   })
   window.addEventListener('blur', () => {
     blurredAt = Date.now()
-    set(false)
+    set(false, 'window lost focus')
   })
   window.steamtv.onFront((inFront) => {
     lastFromMain = { front: inFront, at: Date.now() }
     if (!inFront) {
       blurredAt = 0
-      return set(false)
+      return set(false, 'gamescope shows something else')
     }
     if (blurredAt && Date.now() - blurredAt < STALE_MS) return
     blurredAt = 0
-    set(true)
+    set(true, 'gamescope shows vaporTV')
   })
   // Waking: whatever was in front before, main's next word decides.
   window.steamtv.onResume(() => {

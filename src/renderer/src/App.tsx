@@ -38,6 +38,7 @@ import { SearchScreen } from './components/SearchScreen'
 import { BugReportDialog } from './components/BugReportDialog'
 import { GuideReader } from './components/GuideReader'
 import { ControlsGuide } from './components/ControlsGuide'
+import { trail } from './trail'
 import { GameDialog } from './components/GameDialog'
 import { Screensaver } from './components/Screensaver'
 import { SleepPrompt } from './components/SleepPrompt'
@@ -257,6 +258,7 @@ export function App() {
   const visited = useRef<string[]>([])
   useEffect(() => {
     visited.current = [...visited.current, `${new Date().toISOString().slice(11, 19)} ${screen}`].slice(-8)
+    trail(`screen ${screen}`)
   }, [screen])
   useEffect(
     () =>
