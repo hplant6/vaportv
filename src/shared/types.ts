@@ -1230,6 +1230,8 @@ export interface SteamTvApi {
   makeBugReport(input: BugReportInput): Promise<BugReport>
   /** Report a problem closed: its details page stops. */
   closeBugReport(): void
+  /** The screen as it is now, for the report's details (before the report draws over it). */
+  captureForReport(): Promise<void>
   /** A remote's Menu held: open Settings. */
   onMenuHeld(callback: () => void): () => void
   setSteamCollections(ids: string[]): Promise<void>

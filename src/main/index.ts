@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, powerMonitor } from 'electron'
-import { appendFile, chmod, mkdir, writeFile } from 'node:fs/promises'
+import { appendFile, chmod, mkdir, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import home from '../../fixtures/home.json'
@@ -34,8 +34,9 @@ import { setSpeechListeners } from './speech'
 import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
-import { registerDiagnostics, stopDiagnosticsPage } from './diagnostics'
+import { captureForReport, registerDiagnostics, stopDiagnosticsPage } from './diagnostics'
 import { traceIpc } from './trail'
+import { watchCrashes } from './crashes'
 import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMode, installForApp, updateFlatpak } from './appSetup'
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
@@ -136,11 +137,14 @@ app.on('second-instance', () => {
   win?.focus()
 })
 
-// Input events (moves, controller connects, focus changes) for diagnosing phantom
-// input on the box. Rewritten each run; small.
+// Input events (moves, controller connects, focus changes) and what went wrong, for diagnosing
+// problems on the box. A new one each run; the last two runs' are kept as input.log.1 and .2,
+// so a crash and restart don't wipe what led up to it.
 const INPUT_LOG = join(homedir(), '.cache', 'steamtv', 'input.log')
 const inputLogReady = mkdir(join(homedir(), '.cache', 'steamtv'), { recursive: true })
-  .then(() => writeFile(INPUT_LOG, `steamtv started ${new Date().toISOString()}\n`, { mode: 0o600 }))
+  .then(() => rename(`${INPUT_LOG}.1`, `${INPUT_LOG}.2`).catch(() => {}))
+  .then(() => rename(INPUT_LOG, `${INPUT_LOG}.1`).catch(() => {}))
+  .then(() => writeFile(INPUT_LOG, `steamtv started ${new Date().toISOString()} (vaporTV ${app.getVersion()})\n`, { mode: 0o600 }))
   // Owner-only, as config.json; an older log already there keeps its mode otherwise.
   .then(() => chmod(INPUT_LOG, 0o600))
 function logInput(line: string): void {
@@ -218,6 +222,9 @@ ipcMain.on('claude:signIn', () => {
 ipcMain.on('claude:cancelSignIn', () => stopClaudeLogin())
 ipcMain.handle('bugReport:make', (_event, input: BugReportInput) => makeBugReport(input, INPUT_LOG))
 ipcMain.on('bugReport:close', () => stopDiagnosticsPage())
+// The screen as it is, taken just before Report a problem draws over it (for the details page).
+ipcMain.handle('bugReport:capture', () => captureForReport(win))
+watchCrashes(logInput, () => win)
 
 // Report a problem's snapshot: main's side (diagnostics.ts). Asked only when a report opens.
 let lastWake: string | null = null

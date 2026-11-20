@@ -11,10 +11,12 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ### Added
 - Hold **R3 + RT** (right stick in, right trigger) for a second to open **Report a problem** from any screen, so its details catch the screen the problem is on. It's in R2's button guide and Settings → Controller.
+- **Add details** also offers a screenshot of the screen as it was when you opened Report a problem, to attach if it shows the problem.
 - **Report a problem** is two steps: the report's code, then (optional, but the most help) **Add details**, whose code opens a page on your phone (on the same Wi-Fi) to download or copy what vaporTV was doing when you opened the report, and its recent log, to attach to the report on GitHub, with the last few minutes of activity (screens, cursor, music, and vaporTV's own requests and how long each took). The activity is kept in memory only; the rest is gathered only when you open Report a problem, the page closes with it, and what's personal is taken out, as in the report.
 - Seven new guides in **Settings → Help → Guides**: The Video tab, The Music tab, Finding and organising your games, The controller, Claude on vaporTV, Making it yours (backdrops, screensavers, Home) and The Files app. The Privacy guide now covers Claude, media servers and network shares, and the Emulators, Streaming apps and TV remotes guides are up to date.
 
 ### Fixed
+- If vaporTV's screen crashes, it comes back by itself instead of leaving the TV blank (up to three times in a few minutes). Crashes, freezes and the graphics process failing are now written to the log, and the log of the run before is kept, so **Add details** can show what led up to a crash.
 - **Report a problem** leaves out more of what's personal: what the Claude app asked to run or change, the names of network shares, and the box's address on your network.
 - The backdrop went black after the box woke from sleep, until vaporTV was restarted. It now starts again by itself (the turning consoles too).
 - Moving quickly across the tiles on **More** could raise an error behind the scenes.

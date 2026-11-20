@@ -1,3 +1,4 @@
+import type { BrowserWindow } from 'electron'
 import { randomBytes } from 'node:crypto'
 import { open } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
@@ -39,6 +40,20 @@ export async function collectMainDiagnostics(): Promise<Record<string, unknown>>
   return out
 }
 
+/**
+ * The screen just before Report a problem drew over it (the page asks as it opens): a JPEG,
+ * scaled down, offered on the details page beside the file, never put in it.
+ */
+let screenshot: { jpeg: Buffer; at: string } | null = null
+
+export async function captureForReport(win: BrowserWindow | null): Promise<void> {
+  screenshot = null
+  if (!win || win.isDestroyed()) return
+  const image = await win.webContents.capturePage()
+  if (image.isEmpty()) return
+  screenshot = { jpeg: image.resize({ width: 1280, quality: 'good' }).toJPEG(80), at: new Date().toISOString() }
+}
+
 /** How much of the end of the log goes in: days of an ordinary log, without making the file huge. */
 const LOG_BYTES = 512 * 1024
 
@@ -63,6 +78,8 @@ export async function makeDiagnostics(system: string[], page: Record<string, unk
   const json = (value: unknown): string => JSON.stringify(value, null, 2).split(home).join('~')
   const main = await collectMainDiagnostics()
   const log = (await logTail(logPath)).map((line) => scrub(line, home))
+  // The run before this one (kept as input.log.1): what led up to a crash and restart.
+  const before = (await logTail(`${logPath}.1`)).map((line) => scrub(line, home))
   // The page's trail comes in its snapshot; the two are merged by time.
   const { trail: pageTrail, ...pageState } = page as { trail?: unknown }
   const activity = [...trailEntries(), ...(Array.isArray(pageTrail) ? (pageTrail as string[]) : [])]
@@ -74,6 +91,7 @@ export async function makeDiagnostics(system: string[], page: Record<string, unk
     '',
     '## System',
     ...system.map((s) => `- ${s}`),
+    `- Screenshot: ${screenshot ? `taken ${screenshot.at} (on the details page, to attach as well)` : 'none'}`,
     '',
     '## vaporTV (main)',
     json(main),
@@ -86,6 +104,9 @@ export async function makeDiagnostics(system: string[], page: Record<string, unk
     '',
     `## Log (last ${log.length} lines)`,
     ...log,
+    '',
+    `## Log of the run before (last ${before.length} lines)`,
+    ...before,
     ''
   ].join('\n')
 }
@@ -96,7 +117,7 @@ const OPEN_MS = 20 * 60_000
 let server: Server | null = null
 let timer: NodeJS.Timeout | null = null
 
-function pageHtml(token: string, issueUrl: string, lines: number): string {
+function pageHtml(token: string, issueUrl: string, lines: number, shot: boolean): string {
   const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Report details · vaporTV</title><style>
@@ -109,6 +130,9 @@ a.primary{background:#ee960d;color:#000}pre{white-space:pre-wrap;word-break:brea
 <p>What vaporTV was doing when you opened Report a problem, and its recent log (${lines} lines). What you pressed, said and named has been taken out, but read it over before you share it: reports on GitHub are public.</p>
 <a class="button primary" href="/${token}/vaportv-details.txt" download="vaportv-details.txt">Download the details</a>
 <button id="copy">Copy the details</button><div id="copied"></div>
+${shot ? `<p>The screen when you opened Report a problem. Attach it too if it shows the problem (it may show what you were watching or playing):</p>
+<img src="/${token}/screenshot.jpg" alt="" style="width:100%;border-radius:8px;margin:4px 0 8px">
+<a class="button" href="/${token}/screenshot.jpg" download="vaportv-screen.jpg">Download the screenshot</a>` : ''}
 <a class="button" href="${esc(issueUrl)}">Write the report on GitHub</a>
 <p>On GitHub, describe what went wrong, then attach the downloaded file (or paste the copy) before you submit.</p>
 <pre id="text">Loading…</pre></main><script>
@@ -133,7 +157,11 @@ export function startDiagnosticsPage(details: string, issueUrl: string): Promise
     const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }
     if (req.method === 'GET' && path === `/${token}`) {
       res.writeHead(200, { ...headers, 'Content-Type': 'text/html; charset=utf-8' })
-      return res.end(pageHtml(token, issueUrl, lines))
+      return res.end(pageHtml(token, issueUrl, lines, !!screenshot))
+    }
+    if (req.method === 'GET' && path === `/${token}/screenshot.jpg` && screenshot) {
+      res.writeHead(200, { ...headers, 'Content-Type': 'image/jpeg' })
+      return res.end(screenshot.jpeg)
     }
     if (req.method === 'GET' && path === `/${token}/vaportv-details.txt`) {
       res.writeHead(200, { ...headers, 'Content-Type': 'text/plain; charset=utf-8', 'Content-Disposition': 'attachment; filename="vaportv-details.txt"' })

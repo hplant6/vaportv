@@ -33,7 +33,14 @@ function pageDetails(): { gpu?: string; controllers: string[]; display: string }
 export function BugReportDialog() {
   const [from, setFrom] = useState<HTMLElement | null | undefined>(undefined)
   useEffect(() => {
-    const onOpen = (event: Event): void => setFrom((event as CustomEvent<HTMLElement | null>).detail ?? null)
+    // The screen first, as it is, then the report over it.
+    const onOpen = (event: Event): void => {
+      const back = (event as CustomEvent<HTMLElement | null>).detail ?? null
+      void window.steamtv
+        .captureForReport()
+        .catch(() => {})
+        .then(() => setFrom(back))
+    }
     window.addEventListener(OPEN_BUG_REPORT_EVENT, onOpen)
     return () => window.removeEventListener(OPEN_BUG_REPORT_EVENT, onOpen)
   }, [])

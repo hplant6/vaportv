@@ -348,6 +348,7 @@ const api: SteamTvApi = {
   finishVoice: () => ipcRenderer.send('voice:finish'),
   makeBugReport: (input) => ipcRenderer.invoke('bugReport:make', input),
   closeBugReport: () => ipcRenderer.send('bugReport:close'),
+  captureForReport: () => ipcRenderer.invoke('bugReport:capture'),
   setVoiceHints: (titles) => ipcRenderer.send('voice:hints', titles),
   onVoice: (callback) => {
     const listener = (_event: unknown, state: VoiceState, purpose: VoicePurpose): void => callback(state, purpose)

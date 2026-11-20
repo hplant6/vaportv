@@ -44,7 +44,9 @@ GitHub reports are **public**. A report holds:
 - vaporTV's version, the SteamOS version, your graphics card, screen size and controllers.
 - The end of vaporTV's log: which buttons were pressed and errors. Before it goes in, vaporTV takes out what's personal: the names on the buttons you pressed (files, folders, Wi-Fi networks, Bluetooth devices, playlists), what voice search heard, what the Claude app asked to run or change (only the kind of thing, such as a command or an edit, is kept), the names of network shares, and the box's address on your network. What you type on the on-screen keyboard is never logged at all.
 
-Its optional second step, **Add details**, has a code that opens a page on your phone, over your home network only, with more: what each part of vaporTV was doing when you opened Report a problem (states and counts, such as whether the music is playing, not what it is), a summary of your settings (choices only: no place, keys, names or sign-ins), the last few minutes of activity (which screens you went to, what kind of thing the cursor was on, music starting and stopping, and each request inside vaporTV with how long it took and how many things came back, never what they were), and the log of recent days, scrubbed the same way. The activity is kept only in memory and is gone when vaporTV closes. It's made when you open Report a problem, and the page closes with it. It goes on GitHub only if you download it and attach it yourself.
+Its optional second step, **Add details**, has a code that opens a page on your phone, over your home network only, with more: what each part of vaporTV was doing when you opened Report a problem (states and counts, such as whether the music is playing, not what it is), a summary of your settings (choices only: no place, keys, names or sign-ins), the last few minutes of activity (which screens you went to, what kind of thing the cursor was on, music starting and stopping, and each request inside vaporTV with how long it took and how many things came back, never what they were), and the log of recent days and of the run before (so a crash and restart don't lose it), scrubbed the same way. The activity is kept only in memory and is gone when vaporTV closes.
+
+The page also shows a **screenshot** of the screen as it was when you opened Report a problem, to download and attach as well. It isn't in the file: look at it first, since it shows whatever was on screen. It's made when you open Report a problem, and the page closes with it. It goes on GitHub only if you download it and attach it yourself.
 
 Read the report over on your phone before you submit, and delete anything you'd rather not share.
 
@@ -56,7 +58,7 @@ All of it is in your home folder. Only your account can read the settings, the n
 - `~/.config/steamtv/rclone.conf`: network share sign-ins (the computer, the share, your user name and password). The password is scrambled, not encrypted, so treat the file like the password itself.
 - `~/.config/steamtv`: your music's liked songs, favourite albums and thumbs down (`music-favorites.json`), your music playlists (`music-playlists.json`), and which drives and shares are in your library (`music-sources.json`).
 - `~/.local/share/steamtv`: play history (`history.json`), playtime (`playtime.json`), favourites (`favorites.json`), game playlists (`playlists.json`), the speech model and Claude's voice (`voice`), the network share helper (`rclone`), and photos the screensaver downloaded.
-- `~/.cache/steamtv`: downloaded game art, the weather, the music library's index of every song (`music-index.json`) and its covers (`music-covers`), the background station (`background-station.json`), the last lists sent to Claude (`claude-search.txt`, `claude-music.txt` and `claude-music-songs.txt`), and the log (`input.log`), which starts over each time vaporTV opens.
+- `~/.cache/steamtv`: downloaded game art, the weather, the music library's index of every song (`music-index.json`) and its covers (`music-covers`), the background station (`background-station.json`), the last lists sent to Claude (`claude-search.txt`, `claude-music.txt` and `claude-music-songs.txt`), and the log of this run and the two before (`input.log`, `input.log.1`, `input.log.2`), which starts over each time vaporTV opens.
 - `~/Music`: songs sent from your phone (`From your phone`) and playlists saved as files (`Playlists`). Network shares appear under `~/Network` while they're mounted: those are the other computer's files, read-only.
 - Claude Code keeps its own files in `~/.claude`: its sign-in, and a record of each Claude app conversation (`~/.claude/projects`).
 - Streaming apps keep your sign-ins in Chrome, as a website would. Sign out inside each app to remove them.
@@ -82,7 +84,7 @@ To remove what vaporTV has saved about you, sign out of your media servers and r
 ```
 rm -f ~/.config/steamtv/{config,music-favorites,music-playlists,music-sources}.json ~/.config/steamtv/rclone.conf
 rm -f ~/.local/share/steamtv/{history,playtime,favorites,playlists}.json
-rm -f ~/.cache/steamtv/{input.log,music-index.json,background-station.json,weather.json,claude-search.txt,claude-music.txt,claude-music-songs.txt}
+rm -f ~/.cache/steamtv/{input.log,input.log.1,input.log.2,music-index.json,background-station.json,weather.json,claude-search.txt,claude-music.txt,claude-music-songs.txt}
 rm -rf ~/.local/share/steamtv/screensaver ~/.cache/steamtv/art ~/.cache/steamtv/music-covers
 ```
 
