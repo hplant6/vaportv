@@ -7,7 +7,7 @@ What to do when a SteamOS or vaporTV update leaves something not working, and ho
 SteamOS replaces the whole system when it updates, and throws away system settings it doesn't know about. Two parts of vaporTV's setup live there:
 
 - **Wake from sleep:** the setting that lets a controller or remote wake the box.
-- **Netflix remote control:** the setting that installs the Netflix extension.
+- **Netflix and Twitch remote control:** the setting that installs the extension for Netflix and Twitch.
 
 vaporTV adds both to the list of settings SteamOS keeps, so they normally survive. If an update does take them (SteamOS 3.9.5 removed them before vaporTV added that), vaporTV notices as it starts:
 

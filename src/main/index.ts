@@ -41,7 +41,7 @@ import { addShortcutsWithRestart, appProgram, appState, flatpakFacts, inGamingMo
 import { appCatalog, CUSTOM_TILES } from './customApps'
 import { install, installStatus, repairSetup, returnToGamingMode, setupDamage, uninstall } from './installer'
 import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSteam, shortcutGameId } from './launch'
-import { stageNetflixExtension } from './netflixExtension'
+import { EXTENSION_SITES, stageNetflixExtension } from './netflixExtension'
 import { ensureChromeFlags } from './chromeFlags'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
 import { INTRO_FOLDER, introSettings } from './intro'
@@ -681,8 +681,8 @@ ipcMain.handle('sun:get', async (): Promise<SunTimes | null> => {
   return location ? sunTimes(new Date(), location.latitude, location.longitude) : null
 })
 ipcMain.handle('launch', async (_event, kind: LaunchKind, id: string, name?: string) => {
-  // Netflix: a Chrome that has closed since vaporTV started gets the extension's newest version now.
-  if (kind === 'app' && id === 'netflix') await stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
+  // Netflix, Twitch: a Chrome that has closed since vaporTV started gets the extension's newest version now.
+  if (kind === 'app' && EXTENSION_SITES.includes(id)) await stageNetflixExtension().catch((err) => logInput(`netflix extension: ${err}`))
   // The streaming websites' Chrome: its flags (sound without a click first) in place before it starts.
   if (kind === 'app') await ensureChromeFlags().catch((err) => logInput(`chrome flags: ${err}`))
   return launch(await loadConfig(), kind, id, name)

@@ -10,7 +10,7 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ## Unreleased
 
 ### Added
-- **Twitch** in the Apps tab: the website, opened full screen in Chrome like Netflix and the other streaming sites (Set up adds it to Steam). Give it Steam's Web Browser controller layout the first time.
+- **Twitch** in the Apps tab: the website, opened full screen in Chrome like Netflix and the other streaming sites (Set up adds it to Steam). vaporTV's extension (it was vaporTV for Netflix) now works on Twitch too: a gold ring moves between streams, channels and categories with the D-pad, A opens, B goes back, and a channel's stream fills the screen (A pauses, Y mutes, Down shows chat and Follow). No Web Browser layout needed.
 - The two-button presses can be moved in **Settings → Controller**, like the other buttons: **Close a game or app** (Select + Start), **Sound off or on** (both sticks) and **Report a problem** (R3 + RT). Choose one and hold the two buttons you want. A button that's part of one now acts as you let go of it, so pressing a pair never also does what each button does alone.
 - Hold **R3 + RT** (right stick in, right trigger) for a second to open **Report a problem** from any screen, so its details catch the screen the problem is on. It's in R2's button guide and Settings → Controller.
 - **Add details** also offers a screenshot of the screen as it was when you opened Report a problem, to attach if it shows the problem.

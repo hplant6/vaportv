@@ -1,14 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "vaporTV for Netflix",
-  "version": "0.3.1",
-  "description": "Netflix from the couch: a remote or a controller moves between titles, with no hover previews in the way.",
+  "name": "vaporTV for streaming sites",
+  "version": "0.4.0",
+  "description": "Netflix and Twitch from the couch: a remote or a controller moves between titles and streams, and plays them full screen.",
   "content_scripts": [
     {
-      "matches": ["https://www.netflix.com/*"],
-      "js": ["netflix.js"],
-      "css": ["netflix.css"],
+      "matches": [
+        "https://www.netflix.com/*"
+      ],
+      "js": [
+        "netflix.js"
+      ],
+      "css": [
+        "netflix.css"
+      ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.twitch.tv/*"
+      ],
+      "js": [
+        "twitch.js"
+      ],
+      "css": [
+        "twitch.css"
+      ],
+      "run_at": "document_idle"
     }
   ]
 }

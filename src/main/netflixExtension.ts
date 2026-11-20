@@ -12,6 +12,9 @@ import { BROWSER } from './appSetup'
 // folder, the one place its sandbox can read them; vaporTV refreshes them each start, so
 // a new version of the extension reaches Chrome with a new vaporTV.
 
+/** The streaming websites the extension works on (extensions/netflix/manifest.json): any of them set up needs it. */
+export const EXTENSION_SITES = ['netflix', 'twitch']
+
 /** Chrome's Flatpak merges this host folder into its own policies. */
 export const NETFLIX_POLICY = '/etc/opt/chrome/policies/managed/vaportv.json'
 const STAGE = join(homedir(), '.var', 'app', BROWSER, 'vaportv')

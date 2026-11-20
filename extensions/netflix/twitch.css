@@ -1,0 +1,18 @@
+/* vaporTV for Twitch: the gold ring on what the D-pad has reached (twitch.js draws and moves this box),
+   as vaporTV's own. Over everything, and never in the way of a click. */
+#vaportv-ring {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 5px solid #ee960d;
+  border-radius: 10px;
+  box-shadow: 0 0 24px rgba(238, 150, 13, 0.6);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+/* No scrollbars on a TV (as Netflix). */
+html {
+  scrollbar-width: none;
+}

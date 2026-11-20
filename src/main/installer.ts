@@ -26,7 +26,7 @@ import { loadConfig } from './config'
 import { appCatalog } from './customApps'
 import { launchUrl } from './launch'
 import { bootVideoSelected, installBootVideo, removeBootVideo } from './bootVideo'
-import { NETFLIX_POLICY, netflixPolicy, netflixPolicyCurrent, stageNetflixExtension } from './netflixExtension'
+import { EXTENSION_SITES, NETFLIX_POLICY, netflixPolicy, netflixPolicyCurrent, stageNetflixExtension } from './netflixExtension'
 import { shortcutAppId } from './library/emudeck'
 import { steamRoot } from './library/recents'
 import { activeUserDir } from './library/steam'
@@ -298,7 +298,7 @@ async function rootSteps(wake: boolean, netflix: boolean, report: Report): Promi
     wake = false
   }
   const policy = netflix && !(await netflixPolicyCurrent()) ? await netflixPolicy() : null
-  if (netflix && !policy) report('Netflix remote control is already set up')
+  if (netflix && !policy) report('Netflix and Twitch remote control is already set up')
   // Also for a box set up before there was a keep list, once either file is in place.
   const keep = (wake || !!policy || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
   if (!wake && !policy && !keep) return null
@@ -355,10 +355,16 @@ const previous = (file: string): string => file.replace(/^\/etc\//, '/etc/previo
  * wake rule when a SteamOS update moved it to /etc/previous, the Netflix policy whenever
  * the Netflix tile works but the policy isn't this version's, and the keep list.
  */
+/** Whether a streaming website the extension works on (Netflix, Twitch) has its Steam shortcut. */
+async function anyExtensionSite(config: Awaited<ReturnType<typeof loadConfig>>): Promise<boolean> {
+  for (const site of EXTENSION_SITES) if ((await launchUrl(config, 'app', site)) !== null) return true
+  return false
+}
+
 export async function setupDamage(): Promise<SetupDamage> {
   const config = await loadConfig()
   const wake = !existsSync(WAKE_RULE) && !existsSync(OLD_WAKE_RULE) && existsSync(previous(WAKE_RULE))
-  const netflix = (await launchUrl(config, 'app', 'netflix')) !== null && (await netflixPolicy()) !== null && !(await netflixPolicyCurrent())
+  const netflix = (await anyExtensionSite(config)) && (await netflixPolicy()) !== null && !(await netflixPolicyCurrent())
   const keep = (wake || netflix || existsSync(WAKE_RULE) || existsSync(NETFLIX_POLICY)) && !(await keepListCurrent())
   return { wake, netflix, netflixOutdated: netflix && existsSync(NETFLIX_POLICY), keep, password: await hasPassword() }
 }
@@ -403,7 +409,7 @@ export async function install(options: InstallOptions, report: Report): Promise<
     report("vaporTV's intro is now Steam's startup movie")
   }
   if (options.autostart) await installAutostart(report)
-  const netflix = options.apps.includes('netflix') || (await launchUrl(config, 'app', 'netflix')) !== null
+  const netflix = options.apps.some((app) => EXTENSION_SITES.includes(app)) || (await anyExtensionSite(config))
   if (netflix) await stageNetflixExtension()
   await adminStep(options.wake, netflix, report)
   report('Done. Return to Gaming Mode to start vaporTV.')

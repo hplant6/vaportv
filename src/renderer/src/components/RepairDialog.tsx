@@ -15,8 +15,8 @@ const damageKey = (d: SetupDamage): string => (['wake', 'netflix', 'keep'] as co
 
 function lost(d: SetupDamage): string {
   // The Netflix policy still there but an older vaporTV's: this version changed it, nothing removed it.
-  const removed = [d.netflix && !d.netflixOutdated && 'Netflix remote control', d.wake && 'waking with the controller'].filter(Boolean)
-  const changed = d.netflix && d.netflixOutdated ? "This vaporTV changes part of its setup: Netflix remote control, and no pop-up notifications from websites." : ''
+  const removed = [d.netflix && !d.netflixOutdated && 'Netflix and Twitch remote control', d.wake && 'waking with the controller'].filter(Boolean)
+  const changed = d.netflix && d.netflixOutdated ? "This vaporTV changes part of its setup: Netflix and Twitch remote control, and no pop-up notifications from websites." : ''
   if (removed.length) return `A SteamOS update removed part of vaporTV's setup: ${removed.join(' and ')}.${changed ? ' ' + changed : ''}`
   if (changed) return changed
   return "SteamOS updates can remove part of vaporTV's setup. Repair once so they keep it."

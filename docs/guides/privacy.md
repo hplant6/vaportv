@@ -22,7 +22,7 @@ What vaporTV sends over the internet, what it keeps on the box, and how to clear
 | Network shares | The computer or NAS you add | The user name and password you sign in with |
 | Network shares' helper (rclone) | rclone.org, once | A download of rclone (a fixed version, checked against its published fingerprint before it's used) |
 | Send from your phone | Nowhere: your home network only | Songs go straight from your phone to the box |
-| Setting up apps | Flathub and the Chrome Web Store | Downloads of the apps, the mpv video player and the Netflix extension |
+| Setting up apps | Flathub and the Chrome Web Store | Downloads of the apps, the mpv video player and the Netflix and Twitch extension |
 | Streaming apps | Netflix, YouTube and the rest | Whatever those services collect; they open in Chrome, under their own privacy policies |
 
 To keep your location to yourself, choose a place in **Settings → General → Location**: ipwho.is is then never asked. A nearby city works as well as your street.
@@ -63,7 +63,7 @@ All of it is in your home folder. Only your account can read the settings, the n
 - Claude Code keeps its own files in `~/.claude`: its sign-in, and a record of each Claude app conversation (`~/.claude/projects`).
 - Streaming apps keep your sign-ins in Chrome, as a website would. Sign out inside each app to remove them.
 
-The same folders hold files vaporTV needs to run (its Steam shortcut, the Netflix extension's setup), so don't delete the folders whole.
+The same folders hold files vaporTV needs to run (its Steam shortcut, the Netflix and Twitch extension's setup), so don't delete the folders whole.
 
 ## Clearing it
 

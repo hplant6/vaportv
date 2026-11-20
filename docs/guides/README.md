@@ -10,7 +10,7 @@ How to get things working in vaporTV. The same guides are built into vaporTV, un
 5. [Emulators](emulators.md): EmuDeck, where games go, and each console's tab
 6. [GOG, Epic and other PC games](pc-games.md): Heroic Games Launcher, and games added to Steam
 7. [The controller](controller.md): Every button, the on-screen keyboard, and moving buttons
-8. [The Netflix extension](netflix-extension.md): Moving around Netflix with a remote or D-pad
+8. [The Netflix and Twitch extension](netflix-extension.md): Moving around Netflix and Twitch with a remote or D-pad
 9. [TV remotes](remotes.md): Pairing, the buttons, and waking the box
 10. [Claude on vaporTV](claude.md): Talking to Claude on the TV, signing in, and the voice search and music it powers
 11. [Making it yours](look-and-feel.md): Backdrops, your own videos, the screensaver, Home's corners and background sounds
