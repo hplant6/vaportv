@@ -240,6 +240,11 @@ const api: SteamTvApi = {
     ipcRenderer.on('closing', listener)
     return () => ipcRenderer.removeListener('closing', listener)
   },
+  onFront: (callback) => {
+    const listener = (_event: unknown, front: boolean): void => callback(front)
+    ipcRenderer.on('front', listener)
+    return () => ipcRenderer.removeListener('front', listener)
+  },
   onSteamFocus: (callback) => {
     const listener = (_event: unknown, away: boolean): void => callback(away)
     ipcRenderer.on('steam-focus', listener)

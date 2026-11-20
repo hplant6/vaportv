@@ -1197,6 +1197,9 @@ ipcMain.handle('power', (_event, action: PowerAction) => power(action))
 ipcMain.handle('power:sleepBlocker', () => sleepBlocker())
 ipcMain.handle('volume:step', (_event, direction: 1 | -1) => stepVolume(direction === 1 ? 1 : -1))
 
+/** How often gamescope's asked whether vaporTV is on screen. */
+const FRONT_CHECK_MS = 2000
+
 app.whenReady().then(async () => {
   // Waking from sleep resets the GPU, which can leave the page's WebGL backdrops drawing
   // nothing (black): the page starts them again (gpuRecovery.ts).
@@ -1257,6 +1260,17 @@ app.whenReady().then(async () => {
       logInput(away ? 'steam focus: away' : 'steam focus: back')
       send('steam-focus', away)
     }, logInput)
+    // Whether vaporTV is what's on screen, by gamescope's word: the window's focus events miss
+    // gamescope switching back to it (from an app, or on waking), which left the music paused.
+    // Sent every check (the page decides what's news); logged when it changes.
+    let front: boolean | null = null
+    setInterval(async () => {
+      const now = await foreground.frontState()
+      if (now === null) return
+      if (now !== front) logInput(`in front: ${now ? 'yes' : 'no'}`)
+      front = now
+      send('front', now)
+    }, FRONT_CHECK_MS)
     // Back in vaporTV some other way (Steam's menu) with an app it opened still running
     // behind: that app is done with, so it's closed rather than left running unseen.
     // Not in an app's first seconds (Kodi's window comes and goes as it starts), and

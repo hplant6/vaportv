@@ -12,6 +12,8 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Fixed
 - The backdrop went black after the box woke from sleep, until vaporTV was restarted. It now starts again by itself (the turning consoles too).
 - Moving quickly across the tiles on **More** could raise an error behind the scenes.
+- Background music stayed stopped after the box woke from sleep, and sometimes after coming back from an app. vaporTV now asks the screen what's showing rather than waiting to be told, and starts the music again by itself.
+- An album played from **Music** that ended, or was paused by opening an app, left the background music silent until you pressed Stop. It comes back when the album ends, and the album carries on when you come back from an app.
 
 ### Changed
 - **Apps** has its own backdrop: a TV on a walnut stand showing the vaporTV logo, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.

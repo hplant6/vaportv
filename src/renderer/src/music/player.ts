@@ -1,5 +1,6 @@
 import type { MusicTags } from '../../../shared/types'
 import { MUSIC_HOLD_EVENT } from '../components/MusicPreview'
+import { onFrontChange } from '../front'
 
 // The Music app's player: one audio element for the whole of vaporTV, so a queue keeps playing
 // when the Music screen closes. It holds the background music while there's a queue, plays
@@ -163,8 +164,11 @@ export function updateTags(got: MusicTags[]): void {
 export function toggle(): void {
   if (state.at < 0) return
   musicAnalyser()
-  if (audio.paused) void audio.play().catch(() => undefined)
-  else audio.pause()
+  if (audio.paused) {
+    // Played again after the queue ended: the background music waits again.
+    hold(true)
+    void audio.play().catch(() => undefined)
+  } else audio.pause()
 }
 
 /** The next song; at the end, the first again with repeat all, else it stops. `auto`: the last one ended. */
@@ -180,6 +184,8 @@ export async function next(auto = false): Promise<void> {
     audio.pause()
     audio.currentTime = 0
     set({ playing: false })
+    // The queue's over: the background music comes back.
+    hold(false)
   }
 }
 
@@ -234,5 +240,15 @@ audio.addEventListener('error', () => {
   console.error('steamtv: music: playback error', audio.error?.message)
   void next(true)
 })
-// A game or app in front: the music pauses, as the background music does.
-window.addEventListener('blur', () => audio.pause())
+// A game or app in front: the music pauses, as the background music does, and carries on
+// once vaporTV's back in front (if it was playing when it went).
+let pausedForFront = false
+onFrontChange((front) => {
+  if (!front) {
+    pausedForFront = !audio.paused
+    audio.pause()
+  } else if (pausedForFront) {
+    pausedForFront = false
+    if (state.at >= 0) void audio.play().catch(() => undefined)
+  }
+})

@@ -1252,6 +1252,8 @@ export interface SteamTvApi {
   onPasteProgress(callback: (percent: number) => void): () => void
   /** The system woke from sleep (its GPU was reset): WebGL drawing may need starting again. */
   onResume(callback: () => void): () => void
+  /** Every few seconds on the box: whether vaporTV's window is the one gamescope shows. */
+  onFront(callback: (front: boolean) => void): () => void
   /** Copies a picture or video in as one of your own backdrops; returns its file name. */
   addBackdrop(path: string): Promise<string>
   getBackdrop(): Promise<{

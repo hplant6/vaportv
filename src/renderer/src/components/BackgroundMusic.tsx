@@ -4,6 +4,7 @@ import { introDone } from './Intro'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
 import { SOUND_OFF_EVENT } from '../input/focus'
 import { toast } from './Toast'
+import { isFront, onFrontChange } from '../front'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -67,6 +68,8 @@ const FADE_MS = 1200
 const SKIP_FADE_MS = 250
 /** Held (a preview, Files playing, voice search listening): out quickly, so it's quiet at once. */
 const HOLD_FADE_MS = 300
+/** How often a layer that should be sounding is checked, and started again if it isn't (a missed return to the front, the box waking). */
+const WATCH_MS = 3000
 
 /**
  * Both sticks clicked in turn vaporTV's sound off: the music and ambience fade out, and
@@ -102,7 +105,7 @@ export function BackgroundMusic() {
 
 /**
  * One layer, playing quietly: its track looping, a playlist's tracks in turn, or (shuffled)
- * a random track after each ends. It fades out and pauses while a game or app is in front, and fades back in on return.
+ * a random track after each ends. It fades out and pauses while a game or app is in front, and fades back in on return (front.ts).
  */
 function Layer({ kind }: { kind: MusicKind }) {
   const audio = useRef<HTMLAudioElement>(null)
@@ -170,9 +173,19 @@ function Layer({ kind }: { kind: MusicKind }) {
     // Not over the intro video: it has its own sound. Nor over a song being previewed in Settings.
     let introOver = false
     let held = false
+    /** The track that last wouldn't play (logged once). */
+    let failed = ''
     const start = (): void => {
-      if (!introOver || held || soundOff || !el.src || !document.hasFocus()) return
-      el.play().then(() => fadeTo(target.current)).catch(() => {})
+      if (!introOver || held || soundOff || !el.src || !isFront()) return
+      el.play()
+        .then(() => fadeTo(target.current))
+        .catch((err: unknown) => {
+          // Paused again before it began (an app opening) isn't a failure.
+          if ((err as Error)?.name === 'AbortError' || failed === el.src) return
+          // Once per track: the watch tries again every few seconds.
+          failed = el.src
+          console.error(`steamtv: ${kind}: couldn't play ${decodeURIComponent(el.src.split('/').pop() ?? '')}: ${(err as Error)?.name}: ${(err as Error)?.message}`)
+        })
     }
     introDone.then(() => {
       introOver = true
@@ -274,13 +287,21 @@ function Layer({ kind }: { kind: MusicKind }) {
       }
     }
     load()
+    // vaporTV on screen again (or gone behind a game or app).
+    const stopFront = onFrontChange((front) => (front ? start() : onBlur()))
+    // Should be sounding but isn't: started again.
+    const watch = setInterval(() => {
+      if (el.paused) start()
+    }, WATCH_MS)
+    // Waking from sleep: the sound output may have gone with it; paused, then the watch starts it afresh.
+    const stopResume = window.steamtv.onResume(() => {
+      if (!el.paused) el.pause()
+    })
     el.addEventListener('ended', onEnded)
     el.addEventListener('play', onPlay)
     el.addEventListener('pause', onPause)
     window.addEventListener(SKIP_EVENT, onSkip)
     window.addEventListener(MUSIC_CHANGED_EVENT, load)
-    window.addEventListener('focus', start)
-    window.addEventListener('blur', onBlur)
     window.addEventListener(MUSIC_HOLD_EVENT, onHold)
     window.addEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
     return () => {
@@ -293,8 +314,9 @@ function Layer({ kind }: { kind: MusicKind }) {
       el.removeEventListener('pause', onPause)
       window.removeEventListener(SKIP_EVENT, onSkip)
       window.removeEventListener(MUSIC_CHANGED_EVENT, load)
-      window.removeEventListener('focus', start)
-      window.removeEventListener('blur', onBlur)
+      stopFront()
+      stopResume()
+      clearInterval(watch)
     }
   }, [kind])
 

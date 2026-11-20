@@ -77,8 +77,15 @@ async function appOnScreen(): Promise<number | null> {
  * the app id can't tell them apart, but the pid can.
  */
 async function ownWindowInFront(): Promise<boolean> {
+  return (await frontState()) === true
+}
+
+/** Whether vaporTV's own window is the one gamescope shows; null outside gamescope (a desktop, a dev PC), where only the window's focus says. */
+async function frontState(): Promise<boolean | null> {
   const out = await xprop(['-root', 'GAMESCOPE_FOCUSED_WINDOW', 'GAMESCOPE_FOCUSABLE_WINDOWS'])
-  const focused = Number(/GAMESCOPE_FOCUSED_WINDOW\(CARDINAL\) = (\d+)/.exec(out)?.[1])
+  const match = /GAMESCOPE_FOCUSED_WINDOW\(CARDINAL\) = (\d+)/.exec(out)
+  if (!match) return null
+  const focused = Number(match[1])
   const windows = (/GAMESCOPE_FOCUSABLE_WINDOWS\(CARDINAL\) = ([\d, ]+)/.exec(out)?.[1] ?? '').split(',').map(Number)
   for (let i = 0; i + 2 < windows.length; i += 3) if (windows[i] === focused) return windows[i + 2] === process.pid
   return false
@@ -291,6 +298,8 @@ export interface Foreground {
   runs: (pattern: RegExp) => Promise<boolean>
   /** Whether vaporTV's own window is in front, rather than an app it opened. */
   ownInFront: () => Promise<boolean>
+  /** The same, or null where there's no gamescope to ask. */
+  frontState: () => Promise<boolean | null>
 }
 
 async function frontRuns(pattern: RegExp): Promise<boolean> {
@@ -319,7 +328,8 @@ export function startHotkey(options: HotkeyOptions): Foreground {
       await terminate(pids, options.log)
     },
     runs: frontRuns,
-    ownInFront: ownWindowInFront
+    ownInFront: ownWindowInFront,
+    frontState
   }
   if (process.platform !== 'linux') return foreground
   logXprop = options.log
