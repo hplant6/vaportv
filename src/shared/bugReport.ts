@@ -5,8 +5,10 @@
 // its error lines first, then the latest lines.
 //
 // The issue is public, so what's personal in the log is taken out first: the label of each
-// button pressed (file and folder names, Wi-Fi networks, Bluetooth devices, playlists) and
-// what voice search heard. The log on the box keeps them, for looking into over ssh.
+// button pressed (file and folder names, Wi-Fi networks, Bluetooth devices, playlists), what
+// voice search heard, what the Claude app asked to run or change (commands, file paths), the
+// names of network shares, and the box's address on the home network. The log on the box
+// keeps them, for looking into over ssh.
 
 const NEW_ISSUE = 'https://github.com/hplant6/vaportv/issues/new'
 /** Longest link put in the code: dense enough to scan off a TV across a room. */
@@ -15,13 +17,19 @@ const MAX_URL = 2000
 const MAX_ERROR_LINES = 8
 const ERROR_LINE = /error|fail|couldn'?t|can'?t|exited|crash|uncaught|refused|denied|not found|timed? ?out/i
 
-/** A log line with button labels, what voice search heard, and the home folder taken out. */
+/** A log line with what's personal taken out (see above), and the home folder as ~. */
 export function scrub(line: string, home: string): string {
   return line
     .split(home)
     .join('~')
     .replace(/\b(select|favorite) (?!key$|nothing$).+$/, '$1 (a button)')
     .replace(/\bvoice: heard "(.*)"/, (_, text: string) => `voice: heard ${text.split(/\s+/).filter(Boolean).length} words`)
+    // Which tool, but not the command or file it was for.
+    .replace(/\bclaude: asks to use (\S+?):? .*$/, 'claude: asks to use $1')
+    .replace(/\bclaude login: phone page on .+$/, 'claude login: phone page on (the box)')
+    .replace(/\bshares: (mounted|removed) .+$/, 'shares: $1 (a share)')
+    // A share that wouldn't mount: its name out, and any //computer/share in what went wrong.
+    .replace(/\bshares: (?!fetching |rclone ready)[^:]+: (.*)$/, (_, why: string) => `shares: (a share): ${why.replace(/\/\/[^\s:]+/g, '(a share)')}`)
 }
 
 /** Error lines, then the latest, in the log's order, each once, scrubbed for a public report. */

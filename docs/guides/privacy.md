@@ -42,9 +42,9 @@ The pages your phone opens to sign Claude in or send music are on your home netw
 GitHub reports are **public**. A report holds:
 
 - vaporTV's version, the SteamOS version, your graphics card, screen size and controllers.
-- The end of vaporTV's log: which buttons were pressed and errors. Before it goes in, vaporTV takes out what's personal: the names on the buttons you pressed (files, folders, Wi-Fi networks, Bluetooth devices, playlists) and what voice search heard. What you type on the on-screen keyboard is never logged at all.
+- The end of vaporTV's log: which buttons were pressed and errors. Before it goes in, vaporTV takes out what's personal: the names on the buttons you pressed (files, folders, Wi-Fi networks, Bluetooth devices, playlists), what voice search heard, what the Claude app asked to run or change (only the kind of thing, such as a command or an edit, is kept), the names of network shares, and the box's address on your network. What you type on the on-screen keyboard is never logged at all.
 
-The log can also hold what the Claude app ran (each command it asked to run, and the files it asked to change) and the names of network shares. Read it over on your phone before you submit, and delete anything you'd rather not share.
+Read the report over on your phone before you submit, and delete anything you'd rather not share.
 
 ## What vaporTV keeps on the box
 

@@ -24,6 +24,31 @@ describe('bug report', () => {
     ])
   })
 
+  it("takes out what the Claude app asked to do, share names and the box's address", () => {
+    const lines = [
+      '12:00:00.000 claude: asks to use Bash: Delete old backups (rm -rf /home/deck/Backups/taxes-2025)',
+      '12:00:01.000 claude: asks to use Edit: (/home/deck/notes/diary.md)',
+      '12:00:02.000 claude: allowed toolu_01',
+      '12:00:03.000 claude login: phone page on 192.168.1.41',
+      '12:00:04.000 shares: mounted largebox-Music',
+      '12:00:05.000 shares: removed largebox-Music',
+      '12:00:06.000 shares: largebox-Music: mount failed: //largebox/Music: permission denied',
+      '12:00:07.000 shares: fetching rclone v1.68.2',
+      '12:00:08.000 shares: rclone ready'
+    ]
+    expect(pickLogLines(lines, 9, '/home/deck')).toEqual([
+      '12:00:00.000 claude: asks to use Bash',
+      '12:00:01.000 claude: asks to use Edit',
+      '12:00:02.000 claude: allowed toolu_01',
+      '12:00:03.000 claude login: phone page on (the box)',
+      '12:00:04.000 shares: mounted (a share)',
+      '12:00:05.000 shares: removed (a share)',
+      '12:00:06.000 shares: (a share): mount failed: (a share): permission denied',
+      '12:00:07.000 shares: fetching rclone v1.68.2',
+      '12:00:08.000 shares: rclone ready'
+    ])
+  })
+
   it("doesn't keep a label as an error line", () => {
     expect(pickLogLines(['select Crash Bandicoot', 'ok'], 1, '/home/deck')).toEqual(['ok'])
   })
