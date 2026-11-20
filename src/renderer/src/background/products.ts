@@ -67,11 +67,15 @@ export const PRODUCTS: Partial<Record<string, Product>> = {
     // Henry's TV scene from his unreleased ES-DE theme: a plasma TV on a walnut stand, a KAWS figure holding a controller beside it.
     model: 'private/apps-tv.vtm',
     elevation: 15,
+    // The lit screen and the controller's glow made it brighter than the consoles: dimmed overall.
+    exposure: 0.7,
+    // Bloom haloed the logo and the controller.
+    bloom: false,
     // The TV shows the vaporTV logo (its screen is mapped properly, 16:9).
     screen: { image: 'private/screen-apps.jpg', material: 'Material.011', modelUv: true },
-    // The controller's light-up texture glows at 10× in Blender: a white blob here.
+    // The controller's light-up texture glows at 10× in Blender: a white blob here, so barely lit.
     fix: (material) => {
-      if (material.name === 'Controle.001') material.emissiveIntensity = 0.3
+      if (material.name === 'Controle.001') material.emissiveIntensity = 0.1
     }
   },
   // The Video tab's bar turns a pile of VHS tapes.
