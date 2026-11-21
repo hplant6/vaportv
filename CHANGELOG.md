@@ -7,9 +7,12 @@ as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Ch
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 
-## Unreleased
+## 0.18.0
 
 ### Added
+- **Settings → General → Updates → Apps and system** updates the box's other software from the TV, no Desktop Mode needed: the apps and runtimes Discover would offer (Chrome, Kodi, the emulators and the rest). It shows what has an update waiting; press A to update them all. Apps that are open get the new version next time you open them. SteamOS itself is still updated in Steam's Settings → System.
+- **Now playing** has a visualizer beside the album cover: a neon **Orb** or a glowing **Wave** of the music, or **None**. Choose in Settings → Music.
+- **Recently added** in the Music tab's bar: the albums you added most recently.
 - **Twitch** in the Apps tab: the website, opened full screen in Chrome like Netflix and the other streaming sites (Set up adds it to Steam). vaporTV's extension (it was vaporTV for Netflix) now works on Twitch too: a gold ring moves between streams, channels and categories with the D-pad, A opens, B goes back, and a channel's stream fills the screen (A pauses, Y mutes, Down shows chat and Follow). No Web Browser layout needed.
 - The two-button presses can be moved in **Settings → Controller**, like the other buttons: **Close a game or app** (Select + Start), **Sound off or on** (both sticks) and **Report a problem** (R3 + RT). Choose one and hold the two buttons you want. A button that's part of one now acts as you let go of it, so pressing a pair never also does what each button does alone.
 - Hold **R3 + RT** (right stick in, right trigger) for a second to open **Report a problem** from any screen, so its details catch the screen the problem is on. It's in R2's button guide and Settings → Controller.
