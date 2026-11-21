@@ -100,6 +100,15 @@ const api: SteamTvApi = {
       return () => ipcRenderer.removeListener('update:progress', listener)
     }
   },
+  systemUpdates: {
+    list: () => ipcRenderer.invoke('system-updates:list'),
+    install: () => ipcRenderer.invoke('system-updates:install'),
+    onProgress: (callback) => {
+      const listener = (_event: unknown, line: string): void => callback(line)
+      ipcRenderer.on('system-updates:progress', listener)
+      return () => ipcRenderer.removeListener('system-updates:progress', listener)
+    }
+  },
   welcome: {
     seen: () => ipcRenderer.invoke('welcome:seen'),
     done: () => ipcRenderer.invoke('welcome:done')

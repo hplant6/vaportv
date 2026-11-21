@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { IntroSettings, LocationSettings, TemperatureUnit, UpdateState } from '../../../shared/types'
+import type { IntroSettings, LocationSettings, SystemUpdate, TemperatureUnit, UpdateState } from '../../../shared/types'
 import { OverStage } from './GooglePhotos'
 import { LocationDialog, WEATHER_CHANGED_EVENT } from './LocationDialog'
 import { OPEN_UPDATE_EVENT } from './UpdateDialog'
@@ -75,6 +75,45 @@ export function GeneralSettings() {
           : updates.error
             ? `Couldn't check: ${updates.error} · A to try again`
             : 'Up to date · A to check now'
+
+  // The box's Flatpaks (what Discover offers in Desktop Mode): checked as Settings opens,
+  // all updated with one press.
+  const [system, setSystem] = useState<SystemUpdate[] | null>(null)
+  const [systemError, setSystemError] = useState<string | null>(null)
+  const [systemBusy, setSystemBusy] = useState<string | null>(null)
+  const checkSystem = useCallback(() => {
+    setSystem(null)
+    setSystemError(null)
+    window.steamtv.systemUpdates.list().then(setSystem, (err: Error) => {
+      setSystem([])
+      setSystemError(err.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ''))
+    })
+  }, [])
+  useEffect(() => {
+    checkSystem()
+    return window.steamtv.systemUpdates.onProgress(setSystemBusy)
+  }, [checkSystem])
+
+  const pressSystem = (): void => {
+    if (systemBusy || !system) return
+    if (systemError || system.length === 0) return checkSystem()
+    setSystemBusy('Starting…')
+    window.steamtv.systemUpdates.install().then((err) => {
+      setSystemBusy(null)
+      checkSystem()
+      if (err) setSystemError(err)
+    })
+  }
+
+  const systemDetail = systemBusy
+    ? systemBusy
+    : !system
+      ? 'Checking…'
+      : systemError
+        ? `Couldn't ${system.length ? 'update' : 'check'}: ${systemError} · A to try again`
+        : system.length === 0
+          ? 'Up to date · A to check again'
+          : `${pendingSummary(system)} · A to update all`
 
   const closePicker = useCallback(() => {
     setPicking(false)
@@ -167,6 +206,10 @@ export function GeneralSettings() {
             <span className="setting-name display">vaporTV {updates?.current ?? ''}</span>
             <span className="setting-detail">{updateDetail}</span>
           </button>
+          <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={pressSystem}>
+            <span className="setting-name display">Apps and system</span>
+            <span className="setting-detail">{systemDetail}</span>
+          </button>
         </div>
       </div>
 
@@ -177,4 +220,13 @@ export function GeneralSettings() {
       )}
     </>
   )
+}
+
+/** "Google Chrome, Kodi and 2 runtimes": the apps by name, the runtimes they need counted. */
+function pendingSummary(updates: SystemUpdate[]): string {
+  const apps = updates.filter((u) => !u.runtime).map((u) => u.name)
+  const runtimes = updates.length - apps.length
+  const named = apps.length > 3 ? [...apps.slice(0, 2), `${apps.length - 2} more apps`] : apps
+  const parts = runtimes ? [...named, `${runtimes} ${runtimes === 1 ? 'runtime' : 'runtimes'}`] : named
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0]
 }

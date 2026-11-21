@@ -907,6 +907,15 @@ export interface UpdateInfo {
   notes: { version: string; date: string | null; body: string }[]
 }
 
+/** A Flatpak (app or runtime) with an update waiting: what Discover would offer in Desktop Mode. */
+export interface SystemUpdate {
+  id: string
+  name: string
+  branch: string
+  /** A runtime or extension the apps run on, rather than an app. */
+  runtime: boolean
+}
+
 /** Settings and the update window's view of updates. */
 export interface UpdateState {
   current: string
@@ -1359,6 +1368,15 @@ export interface SteamTvApi {
     onAvailable(callback: (state: UpdateState) => void): () => void
     /** Download progress, in whole percents. */
     onProgress(callback: (percent: number) => void): () => void
+  }
+  /** The box's other software (Flatpak apps and runtimes), updated from Settings rather than Discover. */
+  systemUpdates: {
+    /** What has an update waiting; rejects if Flathub couldn't be asked. */
+    list(): Promise<SystemUpdate[]>
+    /** Installs every waiting update; resolves with an error message if it fails. */
+    install(): Promise<string | null>
+    /** What the install is doing, a line at a time. */
+    onProgress(callback: (line: string) => void): () => void
   }
   /** The first-start welcome tour: whether it's been shown, and marking it shown. */
   welcome: {

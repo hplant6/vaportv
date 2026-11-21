@@ -44,6 +44,7 @@ import { directAppAge, launch, launchedIsGame, launchedName, launchUrl, openInSt
 import { EXTENSION_SITES, stageNetflixExtension } from './netflixExtension'
 import { ensureChromeFlags } from './chromeFlags'
 import { canUpdate, checkForUpdate, installUpdate, restartAfterUpdate } from './updater'
+import { installSystemUpdates, listSystemUpdates } from './systemUpdates'
 import { INTRO_FOLDER, introSettings } from './intro'
 import { bootVideoSelected, refreshBootVideo, steamJustStarted } from './bootVideo'
 import { systemBattery } from './battery'
@@ -569,6 +570,16 @@ ipcMain.handle('update:install', async (event): Promise<string | null> => {
   }
   await restartAfterUpdate()
   return null
+})
+
+// The box's Flatpaks, approved from Settings → General → Updates; see systemUpdates.ts.
+let systemUpdating: Promise<string | null> | null = null
+ipcMain.handle('system-updates:list', () => listSystemUpdates())
+ipcMain.handle('system-updates:install', (event): Promise<string | null> => {
+  systemUpdating ??= installSystemUpdates((line) => event.sender.send('system-updates:progress', line))
+    .then(() => null, (err) => (err instanceof Error ? err.message : String(err)))
+    .finally(() => (systemUpdating = null))
+  return systemUpdating
 })
 
 ipcMain.handle('battery:get', () => systemBattery())
