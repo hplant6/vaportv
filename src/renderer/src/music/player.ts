@@ -85,7 +85,7 @@ export function musicAnalyser(): AnalyserNode | null {
       const source = context.createMediaElementSource(audio)
       analyser = context.createAnalyser()
       analyser.fftSize = 1024
-      analyser.smoothingTimeConstant = 0.78
+      analyser.smoothingTimeConstant = 0.6
       source.connect(analyser)
       analyser.connect(context.destination)
     } catch (err) {

@@ -5378,6 +5378,53 @@ button {
   }
 }
 
+/* Right of the cover: the visualizer, the cover's height and level with it, and the song
+   centred in front of it. Without one, the song just sits there. */
+.music-now-side {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.music-now-stage.with-visualizer .music-now-side {
+  align-self: center;
+  height: 600px;
+  justify-content: center;
+}
+
+.music-visualizer {
+  position: absolute;
+  inset: 0;
+}
+
+/* A soft shade behind the words, so they read over the brightest part. */
+.music-now-stage.with-visualizer .music-song {
+  position: relative;
+  flex: none;
+  max-width: 100%;
+  padding: 30px 50px;
+  text-align: left;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+}
+
+.music-visualizer-canvas {
+  /* Well past its box all round: room for the orb's swells and the glow, never cut off. */
+  position: absolute;
+  inset: -200px;
+  width: calc(100% + 400px);
+  height: calc(100% + 400px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.music-visualizer-canvas.ready {
+  opacity: 1;
+}
+
 .music-song {
   min-width: 0;
   flex: 1;

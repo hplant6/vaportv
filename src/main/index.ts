@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { DEFAULT_COMBOS, resolveCombos, resolveControls, type Combos, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicBar, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicBar, VisualizerLook, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import * as media from './media/servers'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
@@ -732,6 +732,7 @@ ipcMain.handle('settings:get', async (): Promise<Settings> => {
     musicVolume: config.musicVolume ?? 'medium',
     ambienceVolume: config.ambienceVolume ?? 'medium',
     musicBar: config.musicBar ?? 'auto',
+    musicVisualizer: config.musicVisualizer ?? 'orb',
     backdrop: (await backdropChoice(config)).style,
     homeBackdrop: config.homeBackdrop ? (await backdropChoice(config, config.homeBackdrop)).style : null,
     backdropFile: customBackdropFile(config, await customBackdrops()),
@@ -795,6 +796,7 @@ ipcMain.handle('settings:playlists', async (_event, lists: Playlist[]) => {
   })
 })
 ipcMain.handle('settings:musicBar', (_event, bar: MusicBar) => saveConfig({ musicBar: bar }))
+ipcMain.handle('settings:musicVisualizer', (_event, look: VisualizerLook) => saveConfig({ musicVisualizer: look }))
 ipcMain.handle('settings:musicVolume', (_event, kind: MusicKind, volume: MusicVolume) =>
   saveConfig(kind === 'music' ? { musicVolume: volume } : { ambienceVolume: volume })
 )
@@ -1250,7 +1252,7 @@ function settingsSummary(c: Config): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const CHOICES = [
     'backdrop', 'homeBackdrop', 'backdropTime', 'driftPreset', 'driftDirection', 'tunnelColors', 'consoleBackdropQuality', 'consoleBackdrops', 'spinningConsoles',
-    'music', 'musicVolume', 'musicBar', 'ambience', 'ambienceVolume', 'screensaverDelay', 'screensaverStyle', 'screensaverClock', 'introVideo',
+    'music', 'musicVolume', 'musicBar', 'musicVisualizer', 'ambience', 'ambienceVolume', 'screensaverDelay', 'screensaverStyle', 'screensaverClock', 'introVideo',
     'claudeModel', 'claudeSpeak', 'sleepOnControllerOff', 'sleepWarning', 'recentDays', 'recentLimit', 'welcomeSeen', 'favoritesLayout'
   ]
   for (const key of CHOICES) if (key in record) out[key] = choice(record[key])

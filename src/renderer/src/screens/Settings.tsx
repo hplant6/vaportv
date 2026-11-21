@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, VisualizerLook, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT, skipTrack, useNowPlaying } from '../components/BackgroundMusic'
 import { MUSIC_BAR_EVENT } from '../components/NowPlayingRow'
 import { AddMusicRow } from '../components/AddMusic'
@@ -196,6 +196,12 @@ const MUSIC_BARS: { id: MusicBar; name: string; detail: string }[] = [
   { id: 'auto', name: 'Shows as each song starts', detail: 'Drops down for a few seconds, then folds away. Down from the top bar brings it back' },
   { id: 'always', name: 'Always open', detail: 'Stays down under the top bar while music plays' },
   { id: 'off', name: 'Never', detail: "Doesn't show" }
+]
+
+const VISUALIZERS: { id: VisualizerLook; name: string; detail: string }[] = [
+  { id: 'orb', name: 'Orb', detail: 'A neon globe that breaks apart and swells with the music' },
+  { id: 'wave', name: 'Wave', detail: 'A glowing ridge of the sound, bass in the middle, rolling back' },
+  { id: 'off', name: 'None', detail: 'Just the cover and the song' }
 ]
 
 const VOLUMES: { id: MusicVolume; name: string }[] = [
@@ -449,6 +455,12 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.musicBar === bar) return
     setSettings({ ...settings, musicBar: bar })
     window.steamtv.setMusicBar(bar).then(() => window.dispatchEvent(new Event(MUSIC_BAR_EVENT)))
+  }
+
+  const chooseVisualizer = (look: VisualizerLook): void => {
+    if (!settings || settings.musicVisualizer === look) return
+    setSettings({ ...settings, musicVisualizer: look })
+    void window.steamtv.setMusicVisualizer(look)
   }
 
   const chooseVolume = (kind: MusicKind, volume: MusicVolume): void => {
@@ -1234,6 +1246,17 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings &&
               MUSIC_BARS.map((b) => (
                 <ChoiceRow key={b.id} label={b.name} subtitle={b.detail} selected={settings.musicBar === b.id} onSelect={() => chooseMusicBar(b.id)} />
+              ))}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <h3 className="settings-heading display">Visualizer</h3>
+          <p className="settings-help">Moves with the music beside the cover while a song plays.</p>
+          <div className="setting-list" data-focus-memory="settings-music-visualizer">
+            {settings &&
+              VISUALIZERS.map((v) => (
+                <ChoiceRow key={v.id} label={v.name} subtitle={v.detail} selected={settings.musicVisualizer === v.id} onSelect={() => chooseVisualizer(v.id)} />
               ))}
           </div>
         </div>

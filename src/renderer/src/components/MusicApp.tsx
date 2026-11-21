@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MusicEntry, MusicFolder, MusicPlace, MusicTags, VoiceState } from '../../../shared/types'
+import type { MusicEntry, MusicFolder, MusicPlace, MusicTags, VisualizerLook, VoiceState } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, trap, TRAP_CLOSE_EVENT, TRAP_SIDE_BAR_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
 import { play } from '../input/sounds'
 import { cycleRepeat, current, next, playAt, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
 import { FloatingCover } from '../music/FloatingCover'
+import { Visualizer } from '../music/Visualizer'
 import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { newPlaylist } from '../music/playlists'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
@@ -1004,6 +1005,16 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
     }
   }, [showBar, toTop])
 
+  // Which visualizer (Settings → Music), read as the screen opens.
+  const [visualizer, setVisualizer] = useState<VisualizerLook>('off')
+  useEffect(() => {
+    let live = true
+    window.steamtv.getSettings().then((s) => live && setVisualizer(s.musicVisualizer ?? 'orb'))
+    return () => {
+      live = false
+    }
+  }, [])
+
   const length = player.duration || song?.duration || 0
   const progress = length ? Math.min(100, (player.time / length) * 100) : 0
   const queueText = player.order.length > 1 ? `${player.at + 1} of ${player.order.length}` : ''
@@ -1012,13 +1023,17 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
     <div className="media-player music-playing" data-focus-trap="" {...(stationOpen ? {} : { 'data-own-directions': '' })}>
       <div className="music-playing-scrim" aria-hidden="true" />
       <div className={`files-viewer music-viewer${barShown || !player.playing || onButtons ? ' bar-shown' : ''}`}>
-        <div className="music-now-stage">
+        <div className={`music-now-stage${visualizer === 'off' ? '' : ' with-visualizer'}`}>
           <FloatingCover cover={song?.cover} playing={player.playing} />
-          <div className="music-song">
-            {queueText && <p className="music-song-queue">{queueText}</p>}
-            <p className="music-song-title display">{song?.title ?? ''}</p>
-            {song?.artist && <p className="music-song-artist">{song.artist}</p>}
-            {song?.album && <p className="music-song-album">{song.album}</p>}
+          {/* The song in front of the visualizer, centred on it. */}
+          <div className="music-now-side">
+            <Visualizer look={visualizer} playing={player.playing} />
+            <div className="music-song">
+              {queueText && <p className="music-song-queue">{queueText}</p>}
+              <p className="music-song-title display">{song?.title ?? ''}</p>
+              {song?.artist && <p className="music-song-artist">{song.artist}</p>}
+              {song?.album && <p className="music-song-album">{song.album}</p>}
+            </div>
           </div>
         </div>
         <div className="files-viewer-bar media-controls-bar">

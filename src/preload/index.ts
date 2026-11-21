@@ -23,6 +23,7 @@ const api: SteamTvApi = {
   setPlaylists: (playlists) => ipcRenderer.invoke('settings:playlists', playlists),
   setMusicVolume: (kind, volume) => ipcRenderer.invoke('settings:musicVolume', kind, volume),
   setMusicBar: (bar) => ipcRenderer.invoke('settings:musicBar', bar),
+  setMusicVisualizer: (look) => ipcRenderer.invoke('settings:musicVisualizer', look),
   musicFiles: {
     add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)
   },

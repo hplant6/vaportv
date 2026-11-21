@@ -16,7 +16,7 @@ import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
 // The Music tab: the console tabs' left bar and grid, filled from the music index
 // (musicIndex.ts: every song's tags, across ~/Music, drives and shares). The bar turns Henry's
-// turntable; its lists are Recently played, Favorites (Liked songs, then albums), Playlists,
+// turntable; its lists are Recently played, Recently added, Favorites (Liked songs, then albums), Playlists,
 // Albums, Artists and Folders; Genre (a drop-down under Sort) narrows the albums and artists, and
 // Folders (the places, opening the folder browser). A on an album opens its page (Play all,
 // Shuffle, its songs), which plays straight from the index; playing opens Now playing. Voice
@@ -36,6 +36,8 @@ export const MUSIC_SORTS: { id: MusicSort; name: string }[] = [
 /** When each album was last played on this TV (album id → ms). Losing it just means Recently played starts again. */
 const PLAYED_STORE = 'vaportv.musicPlayedAlbums'
 const PLAYED_KEPT = 500
+/** How many albums Recently added shows. */
+const RECENTLY_ADDED = 60
 /** Genre's "all" choice. */
 const ALL_GENRES = 'all'
 
@@ -198,6 +200,13 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       name: 'Recently played',
       items: asAlbums(shown.filter((a) => played[a.id]).sort((a, b) => played[b.id] - played[a.id])),
       empty: inGenre || (albums?.length ? 'Albums you play show up here.' : noneYet)
+    },
+    {
+      id: 'recent-added',
+      name: 'Recently added',
+      // Your newest albums (by their newest song's file), not the ones vaporTV comes with.
+      items: asAlbums(shown.filter((a) => !a.included).sort((a, b) => b.added - a.added).slice(0, RECENTLY_ADDED)),
+      empty: inGenre || (albums?.length ? 'Music you add shows up here.' : noneYet)
     },
     {
       id: 'favorites',
