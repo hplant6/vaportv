@@ -12,7 +12,8 @@ import { ownHelper } from './helpers'
 // Voice search: a remote's Menu tapped (or the search screen's mic) records from the default
 // microphone until the speaker stops, then whisper.cpp turns it into text, all on this
 // machine. whisper-cli ships with vaporTV (scripts/whisper.sh builds it); its English model
-// (~490 MB) downloads the first time voice search is used.
+// (~490 MB) downloads the first time voice search is used. Talking to Claude uses the
+// multilingual model (~490 MB more) instead, which hears whether it's English or Japanese.
 
 const RATE = 16000
 /** Level is judged over this much sound at a time. */
@@ -40,6 +41,10 @@ const MUSIC_FADE_MS = 400
 
 const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin'
 const MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-small.en.bin')
+const MULTI_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin'
+const MULTI_MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-small.bin')
+/** The languages talking to Claude hears: a clip it takes for any other is English mumbled. */
+const LANGUAGES = ['en', 'ja']
 /** whisper's prompt is cut at about 224 tokens; titles beyond this many characters wouldn't count. */
 const HINTS_MAX = 600
 /** Words said to Claude that whisper wouldn't otherwise spell right ("paper TV"). */
@@ -80,16 +85,16 @@ export function voiceReady(): boolean {
   return existsSync(whisperCli())
 }
 
-async function ensureModel(send: Send, log: Log): Promise<void> {
-  if (existsSync(MODEL)) return
+async function ensureModel(send: Send, log: Log, model = MODEL, url = MODEL_URL): Promise<void> {
+  if (existsSync(model)) return
   send({ phase: 'preparing' })
   log('voice: downloading the speech model')
-  await mkdir(join(MODEL, '..'), { recursive: true })
-  const part = `${MODEL}.part`
-  const res = await fetch(MODEL_URL)
+  await mkdir(join(model, '..'), { recursive: true })
+  const part = `${model}.part`
+  const res = await fetch(url)
   if (!res.ok || !res.body) throw new Error(`Couldn't download the speech model (${res.status})`)
   await pipeline(Readable.fromWeb(res.body as import('node:stream/web').ReadableStream), createWriteStream(part))
-  await rename(part, MODEL)
+  await rename(part, model)
 }
 
 /** dBFS of 16-bit samples. */
@@ -237,15 +242,20 @@ export function cleanTranscript(out: string): string {
     .replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/[.!?]+$/, '')
+    .replace(/[.!?。！？]+$/, '')
 }
 
-function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<string> {
+/** The language whisper settled on ("en"), from its notes when it was left to listen for it. */
+export function detectedLanguage(err: string): string | null {
+  return /auto-detected language: (\w+)/.exec(err)?.[1] ?? null
+}
+
+function whisper(model: string, file: string, language: string, log: Log, prompt?: string): Promise<{ text: string; language: string | null }> {
   return new Promise((resolve, reject) => {
-    const args = ['-m', MODEL, '-f', file, '-l', 'en', '-nt', '-np', '-t', '8']
-    // Game names help a search; in a description they'd only tempt it to hear them.
-    if (hints && purpose === 'search') args.push('--prompt', hints)
-    else if (purpose === 'conversation') args.push('--prompt', CONVERSATION_HINTS)
+    // No -np for auto: its notes include the language it heard.
+    const args = ['-m', model, '-f', file, '-l', language, '-nt', '-t', '8']
+    if (language !== 'auto') args.push('-np')
+    if (prompt) args.push('--prompt', prompt)
     const child = spawn(whisperCli(), args, { stdio: ['ignore', 'pipe', 'pipe'] })
     ownHelper(child)
     let out = ''
@@ -258,9 +268,22 @@ function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<stri
         log(`voice: whisper exited ${code}: ${err.trim().split('\n').slice(-3).join(' | ')}`)
         return reject(new Error('Speech recognition failed'))
       }
-      resolve(cleanTranscript(out))
+      resolve({ text: cleanTranscript(out), language: detectedLanguage(err) })
     })
   })
+}
+
+async function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<string> {
+  // Game names help a search; in a description they'd only tempt it to hear them.
+  if (purpose !== 'conversation') return (await whisper(MODEL, file, 'en', log, hints && purpose === 'search' ? hints : undefined)).text
+  // Talking to Claude: English or Japanese (a Japanese relative at the sofa), whichever it hears.
+  const heard = await whisper(MULTI_MODEL, file, 'auto', log, CONVERSATION_HINTS)
+  if (!heard.language || LANGUAGES.includes(heard.language)) {
+    if (heard.language === 'ja') log('voice: heard Japanese')
+    return heard.text
+  }
+  log(`voice: took it for ${heard.language}, trying English`)
+  return (await whisper(MODEL, file, 'en', log, CONVERSATION_HINTS)).text
 }
 
 /** Listens once (for a search, or dictating a bug report) and reports along the way: listening, thinking, then what was heard (or why not). */
@@ -284,6 +307,7 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     // At once, so the search screen opens (and the music fades) before the room is measured.
     send({ phase: 'starting' })
     await ensureModel(send, log)
+    if (purpose === 'conversation') await ensureModel(send, log, MULTI_MODEL, MULTI_URL)
     const mic = await microphone()
     if (!mic) {
       send({ phase: 'error', message: 'No microphone found. Plug one in and try again.' })

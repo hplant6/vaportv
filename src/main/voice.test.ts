@@ -2,7 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => '/nowhere' } }))
 
-const { cleanTranscript, roomLevel } = await import('./voice')
+const { cleanTranscript, detectedLanguage, roomLevel } = await import('./voice')
+
+describe('detectedLanguage', () => {
+  it('reads the language from whisper notes', () => {
+    expect(detectedLanguage('x\nwhisper_full_with_state: auto-detected language: ja (p = 0.98)\ny')).toBe('ja')
+    expect(detectedLanguage('nothing here')).toBeNull()
+  })
+
+  it('drops a Japanese full stop like an English one', () => {
+    expect(cleanTranscript('こんにちは。')).toBe('こんにちは')
+  })
+})
 
 describe('roomLevel', () => {
   it('takes the quieter end, so talking straight away does not raise the room', () => {

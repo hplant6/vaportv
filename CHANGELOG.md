@@ -6,6 +6,10 @@ so write for the people using it: what's new, what's fixed. Start a version's se
 as `## <version>` (as in package.json), then `### Added`, `### Fixed` or `### Changed`
 groups of `- ` points. Collect changes under `## Unreleased` until then.
 
+## Unreleased
+
+### Added
+- Claude app: talk to it in Japanese. It hears English or Japanese by itself (a second speech model, about 490 MB, downloads the first time), answers Japanese in a Japanese voice, and can translate back and forth between two people at the TV.
 
 ## 0.18.0
 

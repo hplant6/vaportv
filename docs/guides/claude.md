@@ -51,7 +51,7 @@ When it's done, it listens again, so you can carry on talking. If you say nothin
 
 ### The voice
 
-Claude speaks with **Kokoro**, a natural-sounding voice that runs on the box itself. It downloads the first time something is spoken (about 350 MB), so the first reply takes a little longer. Speech recognition downloads the first time too: you'll see **Getting speech recognition ready (first time only)…**.
+Claude speaks with **Kokoro**, a natural-sounding voice that runs on the box itself. It downloads the first time something is spoken (about 350 MB), so the first reply takes a little longer. Speaking Japanese works too: it hears English or Japanese by itself, and answers Japanese in a Japanese voice (in kana; ask it to translate and it will pass your words to someone else and theirs back). Speech recognition downloads the first time too: you'll see **Getting speech recognition ready (first time only)…**.
 
 ## What it can do
 

@@ -10,6 +10,10 @@ describe('splitSentences', () => {
     expect(splitSentences('It is 12 degrees. Light rain until three')).toEqual([['It is 12 degrees.'], 'Light rain until three'])
   })
 
+  it('ends a Japanese sentence at 。 with no space after', () => {
+    expect(splitSentences('こんにちは。おげんきですか？まだ')).toEqual([['こんにちは。', 'おげんきですか？'], 'まだ'])
+  })
+
   it('waits for the space after a stop, so a decimal point is not an end', () => {
     expect(splitSentences('Pi is about 3.14')).toEqual([[], 'Pi is about 3.14'])
     expect(splitSentences('Pi is about 3.14. Next')).toEqual([['Pi is about 3.14.'], 'Next'])

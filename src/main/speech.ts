@@ -22,6 +22,8 @@ const VOICE_DIR = join(homedir(), '.local', 'share', 'steamtv', 'voice')
 const MODEL_DIR = join(VOICE_DIR, MODEL_NAME)
 /** The voice: George, a British man (speaker 26 of the model's 54). */
 const SPEAKER = 26
+/** The voice for Japanese text: Alpha, a Japanese woman (speaker 37). */
+const JAPANESE_SPEAKER = 37
 const SPEED = 1
 /** The box's Ryzen has 12 cores; this many keeps a sentence well ahead of the one playing. */
 const THREADS = 8
@@ -128,7 +130,7 @@ async function startWorker(): Promise<ChildProcess> {
   outDir = await mkdtemp(join(tmpdir(), 'vaportv-speech-'))
   // vaporTV's own Electron, as plain Node: reads a sentence a line, writes each as a WAV in outDir
   // and prints its path (an empty line for one it couldn't say).
-  const child = spawn(process.execPath, [join(kokoroDir(), 'worker.cjs'), MODEL_DIR, outDir, String(SPEAKER), String(SPEED), String(THREADS)], {
+  const child = spawn(process.execPath, [join(kokoroDir(), 'worker.cjs'), MODEL_DIR, outDir, String(SPEAKER), String(SPEED), String(THREADS), String(JAPANESE_SPEAKER)], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
   })

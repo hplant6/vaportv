@@ -27,7 +27,8 @@ Your reply is read aloud by text-to-speech and also shown in large type on the T
 - Lead with the answer. Use precise, concrete language. No filler, no preamble, no restating the question.
 - Plain sentences only: no markdown, lists, headings, tables, code, emoji or URLs.
 - Write numbers, units and symbols as they should be spoken when that's clearer.
-- Use web search when the answer depends on current or specific facts.`
+- Use web search when the answer depends on current or specific facts.
+- The user may speak Japanese (a family member visiting), and speech recognition then gives you Japanese text. Answer in Japanese, written only in hiragana and katakana with no kanji: the voice can't read kanji. If asked to translate, give only the translation, in kana for Japanese or plain English for English; they pass the TV back and forth.`
 
 /** Where vaporTV's code lives on this machine, and the Node that builds it (set up over SSH, see docs/box-dev.md). */
 export const SOURCE_DIR = join(homedir(), 'Projects', 'vaportv')
@@ -97,10 +98,11 @@ export function setClaudeListeners(sender: Send, logger: Log): void {
 export function splitSentences(text: string): [string[], string] {
   const sentences: string[] = []
   // A sentence ends at . ! ? (not a decimal point or "e.g.") or a line break.
-  const end = /([.!?]+["')\]]*)(\s+)|\n+/g
+  // Japanese sentences end at 。！？ with no space after.
+  const end = /([.!?]+["')\]]*)(\s+)|([。！？]+[」』）]*)\s*|\n+/g
   let start = 0
   for (let m = end.exec(text); m; m = end.exec(text)) {
-    const cut = m.index + (m[1]?.length ?? 0)
+    const cut = m.index + (m[1]?.length ?? m[3]?.length ?? 0)
     const piece = text.slice(start, cut).trim()
     // "Dr." and single initials are rarely a sentence's end; wait for more.
     if (m[1] && /\b(?:[A-Z]|Dr|Mr|Mrs|Ms|St|vs|etc|e\.g|i\.e)\.$/.test(piece)) continue
