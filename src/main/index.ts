@@ -7,7 +7,7 @@ import type { ArcadeRow } from '../shared/arcade'
 import { EXTRAS } from '../shared/build'
 import { DEFAULT_COMBOS, resolveCombos, resolveControls, type Combos, type Controls } from '../shared/controls'
 import { sunTimes, type SunTimes } from '../shared/sun'
-import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicBar, VisualizerLook, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput } from '../shared/types'
+import type { AppDetails, MediaChoice, MediaPlayback, MediaLibrary, MediaServer, MediaSort, PlaylistChoice, PlaylistPlace, GameOptions, SteamGameDetails, PlaceMatch, Playlist, TemperatureUnit, BackdropStyle, BrowseKind, CustomBackdrop, DriveFolder, InstallOptions, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, BackdropTime, ClockCorners, ConsoleBackdropQuality, HomeData, LaunchKind, LayoutTab, MusicBar, VisualizerLook, MusicKind, MusicVolume, PowerAction, RecentsTab, Settings, SteamLayout, TabArrangement, UpdateInfo, UpdateState, HideableTab, VoicePurpose, BugReportInput, TranslatorSettings } from '../shared/types'
 import { configPath, loadConfig, recentsLayout, saveConfig, type Config } from './config'
 import * as media from './media/servers'
 import { forgetGame, readHistory, readPlaytime, toggleFavorite } from './history'
@@ -28,9 +28,10 @@ import { ensureSteamtvInFront, startHotkey, STEAMTV_APPID } from './hotkey'
 import { watchSteamFocus } from './steamFocus'
 import { stopHelpers } from './helpers'
 import { startRemoteKeys } from './remoteKeys'
-import { listen, setVoiceHints, finishListening, stopListening } from './voice'
+import { listen, setVoiceHints, finishListening, stopListening, type ListenOptions } from './voice'
 import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
-import { setSpeechListeners } from './speech'
+import { setJapaneseVoice, setSpeechListeners } from './speech'
+import { endTranslation, installVoice, japaneseVoiceInstalled, japaneseWav, quietTranslator, stopJapaneseVoice, saveTranslatorSettings, say, setTranslatorListeners, setTranslatorOpen, translate, translatorStatus } from './addons/translator'
 import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
 import { makeBugReport } from './bugReport'
@@ -152,19 +153,20 @@ function logInput(line: string): void {
   inputLogReady.then(() => appendFile(INPUT_LOG, `${new Date().toISOString().slice(11, 23)} ${line}\n`)).catch(() => {})
 }
 ipcMain.on('input:log', (_event, line: string) => logInput(line))
-ipcMain.on('voice:start', (event, purpose: VoicePurpose) =>
+ipcMain.on('voice:start', (event, purpose: VoicePurpose, options?: ListenOptions) =>
   void listen(
     (state, why) => {
       if (!event.sender.isDestroyed()) event.sender.send('voice', state, why)
     },
     logInput,
     purpose,
-    // Talking to Claude, its button shows the mic's level as it records.
-    purpose === 'conversation'
+    // Talking to Claude or through the translator, its button shows the mic's level as it records.
+    purpose === 'conversation' || purpose === 'translation'
       ? (level, speech) => {
           if (!event.sender.isDestroyed()) event.sender.send('voice:level', level, speech)
         }
-      : undefined
+      : undefined,
+    { language: options?.language, prompt: options?.prompt }
   )
 )
 ipcMain.on('voice:stop', () => stopListening())
@@ -172,6 +174,8 @@ ipcMain.on('voice:finish', () => finishListening())
 
 // The Claude app. While its screen is open, replies are spoken and a remote's Menu talks to it.
 let claudeOpen = false
+/** The translator's screen is open (an extra). */
+let translatorOpen = false
 // The music index: how its scan goes, to the window; and a first scan a minute after starting, in the background.
 setMusicIndexListener((status) => toWindow('music:index', status))
 // Shares signed in to from vaporTV mounted again first, so the scan finds them.
@@ -197,6 +201,8 @@ ipcMain.handle('claude:speak', async (_event, on: boolean) => {
 ipcMain.on('claude:quiet', () => quietClaude())
 ipcMain.on('claude:open', async (_event, open: boolean) => {
   claudeOpen = open
+  // Its Japanese voice (VOICEVOX, an extra) starts when it's first needed; it stops when the screen closes.
+  if (!open && !translatorOpen) stopJapaneseVoice()
   setClaudeVoice(open && (await loadConfig()).claudeSpeak !== false)
   if (!open) {
     stopListening()
@@ -207,6 +213,26 @@ ipcMain.handle('claude:send', async (_event, text: string) => sendToClaude(text,
 ipcMain.on('claude:interrupt', () => interruptClaude())
 ipcMain.on('claude:reset', () => endClaude())
 ipcMain.on('claude:answer', (_event, id: string, allow: boolean) => answerPermission(id, allow === true))
+// The translator (an extra): its screen talks to Claude Code and VOICEVOX through translator.ts.
+setTranslatorListeners((event) => toWindow('translator:event', event), logInput)
+// The Claude app's Japanese is said by the translator's voice too, once it's downloaded.
+if (EXTRAS) setJapaneseVoice((text) => (japaneseVoiceInstalled() ? japaneseWav(text) : Promise.resolve(null)), japaneseVoiceInstalled)
+const extrasOnly = (): void => {
+  if (!EXTRAS) throw new Error('The translator isn’t in this build')
+}
+ipcMain.handle('translator:status', () => (extrasOnly(), translatorStatus()))
+ipcMain.on('translator:open', (_event, open: boolean) => {
+  if (!EXTRAS) return
+  translatorOpen = open === true
+  setTranslatorOpen(translatorOpen)
+})
+ipcMain.handle('translator:installVoice', () => (extrasOnly(), installVoice()))
+ipcMain.handle('translator:translate', (_event, text: string, from: 'en' | 'ja') => (extrasOnly(), translate(String(text), from === 'ja' ? 'ja' : 'en')))
+ipcMain.handle('translator:say', (_event, text: string, language: 'en' | 'ja') => (extrasOnly(), say(String(text), language === 'ja' ? 'ja' : 'en')))
+ipcMain.on('translator:quiet', () => quietTranslator())
+ipcMain.on('translator:reset', () => endTranslation())
+ipcMain.handle('translator:settings', (_event, changes: Partial<TranslatorSettings>) => (extrasOnly(), saveTranslatorSettings(changes ?? {})))
+
 ipcMain.on('claude:signIn', () => {
   const bin = claudeBin()
   if (!bin) return toWindow('claude:login', { phase: 'failed', message: 'Claude Code isn’t installed on this box' })
@@ -1340,6 +1366,7 @@ app.whenReady().then(async () => {
       tap: async () => {
         if (!(await foreground.ownInFront())) return logInput('remote menu: voice search only works over vaporTV for now')
         if (claudeOpen) return send('claude:talk')
+        if (translatorOpen) return send('translator:talk')
         listen((state, why) => send('voice', state, why), logInput, musicOpens > 0 ? 'music' : 'search')
       },
       hold: async () => {

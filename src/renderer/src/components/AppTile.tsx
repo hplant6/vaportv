@@ -3,9 +3,10 @@ import { startLaunch } from '../launch'
 import { APP_SETUP_EVENT } from './AppSetupDialog'
 import { CLAUDE_EVENT } from './ClaudeApp'
 import { FILES_EVENT } from './FilesApp'
+import { TRANSLATOR_EVENT } from './TranslatorApp'
 
 /** vaporTV's own apps, by id: the event that opens each. */
-const BUILTIN_EVENTS: Record<string, string> = { files: FILES_EVENT, claude: CLAUDE_EVENT }
+const BUILTIN_EVENTS: Record<string, string> = { files: FILES_EVENT, claude: CLAUDE_EVENT, translator: TRANSLATOR_EVENT }
 
 export function AppTile({
   app,

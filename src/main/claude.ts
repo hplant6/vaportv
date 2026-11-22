@@ -7,7 +7,7 @@ import { createInterface } from 'node:readline'
 import type { ClaudeEvent, ClaudeStatus } from '../shared/types'
 import { claudeSignedIn } from './claudeLogin'
 import { ownHelper } from './helpers'
-import { speak, speechReady, stopSpeaking } from './speech'
+import { japaneseReadsKanji, speak, speechReady, stopSpeaking } from './speech'
 
 // The Claude app: a spoken conversation with Claude Code. One `claude -p` stays running for
 // the whole conversation, reading what was said (stream-json in) and streaming its reply
@@ -19,6 +19,11 @@ import { speak, speechReady, stopSpeaking } from './speech'
 // vaporTV's own code is kept at ~/Projects/vaportv and brought up to date from GitHub each
 // time a conversation starts, so a fix is made to the latest code.
 
+/** Talking in Japanese when the voice for it is Kokoro, which reads only kana. */
+const KANA_RULE = `The user may speak Japanese (a family member visiting), and speech recognition then gives you Japanese text. Answer in Japanese, written only in hiragana and katakana with no kanji: the voice can't read kanji. If asked to translate, give only the translation, in kana for Japanese or plain English for English; they pass the TV back and forth.`
+/** Talking in Japanese when VOICEVOX speaks it (an extra), which reads ordinary written Japanese. */
+const KANJI_RULE = `The user may speak Japanese (a family member visiting), and speech recognition then gives you Japanese text. Answer in natural Japanese, written normally with kanji. If asked to translate, give only the translation, in Japanese or plain English; they pass the TV back and forth.`
+
 /** Short and plain: it's heard through a TV and read from across the room. */
 export const VOICE_PROMPT = `You are in a spoken conversation through a TV in a living room.
 The user talks into a microphone; speech recognition turns it into text, so expect misheard words and infer what was meant. If you truly can't tell, ask one short question.
@@ -28,7 +33,12 @@ Your reply is read aloud by text-to-speech and also shown in large type on the T
 - Plain sentences only: no markdown, lists, headings, tables, code, emoji or URLs.
 - Write numbers, units and symbols as they should be spoken when that's clearer.
 - Use web search when the answer depends on current or specific facts.
-- The user may speak Japanese (a family member visiting), and speech recognition then gives you Japanese text. Answer in Japanese, written only in hiragana and katakana with no kanji: the voice can't read kanji. If asked to translate, give only the translation, in kana for Japanese or plain English for English; they pass the TV back and forth.`
+- ${KANA_RULE}`
+
+/** The voice prompt, with the Japanese rule the voice in use can read. */
+export function voicePrompt(kanji: boolean): string {
+  return kanji ? VOICE_PROMPT.replace(KANA_RULE, KANJI_RULE) : VOICE_PROMPT
+}
 
 /** Where vaporTV's code lives on this machine, and the Node that builds it (set up over SSH, see docs/box-dev.md). */
 export const SOURCE_DIR = join(homedir(), 'Projects', 'vaportv')
@@ -306,7 +316,7 @@ async function start(model: string): Promise<ChildProcess> {
     '--setting-sources',
     '',
     '--append-system-prompt',
-    `${VOICE_PROMPT}\n\n${workPrompt(source)}`
+    `${voicePrompt(japaneseReadsKanji())}\n\n${workPrompt(source)}`
   ]
   log(`claude: starting ${bin} (${model})`)
   const child = spawn(bin, args, { cwd: existsSync(SOURCE_DIR) ? SOURCE_DIR : WORKDIR, stdio: ['pipe', 'pipe', 'pipe'], env: { ...toolEnv(), CLAUDE_CODE_ENTRYPOINT: 'vaportv' } })

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ClaudeEvent, ClaudeLoginState, GooglePhotosProgress, MusicIndexStatus, SteamTvApi, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
+import type { ClaudeEvent, ClaudeLoginState, GooglePhotosProgress, MusicIndexStatus, SteamTvApi, TranslatorEvent, UpdateState, VoicePurpose, VoiceState } from '../shared/types'
 
 const api: SteamTvApi = {
   getHome: () => ipcRenderer.invoke('home:get'),
@@ -322,6 +322,26 @@ const api: SteamTvApi = {
       return () => void ipcRenderer.removeListener('music:index', listener)
     }
   },
+  translator: {
+    status: () => ipcRenderer.invoke('translator:status'),
+    setOpen: (open) => ipcRenderer.send('translator:open', open),
+    installVoice: () => ipcRenderer.invoke('translator:installVoice'),
+    translate: (text, from) => ipcRenderer.invoke('translator:translate', text, from),
+    say: (text, language) => ipcRenderer.invoke('translator:say', text, language),
+    quiet: () => ipcRenderer.send('translator:quiet'),
+    reset: () => ipcRenderer.send('translator:reset'),
+    saveSettings: (changes) => ipcRenderer.invoke('translator:settings', changes),
+    onEvent: (callback) => {
+      const listener = (_event: unknown, event: TranslatorEvent): void => callback(event)
+      ipcRenderer.on('translator:event', listener)
+      return () => ipcRenderer.removeListener('translator:event', listener)
+    },
+    onTalk: (callback) => {
+      const listener = (): void => callback()
+      ipcRenderer.on('translator:talk', listener)
+      return () => ipcRenderer.removeListener('translator:talk', listener)
+    }
+  },
   claude: {
     status: () => ipcRenderer.invoke('claude:status'),
     setOpen: (open) => ipcRenderer.send('claude:open', open),
@@ -354,7 +374,7 @@ const api: SteamTvApi = {
       return () => ipcRenderer.removeListener('claude:login', listener)
     }
   },
-  startVoice: (purpose) => ipcRenderer.send('voice:start', purpose ?? 'search'),
+  startVoice: (purpose, options) => ipcRenderer.send('voice:start', purpose ?? 'search', options ?? {}),
   stopVoice: () => ipcRenderer.send('voice:stop'),
   finishVoice: () => ipcRenderer.send('voice:finish'),
   makeBugReport: (input) => ipcRenderer.invoke('bugReport:make', input),

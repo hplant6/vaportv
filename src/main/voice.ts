@@ -3,7 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { createWriteStream, existsSync } from 'node:fs'
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { VoicePurpose, VoiceState } from '../shared/types'
@@ -31,20 +31,36 @@ const LIMITS: Record<VoicePurpose, { endSilenceMs: number; noSpeechMs: number; m
   // Searching the Music app: as search.
   music: { endSilenceMs: 1000, noSpeechMs: 5000, maxMs: 10_000, overNoiseDb: 12 },
   dictation: { endSilenceMs: 1500, noSpeechMs: 6000, maxMs: 30_000, overNoiseDb: 12 },
-  // Talking to Claude from the sofa: quieter speech counts, and a pause to think mid-sentence shouldn't end it.
-  conversation: { endSilenceMs: 2200, noSpeechMs: 10_000, maxMs: 60_000, overNoiseDb: 8 }
+  // Talking to Claude from the sofa: quieter speech counts, and no pause ends it: only the button
+  // (Send) does. The ten minutes is just so a forgotten microphone doesn't record all night.
+  conversation: { endSilenceMs: Infinity, noSpeechMs: 600_000, maxMs: 600_000, overNoiseDb: 8 },
+  // The translator: as talking to Claude, but someone may take a while to start, and a pause ends their turn a little sooner.
+  translation: { endSilenceMs: 1600, noSpeechMs: 20_000, maxMs: 45_000, overNoiseDb: 8 }
 }
+/** Talking (to Claude, or through the translator) rather than searching: quieter speech counts, and a press before any speech just keeps listening. */
+const talking = (purpose: VoicePurpose): boolean => purpose === 'conversation' || purpose === 'translation'
 /** Nothing counted as speech, but something this far over the room was there: worth transcribing anyway (talking to Claude). */
 const MAYBE_SPEECH_DB = 4
 /** vaporTV's music fades out as search opens; the room is measured once it has. */
 const MUSIC_FADE_MS = 400
 
-const MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin'
-const MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-small.en.bin')
-const MULTI_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin'
-const MULTI_MODEL = join(homedir(), '.local', 'share', 'steamtv', 'voice', 'ggml-small.bin')
+const MODEL_BASE = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main'
+const MODEL_DIR = join(homedir(), '.local', 'share', 'steamtv', 'voice')
+/** English: small and quick. */
+const MODEL = join(MODEL_DIR, 'ggml-small.en.bin')
+/** Any other language (the translator's Japanese): multilingual small (~490 MB). large-v3-turbo spelled a little
+ *  better but took three times as long (8.5 s against 2.9 s for a 6 s sentence), and Claude reads past small's slips. */
+const MULTILINGUAL_MODEL = join(MODEL_DIR, 'ggml-small.bin')
 /** The languages talking to Claude hears: a clip it takes for any other is English mumbled. */
 const LANGUAGES = ['en', 'ja']
+/** What whisper makes of near-silence in Japanese (it learned from subtitled videos): nothing said. */
+const JA_PHANTOMS = /^(ご視聴ありがとうございました|チャンネル登録|字幕|おやすみなさい|ありがとうございました)[。!！\s]*$/
+
+/** Listening in a language other than English, and words to expect. */
+export interface ListenOptions {
+  language?: string
+  prompt?: string
+}
 /** whisper's prompt is cut at about 224 tokens; titles beyond this many characters wouldn't count. */
 const HINTS_MAX = 600
 /** Words said to Claude that whisper wouldn't otherwise spell right ("paper TV"). */
@@ -85,13 +101,13 @@ export function voiceReady(): boolean {
   return existsSync(whisperCli())
 }
 
-async function ensureModel(send: Send, log: Log, model = MODEL, url = MODEL_URL): Promise<void> {
+async function ensureModel(model: string, send: Send, log: Log): Promise<void> {
   if (existsSync(model)) return
   send({ phase: 'preparing' })
-  log('voice: downloading the speech model')
-  await mkdir(join(model, '..'), { recursive: true })
+  log(`voice: downloading the speech model ${basename(model)}`)
+  await mkdir(MODEL_DIR, { recursive: true })
   const part = `${model}.part`
-  const res = await fetch(url)
+  const res = await fetch(`${MODEL_BASE}/${basename(model)}`)
   if (!res.ok || !res.body) throw new Error(`Couldn't download the speech model (${res.status})`)
   await pipeline(Readable.fromWeb(res.body as import('node:stream/web').ReadableStream), createWriteStream(part))
   await rename(part, model)
@@ -157,7 +173,7 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void, onLevel?: 
     // Send: whatever's been said so far (whisper says if it was nothing).
     finishNow = () => {
       // Talking to Claude, a press before a word's been said is "I'm about to talk", not Send.
-      if (purpose === 'conversation' && !heard) {
+      if (talking(purpose) && !heard) {
         waitFrom = elapsed
         return log('voice: pressed before speaking, still listening')
       }
@@ -166,7 +182,7 @@ function record(log: Log, purpose: VoicePurpose, onReady: () => void, onLevel?: 
     }
     // Given up with nothing counted as speech: talking to Claude, something near it is still sent.
     const giveUp = (): void => {
-      const maybe = purpose === 'conversation' && loudest >= room + MAYBE_SPEECH_DB
+      const maybe = talking(purpose) && loudest >= room + MAYBE_SPEECH_DB
       log(`voice: nothing over ${threshold.toFixed(1)} dB (loudest ${loudest.toFixed(1)} dB)${maybe ? ', transcribing anyway' : ''}`)
       finish(maybe ? Buffer.concat(chunks) : null)
     }
@@ -239,7 +255,7 @@ function wav(pcm: Buffer): Buffer {
 /** whisper's text, less its notes on what it heard besides words ("[BLANK_AUDIO]", "(music)"). */
 export function cleanTranscript(out: string): string {
   return out
-    .replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*/g, ' ')
+    .replace(/\[[^\]]*\]|\([^)]*\)|（[^）]*）|\*[^*]*\*/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[.!?。！？]+$/, '')
@@ -273,11 +289,13 @@ function whisper(model: string, file: string, language: string, log: Log, prompt
   })
 }
 
-async function transcribe(file: string, log: Log, purpose: VoicePurpose): Promise<string> {
+async function transcribe(file: string, log: Log, purpose: VoicePurpose, options: ListenOptions): Promise<string> {
+  // A language given (the translator knows whose turn it is): that language only.
+  if (options.language) return (await whisper(options.language === 'en' ? MODEL : MULTILINGUAL_MODEL, file, options.language, log, options.prompt)).text
   // Game names help a search; in a description they'd only tempt it to hear them.
   if (purpose !== 'conversation') return (await whisper(MODEL, file, 'en', log, hints && purpose === 'search' ? hints : undefined)).text
   // Talking to Claude: English or Japanese (a Japanese relative at the sofa), whichever it hears.
-  const heard = await whisper(MULTI_MODEL, file, 'auto', log, CONVERSATION_HINTS)
+  const heard = await whisper(MULTILINGUAL_MODEL, file, 'auto', log, CONVERSATION_HINTS)
   if (!heard.language || LANGUAGES.includes(heard.language)) {
     if (heard.language === 'ja') log('voice: heard Japanese')
     return heard.text
@@ -287,11 +305,17 @@ async function transcribe(file: string, log: Log, purpose: VoicePurpose): Promis
 }
 
 /** Listens once (for a search, or dictating a bug report) and reports along the way: listening, thinking, then what was heard (or why not). */
-export async function listen(report: (state: VoiceState, purpose: VoicePurpose) => void, log: Log, purpose: VoicePurpose = 'search', onLevel?: OnLevel): Promise<void> {
+export async function listen(
+  report: (state: VoiceState, purpose: VoicePurpose) => void,
+  log: Log,
+  purpose: VoicePurpose = 'search',
+  onLevel?: OnLevel,
+  options: ListenOptions = {}
+): Promise<void> {
   if (busy) {
     log('voice: already listening')
-    // The Claude screen waits on an answer; tell it there wasn't one, so it stops waiting.
-    if (purpose === 'conversation') report({ phase: 'error', message: "Didn't hear anything" }, purpose)
+    // The Claude and translator screens wait on an answer; tell them there wasn't one, so they stop waiting.
+    if (talking(purpose)) report({ phase: 'error', message: "Didn't hear anything" }, purpose)
     return
   }
   cancelled = false
@@ -306,8 +330,8 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
   try {
     // At once, so the search screen opens (and the music fades) before the room is measured.
     send({ phase: 'starting' })
-    await ensureModel(send, log)
-    if (purpose === 'conversation') await ensureModel(send, log, MULTI_MODEL, MULTI_URL)
+    await ensureModel(MODEL, send, log)
+    if (purpose === 'conversation' || (options.language && options.language !== 'en')) await ensureModel(MULTILINGUAL_MODEL, send, log)
     const mic = await microphone()
     if (!mic) {
       send({ phase: 'error', message: 'No microphone found. Plug one in and try again.' })
@@ -330,10 +354,11 @@ export async function listen(report: (state: VoiceState, purpose: VoicePurpose) 
     const file = join(tmpdir(), `vaportv-voice-${process.pid}.wav`)
     await writeFile(file, wav(pcm))
     const started = performance.now()
-    const text = await transcribe(file, log, purpose).finally(() => rm(file, { force: true }))
+    const text = await transcribe(file, log, purpose, options).finally(() => rm(file, { force: true }))
     log(`voice: heard "${text}" in ${Math.round(performance.now() - started)} ms`)
     // Near-silence can come back as the prompt itself: that's nothing said.
-    if (purpose === 'conversation' && text && CONVERSATION_HINTS.toLowerCase().includes(text.toLowerCase())) {
+    const phantom = options.prompt ?? (purpose === 'conversation' ? CONVERSATION_HINTS : '')
+    if (talking(purpose) && text && ((phantom && phantom.toLowerCase().includes(text.toLowerCase())) || (options.language === 'ja' && JA_PHANTOMS.test(text)))) {
       send({ phase: 'error', message: "Didn't catch that" })
       return
     }

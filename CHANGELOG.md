@@ -11,6 +11,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 ### Added
 - Claude app: talk to it in Japanese. It hears English or Japanese by itself (a second speech model, about 490 MB, downloads the first time), answers Japanese in a Japanese voice, and can translate back and forth between two people at the TV.
 
+### Changed
+- Claude app: a pause no longer ends what you're saying. It listens until you press the button to send.
+
 ## 0.18.0
 
 ### Added

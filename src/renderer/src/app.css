@@ -5035,6 +5035,142 @@ button {
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* The translator (an extra): the Claude app's screen, with who's speaking, each line and its translation. */
+.translator-app .claude-stop svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.translator-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  margin: auto 0;
+}
+
+.translator-pick .claude-new {
+  position: static;
+}
+
+.translator-people {
+  display: flex;
+  gap: 48px;
+}
+
+.translator-person {
+  width: 420px;
+  height: 220px;
+  border-radius: 28px;
+  border: 3px solid var(--color-panel-line);
+  background: var(--color-panel);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition:
+    transform var(--dur-focus) var(--ease-focus),
+    border-color var(--dur-focus) var(--ease-focus),
+    background var(--dur-focus) var(--ease-focus);
+}
+
+.translator-person:focus {
+  outline: none;
+  transform: scale(1.05);
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+}
+
+.translator-person-name {
+  font-size: var(--text-display);
+}
+
+.translator-person-lang {
+  font-size: var(--text-label);
+  opacity: 0.6;
+}
+
+.translator-line {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* What was said, small and dim; its translation, large, for the one listening. */
+.translator-said {
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: 1.4;
+  opacity: 0.6;
+}
+
+.translator-who {
+  color: var(--color-accent);
+  margin-right: 8px;
+}
+
+.translator-line.from-en .claude-reply {
+  font-size: var(--text-display);
+}
+
+/* Whose turn it is, above the talk button, big enough to read from the sofa. */
+.translator-turn {
+  margin: 0;
+  font-size: var(--text-title);
+  color: var(--color-accent);
+}
+
+.translator-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 900px;
+  margin: auto;
+}
+
+.translator-setting {
+  width: 100%;
+  height: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 32px;
+  border-radius: 18px;
+  border: 2px solid var(--color-panel-line);
+  background: var(--color-panel);
+  color: var(--color-text);
+  font-size: var(--text-label);
+  transition:
+    border-color var(--dur-focus) var(--ease-focus),
+    background var(--dur-focus) var(--ease-focus);
+}
+
+.translator-setting:focus {
+  outline: none;
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+}
+
+.translator-setting-label {
+  opacity: 0.7;
+}
+
+.translator-setting-value {
+  color: var(--color-accent);
+}
+
+.translator-credit {
+  margin: 8px 0 0;
+  font-size: var(--text-small);
+  opacity: 0.5;
+  text-align: center;
+}
+
 /* Text subtitles still coming from the server (the first time can take a minute or two): a note in the corner. */
 .media-subs-loading {
   position: absolute;

@@ -19,6 +19,8 @@ export interface MediaAccount {
 }
 
 export interface Config {
+  /** The translator's people, wording and voice (an extra). */
+  translator?: Partial<import('../shared/types').TranslatorSettings>
   /** The Claude app's model (a Claude Code alias or model id; default sonnet, quick to answer aloud). */
   claudeModel?: string
   /** The Claude app speaks its replies (default on); off, they're only written. */

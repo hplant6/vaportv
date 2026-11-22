@@ -35,10 +35,19 @@ export type SpeakingListener = (speaking: boolean) => void
 
 let worker: ChildProcess | null = null
 let outDir: string | null = null
-/** Sentences sent to the worker whose WAV hasn't come back yet. */
-let pending = 0
-/** WAVs waiting their turn to play. */
-const queue: string[] = []
+/** A sentence to say: its WAV once it's made (none if it couldn't be), in the order they were given. */
+interface Slot {
+  file?: string
+  ready: boolean
+}
+/** Everything to be said, in order: a sentence plays once it's made and those before it have played. */
+const slots: Slot[] = []
+/** The slots waiting on the Kokoro worker, which answers in the order it's asked. */
+const workerSlots: Slot[] = []
+/** Japanese said by another voice (VOICEVOX, one of the extras), set by the translator: a WAV, or null to leave it to Kokoro. */
+let japaneseVoice: ((text: string) => Promise<string | null>) | null = null
+let japaneseReady: () => boolean = () => false
+const JAPANESE = /[\u3040-\u30ff\u3400-\u9fff]/
 let player: ChildProcess | null = null
 let speaking = false
 /** Counts stopSpeaking calls: a sentence still on its way from before one is dropped. */
@@ -95,20 +104,56 @@ export async function prepareSpeech(): Promise<void> {
   await downloading
 }
 
+/** Waiting for everything queued to have been said (the translator, before it listens again). */
+const quietWaiters: (() => void)[] = []
+
 function setSpeaking(on: boolean): void {
   if (speaking === on) return
   speaking = on
   onSpeaking(on)
+  if (!on) for (const done of quietWaiters.splice(0)) done()
+}
+
+/** Resolves once everything queued has been said (or stopped). */
+export function whenQuiet(): Promise<void> {
+  return speaking ? new Promise((resolve) => quietWaiters.push(resolve)) : Promise.resolve()
+}
+
+/** Japanese sentences go to `voice` from now on (falling back to Kokoro when it gives none); `ready` says whether it's there (it reads kanji). */
+export function setJapaneseVoice(voice: ((text: string) => Promise<string | null>) | null, ready: () => boolean = () => voice !== null): void {
+  japaneseVoice = voice
+  japaneseReady = ready
+}
+
+/** Whether Japanese is said by a voice that reads kanji (else Kokoro, which needs kana). */
+export function japaneseReadsKanji(): boolean {
+  return japaneseVoice !== null && japaneseReady()
+}
+
+/** Plays a WAV made elsewhere (the translator's Japanese voice) after whatever is queued; it's deleted once played. */
+export function playWav(file: string): void {
+  slots.push({ file, ready: true })
+  setSpeaking(true)
+  playNext()
+}
+
+function fill(slot: Slot, file?: string): void {
+  slot.file = file
+  slot.ready = true
+  playNext()
 }
 
 function settle(): void {
-  if (!player && !queue.length && !pending) setSpeaking(false)
+  if (!player && !slots.length) setSpeaking(false)
 }
 
 function playNext(): void {
   if (player) return
-  const file = queue.shift()
-  if (!file) return settle()
+  // Sentences that couldn't be said are passed over; one still being made holds up those after it.
+  while (slots[0]?.ready && !slots[0].file) slots.shift()
+  if (!slots.length) return settle()
+  if (!slots[0].ready) return
+  const file = slots.shift()!.file!
   const child = spawn('paplay', [file], { stdio: 'ignore' })
   ownHelper(child)
   player = child
@@ -138,12 +183,10 @@ async function startWorker(): Promise<ChildProcess> {
   worker = child
   createInterface({ input: child.stdout! }).on('line', (line) => {
     if (worker !== child) return
-    pending = Math.max(0, pending - 1)
+    const slot = workerSlots.shift()
     const file = line.trim()
-    if (file.endsWith('.wav')) {
-      queue.push(file)
-      playNext()
-    } else settle()
+    if (slot) fill(slot, file.endsWith('.wav') ? file : undefined)
+    else if (file.endsWith('.wav')) void rm(file, { force: true })
   })
   child.stderr!.on('data', (chunk: Buffer) => {
     // sherpa-onnx notes each phoneme it has no sound for (a syllable mark eSpeak adds): not worth a log line each.
@@ -155,7 +198,7 @@ async function startWorker(): Promise<ChildProcess> {
     if (worker !== child) return
     log(`speech: kokoro exited ${code}`)
     worker = null
-    pending = 0
+    for (const slot of workerSlots.splice(0)) fill(slot)
     settle()
   })
   return child
@@ -177,20 +220,30 @@ export function speakable(text: string): string {
 export async function speak(text: string): Promise<void> {
   const line = speakable(text)
   if (!/[\p{L}\p{N}]/u.test(line)) return
-  // Counted at once: speaking has begun even while the voice downloads.
-  pending++
+  // Its place is taken at once (speaking has begun even while a voice downloads), so sentences keep their order.
+  const slot: Slot = { ready: false }
+  slots.push(slot)
   setSpeaking(true)
   const generation = stops
   try {
+    if (japaneseVoice && JAPANESE.test(line)) {
+      const file = await japaneseVoice(line).catch((err) => {
+        log(`speech: Japanese voice: ${err}`)
+        return null
+      })
+      if (generation !== stops) {
+        if (file) void rm(file, { force: true })
+        return
+      }
+      if (file) return fill(slot, file)
+    }
     await prepareSpeech()
     const child = await startWorker()
     if (generation !== stops) return
+    workerSlots.push(slot)
     child.stdin!.write(`${line}\n`)
   } catch (err) {
-    if (generation === stops) {
-      pending = Math.max(0, pending - 1)
-      settle()
-    }
+    if (generation === stops) fill(slot)
     throw err
   }
 }
@@ -200,11 +253,11 @@ export function stopSpeaking(): void {
   stops++
   const child = worker
   worker = null
-  pending = 0
+  workerSlots.length = 0
   child?.kill()
   player?.kill()
   player = null
-  for (const file of queue.splice(0)) void rm(file, { force: true })
+  for (const slot of slots.splice(0)) if (slot.file) void rm(slot.file, { force: true })
   if (outDir) void rm(outDir, { recursive: true, force: true })
   outDir = null
   setSpeaking(false)

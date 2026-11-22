@@ -4,6 +4,7 @@ import type { AppItem } from '../shared/types'
 import type { Config } from './config'
 import home from '../../fixtures/home.json'
 import { artUrl } from './library/art'
+import { EXTRAS } from '../shared/build'
 
 // App tiles of the user's own, beyond the built-in ones (config `customApps`): a name,
 // the Steam shortcut it opens, and a tile picture kept in ~/.config/steamtv/tiles.
@@ -35,8 +36,11 @@ export function customAppItems(config: Config): AppItem[] {
   return customApps(config).map((app) => ({ id: app.id, name: app.name, tile: app.tile ?? '' }))
 }
 
+/** The translator's tile: one of the extras, so not in the public build. */
+const EXTRA_APPS: AppItem[] = EXTRAS ? [{ id: 'translator', name: 'Translate', tile: '' }] : []
+
 /** Every app tile: the built-in ones, then your own. */
-export const appCatalog = (config: Config): AppItem[] => [...home.apps, ...home.moreApps, ...customAppItems(config)]
+export const appCatalog = (config: Config): AppItem[] => [...home.apps, ...home.moreApps, ...EXTRA_APPS, ...customAppItems(config)]
 
 /** The custom app a Steam shortcut belongs to, by its name. */
 export function customAppFor(config: Config, shortcutName: string): CustomApp | undefined {

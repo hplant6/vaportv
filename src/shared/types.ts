@@ -299,7 +299,36 @@ export interface BugReport {
 }
 
 /** What voice is listening for: a search (a few words, the library's names expected) or dictation (sentences). */
-export type VoicePurpose = 'search' | 'dictation' | 'conversation' | 'music'
+export type VoicePurpose = 'search' | 'dictation' | 'conversation' | 'music' | 'translation'
+
+/** The translator's two people and how it speaks for them (config.json `translator`). */
+export interface TranslatorSettings {
+  /** The English speaker, in English and as Japanese writes it. */
+  you: string
+  youJa: string
+  /** The Japanese speaker, in English and in Japanese (with -san, as they're called). */
+  them: string
+  themJa: string
+  /** Who they are to each other, in a sentence, for the interpreter. */
+  context: string
+  /** What the English speaker's words call the Japanese speaker: お義母さん, お母さん or their name (themJa). */
+  address: 'okaasan' | 'mother' | 'name'
+  /** How politely the English speaker's words come out in Japanese. */
+  tone: 'polite' | 'casual'
+  /** The Japanese voice (a VOICEVOX style id). */
+  voice: number
+}
+
+export interface TranslatorStatus {
+  claudeInstalled: boolean
+  signedIn: boolean
+  /** VOICEVOX is downloaded. */
+  voiceInstalled: boolean
+  settings: TranslatorSettings
+  voices: { id: number; name: string }[]
+}
+
+export type TranslatorEvent = { type: 'installing'; done: number; total: number; unpacking?: boolean }
 
 /** The Claude app's view of what it needs: Claude Code installed, speech built in, a conversation going, a reply on its way. */
 export interface ClaudeStatus {
@@ -1132,8 +1161,8 @@ export interface SteamTvApi {
   /** Select + Start held with vaporTV in front (the media player closes its video on it). */
   onCloseCombo(callback: () => void): () => void
   onArtUpdated(callback: () => void): () => void
-  /** Listens once (for a search unless said); what happens comes through onVoice. */
-  startVoice(purpose?: VoicePurpose): void
+  /** Listens once (for a search unless said; in English unless `language` says); what happens comes through onVoice. */
+  startVoice(purpose?: VoicePurpose, options?: { language?: string; prompt?: string }): void
   stopVoice(): void
   /** Send: stops listening now and works out what was said so far. */
   finishVoice(): void
@@ -1239,6 +1268,26 @@ export interface SteamTvApi {
     signIn(): void
     cancelSignIn(): void
     onLogin(callback: (state: ClaudeLoginState) => void): () => void
+  }
+  /** The translator (an extra: absent from the public build). */
+  translator: {
+    status(): Promise<TranslatorStatus>
+    /** The screen opened or closed (the Japanese voice runs while it's open). */
+    setOpen(open: boolean): void
+    /** Downloads the Japanese voice; progress comes through onEvent. */
+    installVoice(): Promise<void>
+    /** The translation of what was said ("???" if it couldn't be made out). */
+    translate(text: string, from: 'en' | 'ja'): Promise<string>
+    /** Says something aloud; resolves once it's been said or stopped. */
+    say(text: string, language: 'en' | 'ja'): Promise<void>
+    /** Stops speaking now. */
+    quiet(): void
+    /** Forgets the conversation. */
+    reset(): void
+    saveSettings(changes: Partial<TranslatorSettings>): Promise<TranslatorSettings>
+    onEvent(callback: (event: TranslatorEvent) => void): () => void
+    /** A remote's Menu tapped while the screen is open: talk. */
+    onTalk(callback: () => void): () => void
   }
   /** A GitHub issue link (and its QR code) for a bug report. */
   makeBugReport(input: BugReportInput): Promise<BugReport>

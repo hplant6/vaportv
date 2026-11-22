@@ -33,6 +33,8 @@ import { AppSetupDialog } from './components/AppSetupDialog'
 import { Welcome } from './components/Welcome'
 import { FilesApp } from './components/FilesApp'
 import { ClaudeApp } from './components/ClaudeApp'
+import { TranslatorApp } from './components/TranslatorApp'
+import { EXTRAS } from '../../shared/build'
 import { MusicApp } from './components/MusicApp'
 import { SearchScreen } from './components/SearchScreen'
 import { BugReportDialog } from './components/BugReportDialog'
@@ -512,6 +514,7 @@ export function App() {
       {screen === 'settings' && <Settings onNavigate={setScreen} />}
       <FilesApp />
       <ClaudeApp />
+      {EXTRAS && <TranslatorApp />}
       <MusicApp />
       <SongMenu />
       <PlaylistPicker />
