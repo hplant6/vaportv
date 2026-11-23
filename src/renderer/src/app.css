@@ -5496,8 +5496,8 @@ button {
 
 .music-cover-stage {
   position: relative;
-  width: 520px;
-  height: 520px;
+  width: 440px;
+  height: 440px;
   perspective: 1600px;
 }
 

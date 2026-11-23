@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { FALLBACK, paletteFromPixels } from './palette'
-import { musicAnalyser } from './player'
+import { musicLevels } from './levels'
 
 // Now playing's album cover, in the middle of the visualizer: dancing to the music, with a glow
 // in the cover's own colour behind it. A new cover fades in over the old one.
 //
-// The dance: facing you at rest, it wanders (drifting, turning and tipping) along smooth random
-// paths, each its own, so it never settles into a pattern; and each kick throws it a random way
-// (turned, tipped, nudged, a little bigger) on springs that bring it back with a slight overshoot.
+// The dance hears the music as the visualizer does (levels.ts, the same reading each frame), so
+// it moves on the kicks the visualizer shows, not after them. On a kick it strikes a new pose:
+// leaning a random way (any corner tipped back or forward) and shifted towards it, reached in a
+// fraction of a second on springs; with no kicks it still changes pose every few seconds.
+// Between poses it keeps drifting, more when it's loud. On every kick it lifts and swells at
+// once, and it rolls with the visualizer's colour swing, so the two move together.
 
 /** The cover's liveliest colour, for its glow; vaporTV's amber without one. */
 function glowColour(url: string | undefined): Promise<string> {
@@ -51,34 +54,34 @@ function wander(): (t: number) => number {
   }
 }
 
-/** A damped spring towards 0: kicked by an impulse, it swings back with a little overshoot. */
-function spring(stiffness = 70, damping = 9): { value: number; kick(v: number): void; step(dt: number): void } {
+/** A spring following a target: quick to get there, with a little overshoot. */
+function spring(stiffness = 150, damping = 16): { value: number; target: number; step(dt: number): void } {
   let velocity = 0
   return {
     value: 0,
-    kick(v) {
-      velocity += v
-    },
+    target: 0,
     step(dt) {
-      velocity += (-stiffness * this.value - damping * velocity) * dt
-      this.value += velocity * dt
+      // In small steps, so a slow frame can't throw it out of control.
+      for (let left = dt; left > 0; left -= 1 / 240) {
+        const h = Math.min(left, 1 / 240)
+        velocity += (stiffness * (this.target - this.value) - damping * velocity) * h
+        this.value += velocity * h
+      }
     }
-  }
-}
-
-/** A level against the song's own quiet and loud (as the visualizer's), so a quiet track has kicks too. */
-function gauge(): (x: number, dt: number) => number {
-  let low = 1
-  let high = 0
-  return (x, dt) => {
-    low = x < low ? x : low + (x - low) * Math.min(1, dt * 0.15)
-    high = x > high ? x : high + (x - high) * Math.min(1, dt * 0.12)
-    return Math.min(1, Math.max(0, (x - low) / Math.max(high - low, 0.08)))
   }
 }
 
 /** -1 or 1, at random. */
 const side = (): number => (Math.random() < 0.5 ? -1 : 1)
+/** A random number from `a` to `b`. */
+const between = (a: number, b: number): number => a + Math.random() * (b - a)
+
+/** The cover's pose limits: degrees for turning (left/right), tipping (top/bottom) and rolling; pixels for shifting. */
+const POSE = { turn: [8, 22], tip: [6, 17], roll: [0.5, 4.5], x: [14, 52], y: [10, 40] } as const
+/** A kick strikes a new pose at most this often (seconds); each kick still lifts it. */
+const POSE_EVERY = 0.45
+/** With no kicks, a new pose after this long (seconds), give or take a second. */
+const POSE_IDLE = 3
 
 export function FloatingCover({ cover, playing }: { cover?: string; playing: boolean }) {
   const box = useRef<HTMLDivElement>(null)
@@ -100,60 +103,56 @@ export function FloatingCover({ cover, playing }: { cover?: string; playing: boo
   const playingRef = useRef(playing)
   playingRef.current = playing
   useEffect(() => {
-    const bins = new Uint8Array(512)
-    // Each part of the wander on its own path, at its own pace.
-    const path = { x: wander(), y: wander(), turn: wander(), tip: wander(), roll: wander() }
-    const beat = { turn: spring(), tip: spring(), roll: spring(80, 10), x: spring(60, 9), y: spring(60, 9), size: spring(120, 12) }
-    let bass = 0
-    const measure = gauge()
-    let kickLevel = 0
-    let kickSlow = 0
-    let sinceKick = 1
+    const drift = { x: wander(), y: wander(), turn: wander(), tip: wander(), roll: wander() }
+    const pose = { x: spring(), y: spring(), turn: spring(), tip: spring(), roll: spring() }
+    let seenBeats = 0
+    let sincePose = 0
+    let idleFor = POSE_IDLE
     let frame = 0
     let last = performance.now()
     let t = 0
+    const strike = (energy: number): void => {
+      const amp = 0.55 + energy * 0.6
+      const turn = side()
+      const tip = side()
+      pose.turn.target = turn * between(...POSE.turn) * amp
+      pose.tip.target = tip * between(...POSE.tip) * amp
+      pose.roll.target = side() * between(...POSE.roll) * amp
+      // Shifted the way it leans, mostly: a turned-away edge goes further that way.
+      pose.x.target = (Math.random() < 0.8 ? turn : -turn) * between(...POSE.x) * amp
+      pose.y.target = (Math.random() < 0.8 ? -tip : tip) * between(...POSE.y) * amp
+      sincePose = 0
+      idleFor = POSE_IDLE + between(-1, 1)
+    }
     const tick = (now: number): void => {
       frame = requestAnimationFrame(tick)
       const dt = Math.min((now - last) / 1000, 0.1)
       last = now
-      // Paused: the wander slows to a near stop where it is rather than jumping.
-      t += dt * (playingRef.current ? 1 : 0.15)
-      const analyser = playingRef.current ? musicAnalyser() : null
-      let level = 0
-      if (analyser) {
-        analyser.getByteFrequencyData(bins)
-        let sum = 0
-        for (let i = 1; i < 10; i++) sum += bins[i]
-        level = Math.pow(sum / 9 / 255, 1.6)
+      const playing = playingRef.current
+      const levels = musicLevels(now, playing)
+      const { bass, kick, energy, hue } = levels
+      // Paused: the drift slows to a near stop where it is, and it keeps its pose.
+      t += dt * (playing ? 0.6 + energy * 0.8 : 0.1)
+      if (playing) {
+        sincePose += dt
+        const kicked = levels.beats !== seenBeats
+        if ((kicked && sincePose >= POSE_EVERY) || sincePose >= idleFor) strike(energy)
       }
-      // Quick to rise, slower to fall: with the beat, without flicker.
-      bass += (level - bass) * (level > bass ? 0.5 : 0.12)
-      // A kick: the bass jumping well over where it's been lately. Each throws it a different way.
-      sinceKick += dt
-      const raw = analyser ? measure(level, dt) : 0
-      kickLevel += (raw - kickLevel) * (raw > kickLevel ? 0.6 : 0.1)
-      if (kickLevel - kickSlow > 0.22 && kickLevel > 0.55 && sinceKick > 0.25) {
-        sinceKick = 0
-        const k = 0.6 + Math.random() * 0.8
-        beat.turn.kick(side() * k * (40 + Math.random() * 50))
-        beat.tip.kick(side() * k * (25 + Math.random() * 40))
-        beat.roll.kick(side() * k * (8 + Math.random() * 14))
-        beat.x.kick(side() * k * Math.random() * 160)
-        beat.y.kick(side() * k * Math.random() * 120)
-        beat.size.kick(k * 0.5)
-      }
-      kickSlow += (kickLevel - kickSlow) * Math.min(1, dt * 4)
-      for (const s of Object.values(beat)) s.step(dt)
+      seenBeats = levels.beats
+      for (const s of Object.values(pose)) s.step(dt)
       if (box.current) {
-        const x = path.x(t * 0.11) * 18 + beat.x.value
-        const y = path.y(t * 0.14) * 14 + beat.y.value
-        const turn = path.turn(t * 0.09) * 9 + beat.turn.value
-        const tip = path.tip(t * 0.12) * 6 + beat.tip.value
-        const roll = path.roll(t * 0.1) * 2.5 + beat.roll.value
-        const size = 1 + bass * 0.03 + beat.size.value
+        const sway = 0.5 + energy * 0.8
+        const x = pose.x.value + drift.x(t * 0.5) * 10 * sway
+        // On a kick it lifts at once, falling back as the kick fades.
+        const y = pose.y.value + drift.y(t * 0.55) * 8 * sway - kick * 14
+        const turn = pose.turn.value + drift.turn(t * 0.45) * 5 * sway
+        const tip = pose.tip.value + drift.tip(t * 0.5) * 4 * sway
+        // Rolling with the visualizer's colour swing, which is thrown one way then the other on the kicks.
+        const roll = pose.roll.value + drift.roll(t * 0.4) * 1.5 * sway + hue * 4
+        const size = 1 + bass * 0.025 + kick * 0.04
         box.current.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotateY(${turn.toFixed(2)}deg) rotateX(${tip.toFixed(2)}deg) rotateZ(${roll.toFixed(2)}deg) scale(${size.toFixed(4)})`
       }
-      if (glow.current) glow.current.style.opacity = (0.45 + bass * 0.5).toFixed(3)
+      if (glow.current) glow.current.style.opacity = (0.35 + bass * 0.35 + kick * 0.3).toFixed(3)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
