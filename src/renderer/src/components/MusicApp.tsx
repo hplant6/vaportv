@@ -28,8 +28,8 @@ export const MUSIC_EVENT = 'steamtv:music'
 const TAGS_AT_ONCE = 24
 /** Folders' covers asked for at a time, as the grid fills in. */
 const FOLDERS_AT_ONCE = 10
-/** Now playing: the bar fades this long after the last press, unless the cursor's on the buttons. */
-const BAR_MS = 5000
+/** Now playing: the controls slip away this long after the last press (not while paused). */
+const BAR_MS = 2000
 
 function clock(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
@@ -886,9 +886,12 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   const buttonsRow = useRef<HTMLDivElement>(null)
   const playButton = useRef<HTMLButtonElement>(null)
   const [barShown, setBarShown] = useState(true)
+  // Whether the controls are showing, for the press that brings them back to do only that.
+  const shownRef = useRef(true)
+  const playingRef = useRef(player.playing)
+  playingRef.current = player.playing
   const barTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const onButtonsRef = useRef(false)
-  const [onButtons, setOnButtonsState] = useState(false)
   const [keysShown, setKeysShown] = useState(false)
   const [controls, setControls] = useState<Controls>(DEFAULT_CONTROLS)
   const family = useControllerFamily()
@@ -916,23 +919,29 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
 
   const setOnButtons = (on: boolean): void => {
     onButtonsRef.current = on
-    setOnButtonsState(on)
   }
   const toTop = useCallback((): void => {
     onButtonsRef.current = false
-    setOnButtonsState(false)
     if (self.current) focus(self.current)
   }, [])
   const showBar = useCallback(() => {
     setBarShown(true)
+    shownRef.current = true
     clearTimeout(barTimer.current)
-    if (onButtonsRef.current) return
     barTimer.current = setTimeout(() => {
       setBarShown(false)
       setKeysShown(false)
+      // Paused, they stay; playing, they go, and the cursor goes quietly back to the seek bar.
+      if (!playingRef.current) return
+      shownRef.current = false
+      if (onButtonsRef.current) toTop()
     }, BAR_MS)
-  }, [])
+  }, [toTop])
   useEffect(() => () => clearTimeout(barTimer.current), [])
+  // Playing again (however it was started), the controls go after the usual wait.
+  useEffect(() => {
+    if (player.playing) showBar()
+  }, [player.playing, showBar])
 
   useEffect(() => {
     window.steamtv.getSettings().then((s) => setControls(s.controls))
@@ -966,7 +975,10 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   useEffect(() => {
     const onDirection = (event: Event): void => {
       const direction = (event as CustomEvent<Direction>).detail
+      // With the controls hidden, a press just brings them back.
+      const hidden = !shownRef.current && playingRef.current
       showBar()
+      if (hidden) return
       if (onButtonsRef.current) {
         if (direction === 'up') return toTop()
         if (direction === 'down') return
@@ -1022,7 +1034,7 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
     // The station's list takes the D-pad while it's open.
     <div className="media-player music-playing" data-focus-trap="" {...(stationOpen ? {} : { 'data-own-directions': '' })}>
       <div className="music-playing-scrim" aria-hidden="true" />
-      <div className={`files-viewer music-viewer${barShown || !player.playing || onButtons ? ' bar-shown' : ''}`}>
+      <div className={`files-viewer music-viewer${barShown || !player.playing ? ' bar-shown' : ''}`}>
         <div className="music-now-stage">
           {/* The cover in the middle of the visualizer, which runs the full width behind it. */}
           <div className="music-now-centre">

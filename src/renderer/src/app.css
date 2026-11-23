@@ -5444,6 +5444,49 @@ button {
   background: transparent;
 }
 
+/* Now playing's controls slip away: the row of buttons drops first and the seek bar a beat
+   after, as the shade behind them fades; coming back they rise in the other order, quicker. */
+.files-viewer.music-viewer .files-viewer-bar {
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.files-viewer.music-viewer.bar-shown .files-viewer-bar {
+  transition-duration: 0.35s;
+}
+
+.files-viewer.music-viewer .files-viewer-bar > .media-seek,
+.files-viewer.music-viewer .files-viewer-bar > .media-buttons {
+  opacity: 0;
+  transition:
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.files-viewer.music-viewer .files-viewer-bar > .media-buttons {
+  transform: translateY(40px);
+}
+
+.files-viewer.music-viewer .files-viewer-bar > .media-seek {
+  transform: translateY(26px);
+  transition-delay: 0.12s;
+}
+
+.files-viewer.music-viewer.bar-shown .files-viewer-bar > .media-seek,
+.files-viewer.music-viewer.bar-shown .files-viewer-bar > .media-buttons {
+  opacity: 1;
+  transform: none;
+  transition-duration: 0.3s, 0.45s;
+  transition-timing-function: ease-out, cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.files-viewer.music-viewer.bar-shown .files-viewer-bar > .media-seek {
+  transition-delay: 0s;
+}
+
+.files-viewer.music-viewer.bar-shown .files-viewer-bar > .media-buttons {
+  transition-delay: 0.06s;
+}
+
 /* Now playing: the song in two small lines across the top, the cover in the middle, and the
    visualizer the full width behind it, so the cover dances inside it. */
 .music-now-stage {
