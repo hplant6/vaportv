@@ -15,7 +15,10 @@ import { switcher } from './visualizerSwitch'
 //  - Wave: the spectrum as a ridge, bass in the middle and treble out to both sides, each
 //    moment rolling back into the distance; white-gold in the middle through cyan and violet
 //    to magenta at the ends.
-// "Both" has them take turns, cross-fading on a beat (visualizerSwitch.ts). Both are built and
+//  - Ring: a tilted ring of fine upright lines, its band as tall as the music at each point
+//    round it (bass front and back, treble at the sides), out of round and drifting outward in
+//    layers; green, cyan and blue going white where it's loud, with a halo in its plane.
+// "Both" (shown as Mix) has them all take turns, cross-fading on a beat (visualizerSwitch.ts). All are built and
 // their shaders compiled before anything shows, and they share one canvas, so a change costs
 // nothing then: the one coming in has been following the music all along.
 
@@ -395,6 +398,199 @@ function makeWave(): Look {
   }
 }
 
+// ── Ring ──
+
+/** Lines round the ring. */
+const RING_COLUMNS = 360
+/** Moments of the spectrum kept: each a layer of lines, the newest innermost, older ones drifting out. */
+const RING_ROWS = 14
+/** Layers pushed out per second. */
+const RING_ROWS_PER_SECOND = 24
+/** The ring's distance at SIZED_FOR. */
+const RING_DISTANCE = 4.6
+
+const RING_VERTEX = /*glsl*/ `
+uniform sampler2D uSpectrum;
+uniform float uTime;
+uniform float uBass;
+uniform float uKick;
+uniform float uFade;
+attribute vec3 aLine;
+varying float vS;
+varying float vU;
+varying float vAge;
+varying float vEnd;
+${NOISE}
+void main() {
+  // aLine: where round the ring (0 to 1), which layer (0 newest), which end of the line (-1 bottom, 1 top).
+  float u = aLine.x;
+  float age = aLine.y;
+  float end = aLine.z;
+  float a = u * 6.2831853;
+  // The spectrum mirrored round the ring: bass at the front and back, treble at the sides.
+  float m = abs(fract(u * 2.0) * 2.0 - 1.0);
+  float s = texture2D(uSpectrum, vec2(pow(m, 0.8) * 0.92 + 0.01, age)).r;
+  // Out of round: slow noise round the ring, the bass pushing it out; older layers further out.
+  vec3 dir = vec3(cos(a), 0.0, sin(a));
+  float wobble = snoise(dir * 1.3 + vec3(0.0, uTime * 0.18, 0.0)) * 0.07;
+  float r = 1.0 + wobble + uBass * 0.05 + uKick * 0.04 + age * 0.09;
+  // The band's height: a little always, the music's level at that point, a kick lifting it all.
+  float band = (0.1 + s * 0.36 + uKick * 0.08) * (1.0 - age * 0.45) * (0.3 + 0.7 * uFade);
+  // Each line's ends jitter a touch with the treble's grain, for the jagged edge.
+  float jag = snoise(vec3(u * 90.0, age * 5.0, uTime * 2.0)) * 0.02 * (0.4 + s);
+  float y = end * (band + jag) + snoise(dir * 2.0 + uTime * 0.25) * 0.05;
+  vS = s;
+  vU = u;
+  vAge = age;
+  vEnd = end;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(dir * r + vec3(0.0, y, 0.0), 1.0);
+}
+`
+
+const RING_FRAGMENT = /*glsl*/ `
+uniform float uHue;
+uniform float uEnergy;
+uniform float uKick;
+uniform float uFade;
+varying float vS;
+varying float vU;
+varying float vAge;
+varying float vEnd;
+${HUE_SHIFT}
+void main() {
+  // Green, cyan and blue round the ring, hotter (towards white) where the music is.
+  float k = 0.5 + 0.5 * sin(vU * 6.2831853 * 2.0 + 1.3);
+  vec3 col = mix(vec3(0.42, 1.0, 0.55), vec3(0.35, 0.92, 1.0), smoothstep(0.2, 0.6, k));
+  col = mix(col, vec3(0.32, 0.5, 1.0), smoothstep(0.65, 1.0, k));
+  col = hueShift(col, uHue * 0.6);
+  col = mix(col, vec3(1.0), clamp(0.25 + vS * 0.8 + uKick * 0.3, 0.0, 0.92));
+  // Brightest at the edges of the band, like light caught on a rim.
+  float rim = 0.55 + 0.45 * abs(vEnd);
+  float alpha = (0.32 + vS * 0.46 + uEnergy * 0.12 + uKick * 0.2) * rim * pow(1.0 - vAge, 1.3) * uFade;
+  gl_FragColor = vec4(col, alpha);
+}
+`
+
+const RING_GLOW_VERTEX = 'varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }'
+
+const RING_GLOW_FRAGMENT = /*glsl*/ `
+uniform float uLevel;
+uniform float uKick;
+uniform float uHue;
+uniform float uFade;
+varying vec2 vP;
+${HUE_SHIFT}
+void main() {
+  // A soft halo on the ring, in its plane: strongest at radius 1, fading in and out from it.
+  float d = length(vP) - 1.05;
+  float g = exp(-d * d * 28.0);
+  vec3 col = hueShift(vec3(0.45, 1.0, 0.75), uHue * 0.5);
+  gl_FragColor = vec4(col, g * (0.1 + uLevel * 0.22 + uKick * 0.2) * uFade);
+}
+`
+
+function makeRing(): Look {
+  const scene = new THREE.Scene()
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50)
+  const history = new Uint8Array(SPECTRUM_BANDS * RING_ROWS)
+  const texture = new THREE.DataTexture(history, SPECTRUM_BANDS, RING_ROWS, THREE.RedFormat, THREE.UnsignedByteType)
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearFilter
+  texture.needsUpdate = true
+  const uniforms = {
+    uSpectrum: { value: texture },
+    uTime: { value: 0 },
+    uBass: { value: 0 },
+    uLevel: { value: 0 },
+    uKick: { value: 0 },
+    uHue: { value: 0 },
+    uEnergy: { value: 0 },
+    uFade: { value: 1 }
+  }
+  // Every line is two points; their positions are worked out in the shader from aLine.
+  const lines = new Float32Array(RING_COLUMNS * RING_ROWS * 2 * 3)
+  let i = 0
+  for (let row = 0; row < RING_ROWS; row++) {
+    for (let c = 0; c < RING_COLUMNS; c++) {
+      // Each layer's lines a little offset from the one inside it, so they don't stack exactly.
+      const u = (c + (row % 2) * 0.5) / RING_COLUMNS
+      const age = row / (RING_ROWS - 1)
+      lines.set([u, age, -1, u, age, 1], i)
+      i += 6
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('aLine', new THREE.BufferAttribute(lines, 3))
+  // Nothing to place from `position` (the shader does it), but three wants one for its bounds.
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lines.length), 3))
+  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 2)
+  const material = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: RING_VERTEX,
+    fragmentShader: RING_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  })
+  const ring = new THREE.LineSegments(geometry, material)
+  ring.frustumCulled = false
+  const glowGeometry = new THREE.PlaneGeometry(3, 3)
+  const glowMaterial = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: RING_GLOW_VERTEX,
+    fragmentShader: RING_GLOW_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide
+  })
+  const glow = new THREE.Mesh(glowGeometry, glowMaterial)
+  glow.rotation.x = -Math.PI / 2
+  const group = new THREE.Group()
+  group.add(glow, ring)
+  scene.add(group)
+
+  let owed = 0
+  return {
+    scene,
+    camera,
+    update({ time, bass, mid, kick, energy, hue, spectrum }, dt) {
+      uniforms.uTime.value = time
+      uniforms.uBass.value = bass
+      uniforms.uLevel.value = Math.min(1, bass * 0.7 + mid * 0.5)
+      uniforms.uKick.value = kick
+      uniforms.uHue.value = hue
+      uniforms.uEnergy.value = energy
+      // Turning slowly, faster when it's loud; tipping gently towards you and away.
+      group.rotation.y += dt * (0.12 + energy * 0.3 + kick * 0.5)
+      group.rotation.x = 1.0 + Math.sin(time * 0.11) * 0.12
+      group.rotation.z = Math.sin(time * 0.07) * 0.08
+      owed += dt * RING_ROWS_PER_SECOND
+      if (owed < 1) return
+      const rows = Math.min(Math.floor(owed), RING_ROWS)
+      owed -= Math.floor(owed)
+      history.copyWithin(SPECTRUM_BANDS * rows, 0, SPECTRUM_BANDS * (RING_ROWS - rows))
+      for (let r = 0; r < rows; r++) history.set(spectrum, r * SPECTRUM_BANDS)
+      texture.needsUpdate = true
+    },
+    setFade(fade) {
+      uniforms.uFade.value = fade
+    },
+    resize(aspect, height) {
+      camera.aspect = aspect
+      camera.position.set(0, 0, (RING_DISTANCE * height) / SIZED_FOR)
+      camera.updateProjectionMatrix()
+    },
+    dispose() {
+      geometry.dispose()
+      material.dispose()
+      glowGeometry.dispose()
+      glowMaterial.dispose()
+      texture.dispose()
+    }
+  }
+}
+
 // ── The music ──
 
 /**
@@ -502,7 +698,7 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     // Cleared once a frame, then each look showing drawn over it (they add light, so they blend).
     renderer.autoClear = false
-    const looks = look === 'both' ? [makeOrb(), makeWave()] : [look === 'orb' ? makeOrb() : makeWave()]
+    const looks = look === 'both' ? [makeOrb(), makeWave(), makeRing()] : [look === 'orb' ? makeOrb() : look === 'wave' ? makeWave() : makeRing()]
     const fit = (): void => {
       // The canvas, not its box: it spills past it for the glow.
       const w = canvas.clientWidth

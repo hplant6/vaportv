@@ -201,7 +201,8 @@ const MUSIC_BARS: { id: MusicBar; name: string; detail: string }[] = [
 const VISUALIZERS: { id: VisualizerLook; name: string; detail: string }[] = [
   { id: 'orb', name: 'Orb', detail: 'A neon globe that breaks apart and swells with the music' },
   { id: 'wave', name: 'Wave', detail: 'A glowing ridge of the sound, bass in the middle, rolling back' },
-  { id: 'both', name: 'Both', detail: 'Orb and Wave take turns, changing over on a beat' },
+  { id: 'ring', name: 'Ring', detail: 'A tilted ring of light, its band rising and falling with the sound' },
+  { id: 'both', name: 'Mix', detail: 'Orb, Wave and Ring take turns, changing over on a beat' },
   { id: 'off', name: 'None', detail: 'Just the cover and the song' }
 ]
 
