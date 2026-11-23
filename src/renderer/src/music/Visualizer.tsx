@@ -17,7 +17,7 @@ import { switcher } from './visualizerSwitch'
 //    to magenta at the ends.
 //  - Ring: a tilted ring of fine upright lines, its band as tall as the music at each point
 //    round it (bass front and back, treble at the sides), out of round and drifting outward in
-//    layers; green, cyan and blue going white where it's loud, with a halo in its plane.
+//    layers; a sunset (gold, orange, coral, crimson), white only on the loudest peaks, with a halo in its plane.
 // "Both" (shown as Mix) has them all take turns, cross-fading on a beat (visualizerSwitch.ts). All are built and
 // their shaders compiled before anything shows, and they share one canvas, so a change costs
 // nothing then: the one coming in has been following the music all along.
@@ -438,12 +438,15 @@ varying float vAge;
 varying float vEnd;
 ${HUE_SHIFT}
 void main() {
-  // Green, cyan and blue round the ring, hotter (towards white) where the music is.
-  float k = 0.5 + 0.5 * sin(vU * 6.2831853 * 2.0 + 1.3);
-  vec3 col = mix(vec3(0.42, 1.0, 0.55), vec3(0.35, 0.92, 1.0), smoothstep(0.2, 0.6, k));
-  col = mix(col, vec3(0.32, 0.5, 1.0), smoothstep(0.65, 1.0, k));
-  col = hueShift(col, uHue * 0.6);
-  col = mix(col, vec3(1.0), clamp(0.25 + vS * 0.8 + uKick * 0.3, 0.0, 0.92));
+  // A sunset round the ring (gold, orange, coral, crimson, twice round), the music's level
+  // warming each point a step along it; only the loudest peaks go towards white.
+  float k = fract(vU * 2.0 + 0.12 + vS * 0.18);
+  float w = 0.5 - 0.5 * cos(k * 6.2831853);
+  vec3 col = mix(vec3(1.0, 0.8, 0.22), vec3(1.0, 0.48, 0.1), smoothstep(0.0, 0.35, w));
+  col = mix(col, vec3(1.0, 0.27, 0.36), smoothstep(0.35, 0.7, w));
+  col = mix(col, vec3(0.86, 0.1, 0.34), smoothstep(0.7, 1.0, w));
+  col = hueShift(col, uHue * 0.5);
+  col = mix(col, vec3(1.0, 0.95, 0.85), clamp((vS - 0.6) * 1.4 + uKick * 0.25, 0.0, 0.6));
   // Brightest at the edges of the band, like light caught on a rim.
   float rim = 0.55 + 0.45 * abs(vEnd);
   float alpha = (0.32 + vS * 0.46 + uEnergy * 0.12 + uKick * 0.2) * rim * pow(1.0 - vAge, 1.3) * uFade;
@@ -464,7 +467,7 @@ void main() {
   // A soft halo on the ring, in its plane: strongest at radius 1, fading in and out from it.
   float d = length(vP) - 1.05;
   float g = exp(-d * d * 28.0);
-  vec3 col = hueShift(vec3(0.45, 1.0, 0.75), uHue * 0.5);
+  vec3 col = hueShift(vec3(1.0, 0.45, 0.2), uHue * 0.5);
   gl_FragColor = vec4(col, g * (0.1 + uLevel * 0.22 + uKick * 0.2) * uFade);
 }
 `

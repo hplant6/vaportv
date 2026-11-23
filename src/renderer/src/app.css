@@ -5432,9 +5432,12 @@ button {
 .music-playing-scrim {
   position: absolute;
   inset: 0;
+  /* A black tint over the backdrop so the visualizer and cover stand out, darker towards the
+     edges (round the cover, in the middle), at the top under the song and at the bottom under the controls. */
   background:
-    radial-gradient(ellipse at 30% 45%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.6) 75%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.55));
+    radial-gradient(ellipse at 50% 48%, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5) 80%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.55)),
+    rgba(0, 0, 0, 0.45);
 }
 
 .files-viewer.music-viewer {
