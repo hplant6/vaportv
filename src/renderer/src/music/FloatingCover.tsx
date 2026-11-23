@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { FALLBACK, paletteFromPixels } from './palette'
 import type { CoverMotion } from '../../../shared/types'
 import { musicLevels } from './levels'
 
 // Now playing's album cover, in the middle of the visualizer: dancing to the music, with a glow
 // in the cover's own colour behind it. A new cover fades in over the old one.
+//
+// The cover is a slab 10 px deep, its edges the cover's own outer pixels (as a sleeve's print
+// wraps round), shaded, so it has thickness as it turns.
 //
 // Each album is in a plastic sleeve: one of the overlays in private/sleeves.json (on Henry's
 // box; a public build has none, and shows the cover bare), chosen and turned by the cover's
@@ -218,6 +221,14 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
     <div className="music-cover-stage">
       <div ref={glow} className="music-cover-glow" style={{ background: colour }} aria-hidden="true" />
       <div ref={box} className="music-cover-float">
+        {shown.now && (
+          <span key={shown.now} className="music-cover-edges" aria-hidden="true" style={{ '--cover-image': `url("${shown.now}")` } as CSSProperties}>
+            <span className="music-cover-edge top" />
+            <span className="music-cover-edge right" />
+            <span className="music-cover-edge bottom" />
+            <span className="music-cover-edge left" />
+          </span>
+        )}
         {shown.was !== undefined && shown.was !== shown.now && art(shown.was, 'music-cover-art was')}
         {art(shown.now, 'music-cover-art now')}
       </div>

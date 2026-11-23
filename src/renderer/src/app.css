@@ -5561,8 +5561,9 @@ button {
 
 .music-cover-stage {
   position: relative;
-  width: 440px;
-  height: 440px;
+  --cover-size: 440px;
+  width: var(--cover-size);
+  height: var(--cover-size);
   perspective: 1600px;
 }
 
@@ -5588,9 +5589,11 @@ button {
   inset: 0;
   width: 100%;
   height: 100%;
+  border-radius: 2px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75);
 }
 
+/* The cover and its sleeve, clipped to the same slightly rounded corners. */
 .music-cover-wrapped {
   display: block;
   overflow: hidden;
@@ -5608,6 +5611,67 @@ button {
 /* The plastic sleeve over the cover: its glare and creases. */
 .music-cover-sleeve {
   pointer-events: none;
+  opacity: 0.9;
+}
+
+/* The cover's thickness: four edges folded back from its sides, 10 px deep, each the cover's
+   own outer pixels (stretched across the depth), shaded as if lit from above. */
+.music-cover-edges {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  --cover-depth: 10px;
+}
+
+.music-cover-edge {
+  position: absolute;
+  background-image: linear-gradient(var(--edge-shade), var(--edge-shade)), var(--cover-image);
+  background-size: auto, var(--cover-size) var(--cover-size);
+}
+
+.music-cover-edge.top {
+  --edge-shade: rgba(0, 0, 0, 0.2);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--cover-depth);
+  background-position: 0 0, center top;
+  transform-origin: top;
+  transform: rotateX(-90deg);
+}
+
+.music-cover-edge.bottom {
+  --edge-shade: rgba(0, 0, 0, 0.6);
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: var(--cover-depth);
+  background-position: 0 0, center bottom;
+  transform-origin: bottom;
+  transform: rotateX(90deg);
+}
+
+.music-cover-edge.left {
+  --edge-shade: rgba(0, 0, 0, 0.4);
+  top: 0;
+  left: 0;
+  width: var(--cover-depth);
+  height: 100%;
+  background-position: 0 0, left center;
+  transform-origin: left;
+  transform: rotateY(90deg);
+}
+
+.music-cover-edge.right {
+  --edge-shade: rgba(0, 0, 0, 0.45);
+  top: 0;
+  right: 0;
+  width: var(--cover-depth);
+  height: 100%;
+  background-position: 0 0, right center;
+  transform-origin: right;
+  transform: rotateY(-90deg);
 }
 
 .music-cover-art.now {
