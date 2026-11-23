@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { ClearPass } from 'three/examples/jsm/postprocessing/ClearPass.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import type { VisualizerLook } from '../../../shared/types'
 import { pacer } from '../background/pace'
 import { markReleased, useGpuGeneration } from '../background/gpuRecovery'
@@ -18,6 +23,9 @@ import { switcher } from './visualizerSwitch'
 //  - Ring: a tilted ring of fine upright lines, its band as tall as the music at each point
 //    round it (bass front and back, treble at the sides), out of round and drifting outward in
 //    layers; a sunset (gold, orange, coral, crimson), white only on the loudest peaks, with a halo in its plane.
+// All of them bloom: drawn on black with a bloom pass over them, then made see-through by their
+// own brightness (black clear, the brightest colour opaque), which over the backdrop comes to
+// the same as light added to it, whatever the page around the canvas does.
 // "Both" (shown as Mix) has them all take turns, cross-fading on a beat (visualizerSwitch.ts). All are built and
 // their shaders compiled before anything shows, and they share one canvas, so a change costs
 // nothing then: the one coming in has been following the music all along.
@@ -574,6 +582,23 @@ function makeRing(): Look {
   }
 }
 
+/** The bloom: how strong, how far it spreads (0 to 1), and how bright a line has to be to bloom. */
+const BLOOM = { strength: 0.35, radius: 0.35, threshold: 0.3 }
+
+/** Light on black to light on nothing: each pixel as opaque as its brightest colour (premultiplied). */
+const LIGHT_ONLY = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: /*glsl*/ `
+uniform sampler2D tDiffuse;
+varying vec2 vUv;
+void main() {
+  vec3 c = clamp(texture2D(tDiffuse, vUv).rgb, 0.0, 1.0);
+  gl_FragColor = vec4(c, max(max(c.r, c.g), c.b));
+}
+`
+}
+
 function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'off'>; playing: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const playingRef = useRef(playing)
@@ -586,17 +611,33 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
     host.appendChild(canvas)
     let stopped = false
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
-    renderer.setClearColor(0x000000, 0)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    // Cleared once a frame, then each look showing drawn over it (they add light, so they blend).
+    const ratio = Math.min(window.devicePixelRatio, 2)
+    renderer.setPixelRatio(ratio)
+    // The shaders' colours as they are, as before the bloom: no conversion on the way out.
+    renderer.outputColorSpace = THREE.LinearSRGBColorSpace
     renderer.autoClear = false
     const looks = look === 'both' ? [makeOrb(), makeWave(), makeRing()] : [look === 'orb' ? makeOrb() : look === 'wave' ? makeWave() : makeRing()]
+    // Cleared to black once a frame, each look showing drawn over it (they add light, so they
+    // blend), then the bloom. Multisampled, so the fine lines stay smooth off the screen too.
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }))
+    composer.addPass(new ClearPass(0x000000, 1))
+    const passes = looks.map((l) => {
+      const pass = new RenderPass(l.scene, l.camera)
+      pass.clear = false
+      composer.addPass(pass)
+      return pass
+    })
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), BLOOM.strength, BLOOM.radius, BLOOM.threshold)
+    composer.addPass(bloom)
+    composer.addPass(new ShaderPass(LIGHT_ONLY))
     const fit = (): void => {
       // The canvas, not its box: it spills past it for the glow.
       const w = canvas.clientWidth
       const h = canvas.clientHeight
       if (!w || !h) return
       renderer.setSize(w, h, false)
+      composer.setPixelRatio(ratio)
+      composer.setSize(w, h)
       for (const l of looks) l.resize(w / h, h)
     }
     fit()
@@ -617,24 +658,21 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
       const beat = levels.beats !== seenBeats
       seenBeats = levels.beats
       const fades = turns(beat, levels.energy, playingRef.current, dt)
-      renderer.clear()
       looks.forEach((l, i) => {
         // Every look follows the music, shown or not, so the next one comes in already moving.
         l.setFade(fades[i])
         l.update(levels, dt)
-        if (fades[i] > 0.001) renderer.render(l.scene, l.camera)
+        passes[i].enabled = fades[i] > 0.001
       })
+      composer.render(dt)
     }
     // Shaders compiled first, so the screen doesn't stall on the first frame; then each look is
-    // drawn once, unseen, so its first real frame has nothing left to upload (the wireframes'
-    // lines, the spectrum's texture); then it fades in.
+    // drawn once, unseen, with the bloom, so the first real frame has nothing left to compile or
+    // upload (the bloom's shaders, the wireframes' lines, the spectrum's texture); then it fades in.
     void Promise.all(looks.map((l) => compileScene(renderer, l.scene, l.camera, () => stopped))).then(() => {
       if (stopped) return
-      for (const l of looks) {
-        l.setFade(0)
-        renderer.render(l.scene, l.camera)
-      }
-      renderer.clear()
+      for (const l of looks) l.setFade(0)
+      composer.render(0)
       last = performance.now()
       frame = requestAnimationFrame(tick)
       canvas.classList.add('ready')
@@ -644,6 +682,8 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
       cancelAnimationFrame(frame)
       observer.disconnect()
       for (const l of looks) l.dispose()
+      bloom.dispose()
+      composer.dispose()
       markReleased(canvas)
       renderer.forceContextLoss()
       renderer.dispose()
