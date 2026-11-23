@@ -236,7 +236,7 @@ export function SideBar({
  * Sort's drop-down: the orders, opening on the one in use. Up and down and A inside it; B
  * closes it. Either way the cursor goes back to Sort.
  */
-function SortMenu({ sort, sorts, buttonId, onPick, onClose }: { sort: string; sorts: { id: string; name: string }[]; buttonId: string; onPick: (sort: string) => void; onClose: () => void }) {
+export function SortMenu({ sort, sorts, buttonId, onPick, onClose }: { sort: string; sorts: { id: string; name: string }[]; buttonId: string; onPick: (sort: string) => void; onClose: () => void }) {
   const menu = useRef<HTMLDivElement>(null)
   const back = (): void => {
     const button = document.getElementById(buttonId)

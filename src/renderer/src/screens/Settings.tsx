@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, VisualizerLook, CoverMotion, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, VisualizerLook, CoverMotion, VisualizerPower, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT, skipTrack, useNowPlaying } from '../components/BackgroundMusic'
 import { MUSIC_BAR_EVENT } from '../components/NowPlayingRow'
 import { AddMusicRow } from '../components/AddMusic'
@@ -32,7 +32,7 @@ import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { MusicSources } from '../music/MusicSources'
-import { COVER_MOTIONS, VISUALIZERS } from '../music/choices'
+import { COVER_MOTIONS, VISUALIZER_POWERS, VISUALIZERS } from '../music/choices'
 import { useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { BG_ALBUM, BG_LIBRARY, BG_LIKED, BG_STATION } from '../../../shared/backgroundMusic'
 
@@ -457,6 +457,11 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.musicVisualizer === look) return
     setSettings({ ...settings, musicVisualizer: look })
     void window.steamtv.setMusicVisualizer(look)
+  }
+  const chooseVisualizerPower = (power: VisualizerPower): void => {
+    if (!settings || settings.musicVisualizerPower === power) return
+    setSettings({ ...settings, musicVisualizerPower: power })
+    void window.steamtv.setMusicVisualizerPower(power)
   }
   const chooseCoverMotion = (motion: CoverMotion): void => {
     if (!settings || settings.musicCoverMotion === motion) return
@@ -1258,6 +1263,16 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings &&
               VISUALIZERS.map((v) => (
                 <ChoiceRow key={v.id} label={v.name} subtitle={v.detail} selected={settings.musicVisualizer === v.id} onSelect={() => chooseVisualizer(v.id)} />
+              ))}
+          </div>
+        </div>
+        <div className="settings-group">
+          <h3 className="settings-heading display">Visualizer performance</h3>
+          <p className="settings-help">For a slower machine: a lighter visualizer, or none.</p>
+          <div className="setting-list" data-focus-memory="settings-music-visualizer-power">
+            {settings &&
+              VISUALIZER_POWERS.map((p) => (
+                <ChoiceRow key={p.id} label={p.name} subtitle={p.detail} selected={settings.musicVisualizerPower === p.id} onSelect={() => chooseVisualizerPower(p.id)} />
               ))}
           </div>
         </div>

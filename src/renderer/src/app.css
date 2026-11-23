@@ -4948,10 +4948,14 @@ button {
   margin: 0 0 4px;
 }
 
-/* The player's settings: rows to choose from, rather than a list of shortcuts. */
+/* The player's settings: drop-downs as Sort and Genre are, the full width of the panel. */
 .media-keys.player-settings {
-  width: 640px;
-  gap: 6px;
+  width: 520px;
+  gap: 12px;
+}
+
+.player-settings .side-bar-sort {
+  width: 100%;
 }
 
 /* The end buttons' names line up with the screen edge instead of running off it. */

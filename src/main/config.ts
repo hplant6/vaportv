@@ -3,7 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ArcadeRow } from '../shared/arcade'
 import type { Combos, Controls } from '../shared/controls'
-import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicBar, MusicVolume, VisualizerLook, CoverMotion, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
+import type { BackdropStyle, MediaKind, BackdropTime, ClockCorners, ConsoleBackdropQuality, HideableTab, MusicBar, MusicVolume, VisualizerLook, CoverMotion, VisualizerPower, Playlist, TabArrangement, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, SteamLayout } from '../shared/types'
 
 /** A media server signed in to (media/servers.ts). */
 export interface MediaAccount {
@@ -204,6 +204,8 @@ export interface Config {
   musicVisualizer?: VisualizerLook
   /** How much Now playing's cover dances: 'lots' when unset. */
   musicCoverMotion?: CoverMotion
+  /** How hard the visualizer works: 'fast' when unset. */
+  musicVisualizerPower?: VisualizerPower
   /** Ambience, the layer under the music: as `music`, from the Ambience folder and the built-in rain. */
   ambience?: string
   ambienceVolume?: MusicVolume

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MusicEntry, MusicFolder, MusicPlace, MusicTags, VisualizerLook, CoverMotion, VoiceState } from '../../../shared/types'
+import type { MusicEntry, MusicFolder, MusicPlace, MusicTags, VisualizerLook, CoverMotion, VisualizerPower, VoiceState } from '../../../shared/types'
 import { DEFAULT_CONTROLS, type Controls } from '../../../shared/controls'
 import { focus, OWN_DIRECTION_EVENT, PLAYER_SKIP_EVENT, PLAYER_TRACKS_EVENT, trap, TRAP_CLOSE_EVENT, TRAP_SIDE_BAR_EVENT, TRAP_TAB_EVENT, type Direction } from '../input/focus'
 import { keepAwake } from '../input/idle'
@@ -7,13 +7,14 @@ import { play } from '../input/sounds'
 import { cycleRepeat, current, next, playAt, playerState, playQueue, previous, seekBy, skipSeconds, stopMusic, subscribe, toggle, toggleShuffle, updateTags, type PlayerState } from '../music/player'
 import { FloatingCover } from '../music/FloatingCover'
 import { Visualizer } from '../music/Visualizer'
-import { COVER_MOTIONS, VISUALIZERS } from '../music/choices'
+import { COVER_MOTIONS, VISUALIZER_POWERS } from '../music/choices'
 import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { newPlaylist } from '../music/playlists'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
 import { ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
+import { SortMenu } from './SideBar'
 
 // The Music app (its tile is in Apps): your own music from ~/Music, network shares (mounted
 // under ~/Network) and drives. Places on the left; on the right a folder's folders as a grid of
@@ -971,6 +972,8 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   useEffect(() => {
     const onClose = (): void => {
       if (settingsOpenRef.current) {
+        // A drop-down open in them closes itself (and the cursor goes back to its button).
+        if (document.querySelector('.player-settings .side-bar-sort-menu')) return
         setSettingsOpen(false)
         showBar()
         if (settingsButton.current) focus(settingsButton.current)
@@ -1037,12 +1040,14 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   // Which visualizer (Settings → Music), read as the screen opens.
   const [visualizer, setVisualizer] = useState<VisualizerLook>('off')
   const [coverMotion, setCoverMotion] = useState<CoverMotion>('lots')
+  const [visualizerPower, setVisualizerPower] = useState<VisualizerPower>('fast')
   useEffect(() => {
     let live = true
     window.steamtv.getSettings().then((s) => {
       if (!live) return
       setVisualizer(s.musicVisualizer ?? 'orb')
       setCoverMotion(s.musicCoverMotion ?? 'lots')
+      setVisualizerPower(s.musicVisualizerPower ?? 'fast')
     })
     return () => {
       live = false
@@ -1060,7 +1065,7 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
         <div className="music-now-stage">
           {/* The cover in the middle of the visualizer, which runs the full width behind it. */}
           <div className="music-now-centre">
-            <Visualizer look={visualizer} playing={player.playing} />
+            <Visualizer look={visualizer} playing={player.playing} power={visualizerPower} />
             <FloatingCover cover={song?.cover} playing={player.playing} motion={coverMotion} />
           </div>
           {/* The song, small, across the top: its title, then artist · album · where in the queue. */}
@@ -1164,11 +1169,11 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
       {stationOpen && player.station && <StationPanel player={player} disliked={favs.disliked} liked={favs.liked} />}
       {settingsOpen && (
         <PlayerSettings
-          visualizer={visualizer}
+          power={visualizerPower}
           motion={coverMotion}
-          onVisualizer={(look) => {
-            setVisualizer(look)
-            void window.steamtv.setMusicVisualizer(look)
+          onPower={(power) => {
+            setVisualizerPower(power)
+            void window.steamtv.setMusicVisualizerPower(power)
           }}
           onMotion={(m) => {
             setCoverMotion(m)
@@ -1209,44 +1214,71 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
   )
 }
 
-/** The player's settings, over Now playing (the gear): the visualizer and how much the cover moves (A goes on to the next choice), and the controller shortcuts. B closes it. */
+/**
+ * The player's settings, over Now playing (the gear), in the app's drop-down style (as Sort and
+ * Genre): Visualizer (Fast machine, Slow machine or Off) and Album movement (A lot, A little or
+ * None), each opening on its choice; then the controller shortcuts. B closes a drop-down, then
+ * the panel.
+ */
 function PlayerSettings({
-  visualizer,
+  power,
   motion,
-  onVisualizer,
+  onPower,
   onMotion,
   onShortcuts
 }: {
-  visualizer: VisualizerLook
+  power: VisualizerPower
   motion: CoverMotion
-  onVisualizer: (look: VisualizerLook) => void
+  onPower: (power: VisualizerPower) => void
   onMotion: (motion: CoverMotion) => void
   onShortcuts: () => void
 }) {
   const panel = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState<'power' | 'motion' | null>(null)
   useEffect(() => {
     const first = panel.current?.querySelector<HTMLElement>('[data-focusable]')
     if (first) focus(first)
   }, [])
-  const looks: VisualizerLook[] = ['both', 'orb', 'wave', 'ring', 'off']
-  const motions: CoverMotion[] = ['lots', 'little', 'still']
-  const after = <T,>(list: T[], now: T): T => list[(list.indexOf(now) + 1) % list.length]
-  const lookName = VISUALIZERS.find((v) => v.id === visualizer)?.name ?? visualizer
-  const motionName = COVER_MOTIONS.find((m) => m.id === motion)?.name ?? motion
+  const menus = [
+    { id: 'power' as const, label: 'Visualizer', value: power, options: VISUALIZER_POWERS, pick: (v: string) => onPower(v as VisualizerPower) },
+    { id: 'motion' as const, label: 'Album movement', value: motion, options: COVER_MOTIONS, pick: (v: string) => onMotion(v as CoverMotion) }
+  ]
   return (
     <div className="media-keys player-settings" role="dialog" aria-label="Player settings" ref={panel} data-focus-trap="" data-nav-scope="">
       <h3 className="settings-heading display">Settings</h3>
-      <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => onVisualizer(after(looks, visualizer))}>
-        <span className="setting-name display">Visualizer</span>
-        <span className="setting-detail">{lookName} · A to change (Off is lighter on a slower machine)</span>
-      </button>
-      <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={() => onMotion(after(motions, motion))}>
-        <span className="setting-name display">Album movement</span>
-        <span className="setting-detail">{motionName} · A to change</span>
-      </button>
-      <button className="setting-row" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onShortcuts}>
-        <span className="setting-name display">Controller shortcuts</span>
-        <span className="setting-detail">What each button does here</span>
+      {menus.map((m) => (
+        <div className="side-bar-sort" key={m.id}>
+          <button
+            id={`player-settings-${m.id}`}
+            className={`side-bar-sort-button display${open === m.id ? ' open' : ''}`}
+            tabIndex={-1}
+            data-focusable=""
+            data-select-sound="move"
+            aria-haspopup="menu"
+            aria-expanded={open === m.id}
+            onClick={() => setOpen(m.id)}
+          >
+            <span className="side-bar-sort-label">
+              {m.label}: {m.options.find((o) => o.id === m.value)?.name}
+            </span>
+            <span className="side-bar-sort-arrow" aria-hidden="true" />
+          </button>
+          {open === m.id && (
+            <SortMenu
+              sort={m.value}
+              sorts={m.options}
+              buttonId={`player-settings-${m.id}`}
+              onPick={(next) => {
+                setOpen(null)
+                if (next !== m.value) m.pick(next)
+              }}
+              onClose={() => setOpen(null)}
+            />
+          )}
+        </div>
+      ))}
+      <button className="side-bar-sort-button display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={onShortcuts}>
+        <span className="side-bar-sort-label">Controller shortcuts</span>
       </button>
     </div>
   )

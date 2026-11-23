@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import type { VisualizerLook } from '../../../shared/types'
+import type { VisualizerLook, VisualizerPower } from '../../../shared/types'
 import { pacer } from '../background/pace'
 import { markReleased, useGpuGeneration } from '../background/gpuRecovery'
 import { compileScene } from '../background/compileScene'
@@ -151,7 +151,7 @@ const SIZED_FOR = 720
 /** The orb's distance at SIZED_FOR: a halo round the cover, which sits in front of it. */
 const ORB_DISTANCE = 2.8
 
-function makeOrb(): Look {
+function makeOrb(slow = false): Look {
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50)
   camera.position.set(0, 0, ORB_DISTANCE)
@@ -169,7 +169,8 @@ function makeOrb(): Look {
     uCrest: { value: new THREE.Color('#38e4ff') },
     uPeak: { value: new THREE.Color('#effcff') }
   }
-  const geometry = new THREE.SphereGeometry(1, 200, 150)
+  // A slow machine: a quarter of the mesh.
+  const geometry = slow ? new THREE.SphereGeometry(1, 100, 75) : new THREE.SphereGeometry(1, 200, 150)
   const material = (alpha: number, wireframe: boolean): THREE.ShaderMaterial =>
     new THREE.ShaderMaterial({
       uniforms: { ...uniforms, uAlpha: { value: alpha } },
@@ -574,7 +575,10 @@ function makeRing(): Look {
   }
 }
 
-function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'off'>; playing: boolean }) {
+/** A slow machine's visualizer: this much of the screen's resolution, at most this many frames a second. */
+const SLOW = { resolution: 0.5, fps: 30 }
+
+function VisualizerCanvas({ look, playing, slow }: { look: Exclude<VisualizerLook, 'off'>; playing: boolean; slow: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const playingRef = useRef(playing)
   playingRef.current = playing
@@ -585,12 +589,12 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
     canvas.className = 'music-visualizer-canvas'
     host.appendChild(canvas)
     let stopped = false
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !slow, powerPreference: 'high-performance' })
     renderer.setClearColor(0x000000, 0)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(slow ? window.devicePixelRatio * SLOW.resolution : Math.min(window.devicePixelRatio, 2))
     // Cleared once a frame, then each look showing drawn over it (they add light, so they blend).
     renderer.autoClear = false
-    const looks = look === 'both' ? [makeOrb(), makeWave(), makeRing()] : [look === 'orb' ? makeOrb() : look === 'wave' ? makeWave() : makeRing()]
+    const looks = look === 'both' ? [makeOrb(slow), makeWave(), makeRing()] : [look === 'orb' ? makeOrb(slow) : look === 'wave' ? makeWave() : makeRing()]
     const fit = (): void => {
       // The canvas, not its box: it spills past it for the glow.
       const w = canvas.clientWidth
@@ -604,7 +608,7 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
     observer.observe(host)
     let seenBeats = 0
     const turns = switcher(looks.length)
-    const due = pacer()
+    const due = pacer(slow ? SLOW.fps : Infinity)
     let frame = 0
     let last = performance.now()
     const tick = (now: number): void => {
@@ -649,13 +653,13 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
       renderer.dispose()
       canvas.remove()
     }
-  }, [look])
+  }, [look, slow])
   return <div ref={box} className={`music-visualizer ${look}`} aria-hidden="true" />
 }
 
 /** The visualizer chosen in Settings (nothing for None), started again after the GPU resets. */
-export function Visualizer({ look, playing }: { look: VisualizerLook; playing: boolean }) {
+export function Visualizer({ look, playing, power = 'fast' }: { look: VisualizerLook; playing: boolean; power?: VisualizerPower }) {
   const generation = useGpuGeneration()
-  if (look === 'off') return null
-  return <VisualizerCanvas key={`${look}-${generation}`} look={look} playing={playing} />
+  if (look === 'off' || power === 'off') return null
+  return <VisualizerCanvas key={`${look}-${power}-${generation}`} look={look} playing={playing} slow={power === 'slow'} />
 }
