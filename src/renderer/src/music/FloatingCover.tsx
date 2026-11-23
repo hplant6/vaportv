@@ -10,8 +10,9 @@ import { musicLevels } from './levels'
 // wraps round), shaded, so it has thickness as it turns.
 //
 // Each album is in a plastic sleeve: one of the overlays in private/sleeves.json (on Henry's
-// box; a public build has none, and shows the cover bare), chosen and turned by the cover's
-// address, so an album always comes in the same one.
+// box; a public build has none, and shows the cover bare), picked at random, and turned a
+// random quarter turn, each time a cover comes up: the same album played again comes in a new
+// one. Never the same sleeve and turn as the album before.
 //
 // The dance hears the music as the visualizer does (levels.ts, the same reading each frame), so
 // it moves on the kicks the visualizer shows, not after them. On a kick it strikes a new pose:
@@ -53,12 +54,15 @@ function sleeves(): Promise<string[]> {
 }
 
 /** An album's sleeve and how it's turned (a quarter turn at a time), the same each time it plays. */
-function sleeveFor(cover: string, list: string[]): { url: string; turn: number } | null {
+type Sleeve = { url: string; turn: number }
+
+/** A sleeve at random, and a random quarter turn of it: not `last` again, when there's a choice. */
+function randomSleeve(list: string[], last: Sleeve | null): Sleeve | null {
   if (!list.length) return null
-  let h = 2166136261
-  for (let i = 0; i < cover.length; i++) h = Math.imul(h ^ cover.charCodeAt(i), 16777619)
-  h >>>= 0
-  return { url: new URL(`private/${list[h % list.length]}`, document.baseURI).href, turn: (Math.floor(h / list.length) % 4) * 90 }
+  for (;;) {
+    const sleeve = { url: new URL(`private/${list[Math.floor(Math.random() * list.length)]}`, document.baseURI).href, turn: Math.floor(Math.random() * 4) * 90 }
+    if (!last || sleeve.url !== last.url || sleeve.turn !== last.turn) return sleeve
+  }
 }
 
 /** A smooth random path, -1 to 1: random points one unit apart, eased between. */
@@ -117,6 +121,10 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
   const glow = useRef<HTMLDivElement>(null)
   const [colour, setColour] = useState(FALLBACK[0])
   const [sleeveNames, setSleeveNames] = useState<string[]>([])
+  // Each cover's sleeve while it's on screen (and fading out): picked as it comes up, forgotten
+  // once it's gone, so it gets a new one when it comes back.
+  const sleeveOf = useRef(new Map<string, Sleeve | null>())
+  const lastSleeve = useRef<Sleeve | null>(null)
   useEffect(() => {
     let live = true
     void sleeves().then((list) => live && setSleeveNames(list))
@@ -130,7 +138,12 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
   useEffect(() => {
     let live = true
     void glowColour(cover).then((c) => live && setColour(c))
-    setShown((s) => (s.now === cover ? s : { now: cover, was: s.now }))
+    setShown((s) => {
+      if (s.now === cover) return s
+      // Covers no longer showing let go of their sleeves.
+      for (const url of [...sleeveOf.current.keys()]) if (url !== cover && url !== s.now) sleeveOf.current.delete(url)
+      return { now: cover, was: s.now }
+    })
     return () => {
       live = false
     }
@@ -208,7 +221,12 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
           ♪
         </span>
       )
-    const sleeve = sleeveFor(url, sleeveNames)
+    if (sleeveNames.length && !sleeveOf.current.get(url)) {
+      const picked = randomSleeve(sleeveNames, lastSleeve.current)
+      sleeveOf.current.set(url, picked)
+      lastSleeve.current = picked
+    }
+    const sleeve = sleeveOf.current.get(url) ?? null
     return (
       <span key={url} className={`${className} music-cover-wrapped`}>
         <img className="music-cover-image" src={url} alt="" />
