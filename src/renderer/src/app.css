@@ -5615,17 +5615,17 @@ button {
 /* The plastic sleeve over the cover: its glare and creases. */
 .music-cover-sleeve {
   pointer-events: none;
-  opacity: 0.9;
+  opacity: 0.75;
 }
 
-/* The cover's thickness: four edges folded back from its sides, 10 px deep, each the cover's
+/* The cover's thickness: four edges folded back from its sides, 16 px deep, each the cover's
    own outer pixels (stretched across the depth), shaded as if lit from above. */
 .music-cover-edges {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
   pointer-events: none;
-  --cover-depth: 10px;
+  --cover-depth: 16px;
 }
 
 .music-cover-edge {

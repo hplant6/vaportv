@@ -6,7 +6,7 @@ import { musicLevels } from './levels'
 // Now playing's album cover, in the middle of the visualizer: dancing to the music, with a glow
 // in the cover's own colour behind it. A new cover fades in over the old one.
 //
-// The cover is a slab 10 px deep, its edges the cover's own outer pixels (as a sleeve's print
+// The cover is a slab 16 px deep, its edges the cover's own outer pixels (as a sleeve's print
 // wraps round), shaded, so it has thickness as it turns.
 //
 // Each album is in a plastic sleeve: one of the overlays in private/sleeves.json (on Henry's
