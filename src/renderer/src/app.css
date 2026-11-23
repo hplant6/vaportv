@@ -5441,22 +5441,63 @@ button {
   background: transparent;
 }
 
+/* Now playing: the song in two small lines across the top, the cover in the middle, and the
+   visualizer the full width behind it, so the cover dances inside it. */
 .music-now-stage {
   position: absolute;
-  left: 140px;
-  right: 120px;
-  top: 90px;
+  inset: 0;
+}
+
+.music-song {
+  position: absolute;
+  top: 64px;
+  left: 72px;
+  right: 72px;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+
+.music-song p {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-song-title {
+  font-size: var(--text-label);
+  line-height: 1.25;
+}
+
+.music-song-line {
+  margin-top: 6px !important;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+
+.music-song-artist {
+  font-weight: 700;
+}
+
+.music-song-album,
+.music-song-queue {
+  opacity: 0.7;
+}
+
+/* Between the song and the controls: the visualizer across the full width, the cover centred in it. */
+.music-now-centre {
+  position: absolute;
+  top: 150px;
   bottom: 250px;
-  display: flex;
-  align-items: center;
-  gap: 90px;
+  left: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
 }
 
 .music-cover-stage {
   position: relative;
-  flex: none;
-  width: 600px;
-  height: 600px;
+  width: 520px;
+  height: 520px;
   perspective: 1600px;
 }
 
@@ -5514,40 +5555,13 @@ button {
   }
 }
 
-/* Right of the cover: the visualizer, the cover's height and level with it, and the song
-   centred in front of it. Without one, the song just sits there. */
-.music-now-side {
-  position: relative;
-  min-width: 0;
-  flex: 1;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-}
-
-.music-now-stage.with-visualizer .music-now-side {
-  align-self: center;
-  height: 600px;
-  justify-content: center;
-}
-
 .music-visualizer {
   position: absolute;
   inset: 0;
 }
 
-/* A soft shade behind the words, so they read over the brightest part. */
-.music-now-stage.with-visualizer .music-song {
-  position: relative;
-  flex: none;
-  max-width: 100%;
-  padding: 30px 50px;
-  text-align: left;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
-}
-
 .music-visualizer-canvas {
-  /* Well past its box all round: room for the orb's swells and the glow, never cut off. */
+  /* Past its box all round: room for the orb's swells and the glow, never cut off. */
   position: absolute;
   inset: -200px;
   width: calc(100% + 400px);
@@ -5559,48 +5573,6 @@ button {
 
 .music-visualizer-canvas.ready {
   opacity: 1;
-}
-
-.music-song {
-  min-width: 0;
-  flex: 1;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
-}
-
-.music-song p {
-  margin: 0;
-}
-
-.music-song-queue {
-  margin-bottom: 18px !important;
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-  letter-spacing: 0.04em;
-  opacity: 0.7;
-}
-
-.music-song-title {
-  font-size: var(--text-display);
-  line-height: 1.1;
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.music-song-artist {
-  margin-top: 18px !important;
-  font-family: var(--font-body);
-  font-size: var(--text-large);
-  font-weight: 700;
-}
-
-.music-song-album {
-  margin-top: 6px !important;
-  font-family: var(--font-body);
-  font-size: var(--text-large);
-  opacity: 0.7;
 }
 
 /* ── Music app: hiding the places (L2), search, Genre ─────────── */

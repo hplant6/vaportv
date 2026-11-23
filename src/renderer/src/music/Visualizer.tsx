@@ -168,8 +168,8 @@ void main() {
 
 /** The canvas height (CSS pixels) the looks' distances were tuned at. */
 const SIZED_FOR = 720
-/** The orb's distance at SIZED_FOR: about the cover's size. */
-const ORB_DISTANCE = 3.95
+/** The orb's distance at SIZED_FOR: a halo round the cover, which sits in front of it. */
+const ORB_DISTANCE = 2.8
 
 function makeOrb(): Look {
   const scene = new THREE.Scene()
@@ -253,8 +253,8 @@ const WAVE_ROWS = 48
 const WAVE_ROWS_PER_SECOND = 30
 const WAVE_WIDTH = 4.2
 const WAVE_DEPTH = 2.4
-/** The ridge's distance at SIZED_FOR. */
-const WAVE_DISTANCE = 5.67
+/** The ridge's distance at SIZED_FOR: about the screen's width. */
+const WAVE_DISTANCE = 3.3
 
 const WAVE_VERTEX = /*glsl*/ `
 uniform sampler2D uSpectrum;
@@ -406,8 +406,8 @@ const RING_COLUMNS = 360
 const RING_ROWS = 14
 /** Layers pushed out per second. */
 const RING_ROWS_PER_SECOND = 24
-/** The ring's distance at SIZED_FOR. */
-const RING_DISTANCE = 4.6
+/** The ring's distance at SIZED_FOR: round the cover, which sits inside it. */
+const RING_DISTANCE = 2.9
 
 const RING_VERTEX = /*glsl*/ `
 uniform sampler2D uSpectrum;

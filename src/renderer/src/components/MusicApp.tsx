@@ -1023,17 +1023,24 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
     <div className="media-player music-playing" data-focus-trap="" {...(stationOpen ? {} : { 'data-own-directions': '' })}>
       <div className="music-playing-scrim" aria-hidden="true" />
       <div className={`files-viewer music-viewer${barShown || !player.playing || onButtons ? ' bar-shown' : ''}`}>
-        <div className={`music-now-stage${visualizer === 'off' ? '' : ' with-visualizer'}`}>
-          <FloatingCover cover={song?.cover} playing={player.playing} />
-          {/* The song in front of the visualizer, centred on it. */}
-          <div className="music-now-side">
+        <div className="music-now-stage">
+          {/* The cover in the middle of the visualizer, which runs the full width behind it. */}
+          <div className="music-now-centre">
             <Visualizer look={visualizer} playing={player.playing} />
-            <div className="music-song">
-              {queueText && <p className="music-song-queue">{queueText}</p>}
-              <p className="music-song-title display">{song?.title ?? ''}</p>
-              {song?.artist && <p className="music-song-artist">{song.artist}</p>}
-              {song?.album && <p className="music-song-album">{song.album}</p>}
-            </div>
+            <FloatingCover cover={song?.cover} playing={player.playing} />
+          </div>
+          {/* The song, small, across the top: its title, then artist · album · where in the queue. */}
+          <div className="music-song">
+            <p className="music-song-title display">{song?.title ?? ''}</p>
+            <p className="music-song-line">
+              {[
+                song?.artist && <span key="artist" className="music-song-artist">{song.artist}</span>,
+                song?.album && <span key="album" className="music-song-album">{song.album}</span>,
+                queueText && <span key="queue" className="music-song-queue">{queueText}</span>
+              ]
+                .filter(Boolean)
+                .flatMap((part, i) => (i ? [<span key={`dot${i}`} className="music-song-album"> · </span>, part] : [part]))}
+            </p>
           </div>
         </div>
         <div className="files-viewer-bar media-controls-bar">
