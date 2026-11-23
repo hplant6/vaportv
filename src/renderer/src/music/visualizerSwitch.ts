@@ -16,7 +16,7 @@ export interface SwitchTiming {
   drop: number
 }
 
-export const SWITCH_TIMING: SwitchTiming = { minHold: 15, maxHold: 40, giveUp: 70, fade: 0.7, drop: 0.3 }
+export const SWITCH_TIMING: SwitchTiming = { minHold: 6, maxHold: 10, giveUp: 20, fade: 0.7, drop: 0.3 }
 
 /** Each look's strength, 0 to 1, for this frame. */
 export type Switcher = (beat: boolean, energy: number, playing: boolean, dt: number) => Float32Array
