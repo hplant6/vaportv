@@ -1,4 +1,7 @@
 // Puts licensed assets that can't be in the public repo into the app being built: today,
+// the plastic-wrap overlays Now playing lays over album covers (sleeves/*.webp, from
+// Pixelbuddha's Plastic Wrap Texture Overlays, cut down to 1024 px; listed in sleeves.json;
+// left out of the public release),
 // Marvin Visions Big Bold (Atelier Triay), licensed to Henry for vaporTV, for headings,
 // tabs and the clock; the console models some tabs' backdrops show (background/products.ts), and the handhelds' screens. They're kept
 // outside the repo, in ~/.config/vaportv (the font cut down to Latin characters, as WOFF2),
@@ -11,7 +14,7 @@
 // it into the renderer. It deters casual copying only: the key ships in the app.
 //
 //   node scripts/private-assets.mjs     (run by npm run dev / build / dist)
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createCipheriv, randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -73,5 +76,15 @@ const key = found.some((asset) => asset.to.endsWith('.vtm')) ? await modelKey() 
 for (const asset of found) {
   if (asset.to.endsWith('.vtm')) await encrypt(join(SOURCE, asset.from), join(OUT, asset.to), key)
   else await copyFile(join(SOURCE, asset.from), join(OUT, asset.to))
+}
+// The cover sleeves: whichever are there, and a list of them for the app to choose from. Not
+// in the public release (VAPORTV_PUBLIC=1): their licence is for using them, not handing them out.
+const sleevesDir = join(SOURCE, 'sleeves')
+const sleeves = process.env.VAPORTV_PUBLIC !== '1' && existsSync(sleevesDir) ? (await readdir(sleevesDir)).filter((f) => f.endsWith('.webp')).sort() : []
+if (sleeves.length) {
+  await mkdir(join(OUT, 'sleeves'), { recursive: true })
+  for (const f of sleeves) await copyFile(join(SOURCE, 'sleeves', f), join(OUT, 'sleeves', f))
+  await writeFile(join(OUT, 'sleeves.json'), JSON.stringify(sleeves.map((f) => `sleeves/${f}`)) + '\n')
+  found.push({ name: `${sleeves.length} cover sleeves` })
 }
 console.log(`private assets: ${found.map((asset) => asset.name).join(', ') || 'none (free fonts only)'}`)
