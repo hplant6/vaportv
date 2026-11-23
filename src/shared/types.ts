@@ -626,8 +626,8 @@ export interface MusicTrack {
 export type MusicVolume = 'low' | 'medium' | 'high'
 /** The bar's second row, the song playing: drops down as each starts then folds away, stays open, or never shows. */
 export type MusicBar = 'auto' | 'always' | 'off'
-/** Now playing's visualizer, beside the cover: a broken neon orb, a glowing wave of the spectrum, or none. */
-export type VisualizerLook = 'orb' | 'wave' | 'off'
+/** Now playing's visualizer, beside the cover: a broken neon orb, a glowing wave of the spectrum, both taking turns on the beat, or none. */
+export type VisualizerLook = 'orb' | 'wave' | 'both' | 'off'
 
 /** Background sound plays in two layers at once: music, and ambience under it. */
 export type MusicKind = 'music' | 'ambience'

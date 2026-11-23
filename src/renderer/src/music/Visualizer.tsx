@@ -5,6 +5,7 @@ import { pacer } from '../background/pace'
 import { markReleased, useGpuGeneration } from '../background/gpuRecovery'
 import { compileScene } from '../background/compileScene'
 import { musicAnalyser } from './player'
+import { switcher } from './visualizerSwitch'
 
 // Now playing's visualizer, beside the cover. Two looks, both fine wireframe meshes in neon,
 // added onto the backdrop rather than painted over it:
@@ -14,6 +15,9 @@ import { musicAnalyser } from './player'
 //  - Wave: the spectrum as a ridge, bass in the middle and treble out to both sides, each
 //    moment rolling back into the distance; white-gold in the middle through cyan and violet
 //    to magenta at the ends.
+// "Both" has them take turns, cross-fading on a beat (visualizerSwitch.ts). Both are built and
+// their shaders compiled before anything shows, and they share one canvas, so a change costs
+// nothing then: the one coming in has been following the music all along.
 
 /** 3D simplex noise (Ashima Arts / Stefan Gustavson, MIT). */
 const NOISE = /*glsl*/ `
@@ -71,6 +75,8 @@ interface Levels {
   high: number
   /** 1 on a kick (a jump in the bass), falling away over a few tenths of a second. */
   kick: number
+  /** A kick landed this frame. */
+  beat: boolean
   /** How loud it is overall, against the song's own quiet and loud. */
   energy: number
   /** Where the colours have turned to (radians): drifting, and swung round on the kicks. */
@@ -83,6 +89,8 @@ interface Look {
   scene: THREE.Scene
   camera: THREE.PerspectiveCamera
   update(levels: Levels, dt: number): void
+  /** How strongly it shows, 0 to 1 (changing looks: fading and settling in). */
+  setFade(fade: number): void
   /** The canvas's shape, and its height in CSS pixels (the shapes keep one size on screen however big the canvas). */
   resize(aspect: number, height: number): void
   dispose(): void
@@ -130,6 +138,7 @@ uniform vec3 uCrest;
 uniform vec3 uPeak;
 uniform float uCut;
 uniform float uAlpha;
+uniform float uFade;
 uniform float uHue;
 uniform float uKick;
 uniform float uEnergy;
@@ -150,7 +159,7 @@ void main() {
   float side = vFacing > 0.0 ? 1.0 : 0.28;
   float fade = smoothstep(0.0, 0.025, vN - uCut);
   float bright = (band + lip * 0.9) * (0.75 + uEnergy * 0.45 + uKick * 0.6);
-  gl_FragColor = vec4(col * bright, uAlpha * side * fade);
+  gl_FragColor = vec4(col * bright, uAlpha * side * fade * uFade);
 }
 `
 
@@ -172,6 +181,7 @@ function makeOrb(): Look {
     uEnergy: { value: 0 },
     uHue: { value: 0 },
     uCut: { value: 0 },
+    uFade: { value: 1 },
     uEdge: { value: new THREE.Color('#ff38d2') },
     uCrest: { value: new THREE.Color('#38e4ff') },
     uPeak: { value: new THREE.Color('#effcff') }
@@ -209,9 +219,14 @@ function makeOrb(): Look {
       uniforms.uHue.value = hue
       // Louder closes the gaps; quiet passages break it apart.
       uniforms.uCut.value = 0.26 - energy * 0.26 - bass * 0.12 - kick * 0.14
-      group.scale.setScalar(0.94 + bass * 0.04 + kick * 0.05)
+      // Coming in, it grows to its size as it fades up.
+      const settle = 0.8 + 0.2 * uniforms.uFade.value
+      group.scale.setScalar((0.94 + bass * 0.04 + kick * 0.05) * settle)
       group.rotation.y += dt * (0.08 + energy * 0.35 + kick * 0.6)
       group.rotation.x = 0.4 + Math.sin(time * 0.13) * 0.25
+    },
+    setFade(fade) {
+      uniforms.uFade.value = fade
     },
     resize(aspect, height) {
       camera.aspect = aspect
@@ -242,6 +257,7 @@ const WAVE_VERTEX = /*glsl*/ `
 uniform sampler2D uSpectrum;
 uniform float uTime;
 uniform float uKick;
+uniform float uFade;
 varying float vU;
 varying float vH;
 varying float vAge;
@@ -255,6 +271,8 @@ void main() {
   h += 0.1 * exp(-u * u * 3.0) + 0.05 * sin(position.x * 3.0 + uTime * 0.8 + position.y * 3.0) * (1.0 - u);
   h += uKick * 0.25 * exp(-u * u * 6.0) * (1.0 - age);
   h *= smoothstep(1.0, 0.82, u);
+  // Coming in, the ridge rises out of the flat as it fades up.
+  h *= 0.25 + 0.75 * uFade;
   vU = u;
   vH = h;
   vAge = age;
@@ -267,6 +285,7 @@ uniform float uLevel;
 uniform float uKick;
 uniform float uHue;
 uniform float uEnergy;
+uniform float uFade;
 varying float vU;
 varying float vH;
 varying float vAge;
@@ -285,7 +304,7 @@ void main() {
   float u = clamp(vU * (1.1 - uEnergy * 0.3) - vH * 0.06, 0.0, 1.0);
   vec3 col = hueShift(ramp(u), uHue * (0.3 + vU));
   float bright = 0.2 + vH * 0.8 + (1.0 - vU) * (0.1 + uLevel * 0.35) + uKick * 0.45 * (1.0 - vAge);
-  float alpha = bright * pow(1.0 - vAge, 1.4) * smoothstep(1.0, 0.9, vU) * 0.32;
+  float alpha = bright * pow(1.0 - vAge, 1.4) * smoothstep(1.0, 0.9, vU) * 0.32 * uFade;
   gl_FragColor = vec4(col, alpha);
 }
 `
@@ -294,12 +313,13 @@ const GLOW_FRAGMENT = /*glsl*/ `
 uniform float uLevel;
 uniform float uKick;
 uniform float uHue;
+uniform float uFade;
 varying vec2 vUv;
 ${HUE_SHIFT}
 void main() {
   vec2 d = (vUv - 0.5) * vec2(1.0, 2.2);
   float g = exp(-dot(d, d) * 14.0);
-  gl_FragColor = vec4(hueShift(vec3(0.85, 1.0, 0.7), uHue * 0.5), g * (0.02 + uLevel * 0.2 + uKick * 0.25));
+  gl_FragColor = vec4(hueShift(vec3(0.85, 1.0, 0.7), uHue * 0.5), g * (0.02 + uLevel * 0.2 + uKick * 0.25) * uFade);
 }
 `
 
@@ -311,7 +331,7 @@ function makeWave(): Look {
   texture.magFilter = THREE.LinearFilter
   texture.minFilter = THREE.LinearFilter
   texture.needsUpdate = true
-  const uniforms = { uSpectrum: { value: texture }, uTime: { value: 0 }, uLevel: { value: 0 }, uKick: { value: 0 }, uHue: { value: 0 }, uEnergy: { value: 0 } }
+  const uniforms = { uSpectrum: { value: texture }, uTime: { value: 0 }, uLevel: { value: 0 }, uKick: { value: 0 }, uHue: { value: 0 }, uEnergy: { value: 0 }, uFade: { value: 1 } }
   const geometry = new THREE.PlaneGeometry(WAVE_WIDTH, WAVE_DEPTH, 240, WAVE_ROWS - 1)
   const material = new THREE.ShaderMaterial({
     uniforms,
@@ -353,6 +373,9 @@ function makeWave(): Look {
       history.copyWithin(SPECTRUM_BANDS * rows, 0, SPECTRUM_BANDS * (WAVE_ROWS - rows))
       for (let r = 0; r < rows; r++) history.set(spectrum, r * SPECTRUM_BANDS)
       texture.needsUpdate = true
+    },
+    setFade(fade) {
+      uniforms.uFade.value = fade
     },
     resize(aspect, height) {
       camera.aspect = aspect
@@ -399,7 +422,7 @@ function listener(): (playing: boolean, dt: number) => Levels {
   // Each band's place among the bins (fractional, read between two), log spaced from about
   // 70Hz to 12kHz at fftSize 1024: whole bins would make the bass a staircase.
   const at = Array.from({ length: SPECTRUM_BANDS }, (_, i) => 1.5 * Math.pow(250 / 1.5, i / (SPECTRUM_BANDS - 1)))
-  const levels: Levels = { time: 0, bass: 0, mid: 0, high: 0, kick: 0, energy: 0, hue: 0, spectrum }
+  const levels: Levels = { time: 0, bass: 0, mid: 0, high: 0, kick: 0, beat: false, energy: 0, hue: 0, spectrum }
   const bassGauge = gauge()
   const midGauge = gauge()
   const highGauge = gauge()
@@ -430,8 +453,10 @@ function listener(): (playing: boolean, dt: number) => Levels {
 
     // A kick: the bass jumping well above where it's been lately.
     sinceKick += dt
+    levels.beat = false
     if (bass - bassSlow > 0.22 && bass > 0.55 && sinceKick > 0.2) {
       levels.kick = 1
+      levels.beat = true
       sinceKick = 0
       swingSpeed += side * (1.0 + levels.energy * 1.2)
       side = -side
@@ -465,7 +490,6 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
   const box = useRef<HTMLDivElement>(null)
   const playingRef = useRef(playing)
   playingRef.current = playing
-
   useEffect(() => {
     const host = box.current
     if (!host) return
@@ -476,20 +500,22 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
     renderer.setClearColor(0x000000, 0)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    const scene = look === 'orb' ? makeOrb() : makeWave()
+    // Cleared once a frame, then each look showing drawn over it (they add light, so they blend).
+    renderer.autoClear = false
+    const looks = look === 'both' ? [makeOrb(), makeWave()] : [look === 'orb' ? makeOrb() : makeWave()]
     const fit = (): void => {
       // The canvas, not its box: it spills past it for the glow.
       const w = canvas.clientWidth
       const h = canvas.clientHeight
       if (!w || !h) return
       renderer.setSize(w, h, false)
-      scene.resize(w / h, h)
+      for (const l of looks) l.resize(w / h, h)
     }
     fit()
     const observer = new ResizeObserver(fit)
     observer.observe(host)
-
     const listen = listener()
+    const turns = switcher(looks.length)
     const due = pacer()
     let frame = 0
     let last = performance.now()
@@ -498,29 +524,41 @@ function VisualizerCanvas({ look, playing }: { look: Exclude<VisualizerLook, 'of
       if (!due(now)) return
       const dt = Math.min((now - last) / 1000, 0.1)
       last = now
-      scene.update(listen(playingRef.current, dt), dt)
-      renderer.render(scene.scene, scene.camera)
+      const levels = listen(playingRef.current, dt)
+      const fades = turns(levels.beat, levels.energy, playingRef.current, dt)
+      renderer.clear()
+      looks.forEach((l, i) => {
+        // Every look follows the music, shown or not, so the next one comes in already moving.
+        l.setFade(fades[i])
+        l.update(levels, dt)
+        if (fades[i] > 0.001) renderer.render(l.scene, l.camera)
+      })
     }
-    // Shaders compiled first, so the screen doesn't stall on the first frame; then it fades in.
-    void compileScene(renderer, scene.scene, scene.camera, () => stopped).then(() => {
+    // Shaders compiled first, so the screen doesn't stall on the first frame; then each look is
+    // drawn once, unseen, so its first real frame has nothing left to upload (the wireframes'
+    // lines, the spectrum's texture); then it fades in.
+    void Promise.all(looks.map((l) => compileScene(renderer, l.scene, l.camera, () => stopped))).then(() => {
       if (stopped) return
+      for (const l of looks) {
+        l.setFade(0)
+        renderer.render(l.scene, l.camera)
+      }
+      renderer.clear()
       last = performance.now()
       frame = requestAnimationFrame(tick)
       canvas.classList.add('ready')
     })
-
     return () => {
       stopped = true
       cancelAnimationFrame(frame)
       observer.disconnect()
-      scene.dispose()
+      for (const l of looks) l.dispose()
       markReleased(canvas)
       renderer.forceContextLoss()
       renderer.dispose()
       canvas.remove()
     }
   }, [look])
-
   return <div ref={box} className={`music-visualizer ${look}`} aria-hidden="true" />
 }
 
