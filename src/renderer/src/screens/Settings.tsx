@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, VisualizerLook, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
+import type { BackdropStyle, BackdropTime, LayoutTab, RecentsTab, ScreensaverClockSpot, ScreensaverSources, ScreensaverStyle, MusicKind, MusicBar, VisualizerLook, CoverMotion, MusicTrack, MusicVolume, Playlist, Settings as SettingsData, SteamCollection, SteamLayout } from '../../../shared/types'
 import { MUSIC_CHANGED_EVENT, skipTrack, useNowPlaying } from '../components/BackgroundMusic'
 import { MUSIC_BAR_EVENT } from '../components/NowPlayingRow'
 import { AddMusicRow } from '../components/AddMusic'
@@ -32,6 +32,7 @@ import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { MusicSources } from '../music/MusicSources'
+import { COVER_MOTIONS, VISUALIZERS } from '../music/choices'
 import { useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { BG_ALBUM, BG_LIBRARY, BG_LIKED, BG_STATION } from '../../../shared/backgroundMusic'
 
@@ -198,13 +199,6 @@ const MUSIC_BARS: { id: MusicBar; name: string; detail: string }[] = [
   { id: 'off', name: 'Never', detail: "Doesn't show" }
 ]
 
-const VISUALIZERS: { id: VisualizerLook; name: string; detail: string }[] = [
-  { id: 'orb', name: 'Orb', detail: 'A neon globe that breaks apart and swells with the music' },
-  { id: 'wave', name: 'Wave', detail: 'A glowing ridge of the sound, bass in the middle, rolling back' },
-  { id: 'ring', name: 'Ring', detail: 'A tilted ring of light, its band rising and falling with the sound' },
-  { id: 'both', name: 'Mix', detail: 'Orb, Wave and Ring take turns, changing over on a beat' },
-  { id: 'off', name: 'None', detail: 'Just the cover and the song' }
-]
 
 const VOLUMES: { id: MusicVolume; name: string }[] = [
   { id: 'low', name: 'Low' },
@@ -463,6 +457,11 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     if (!settings || settings.musicVisualizer === look) return
     setSettings({ ...settings, musicVisualizer: look })
     void window.steamtv.setMusicVisualizer(look)
+  }
+  const chooseCoverMotion = (motion: CoverMotion): void => {
+    if (!settings || settings.musicCoverMotion === motion) return
+    setSettings({ ...settings, musicCoverMotion: motion })
+    void window.steamtv.setMusicCoverMotion(motion)
   }
 
   const chooseVolume = (kind: MusicKind, volume: MusicVolume): void => {
@@ -1259,6 +1258,16 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
             {settings &&
               VISUALIZERS.map((v) => (
                 <ChoiceRow key={v.id} label={v.name} subtitle={v.detail} selected={settings.musicVisualizer === v.id} onSelect={() => chooseVisualizer(v.id)} />
+              ))}
+          </div>
+        </div>
+        <div className="settings-group">
+          <h3 className="settings-heading display">Album movement</h3>
+          <p className="settings-help">How much the cover dances while a song plays.</p>
+          <div className="setting-list" data-focus-memory="settings-music-cover-motion">
+            {settings &&
+              COVER_MOTIONS.map((m) => (
+                <ChoiceRow key={m.id} label={m.name} subtitle={m.detail} selected={settings.musicCoverMotion === m.id} onSelect={() => chooseCoverMotion(m.id)} />
               ))}
           </div>
         </div>

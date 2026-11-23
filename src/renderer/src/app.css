@@ -4822,17 +4822,28 @@ button {
   box-shadow: 0 0 0 4px var(--color-accent);
 }
 
+/* Three columns, the ends the same width, so the middle group (Play in its centre) is centred. */
 .media-buttons {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+}
+
+.media-buttons-side {
   display: flex;
   align-items: center;
   gap: 24px;
+}
+
+.media-buttons-side.end {
+  justify-content: flex-end;
 }
 
 .media-buttons-middle {
   display: flex;
   align-items: center;
   gap: 32px;
-  margin-inline: auto;
 }
 
 .media-button {
@@ -4937,13 +4948,21 @@ button {
   margin: 0 0 4px;
 }
 
+/* The player's settings: rows to choose from, rather than a list of shortcuts. */
+.media-keys.player-settings {
+  width: 640px;
+  gap: 6px;
+}
+
 /* The end buttons' names line up with the screen edge instead of running off it. */
-.media-buttons > .media-button:first-child .media-button-label {
+.media-buttons > .media-button:first-child .media-button-label,
+.media-buttons > .media-buttons-side:first-child > .media-button:first-child .media-button-label {
   left: 0;
   transform: none;
 }
 
-.media-buttons > .media-button:last-child .media-button-label {
+.media-buttons > .media-button:last-child .media-button-label,
+.media-buttons > .media-buttons-side.end > .media-button:last-child .media-button-label {
   left: auto;
   right: 0;
   transform: none;

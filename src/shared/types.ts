@@ -628,6 +628,8 @@ export type MusicVolume = 'low' | 'medium' | 'high'
 export type MusicBar = 'auto' | 'always' | 'off'
 /** Now playing's visualizer, beside the cover: a broken neon orb, a glowing wave of the spectrum, a ring of light, all of them taking turns on the beat ('both', shown as Mix), or none. */
 export type VisualizerLook = 'orb' | 'wave' | 'ring' | 'both' | 'off'
+/** How much Now playing's cover dances: a lot, a little, or not at all. */
+export type CoverMotion = 'lots' | 'little' | 'still'
 
 /** Background sound plays in two layers at once: music, and ambience under it. */
 export type MusicKind = 'music' | 'ambience'
@@ -730,6 +732,7 @@ export interface Settings {
   ambienceVolume: MusicVolume
   musicBar: MusicBar
   musicVisualizer: VisualizerLook
+  musicCoverMotion: CoverMotion
   backdrop: BackdropStyle
   /** Home's own backdrop, or null when it shows the same as the other screens. */
   homeBackdrop: BackdropStyle | null
@@ -1311,6 +1314,7 @@ export interface SteamTvApi {
   setMusicVolume(kind: MusicKind, volume: MusicVolume): Promise<void>
   setMusicBar(bar: MusicBar): Promise<void>
   setMusicVisualizer(look: VisualizerLook): Promise<void>
+  setMusicCoverMotion(motion: CoverMotion): Promise<void>
   /** Adding your own: browse home folders and drives (null for the places to start), then copy a file in as music or ambience. */
   musicFiles: {
     add(path: string, kind: MusicKind): Promise<string>

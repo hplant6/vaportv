@@ -24,6 +24,7 @@ const api: SteamTvApi = {
   setMusicVolume: (kind, volume) => ipcRenderer.invoke('settings:musicVolume', kind, volume),
   setMusicBar: (bar) => ipcRenderer.invoke('settings:musicBar', bar),
   setMusicVisualizer: (look) => ipcRenderer.invoke('settings:musicVisualizer', look),
+  setMusicCoverMotion: (motion) => ipcRenderer.invoke('settings:musicCoverMotion', motion),
   musicFiles: {
     add: (path, kind) => ipcRenderer.invoke('music:add', path, kind)
   },

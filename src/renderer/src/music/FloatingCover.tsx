@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FALLBACK, paletteFromPixels } from './palette'
+import type { CoverMotion } from '../../../shared/types'
 import { musicLevels } from './levels'
 
 // Now playing's album cover, in the middle of the visualizer: dancing to the music, with a glow
@@ -105,7 +106,10 @@ const POSE_EVERY = 0.45
 /** With no kicks, a new pose after this long (seconds), give or take a second. */
 const POSE_IDLE = 3
 
-export function FloatingCover({ cover, playing }: { cover?: string; playing: boolean }) {
+/** How far each kind of movement goes. */
+const MOTION_SCALE: Record<CoverMotion, number> = { lots: 1, little: 0.35, still: 0 }
+
+export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: string; playing: boolean; motion?: CoverMotion }) {
   const box = useRef<HTMLDivElement>(null)
   const glow = useRef<HTMLDivElement>(null)
   const [colour, setColour] = useState(FALLBACK[0])
@@ -132,6 +136,8 @@ export function FloatingCover({ cover, playing }: { cover?: string; playing: boo
   // The float and the beat: written straight to the style each frame, not through React.
   const playingRef = useRef(playing)
   playingRef.current = playing
+  const motionRef = useRef(motion)
+  motionRef.current = motion
   useEffect(() => {
     const drift = { x: wander(), y: wander(), turn: wander(), tip: wander(), roll: wander() }
     const pose = { x: spring(), y: spring(), turn: spring(), tip: spring(), roll: spring() }
@@ -170,7 +176,9 @@ export function FloatingCover({ cover, playing }: { cover?: string; playing: boo
       }
       seenBeats = levels.beats
       for (const s of Object.values(pose)) s.step(dt)
-      if (box.current) {
+      const m = MOTION_SCALE[motionRef.current]
+      if (box.current && m === 0) box.current.style.transform = 'none'
+      else if (box.current) {
         const sway = 0.5 + energy * 0.8
         const x = pose.x.value + drift.x(t * 0.5) * 10 * sway
         // On a kick it lifts at once, falling back as the kick fades.
@@ -180,7 +188,8 @@ export function FloatingCover({ cover, playing }: { cover?: string; playing: boo
         // Rolling with the visualizer's colour swing, which is thrown one way then the other on the kicks.
         const roll = pose.roll.value + drift.roll(t * 0.4) * 1.5 * sway + hue * 4
         const size = 1 + bass * 0.025 + kick * 0.04
-        box.current.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotateY(${turn.toFixed(2)}deg) rotateX(${tip.toFixed(2)}deg) rotateZ(${roll.toFixed(2)}deg) scale(${size.toFixed(4)})`
+        // A little: the same dance, smaller.
+        box.current.style.transform = `translate(${(x * m).toFixed(2)}px, ${(y * m).toFixed(2)}px) rotateY(${(turn * m).toFixed(2)}deg) rotateX(${(tip * m).toFixed(2)}deg) rotateZ(${(roll * m).toFixed(2)}deg) scale(${(1 + (size - 1) * m).toFixed(4)})`
       }
       if (glow.current) glow.current.style.opacity = (0.35 + bass * 0.35 + kick * 0.3).toFixed(3)
     }
