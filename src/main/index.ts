@@ -31,6 +31,8 @@ import { startRemoteKeys } from './remoteKeys'
 import { listen, setVoiceHints, finishListening, stopListening, type ListenOptions } from './voice'
 import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
 import { setJapaneseVoice, setSpeechListeners } from './speech'
+import { spotlightDetails } from './spotlight'
+import { SECTION_STYLES, type TabSection } from '../shared/tabSections'
 import { endTranslation, installVoice, japaneseVoiceInstalled, japaneseWav, quietTranslator, stopJapaneseVoice, saveTranslatorSettings, say, setTranslatorListeners, setTranslatorOpen, translate, translatorStatus } from './addons/translator'
 import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
@@ -213,6 +215,22 @@ ipcMain.handle('claude:send', async (_event, text: string) => sendToClaude(text,
 ipcMain.on('claude:interrupt', () => interruptClaude())
 ipcMain.on('claude:reset', () => endClaude())
 ipcMain.on('claude:answer', (_event, id: string, allow: boolean) => answerPermission(id, allow === true))
+// A game tab's sections, from its Customize window.
+ipcMain.handle('tabSections:get', async (_event, tab: string) => (await loadConfig()).tabSections?.[String(tab)])
+ipcMain.handle('tabSections:set', (_event, tab: string, sections: TabSection[]) =>
+  saveConfig((config) => ({
+    tabSections: {
+      ...config.tabSections,
+      [String(tab)]: (Array.isArray(sections) ? sections : [])
+        .filter((s) => s && typeof s.id === 'string' && SECTION_STYLES.some((style) => style.id === s.style))
+        .map((s) => ({ id: s.id, style: s.style, ...(s.hidden ? { hidden: true } : {}) }))
+    }
+  }))
+)
+
+// The Spotlight layout: the focused game's big picture, logo and description.
+ipcMain.handle('spotlight:details', async (_event, id: string) => spotlightDetails(await loadConfig(), String(id)))
+
 // The translator (an extra): its screen talks to Claude Code and VOICEVOX through translator.ts.
 setTranslatorListeners((event) => toWindow('translator:event', event), logInput)
 // The Claude app's Japanese is said by the translator's voice too, once it's downloaded.

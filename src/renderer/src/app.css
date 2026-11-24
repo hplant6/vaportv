@@ -6424,3 +6424,307 @@ button {
 .app-tile.more-tile:focus .more-tile-name {
   color: var(--color-nav-hover);
 }
+
+/* The Spotlight layout (a tab's third, beside Rows and Grid): the focused game's picture fills the
+   screen behind the bar and the list, darkened toward the left and the bottom where the words and
+   the cards sit; its name (or logo), facts and description at the top; the list as one carousel
+   along the bottom. */
+.spotlight-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.spotlight-picture {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  animation: spotlight-in 700ms var(--ease-focus) both;
+}
+
+/* Only a card's own art to go on (small, or portrait): blurred, so it reads as colour and light. */
+.spotlight-picture.soft {
+  filter: blur(32px) saturate(1.15);
+  transform: scale(1.15);
+}
+
+@keyframes spotlight-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.spotlight-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(11, 7, 13, 0.7) 0, rgba(11, 7, 13, 0) 180px),
+    linear-gradient(to top, rgba(11, 7, 13, 0.96) 0, rgba(11, 7, 13, 0.65) 38%, rgba(11, 7, 13, 0) 64%),
+    linear-gradient(to right, rgba(11, 7, 13, 0.94) 0, rgba(11, 7, 13, 0.78) 24%, rgba(11, 7, 13, 0.3) 58%, rgba(11, 7, 13, 0) 80%);
+}
+
+.spotlight {
+  display: flex;
+  flex-direction: column;
+  /* Room below the row for the focused card, which grows. */
+  height: calc(var(--stage-h) - 118px - 45px - 40px);
+}
+
+.spotlight-info {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 980px;
+  padding-top: 16px;
+  /* A long description gives way rather than running into the row below. */
+  overflow: hidden;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  animation: spotlight-text-in 450ms var(--ease-focus) both;
+}
+
+@keyframes spotlight-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.spotlight-logo {
+  max-width: 560px;
+  max-height: 140px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.55));
+}
+
+.spotlight-title {
+  margin: 0;
+  font-size: calc(var(--text-display) * 1.25);
+  font-weight: var(--display-weight);
+  line-height: 1.05;
+}
+
+.spotlight-facts {
+  margin: 0;
+  font-size: var(--text-label);
+  opacity: 0.85;
+  white-space: pre;
+}
+
+.spotlight-description {
+  margin: 0;
+  max-width: 900px;
+  font-size: 22px;
+  line-height: 1.5;
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  animation: spotlight-text-in 450ms var(--ease-focus) both;
+}
+
+.spotlight-row {
+  flex: none;
+  margin-top: auto;
+  /* Cards scrolled past the row's left edge are cut off there, short of the left bar when it's out
+     (the row starts beside it); with the bar hidden the row is the screen's width. The focused
+     card grows a little past the edge, and up, down and to the right it's free to. */
+  clip-path: inset(-160px -40px -160px -28px);
+}
+
+/* A game tab's sections, stacked down the page under its toolbar (Sort, Genre). */
+.library-toolbar {
+  display: flex;
+  gap: 16px;
+  height: 55px;
+  margin-bottom: 20px;
+}
+
+.library-toolbar .library-toolbar-menu {
+  width: 320px;
+}
+
+.library-toolbar .side-bar-sort-menu {
+  /* Over a game's picture and words: solid enough that its options read. */
+  background: rgba(36, 25, 16, 0.94);
+  max-height: 520px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.stack-section + .stack-section {
+  margin-top: 48px;
+}
+
+/* The first Spotlight shares the screen with the toolbar above it; the others fill it. */
+.spotlight.first {
+  height: calc(var(--stage-h) - 118px - 45px - 40px - 75px);
+}
+
+.stack-section.empty .empty-note {
+  margin: 12px 0 0;
+}
+
+/* Out of a Spotlight section, its picture fades away and the tab's own background shows. */
+.spotlight-backdrop {
+  transition: opacity 600ms var(--ease-focus);
+}
+
+.spotlight-backdrop.off {
+  opacity: 0;
+}
+
+/* The bar's Customize button, under its lists. */
+.side-bar-customize {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 356px;
+  height: 55px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: var(--text-body);
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+  background: transparent;
+  border: 2px solid var(--color-panel-line);
+  opacity: 0.8;
+  transition:
+    background-color var(--dur-focus) var(--ease-focus),
+    color var(--dur-focus) var(--ease-focus),
+    opacity var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar-customize svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.side-bar-customize:focus {
+  outline: none;
+  opacity: 1;
+  color: var(--color-accent);
+  background: var(--color-focus-tint);
+}
+
+/* The Customize window: a row per section, its name (picked up to move), style, shown, and a playlist's actions. */
+.customize-panel {
+  width: 1240px;
+  max-height: 960px;
+  align-items: stretch;
+}
+
+.customize-panel .settings-help {
+  margin: -8px 0 0;
+}
+
+.customize-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px;
+}
+
+.customize-list .settings-heading {
+  margin: 18px 0 4px;
+  font-size: var(--text-label);
+  opacity: 0.7;
+}
+
+.customize-row {
+  display: grid;
+  grid-template-columns: 1fr 210px 150px 140px 160px;
+  gap: 10px;
+  align-items: center;
+  transition: transform var(--dur-focus) var(--ease-focus);
+}
+
+.customize-row.elsewhere {
+  grid-template-columns: 1fr 230px;
+}
+
+.customize-row button,
+.customize-row .customize-name {
+  width: auto;
+  height: 64px;
+  padding: 0 22px;
+  border-radius: 12px;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  background: var(--color-panel);
+  border: 2px solid transparent;
+  text-align: center;
+  transition:
+    border-color var(--dur-focus) var(--ease-focus),
+    background var(--dur-focus) var(--ease-focus),
+    color var(--dur-focus) var(--ease-focus);
+}
+
+.customize-row .customize-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  font-size: var(--text-label);
+}
+
+.customize-grip {
+  opacity: 0.45;
+}
+
+.customize-count {
+  margin-left: auto;
+  font-size: var(--text-body);
+  opacity: 0.55;
+}
+
+.customize-row button:focus {
+  outline: none;
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+}
+
+.customize-style {
+  color: var(--color-accent) !important;
+}
+
+.customize-shown.on {
+  color: var(--color-accent) !important;
+}
+
+.customize-row.hidden .customize-name,
+.customize-row.hidden .customize-style {
+  opacity: 0.45;
+}
+
+/* Picked up: lifted, and outlined until it's put down. */
+.customize-row.moving {
+  transform: scale(1.02);
+}
+
+.customize-row.moving .customize-name {
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+  box-shadow: var(--shadow-card);
+}
+
+.customize-action.danger {
+  color: #ff8a7a !important;
+  border-color: rgba(255, 138, 122, 0.6) !important;
+}

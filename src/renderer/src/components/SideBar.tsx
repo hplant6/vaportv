@@ -59,7 +59,9 @@ export function SideBar({
   menus = [],
   onSwitch,
   onSort,
-  onSelect
+  onSelect,
+  targetOf,
+  onCustomize
 }: {
   /** The tab's id, for its console's logo. */
   tab: string
@@ -70,7 +72,8 @@ export function SideBar({
   lists: SideList<unknown>[]
   selected: string
   open: boolean
-  sort: string
+  /** The order in Sort's drop-down; without one, there's no Sort in the bar (a game tab's is above its games). */
+  sort?: string
   /** Sort's orders (default: the games'). */
   sorts?: { id: string; name: string }[]
   /** More drop-downs under Sort, as it (Music's Genre). */
@@ -79,7 +82,11 @@ export function SideBar({
   switches?: { id: string; name: string; on: boolean }[]
   onSwitch?: (id: string) => void
   /** An order picked from Sort's drop-down. */
-  onSort: (sort: string) => void
+  onSort?: (sort: string) => void
+  /** Where A and right go from a list (a game tab: that list's own section); else the grid's cards. */
+  targetOf?: (listId: string) => string
+  /** The Customize button at the bottom of the lists (a game tab's sections and playlists). */
+  onCustomize?: () => void
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -120,34 +127,36 @@ export function SideBar({
       <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
       {spinning && <ConsoleSpin tab={tab} />}
-      <div className="side-bar-sort">
-        <button
-          id="side-bar-sort"
-          className={`side-bar-sort-button display${sorting ? ' open' : ''}`}
-          tabIndex={-1}
-          {...(open ? { 'data-focusable': '' } : {})}
-          data-select-sound="move"
-          data-nav-right={SIDE_GRID_CARDS}
-          aria-haspopup="menu"
-          aria-expanded={sorting}
-          onClick={() => setSorting(true)}
-        >
-          Sort by: {sorts.find((s) => s.id === sort)?.name}
-          <span className="side-bar-sort-arrow" aria-hidden="true" />
-        </button>
-        {sorting && (
-          <SortMenu
-            sort={sort}
-            sorts={sorts}
-            buttonId="side-bar-sort"
-            onPick={(next) => {
-              setSorting(false)
-              if (next !== sort) onSort(next)
-            }}
-            onClose={() => setSorting(false)}
-          />
-        )}
-      </div>
+      {sort !== undefined && (
+        <div className="side-bar-sort">
+          <button
+            id="side-bar-sort"
+            className={`side-bar-sort-button display${sorting ? ' open' : ''}`}
+            tabIndex={-1}
+            {...(open ? { 'data-focusable': '' } : {})}
+            data-select-sound="move"
+            data-nav-right={SIDE_GRID_CARDS}
+            aria-haspopup="menu"
+            aria-expanded={sorting}
+            onClick={() => setSorting(true)}
+          >
+            Sort by: {sorts.find((s) => s.id === sort)?.name}
+            <span className="side-bar-sort-arrow" aria-hidden="true" />
+          </button>
+          {sorting && (
+            <SortMenu
+              sort={sort}
+              sorts={sorts}
+              buttonId="side-bar-sort"
+              onPick={(next) => {
+                setSorting(false)
+                if (next !== sort) onSort?.(next)
+              }}
+              onClose={() => setSorting(false)}
+            />
+          )}
+        </div>
+      )}
       {menus.map((m) => (
         <div className="side-bar-sort" key={m.id}>
           <button
@@ -214,13 +223,13 @@ export function SideBar({
             {...(open ? { 'data-focusable': '' } : {})}
             {...(open && !current?.items.length && list.id === selected ? { 'data-focus-default': '' } : {})}
             data-select-sound="move"
-            data-nav-right={SIDE_GRID_CARDS}
+            data-nav-right={targetOf?.(list.id) ?? SIDE_GRID_CARDS}
             onFocus={(event) => {
               reveal(event.currentTarget)
               onSelect(list.id)
             }}
             onClick={() => {
-              const first = document.querySelector<HTMLElement>(SIDE_GRID_CARDS)
+              const first = document.querySelector<HTMLElement>(targetOf?.(list.id) ?? SIDE_GRID_CARDS)
               if (first) focus(first)
             }}
           >
@@ -228,6 +237,23 @@ export function SideBar({
           </button>
         ])}
       </div>
+      {onCustomize && (
+        <button
+          className="side-bar-customize display"
+          tabIndex={-1}
+          {...(open ? { 'data-focusable': '' } : {})}
+          data-select-sound="move"
+          data-nav-right={SIDE_GRID_CARDS}
+          onClick={onCustomize}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+            <circle cx="16" cy="7" r="2" />
+            <circle cx="10" cy="17" r="2" />
+          </svg>
+          Customize
+        </button>
+      )}
     </aside>
   )
 }

@@ -18,15 +18,23 @@ export interface Remembered {
   sorts: Record<string, string>
   /** Per tab: the switches under Sort (Media's Show unwatched only). */
   filters: Record<string, string[]>
+  /** Per game tab: the genre its toolbar shows (unset: all). */
+  genres: Record<string, string>
 }
 
 export function remembered(): Remembered {
   const record = (value: unknown) => (value && typeof value === 'object' ? (value as Record<string, never>) : {})
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) ?? '{}')
-    return { hidden: Array.isArray(saved.hidden) ? saved.hidden : [], lists: record(saved.lists), sorts: record(saved.sorts), filters: record(saved.filters) }
+    return {
+      hidden: Array.isArray(saved.hidden) ? saved.hidden : [],
+      lists: record(saved.lists),
+      sorts: record(saved.sorts),
+      filters: record(saved.filters),
+      genres: record(saved.genres)
+    }
   } catch {
-    return { hidden: [], lists: {}, sorts: {}, filters: {} }
+    return { hidden: [], lists: {}, sorts: {}, filters: {}, genres: {} }
   }
 }
 
@@ -78,8 +86,24 @@ export function useSideBarOpen(screen: string, enabled = true): boolean {
 }
 
 /** The bar's list as a grid, scrolling on its own under the fixed bar. B goes back to its list in the bar. */
-export function SideGrid({ backTo, children }: { backTo?: string; children: ReactNode }) {
-  const scroll = usePageScroll()
+export function SideGrid({
+  backTo,
+  jump,
+  children
+}: {
+  backTo?: string
+  /** A section to scroll to (its element id; the bar's cursor on its list), counted so the same one again still scrolls. */
+  jump?: { id: string; n: number }
+  children: ReactNode
+}) {
+  const revealRef = useRef<((el: HTMLElement) => void) | null>(null)
+  const scroll = usePageScroll(undefined, { revealRef })
+  useEffect(() => {
+    const el = jump ? document.getElementById(jump.id) : null
+    // The section's own first card decides where the page goes, as the cursor on it would.
+    const target = el?.querySelector<HTMLElement>('[data-focusable]') ?? el
+    if (target) revealRef.current?.(target)
+  }, [jump])
   return (
     <div className="page-scroll" {...scroll}>
       {/* Left from the first column (or B) goes to the list in the bar, level with the card or not. */}

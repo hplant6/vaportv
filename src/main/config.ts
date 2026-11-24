@@ -19,6 +19,8 @@ export interface MediaAccount {
 }
 
 export interface Config {
+  /** Each game tab's sections (its Customize window): their order, style, and which are hidden. */
+  tabSections?: Record<string, import('../shared/tabSections').TabSection[]>
   /** The translator's people, wording and voice (an extra). */
   translator?: Partial<import('../shared/types').TranslatorSettings>
   /** The Claude app's model (a Claude Code alias or model id; default sonnet, quick to answer aloud). */

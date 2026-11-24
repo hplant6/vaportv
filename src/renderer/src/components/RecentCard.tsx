@@ -2,6 +2,9 @@ import { MediaPoster } from './MediaPoster'
 import type { RecentItem } from '../../../shared/types'
 import { startLaunch } from '../launch'
 import clock from '../assets/clock.svg'
+import { formatDate, formatPlaytime } from './cardText'
+
+export { formatDate, formatPlaytime }
 
 interface Props {
   item: RecentItem
@@ -10,17 +13,6 @@ interface Props {
   onFocus?: () => void
 }
 
-function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-')
-  return `${month}/${day}/${year.slice(2)}`
-}
-
-/** 45m, 3h 20m, then whole hours (126h) once the minutes stop mattering. */
-export function formatPlaytime(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
-  const hours = Math.floor(minutes / 60)
-  return hours < 10 && minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours.toLocaleString()}h`
-}
 
 export function RecentCard({ item, logo, isDefault, onFocus }: Props) {
   // A film, show or episode in a playlist: its own card, which plays (or opens) it.

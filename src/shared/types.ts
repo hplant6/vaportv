@@ -14,6 +14,8 @@ export interface RecentItem {
   cover?: string
   /** 16:9 art; an item with this and no `cover` (a YouTube video) gets a wide card. */
   wide?: string
+  /** A wide banner without a logo on it (SteamGridDB's hero), for the Spotlight layout's backdrop. */
+  hero?: string
   /** Marked as a favourite in steamtv (shows a star). */
   favorite?: boolean
   /** A console tab's games, for its left bar: main genre and release year (from ES-DE's scraped data), and when its file was added (ms). */
@@ -526,7 +528,14 @@ export interface CollectionRow {
 }
 
 /** Rows: a sideways-scrolling row of poster cards per collection. Grid: wide cards, scrolling down. */
-export type SteamLayout = 'rows' | 'grid'
+export type SteamLayout = 'rows' | 'grid' | 'spotlight'
+
+/** The Spotlight layout's picture, logo and description for the item the cursor's on (each where it's known). */
+export interface SpotlightDetails {
+  backdrop?: string
+  logo?: string
+  description?: string
+}
 
 /** Library tabs with their own layout setting. */
 export type LayoutTab = 'steam' | 'media' | 'music' | 'switch' | 'ps2' | 'psx' | 'psp' | 'ps3' | 'xbox' | 'xbox360' | 'gamecube' | 'wii' | 'wiiu' | 'dreamcast' | 'saturn' | 'n64' | 'nes' | 'snes' | 'genesis' | 'sega32x' | 'neogeo' | 'arcade'
@@ -1295,6 +1304,13 @@ export interface SteamTvApi {
     /** A remote's Menu tapped while the screen is open: talk. */
     onTalk(callback: () => void): () => void
   }
+  /** A game tab's sections as saved (its Customize window); undefined until they're first changed. */
+  tabSections: {
+    get(tab: string): Promise<import('./tabSections').TabSection[] | undefined>
+    set(tab: string, sections: import('./tabSections').TabSection[]): Promise<void>
+  }
+  /** The Spotlight layout's details for a card (by its id), as far as they're known. */
+  spotlight(id: string): Promise<SpotlightDetails>
   /** A GitHub issue link (and its QR code) for a bug report. */
   makeBugReport(input: BugReportInput): Promise<BugReport>
   /** Report a problem closed: its details page stops. */

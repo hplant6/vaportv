@@ -166,32 +166,10 @@ function RecentsChoice({
   )
 }
 
-/** Rows / Grid for one tab. */
-function LayoutChoice({
-  tab,
-  value,
-  isDefault = false,
-  onChoose
-}: {
-  tab: LayoutTab
-  value: SteamLayout
-  isDefault?: boolean
-  onChoose: (tab: LayoutTab, layout: SteamLayout) => void
-}) {
-  return (
-    <div className="setting-list" data-focus-memory={`settings-layout-${tab}`}>
-      {LAYOUTS.map((layout, i) => (
-        <LayoutRow
-          key={layout.id}
-          layout={layout}
-          selected={value === layout.id}
-          isDefault={isDefault && i === 0}
-          onSelect={() => onChoose(tab, layout.id)}
-        />
-      ))}
-    </div>
-  )
-}
+/** Where a game tab's look is set now. */
+const TAB_LOOK_HEADING = 'How the game tabs look'
+const TAB_LOOK_HELP =
+  'Each game tab sets its own look: press Customize at the bottom of its left bar to choose each list’s style (Spotlight, Carousel or a grid), order them, hide them, and rename or delete playlists.'
 
 const MUSIC_BARS: { id: MusicBar; name: string; detail: string }[] = [
   { id: 'auto', name: 'Shows as each song starts', detail: 'Drops down for a few seconds, then folds away. Down from the top bar brings it back' },
@@ -692,15 +670,6 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.steamtv.setFavoritesLayout(layout).then(() => window.dispatchEvent(new Event(HOME_CHANGED_EVENT)))
   }
 
-  const chooseLayout = (tab: LayoutTab, layout: SteamLayout): void => {
-    // Media and Music have no rows-or-grid choice: they're always their bar and grid.
-    if (tab === 'media' || tab === 'music') return
-    const field = `${tab}Layout` as const
-    if (!settings || settings[field] === layout) return
-    setSettings({ ...settings, [field]: layout })
-    window.steamtv.setTabLayout(tab, layout)
-  }
-
   const panes: Record<Category, ReactNode> = {
     general: <GeneralSettings />,
     tabs: <TabsSettings />,
@@ -735,14 +704,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     steam: (
       <>
         <div className="settings-group">
-          <h3 className="settings-heading display">Steam tab layout</h3>
-          <p className="settings-help">How the Steam tab shows each collection.</p>
-          {settings && (
-            <>
-              <LayoutChoice tab="steam" value={settings.steamLayout} onChoose={chooseLayout} />
-              <RecentsChoice tab="steam" value={settings.recentsLayouts.steam} onChoose={chooseRecentsLayout} />
-            </>
-          )}
+          <h3 className="settings-heading display">{TAB_LOOK_HEADING}</h3>
+          <p className="settings-help">{TAB_LOOK_HELP}</p>
         </div>
 
         <div className="settings-group">
@@ -769,161 +732,21 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
     consoles: (
       <>
         <div className="settings-group">
-          <h3 className="settings-heading display">Switch tab layout</h3>
-          <p className="settings-help">How the Switch tab shows your games.</p>
-          {settings && <LayoutChoice tab="switch" value={settings.switchLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="switch" value={settings.recentsLayouts.switch} onChoose={chooseRecentsLayout} />
-          )}
+          <h3 className="settings-heading display">{TAB_LOOK_HEADING}</h3>
+          <p className="settings-help">{TAB_LOOK_HELP}</p>
         </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">PS3 tab layout</h3>
-          <p className="settings-help">How the PS3 tab shows your games.</p>
-          {settings && <LayoutChoice tab="ps3" value={settings.ps3Layout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="ps3" value={settings.recentsLayouts.ps3} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Xbox tab layout</h3>
-          <p className="settings-help">How the Xbox tab shows your games.</p>
-          {settings && <LayoutChoice tab="xbox" value={settings.xboxLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="xbox" value={settings.recentsLayouts.xbox} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Xbox 360 tab layout</h3>
-          <p className="settings-help">How the Xbox 360 tab shows your games.</p>
-          {settings && <LayoutChoice tab="xbox360" value={settings.xbox360Layout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="xbox360" value={settings.recentsLayouts.xbox360} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">PS2 tab layout</h3>
-          <p className="settings-help">How the PS2 tab shows your games.</p>
-          {settings && <LayoutChoice tab="ps2" value={settings.ps2Layout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="ps2" value={settings.recentsLayouts.ps2} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">PSX tab layout</h3>
-          <p className="settings-help">How the PSX tab shows your games.</p>
-          {settings && <LayoutChoice tab="psx" value={settings.psxLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="psx" value={settings.recentsLayouts.psx} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">PSP tab layout</h3>
-          <p className="settings-help">How the PSP tab shows your games.</p>
-          {settings && <LayoutChoice tab="psp" value={settings.pspLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="psp" value={settings.recentsLayouts.psp} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">GameCube tab layout</h3>
-          <p className="settings-help">How the GameCube tab shows your games.</p>
-          {settings && <LayoutChoice tab="gamecube" value={settings.gamecubeLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="gamecube" value={settings.recentsLayouts.gamecube} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Wii tab layout</h3>
-          <p className="settings-help">How the Wii tab shows your games.</p>
-          {settings && <LayoutChoice tab="wii" value={settings.wiiLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="wii" value={settings.recentsLayouts.wii} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Wii U tab layout</h3>
-          <p className="settings-help">How the Wii U tab shows your games.</p>
-          {settings && <LayoutChoice tab="wiiu" value={settings.wiiuLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="wiiu" value={settings.recentsLayouts.wiiu} onChoose={chooseRecentsLayout} />}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Dreamcast tab layout</h3>
-          <p className="settings-help">How the Dreamcast tab shows your games.</p>
-          {settings && <LayoutChoice tab="dreamcast" value={settings.dreamcastLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="dreamcast" value={settings.recentsLayouts.dreamcast} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">Saturn tab layout</h3>
-          <p className="settings-help">How the Saturn tab shows your games.</p>
-          {settings && <LayoutChoice tab="saturn" value={settings.saturnLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="saturn" value={settings.recentsLayouts.saturn} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
 
-        <div className="settings-group">
-          <h3 className="settings-heading display">N64 tab layout</h3>
-          <p className="settings-help">How the N64 tab shows your games.</p>
-          {settings && <LayoutChoice tab="n64" value={settings.n64Layout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="n64" value={settings.recentsLayouts.n64} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">NES tab layout</h3>
-          <p className="settings-help">How the NES tab shows your games.</p>
-          {settings && <LayoutChoice tab="nes" value={settings.nesLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="nes" value={settings.recentsLayouts.nes} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">SNES tab layout</h3>
-          <p className="settings-help">How the SNES tab shows your games.</p>
-          {settings && <LayoutChoice tab="snes" value={settings.snesLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="snes" value={settings.recentsLayouts.snes} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">Genesis tab layout</h3>
-          <p className="settings-help">How the Genesis tab shows your games.</p>
-          {settings && <LayoutChoice tab="genesis" value={settings.genesisLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="genesis" value={settings.recentsLayouts.genesis} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">32X tab layout</h3>
-          <p className="settings-help">How the 32X tab shows your games.</p>
-          {settings && <LayoutChoice tab="sega32x" value={settings.sega32xLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="sega32x" value={settings.recentsLayouts.sega32x} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">Neo Geo tab layout</h3>
-          <p className="settings-help">How the Neo Geo tab shows your games.</p>
-          {settings && <LayoutChoice tab="neogeo" value={settings.neogeoLayout} onChoose={chooseLayout} />}
-          {settings && (
-            <RecentsChoice tab="neogeo" value={settings.recentsLayouts.neogeo} onChoose={chooseRecentsLayout} />
-          )}
-        </div>
-
-        <div className="settings-group">
-          <h3 className="settings-heading display">Arcade tab layout</h3>
-          <p className="settings-help">How the Arcade tab shows each board's games.</p>
-          {settings && <LayoutChoice tab="arcade" value={settings.arcadeLayout} onChoose={chooseLayout} />}
-          {settings && <RecentsChoice tab="arcade" value={settings.recentsLayouts.arcade} onChoose={chooseRecentsLayout} />}
-        </div>
 
         <div className="settings-group">
           <h3 className="settings-heading display">Arcade tab systems</h3>

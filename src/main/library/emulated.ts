@@ -40,15 +40,15 @@ export function withNames<T extends EmulatedGame>(config: Config, games: T[]): T
   return games.map((game) => (names[game.id] ? { ...game, title: names[game.id] } : game)).sort((a, b) => a.title.localeCompare(b.title))
 }
 
-async function art(game: EmulatedGame): Promise<Played['art']> {
+async function art(game: EmulatedGame): Promise<Played['art'] & { hero?: string }> {
   const cached = await cachedArt(game.artKey)
   const local = game.localWide && existsSync(game.localWide) ? game.localWide : undefined
-  return { portrait: cached.portrait, wide: cached.wide ?? local }
+  return { portrait: cached.portrait, wide: cached.wide ?? local, hero: cached.hero }
 }
 
 /** `played`: seconds vaporTV has timed it running. */
 export async function emulatedItem(game: EmulatedGame, lastPlayed?: number, favorite = false, played?: number): Promise<RecentItem> {
-  const { portrait, wide } = await art(game)
+  const { portrait, wide, hero } = await art(game)
   return {
     id: game.id,
     title: game.title,
@@ -57,7 +57,8 @@ export async function emulatedItem(game: EmulatedGame, lastPlayed?: number, favo
     lastPlayed: lastPlayed ? isoDate(lastPlayed) : undefined,
     playtime: minutes(played),
     cover: portrait && artUrl(portrait),
-    wide: wide && artUrl(wide)
+    wide: wide && artUrl(wide),
+    hero: hero && artUrl(hero)
   }
 }
 

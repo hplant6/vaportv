@@ -16,7 +16,10 @@ const GRIDS = '.wide-grid, .favorites-grid, .poster-grid'
  * of just above its bottom (Settings' long lists), stopping where the content ends; a
  * grid's cards always are.
  */
-export function usePageScroll(viewportHeight = stageHeight(), { center = false }: { center?: boolean } = {}): {
+export function usePageScroll(
+  viewportHeight = stageHeight(),
+  { center = false, revealRef }: { center?: boolean; /** Set to a function that scrolls to show an element (the left bar jumping to a section). */ revealRef?: { current: ((el: HTMLElement) => void) | null } } = {}
+): {
   ref: RefObject<HTMLDivElement | null>
   onFocus: (event: FocusEvent<HTMLDivElement>) => void
   style: CSSProperties
@@ -28,11 +31,11 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
   useGridBend(ref, scrollY)
 
   // Layout offsets ignore transforms, so this is stable mid-animation.
-  const onFocus = (event: FocusEvent<HTMLDivElement>): void => {
+  const reveal = (target: HTMLElement): void => {
     // A drop-down over the page (the power menu) leaves the page where it is; the
     // nav bar lives at the top, so focusing it scrolls back up.
-    if (event.target.closest('[data-focus-trap]')) return
-    if (event.target.closest('.nav')) return setScrollY(0)
+    if (target.closest('[data-focus-trap]')) return
+    if (target.closest('.nav')) return setScrollY(0)
     const offsetTop = (from: HTMLElement, stop: HTMLElement | null): number => {
       let top = 0
       for (let el: HTMLElement | null = from; el && el !== stop; el = el.offsetParent as HTMLElement | null) top += el.offsetTop
@@ -41,12 +44,15 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
     // From the top of the screen: within the content, plus where the content starts (a
     // pane's may start below the bar).
     const start = ref.current ? offsetTop(ref.current, null) : 0
-    const top = offsetTop(event.target, ref.current) + start
+    // A section that fills the screen (a tab's Spotlight) comes to the top; the first stays where it starts, under the toolbar.
+    const snap = target.closest<HTMLElement>('[data-snap-top]')
+    if (snap && ref.current) return setScrollY(snap.dataset.snapTop === 'first' ? 0 : Math.max(0, offsetTop(snap, ref.current)))
+    const top = offsetTop(target, ref.current) + start
     // Cards and tiles grow by --focus-scale past their layout box. (Nav tabs don't,
     // but they sit where the page never scrolls.)
-    const scale = Number(getComputedStyle(event.target).getPropertyValue('--focus-scale')) || 1
-    const height = event.target.offsetHeight * (1 + (scale - 1) / 2)
-    if ((center || event.target.closest(GRIDS)) && ref.current) {
+    const scale = Number(getComputedStyle(target).getPropertyValue('--focus-scale')) || 1
+    const height = target.offsetHeight * (1 + (scale - 1) / 2)
+    if ((center || target.closest(GRIDS)) && ref.current) {
       // scrollHeight: a page fills the screen (inset 0), so its own height isn't its content's.
       const end = start + ref.current.scrollHeight + BOTTOM_MARGIN
       const middle = top + height / 2 - viewportHeight / 2
@@ -54,6 +60,8 @@ export function usePageScroll(viewportHeight = stageHeight(), { center = false }
     }
     setScrollY(Math.max(0, top + height + BOTTOM_MARGIN - viewportHeight))
   }
+  if (revealRef) revealRef.current = reveal
+  const onFocus = (event: FocusEvent<HTMLDivElement>): void => reveal(event.target)
 
   return {
     ref,

@@ -324,6 +324,11 @@ const api: SteamTvApi = {
       return () => void ipcRenderer.removeListener('music:index', listener)
     }
   },
+  spotlight: (id) => ipcRenderer.invoke('spotlight:details', id),
+  tabSections: {
+    get: (tab) => ipcRenderer.invoke('tabSections:get', tab),
+    set: (tab, sections) => ipcRenderer.invoke('tabSections:set', tab, sections)
+  },
   translator: {
     status: () => ipcRenderer.invoke('translator:status'),
     setOpen: (open) => ipcRenderer.send('translator:open', open),

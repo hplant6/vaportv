@@ -22,13 +22,17 @@ interface Props {
   /** Small text beside the title. */
   note?: string | null
   className?: string
+  /** A card's been focused (the Spotlight layout shows it). */
+  onItemFocus?: (item: RecentItem) => void
 }
 
 /** A titled, horizontally scrolling row of game cards (Recents, Steam collections). */
-export function CardRow({ title, items, logos, memoryKey, hasDefault, note, className = '' }: Props) {
+export function CardRow({ title, items, logos, memoryKey, hasDefault, note, className = '', onItemFocus }: Props) {
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
-  const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - VIEWPORT_W))
+  // Narrower beside a tab's left bar (the Spotlight layout): as wide as the row's own box there.
+  const viewportW = (): number => (className.includes('spotlight-row') ? (track.current?.parentElement?.clientWidth ?? VIEWPORT_W) : VIEWPORT_W)
+  const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - viewportW()))
   useScrollTilt(track, 'x', offset, '--row-tilt')
 
   const reveal = (index: number): void => {
@@ -36,7 +40,7 @@ export function CardRow({ title, items, logos, memoryKey, hasDefault, note, clas
     const width = CARD_W
     // Keep the enlarged card, not just its layout box, inside the viewport.
     const grow = (width * (FOCUS_SCALE - 1)) / 2
-    setOffset((prev) => Math.max(0, Math.min(left - grow, Math.max(prev, left + width + grow - VIEWPORT_W))))
+    setOffset((prev) => Math.max(0, Math.min(left - grow, Math.max(prev, left + width + grow - viewportW()))))
   }
 
   return (
@@ -58,7 +62,10 @@ export function CardRow({ title, items, logos, memoryKey, hasDefault, note, clas
             item={item}
             logo={logos[item.id] ?? logos[item.platform]}
             isDefault={hasDefault && index === 0}
-            onFocus={() => reveal(index)}
+            onFocus={() => {
+              reveal(index)
+              onItemFocus?.(item)
+            }}
           />
         ))}
       </div>
