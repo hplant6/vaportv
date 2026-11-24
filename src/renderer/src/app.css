@@ -6621,6 +6621,7 @@ button {
 
 /* The Customize window: a row per section, its name (picked up to move), style, shown, and a playlist's actions. */
 .customize-panel {
+  position: relative;
   width: 1240px;
   max-height: 960px;
   align-items: stretch;
@@ -6649,14 +6650,11 @@ button {
 
 .customize-row {
   display: grid;
-  grid-template-columns: 1fr 210px 150px 140px 160px;
+  /* Name, style (drop-down), shown (switch), rename and delete (icons). */
+  grid-template-columns: 1fr 250px 150px 64px 64px;
   gap: 10px;
   align-items: center;
   transition: transform var(--dur-focus) var(--ease-focus);
-}
-
-.customize-row.elsewhere {
-  grid-template-columns: 1fr 230px;
 }
 
 .customize-row button,
@@ -6700,12 +6698,77 @@ button {
   background: var(--color-focus-tint);
 }
 
-.customize-style {
-  color: var(--color-accent) !important;
+/* The style: a drop-down, as Sort is elsewhere, its arrow up while it's open. */
+.customize-row .customize-style {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-accent);
+}
+
+.customize-style.open .side-bar-sort-arrow {
+  transform: rotate(180deg);
+}
+
+/* Shown: the app's on/off switch, with On or Off beside it. */
+.customize-row .customize-shown {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  text-align: left;
 }
 
 .customize-shown.on {
-  color: var(--color-accent) !important;
+  color: var(--color-accent);
+}
+
+.customize-shown.on .toggle {
+  background: var(--color-accent);
+}
+
+.customize-shown.on .toggle-knob {
+  transform: translateX(30px);
+}
+
+/* Rename and delete: square icon buttons. */
+.customize-row .customize-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  padding: 0;
+}
+
+.customize-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The style's drop-down, hung from its button in the panel (not in the list, which would cut it off). */
+.customize-menu-anchor {
+  position: absolute;
+  z-index: 5;
+}
+
+/* Wide enough for its longest choice on one line; above the button near the foot of the screen. */
+.customize-menu-anchor .side-bar-sort-menu {
+  width: max-content;
+  min-width: 100%;
+}
+
+.customize-menu-anchor .side-bar-sort-option {
+  white-space: nowrap;
+}
+
+.customize-menu-anchor.up .side-bar-sort-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 .customize-row.hidden .customize-name,
@@ -6724,7 +6787,7 @@ button {
   box-shadow: var(--shadow-card);
 }
 
-.customize-action.danger {
+.customize-icon.danger {
   color: #ff8a7a !important;
   border-color: rgba(255, 138, 122, 0.6) !important;
 }
