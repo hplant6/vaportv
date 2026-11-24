@@ -206,6 +206,10 @@ export interface Config {
   musicVisualizer?: VisualizerLook
   /** How much Now playing's cover dances: 'lots' when unset. */
   musicCoverMotion?: CoverMotion
+  /** The Music tab's choices from its Customize window: albums in plastic sleeves, hidden albums shown (faded). */
+  musicTab?: { sleeves?: boolean; showHidden?: boolean }
+  /** Albums kept off the Music tab (their ids): Hide in an album's Start window. */
+  musicHiddenAlbums?: string[]
   /** How hard the visualizer works: 'fast' when unset. */
   musicVisualizerPower?: VisualizerPower
   /** Ambience, the layer under the music: as `music`, from the Ambience folder and the built-in rain. */

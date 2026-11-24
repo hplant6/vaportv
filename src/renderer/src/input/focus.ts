@@ -357,6 +357,9 @@ export const MEDIA_FAVORITE_EVENT = 'steamtv:media-favorite'
 /** X on one: its playlists. MediaDetails listens; detail is the card. */
 export const MEDIA_PLAYLIST_EVENT = 'steamtv:media-playlist'
 
+/** Start on an album's card on the Music tab: its window (detail: the card, with data-album-id). */
+export const ALBUM_MENU_EVENT = 'steamtv:album-menu'
+
 /** The game-options button on a song: SongMenu opens (detail: the song's row). */
 export const SONG_MENU_EVENT = 'steamtv:song-menu'
 
@@ -375,6 +378,11 @@ export function gameMenu(): void {
     return
   }
   if (open) return
+  // An album on the Music tab: its window (play, playlists, favourite, hide...).
+  if (el?.dataset.albumId) {
+    window.dispatchEvent(new CustomEvent(ALBUM_MENU_EVENT, { detail: el }))
+    return
+  }
   if (el?.dataset.itemId || el?.dataset.appId) window.dispatchEvent(new CustomEvent(GAME_MENU_EVENT, { detail: el }))
 }
 

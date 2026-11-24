@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { MusicAlbum, MusicIndexStatus, MusicPlace, MusicPlaylist, MusicTags } from '../../../shared/types'
 import { listOrder, resolveSections, type TabSection } from '../../../shared/tabSections'
 import { LibraryToolbar, type ToolbarMenu } from '../components/LibraryToolbar'
@@ -9,7 +9,11 @@ import { useDrag } from '../input/drag'
 import { useScrollTilt } from '../scrollTilt'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
-import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
+import { ALBUM_MENU_EVENT, focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
+import calendar from '../assets/calendar.svg'
+import clockIcon from '../assets/clock.svg'
+import { GamePanel, row, useCloseKeys, type Fact } from '../components/GameDialog'
+import { sleeveFor, useSleeveList } from '../music/sleeves'
 import { playNow, toggleFavoriteAlbum, useMusicFavorites } from '../music/favorites'
 import { newPlaylist, pickPlaylist, reloadPlaylists, useMusicPlaylists } from '../music/playlists'
 import { MusicSources } from '../music/MusicSources'
@@ -102,6 +106,9 @@ type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Art
 
 interface MusicList extends SideList<Card> {}
 
+/** How the cards look, from the tab's Customize window: sleeves to wrap albums in ([] for none), and which albums are hidden (faded when shown). */
+const MusicCardContext = createContext<{ sleeves: string[]; hidden: Set<string> }>({ sleeves: [], hidden: new Set() })
+
 /** A section's element id, for the bar to jump to. */
 const sectionId = (listId: string): string => `music-section-${listId.replace(/[^A-Za-z0-9_-]/g, '_')}`
 
@@ -149,6 +156,28 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [jump, setJump] = useState<{ id: string; n: number } | undefined>(undefined)
   /** The card the cursor's on (or was last on) in a Spotlight section, and which section. */
   const [spot, setSpot] = useState<{ section: string; card: Card } | null>(null)
+  /** Customize's choices (albums in plastic sleeves, hidden albums shown) and the hidden albums. */
+  const [tabOptions, setTabOptions] = useState<{ sleeves: boolean; showHidden: boolean; hidden: Set<string> }>({ sleeves: false, showHidden: false, hidden: new Set() })
+  const sleeveNames = useSleeveList()
+  useEffect(() => {
+    window.steamtv.music.tabOptions().then((o) => setTabOptions({ sleeves: o.sleeves, showHidden: o.showHidden, hidden: new Set(o.hidden) }))
+  }, [])
+  const setOption = (key: 'sleeves' | 'showHidden', on: boolean): void => {
+    setTabOptions((was) => ({ ...was, [key]: on }))
+    void window.steamtv.music.setTabOption(key, on)
+  }
+  const setHidden = (album: MusicAlbum, hidden: boolean): void => {
+    setTabOptions((was) => {
+      const next = new Set(was.hidden)
+      if (hidden) next.add(album.id)
+      else next.delete(album.id)
+      return { ...was, hidden: next }
+    })
+    void window.steamtv.music.setHidden(album.id, hidden)
+    toast(hidden ? `Hid ${album.title}${tabOptions.showHidden ? '' : ' from Music'}` : `${album.title} is back in Music`)
+  }
+  /** Start on an album: its window, and the card to come back to. */
+  const [albumMenu, setAlbumMenu] = useState<{ album: MusicAlbum; card: HTMLElement } | null>(null)
   /** Add music's page over the tab, and where to put the cursor back. */
   const [sources, setSources] = useState<{ from: HTMLElement | null } | null>(null)
   useEffect(() => {
@@ -221,7 +250,9 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }, [albums])
   const genreOn = genre !== ALL_GENRES && genres.some((g) => g.key === genre)
   const genreName = genres.find((g) => g.key === genre)?.name
-  const shown = useMemo(() => (genreOn ? (albums ?? []).filter((a) => a.genre && genreKey(a.genre) === genre) : (albums ?? [])), [albums, genre, genreOn])
+  // The albums on the tab: hidden ones left out (unless Customize shows them), and only the genre chosen.
+  const visible = useMemo(() => (tabOptions.showHidden ? (albums ?? []) : (albums ?? []).filter((a) => !tabOptions.hidden.has(a.id))), [albums, tabOptions])
+  const shown = useMemo(() => (genreOn ? visible.filter((a) => a.genre && genreKey(a.genre) === genre) : visible), [visible, genre, genreOn])
   const artists = useMemo(() => {
     const byArtist = new Map<string, Artist>()
     for (const a of shown) {
@@ -259,7 +290,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       // Liked songs first (one tile), then the favorite albums, newest first (in the genre chosen).
       items: [
         ...(favorites.songs.length ? [{ kind: 'liked' as const, songs: favorites.songs }] : []),
-        ...asAlbums(favorites.albums.filter((a) => !genreOn || (a.genre && genreKey(a.genre) === genre)))
+        ...asAlbums(favorites.albums.filter((a) => (tabOptions.showHidden || !tabOptions.hidden.has(a.id)) && (!genreOn || (a.genre && genreKey(a.genre) === genre))))
       ],
       empty: 'Press Y on an album to make it a favorite, or on a song (or in Now playing) to like it.'
     },
@@ -330,6 +361,18 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
     }
   ]
 
+  // Start on an album card here: its window.
+  useEffect(() => {
+    const onMenu = (event: Event): void => {
+      const card = (event as CustomEvent<HTMLElement>).detail
+      const found = (albums ?? []).find((x) => x.id === card.dataset.albumId)
+      if (found) setAlbumMenu({ album: found, card })
+    }
+    window.addEventListener(ALBUM_MENU_EVENT, onMenu)
+    return () => window.removeEventListener(ALBUM_MENU_EVENT, onMenu)
+  }, [albums])
+  const cardLook = useMemo(() => ({ sleeves: tabOptions.sleeves ? sleeveNames : [], hidden: tabOptions.hidden }), [tabOptions, sleeveNames])
+
   const playAlbum = (a: MusicAlbum, from: HTMLElement | null, at = 0, shuffle = false): void => {
     setPlayed(markAlbumPlayed(a.id))
     window.steamtv.music.albumSongs(a.id).then((songs) => playNow(songs, from, at, shuffle))
@@ -348,7 +391,8 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   return (
-    <div className={`page side-layout stacked music-tab${open ? '' : ' closed'}`}>
+    <MusicCardContext.Provider value={cardLook}>
+    <div className={`page side-layout stacked music-tab${open ? '' : ' closed'}${cardLook.sleeves.length ? ' sleeved' : ''}`}>
       <NavBar active="music" onNavigate={onNavigate} />
       <SideBar
         tab={SCREEN}
@@ -427,6 +471,19 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           }}
           onPlaylistsChanged={() => void reloadPlaylists()}
           onClose={() => setCustomizing(false)}
+          options={[
+            // Only where there are sleeves (Henry's box: a public build has none).
+            ...(sleeveNames.length
+              ? [{ id: 'sleeves', label: 'Plastic sleeves', detail: 'Albums wrapped as new records, their corners all but square', on: tabOptions.sleeves, onToggle: () => setOption('sleeves', !tabOptions.sleeves) }]
+              : []),
+            {
+              id: 'showHidden',
+              label: 'Show hidden albums',
+              detail: tabOptions.hidden.size ? `${tabOptions.hidden.size} hidden (Start on one to bring it back)` : 'None hidden: Start on an album to hide it',
+              on: tabOptions.showHidden,
+              onToggle: () => setOption('showHidden', !tabOptions.showHidden)
+            }
+          ]}
         />
       )}
       {sources && (
@@ -477,6 +534,25 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
           }}
         />
       )}
+      {albumMenu && (
+        <AlbumOptions
+          album={albumMenu.album}
+          hidden={tabOptions.hidden.has(albumMenu.album.id)}
+          onClose={() => {
+            const card = albumMenu.card
+            setAlbumMenu(null)
+            if (card.isConnected) setTimeout(() => focus(card))
+          }}
+          onPlay={(shuffle) => playAlbum(albumMenu.album, albumMenu.card, 0, shuffle)}
+          onOpen={() => setAlbum({ album: albumMenu.album, from: albumMenu.card })}
+          onArtist={() => {
+            const name = (albumMenu.album.artist ?? 'Unknown artist').toLowerCase()
+            const found = artists.find((x) => x.name.toLowerCase() === name)
+            if (found) setArtist({ artist: found, from: albumMenu.card })
+          }}
+          onHide={(hidden) => setHidden(albumMenu.album, hidden)}
+        />
+      )}
       {album && (
         <AlbumPage
           album={album.album}
@@ -489,6 +565,7 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         />
       )}
     </div>
+    </MusicCardContext.Provider>
   )
 }
 
@@ -574,6 +651,9 @@ function MusicCard({
       </button>
     )
   }
+  const look = useContext(MusicCardContext)
+  const sleeve = card.kind === 'album' && card.album.cover ? sleeveFor(card.album.id, look.sleeves) : null
+  const hiddenAlbum = card.kind === 'album' && look.hidden.has(card.album.id)
   const [key, title, sub, cover] =
     card.kind === 'album'
       ? [card.album.id, card.album.title, [card.album.artist, card.album.included ? 'Included with vaporTV' : card.album.year].filter(Boolean).join(' · '), card.album.cover]
@@ -583,7 +663,7 @@ function MusicCard({
   return (
     <button
       key={key}
-      className={`recent-card album-card${card.kind === 'artist' ? ' artist-card' : ''}`}
+      className={`recent-card album-card${card.kind === 'artist' ? ' artist-card' : ''}${hiddenAlbum ? ' hidden-album' : ''}`}
       tabIndex={-1}
       data-focusable=""
       data-select-sound="move"
@@ -593,7 +673,7 @@ function MusicCard({
       // The Favorite button on an album (music/favorites.ts).
       {...(card.kind === 'album' ? { 'data-album-id': card.album.id, 'data-title': card.album.title } : {})}
       onFocus={onFocus}
-    onClick={(event) => onOpen(card, event.currentTarget)}
+      onClick={(event) => onOpen(card, event.currentTarget)}
     >
       {card.kind === 'album' && favorites?.has(card.album.id) && (
         <span className="favorite-star" aria-label="Favourite">
@@ -608,6 +688,7 @@ function MusicCard({
             <span className="no-art-band">{card.kind === 'place' ? '♪' : title}</span>
           </span>
         )}
+        {sleeve && <img className="music-card-sleeve" src={sleeve.url} alt="" style={{ transform: `rotate(${sleeve.turn}deg)` }} />}
       </div>
       <div className="recent-footer">
         <div className="recent-text">
@@ -735,6 +816,73 @@ function MusicSpotlightSection({
       )}
       <MusicCardRow className="spotlight-row" title={title} cards={cards} memoryKey={memoryKey} hasDefault={hasDefault} favorites={favorites} onOpen={onOpen} onFocusCard={onFocusCard} />
     </section>
+  )
+}
+
+/** "42 min", "1 hr 3 min": an album's length. */
+function minutes(seconds: number): string {
+  const m = Math.round(seconds / 60)
+  return m >= 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m} min`
+}
+
+/**
+ * Start on an album (the Music tab): its window, as a game's or a film's. Play or shuffle it; open
+ * its page; put it in a playlist; favourite it; make it the background music; go to its artist;
+ * hide it from the tab (or, shown faded, bring it back). B or Start closes it.
+ */
+function AlbumOptions({
+  album,
+  hidden,
+  onClose,
+  onPlay,
+  onOpen,
+  onArtist,
+  onHide
+}: {
+  album: MusicAlbum
+  hidden: boolean
+  onClose: () => void
+  onPlay: (shuffle: boolean) => void
+  onOpen: () => void
+  onArtist: () => void
+  onHide: (hidden: boolean) => void
+}) {
+  const panel = useRef<HTMLDivElement>(null)
+  const favorites = useMusicFavorites()
+  const favorite = favorites.albumIds.has(album.id)
+  const background = useBackgroundChoice()
+  const backgroundChoice = BG_ALBUM + album.id
+  useCloseKeys(onClose)
+  useEffect(() => {
+    const first = panel.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (first) focus(first)
+  }, [])
+  const facts: Fact[] = [
+    ...(album.year ? [[calendar, 'Year', String(album.year)] as Fact] : []),
+    [clockIcon, 'Length', `${album.songs} ${album.songs === 1 ? 'song' : 'songs'} · ${minutes(album.duration)}`]
+  ]
+  const then = (act: () => void) => (): void => {
+    onClose()
+    act()
+  }
+  return (
+    // The cover square and whole (over a blur of itself), not cut to a game's poster.
+    <GamePanel panel={panel} title={album.title} cover={album.cover} wide facts={facts} heading={album.artist ?? 'Album'}>
+      {row('Play', '', then(() => onPlay(false)))}
+      {row('Shuffle', '', then(() => onPlay(true)))}
+      {row('Songs', 'Its page: every song', then(onOpen))}
+      {row(
+        'Add to a playlist',
+        'All its songs, to a playlist or a new one',
+        then(() =>
+          void window.steamtv.music.albumSongs(album.id).then((songs) => pickPlaylist({ paths: songs.map((s) => s.path), name: album.title, from: document.activeElement as HTMLElement | null }))
+        )
+      )}
+      {row(favorite ? 'Remove from Favorites' : 'Add to Favorites', favorite ? 'A favorite' : '', () => void toggleFavoriteAlbum(album.id, album.title))}
+      {row('Background music', background === backgroundChoice ? 'Playing behind vaporTV' : 'Play it behind vaporTV', () => void setBackground(backgroundChoice, album.title))}
+      {album.artist && row('Go to artist', album.artist, then(onArtist))}
+      {row(hidden ? 'Unhide' : 'Hide', hidden ? 'Bring it back to the Music tab' : 'Keep it off the Music tab (Customize can show it again)', then(() => onHide(!hidden)))}
+    </GamePanel>
   )
 }
 

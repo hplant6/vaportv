@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { FALLBACK, paletteFromPixels } from './palette'
 import type { CoverMotion } from '../../../shared/types'
 import { musicLevels } from './levels'
+import { randomSleeve, useSleeveList, type Sleeve } from './sleeves'
 
 // Now playing's album cover, in the middle of the visualizer: dancing to the music, with a glow
 // in the cover's own colour behind it. A new cover fades in over the old one.
@@ -42,27 +43,6 @@ function glowColour(url: string | undefined): Promise<string> {
     img.onerror = () => resolve(FALLBACK[0])
     img.src = url
   })
-}
-
-/** The plastic sleeves there are (none in a public build), asked for once. */
-let sleeveList: Promise<string[]> | null = null
-function sleeves(): Promise<string[]> {
-  sleeveList ??= fetch(new URL('private/sleeves.json', document.baseURI).href)
-    .then((res) => (res.ok ? (res.json() as Promise<string[]>) : []))
-    .catch(() => [])
-  return sleeveList
-}
-
-/** An album's sleeve and how it's turned (a quarter turn at a time), the same each time it plays. */
-type Sleeve = { url: string; turn: number }
-
-/** A sleeve at random, and a random quarter turn of it: not `last` again, when there's a choice. */
-function randomSleeve(list: string[], last: Sleeve | null): Sleeve | null {
-  if (!list.length) return null
-  for (;;) {
-    const sleeve = { url: new URL(`private/${list[Math.floor(Math.random() * list.length)]}`, document.baseURI).href, turn: Math.floor(Math.random() * 4) * 90 }
-    if (!last || sleeve.url !== last.url || sleeve.turn !== last.turn) return sleeve
-  }
 }
 
 /** A smooth random path, -1 to 1: random points one unit apart, eased between. */
@@ -120,18 +100,11 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
   const box = useRef<HTMLDivElement>(null)
   const glow = useRef<HTMLDivElement>(null)
   const [colour, setColour] = useState(FALLBACK[0])
-  const [sleeveNames, setSleeveNames] = useState<string[]>([])
+  const sleeveNames = useSleeveList()
   // Each cover's sleeve while it's on screen (and fading out): picked as it comes up, forgotten
   // once it's gone, so it gets a new one when it comes back.
   const sleeveOf = useRef(new Map<string, Sleeve | null>())
   const lastSleeve = useRef<Sleeve | null>(null)
-  useEffect(() => {
-    let live = true
-    void sleeves().then((list) => live && setSleeveNames(list))
-    return () => {
-      live = false
-    }
-  }, [])
   // The cover showing, and the one before it fading out.
   const [shown, setShown] = useState<{ now?: string; was?: string }>({ now: cover })
 

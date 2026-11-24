@@ -876,6 +876,20 @@ ipcMain.handle('music:indexStatus', () => musicIndexStatus())
 ipcMain.handle('music:favorites', () => musicFavorites())
 ipcMain.handle('music:toggleSong', (_event, path: string) => toggleFavoriteSong(String(path)))
 ipcMain.handle('music:toggleAlbum', (_event, id: string) => toggleFavoriteAlbum(String(id)))
+// The Music tab's Customize choices, and the albums hidden from it.
+ipcMain.handle('music:tabOptions', async () => {
+  const config = await loadConfig()
+  return { sleeves: !!config.musicTab?.sleeves, showHidden: !!config.musicTab?.showHidden, hidden: config.musicHiddenAlbums ?? [] }
+})
+ipcMain.handle('music:setTabOption', (_event, key: 'sleeves' | 'showHidden', on: boolean) =>
+  key === 'sleeves' || key === 'showHidden' ? saveConfig((config) => ({ musicTab: { ...config.musicTab, [key]: !!on } })) : undefined
+)
+ipcMain.handle('music:setHidden', (_event, id: string, hidden: boolean) =>
+  saveConfig((config) => {
+    const rest = (config.musicHiddenAlbums ?? []).filter((h) => h !== String(id))
+    return { musicHiddenAlbums: hidden ? [...rest, String(id)] : rest }
+  })
+)
 // Radio and the background station: Claude Code on the box, and music of your own to choose from.
 ipcMain.handle('music:claudeReady', async () => !!claudeBin() && (await hasOwnMusic()))
 ipcMain.handle('music:toggleDislike', (_event, path: string) => toggleDislike(String(path)))

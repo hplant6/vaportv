@@ -25,6 +25,8 @@ interface Props {
   onSections: (sections: TabSection[]) => void
   onPlaylistsChanged: () => void
   onClose: () => void
+  /** Switches for the whole tab, above its sections (Music's plastic sleeves, hidden albums). */
+  options?: { id: string; label: string; detail?: string; on: boolean; onToggle: () => void }[]
 }
 
 /** What the tab's first group holds, under its heading. */
@@ -41,7 +43,7 @@ const MENU_ROOM = 320
 
 const styleName = (style: TabSection['style']): string => SECTION_STYLES.find((s) => s.id === style)?.name ?? style
 
-export function TabCustomize({ tab, label, lists, sections, onSections, onPlaylistsChanged, onClose }: Props) {
+export function TabCustomize({ tab, label, lists, sections, onSections, onPlaylistsChanged, onClose, options = [] }: Props) {
   const panel = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
   /** The section picked up to move. */
@@ -184,6 +186,30 @@ export function TabCustomize({ tab, label, lists, sections, onSections, onPlayli
         <p className="settings-help">
           {moving ? 'Up and down to move it within its group, A to put it down.' : 'A on a name picks it up to move it within its group. The sections stack down the tab in this order; a grid goes to the bottom.'}
         </p>
+        {options.length > 0 && (
+          <div className="customize-options">
+            {options.map((o) => (
+              <button
+                key={o.id}
+                className={`customize-option${o.on ? ' on' : ''}`}
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                role="switch"
+                aria-checked={o.on}
+                onClick={o.onToggle}
+              >
+                <span className="customize-option-text">
+                  <span className="customize-option-name display">{o.label}</span>
+                  {o.detail && <span className="customize-option-detail">{o.detail}</span>}
+                </span>
+                <span className="toggle" aria-hidden="true">
+                  <span className="toggle-knob" />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="customize-list" ref={box}>
           {listOrder(sections).map((section, i, ordered) => {
             const list = lists.find((l) => l.id === section.id)

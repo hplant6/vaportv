@@ -5867,6 +5867,56 @@ button {
   --card-art-h: var(--card-w);
 }
 
+/* The albums' grid, as the game grids: only the covers; the name and artist slide up over the
+   foot of the one the cursor rests on (as the Video tab's posters' bar). */
+.album-grid .album-card .recent-footer {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(6, 4, 8, 0.89);
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.album-grid .album-card:focus .recent-footer {
+  transform: none;
+  transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.album-grid .album-card {
+  position: relative;
+}
+
+/* An album hidden from the tab, shown (Customize → Show hidden albums): faded. */
+.album-card.hidden-album {
+  opacity: 0.4;
+}
+
+.album-card.hidden-album:focus {
+  opacity: 0.75;
+}
+
+/* Albums in plastic sleeves (Customize → Plastic sleeves): the sleeve over the cover, and corners
+   all but square, as a record's. */
+.music-card-sleeve {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.music-tab.sleeved .album-card,
+.music-tab.sleeved .album-card .recent-art,
+.music-page.sleeved .album-card,
+.music-page.sleeved .album-card .recent-art {
+  border-radius: 2px;
+}
+
 /* Albums (and artists, places): square covers, as many across as fit; four beside the bar, as Media's posters. */
 .album-grid {
   margin-top: 16px;
@@ -6698,6 +6748,64 @@ button {
 
 .customize-panel .settings-help {
   margin: -8px 0 0;
+}
+
+/* Switches for the whole tab (Music's sleeves, hidden albums), above its sections. */
+.customize-options {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 6px;
+}
+
+.customize-option {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  height: 72px;
+  padding: 0 22px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  color: var(--color-text);
+  background: var(--color-panel);
+  text-align: left;
+  transition:
+    border-color var(--dur-focus) var(--ease-focus),
+    background var(--dur-focus) var(--ease-focus);
+}
+
+.customize-option:focus {
+  outline: none;
+  border-color: var(--color-accent-line);
+  background: var(--color-focus-tint);
+}
+
+.customize-option-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customize-option-name {
+  font-size: var(--text-label);
+}
+
+.customize-option-detail {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  opacity: 0.6;
+}
+
+.customize-option.on .toggle {
+  background: var(--color-accent);
+}
+
+.customize-option.on .toggle-knob {
+  transform: translateX(30px);
 }
 
 .customize-list {

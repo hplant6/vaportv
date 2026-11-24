@@ -1212,6 +1212,11 @@ export interface SteamTvApi {
     toggleSong(path: string): Promise<boolean>
     /** Favorites or unfavorites an album (by index id); true if a favorite now. */
     toggleAlbum(id: string): Promise<boolean>
+    /** The Music tab's Customize choices (plastic sleeves, hidden albums shown) and the hidden albums' ids. */
+    tabOptions(): Promise<{ sleeves: boolean; showHidden: boolean; hidden: string[] }>
+    setTabOption(key: 'sleeves' | 'showHidden', on: boolean): Promise<void>
+    /** Keeps an album off the Music tab, or brings it back. */
+    setHidden(id: string, hidden: boolean): Promise<void>
     /** Thumbs down on a song (or back up): never on radio again, and Claude hears it; true if disliked now. */
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */
