@@ -1,8 +1,6 @@
-import { current, next, playerState } from '../music/player'
-import { toast } from '../components/Toast'
+import { nextSong } from './songs'
 import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, toggleSound, voiceSearch, type Direction } from './focus'
 import { keepAwake, noteActivity, noteInput } from './idle'
-import { skipTrack } from '../components/BackgroundMusic'
 import { ASSIGNABLE_BUTTONS, comboButtons, CONTROL_ACTIONS, CONTROL_COMBOS, DEFAULT_COMBOS, DEFAULT_CONTROLS, type Combos, type ControlAction, type ControlCombo, type Controls } from '../../../shared/controls'
 import { registerDiagnostics } from '../diagnostics'
 import { OPEN_BUG_REPORT_EVENT } from '../components/BugReportDialog'
@@ -56,13 +54,7 @@ const ON_PRESS: Partial<Record<ControlAction, () => void>> = {
   voiceSearch,
   nextSong: () => {
     window.steamtv.logInput('next song (controller)')
-    // Whatever you hear: the Music player's song when it has a queue, else background music's.
-    if (playerState().at >= 0) {
-      void next().then(() => {
-        const now = current()
-        if (now) toast(`♪ ${now.title}`)
-      })
-    } else skipTrack('music', 1, true)
+    nextSong()
   },
   previousTab: () => switchTab(-1),
   nextTab: () => switchTab(1)

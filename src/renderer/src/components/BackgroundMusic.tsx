@@ -86,7 +86,7 @@ function toggleSoundOff(): void {
     // Everything with its own sound; a backdrop's video is muted, and stays playing.
     for (const media of document.querySelectorAll<HTMLMediaElement>('audio, video')) if (!media.muted) media.pause()
   }
-  toast(soundOff ? 'Sound off. Press the same two buttons again to turn it back on' : 'Sound on')
+  toast(soundOff ? 'Sound off. Do the same again to turn it back on' : 'Sound on')
   window.dispatchEvent(new Event(SOUND_TOGGLED_EVENT))
 }
 const SOUND_TOGGLED_EVENT = 'steamtv:sound-toggled'

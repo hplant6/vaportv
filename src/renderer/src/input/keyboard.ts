@@ -1,6 +1,31 @@
-import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, type Direction } from './focus'
+import { activate, back, controlsGuide, favorite, gameMenu, move, openSettings, playlist, sideBar, switchTab, toggleSound, voiceSearch, type Direction } from './focus'
+import { nextSong, previousSong } from './songs'
+import { CLAUDE_EVENT } from '../components/ClaudeApp'
+import { TRANSLATOR_EVENT } from '../components/TranslatorApp'
 import { SCREENSAVER_EVENT } from '../components/Screensaver'
 import { noteInput } from './idle'
+
+/**
+ * Function keys for a remote's spare buttons (the Sofabaton app sends any of them): what a
+ * controller does with a button or a pair, and the built-in apps. F-keys, as they type nothing
+ * in text boxes, and Steam leaves them alone (unlike Mute and the media keys).
+ */
+const REMOTE_KEYS: Record<string, { what: string; act: () => void }> = {
+  F3: { what: 'sound off/on', act: toggleSound },
+  F4: { what: 'previous song', act: previousSong },
+  F5: { what: 'next song', act: nextSong },
+  F6: { what: 'Claude', act: () => openApp(CLAUDE_EVENT) },
+  F7: { what: 'translator', act: () => openApp(TRANSLATOR_EVENT) },
+  F8: { what: 'Settings', act: openSettings },
+  F9: { what: 'voice search', act: voiceSearch }
+}
+
+/** Opens a built-in app as its tile does, coming back to what had the cursor. Not over one already open (both are .claude-app). */
+function openApp(name: string): void {
+  if (document.querySelector('.claude-app')) return
+  const from = document.activeElement instanceof HTMLElement ? document.activeElement : document.body
+  window.dispatchEvent(new CustomEvent(name, { detail: from }))
+}
 
 const DIRECTIONS: Record<string, Direction> = {
   ArrowUp: 'up',
@@ -71,6 +96,12 @@ export function startKeyboard(): void {
       if (!event.repeat) {
         window.steamtv.logInput('screensaver key')
         window.dispatchEvent(new CustomEvent(SCREENSAVER_EVENT, { detail: 'preview' }))
+      }
+    } else if (REMOTE_KEYS[event.key]) {
+      event.preventDefault()
+      if (!event.repeat) {
+        window.steamtv.logInput(`key ${event.key}: ${REMOTE_KEYS[event.key].what}`)
+        REMOTE_KEYS[event.key].act()
       }
     } else if (event.key === 'ContextMenu') {
       // A keyboard's Menu key. Remotes' Menu buttons send the HID "Menu" key (Props), which
