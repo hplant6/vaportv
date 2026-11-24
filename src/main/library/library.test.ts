@@ -373,10 +373,11 @@ describe('game playlists', () => {
     expect(placesOf(lists[0])).toEqual(['switch'])
     lists = withShowOn(lists, 'a', ['switch', 'home', 'switch'])
     expect(placesOf(lists[0])).toEqual(['switch', 'home'])
-    // Never nowhere.
-    expect(withShowOn(lists, 'a', [])).toBe(lists)
+    // Switched off everywhere: nowhere (a new one with no choice still shows on Home).
+    expect(placesOf(withShowOn(lists, 'a', [])[0])).toEqual([])
     expect(placesOf(withNew([], 'X', 'b', [])[0])).toEqual(['home'])
     expect(playlistPlacesLabel(['switch', 'home'])).toBe('Home, Switch')
+    expect(playlistPlacesLabel([])).toBe('Not shown')
   })
 
   it('makes a new playlist for the console tab it was made on, else Home', () => {

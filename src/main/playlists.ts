@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { GamePlaylist, PlaylistPlace } from '../shared/types'
+import { isGrid, type SectionStyle } from '../shared/tabSections'
 
 // Game playlists: your own lists of games from any console and Steam (as ES-DE's custom
 // collections). Each shows as a row on Home, in a tab's left bar, or both, as set in Settings
@@ -35,9 +36,9 @@ function change<T>(edit: (playlists: GamePlaylist[]) => { next: GamePlaylist[]; 
   return run
 }
 
-/** Where it shows: as saved, or Home for one made before there was a choice. */
+/** Where it shows: as saved (nowhere, switched off everywhere), or Home for one made before there was a choice. */
 export function placesOf(playlist: GamePlaylist): PlaylistPlace[] {
-  return playlist.showOn?.length ? playlist.showOn : ['home']
+  return playlist.showOn ?? ['home']
 }
 
 export const showsOn = (playlist: GamePlaylist, place: PlaylistPlace): boolean => placesOf(playlist).includes(place)
@@ -48,9 +49,8 @@ export function withNew(playlists: GamePlaylist[], name: string, id: string, sho
   return [...playlists, { id, name, items: item ? [item] : [], showOn: showOn.length ? [...new Set(showOn)] : ['home'] }]
 }
 
-/** Where it shows; left as it was if `showOn` is empty, so it always shows somewhere. */
+/** Where it shows; nowhere, with `showOn` empty (kept, and still in Settings, to switch back on). */
 export function withShowOn(playlists: GamePlaylist[], playlist: string, showOn: PlaylistPlace[]): GamePlaylist[] {
-  if (!showOn.length) return playlists
   return playlists.map((p) => (p.id === playlist ? { ...p, showOn: [...new Set(showOn)] } : p))
 }
 
@@ -73,6 +73,31 @@ export function withMoved(playlists: GamePlaylist[], playlist: string, direction
   const next = [...playlists]
   ;[next[i], next[j]] = [next[j], next[i]]
   return next
+}
+
+/** In the order `ids` gives (Settings → Home's list, as moved); any it leaves out keep their places after them. */
+export function withOrder(playlists: GamePlaylist[], ids: string[]): GamePlaylist[] {
+  const byId = new Map(playlists.map((p) => [p.id, p]))
+  const ordered = ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
+  return [...ordered, ...playlists.filter((p) => !ids.includes(p.id))]
+}
+
+export function orderPlaylists(ids: string[]): Promise<void> {
+  return change((playlists) => ({ next: withOrder(playlists, ids), result: undefined }))
+}
+
+/**
+ * How it shows on Home. Home has room for one grid, at the bottom (a grid scrolls on and on):
+ * another playlist that was a grid goes back to a carousel.
+ */
+export function withHomeStyle(playlists: GamePlaylist[], playlist: string, style: SectionStyle): GamePlaylist[] {
+  return playlists.map((p) =>
+    p.id === playlist ? { ...p, homeStyle: style } : isGrid(style) && p.homeStyle && isGrid(p.homeStyle) ? { ...p, homeStyle: 'carousel' } : p
+  )
+}
+
+export function setPlaylistHomeStyle(playlist: string, style: SectionStyle): Promise<void> {
+  return change((playlists) => ({ next: withHomeStyle(playlists, playlist, style), result: undefined }))
 }
 
 export function createPlaylist(name: string, showOn: PlaylistPlace[], item?: string): Promise<string> {

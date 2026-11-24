@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gameTab, newPlaylistPlace, PLAYLIST_TABS, playlistPlacesLabel, playlistTakes, TAB_LIST } from '../../../shared/tabs'
 import type { PlaylistChoice, PlaylistPlace, PlaylistRow } from '../../../shared/types'
+import { isGrid, SECTION_STYLES, type SectionStyle } from '../../../shared/tabSections'
+import { SortMenu } from './SideBar'
 import { useTabArrangement } from '../availableTabs'
 import { currentScreen } from '../currentScreen'
-import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
+import { focus, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { HOME_CHANGED_EVENT } from '../screens/Settings'
 import { ActionRow, OverStage } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
@@ -171,6 +173,244 @@ export function usePlaylistCount(gameId: string, recount: unknown): number | nul
 }
 
 /** Settings → Home → Game playlists: each one (A to edit), then New playlist. */
+/** About how tall the style drop-down is (four choices). */
+const STYLE_MENU_ROOM = 320
+
+/**
+ * Settings → Home: the playlists' rows on Home, as a tab's Customize window has its sections: a
+ * row each, in the order they show (under everything else on Home). Each row: its name (A picks
+ * it up; up and down move it; A or B puts it down), its style (a drop-down: Spotlight, Carousel or
+ * a grid, which goes to the bottom), whether it shows on Home (a switch), rename and delete (icon
+ * buttons; delete asks for a second press). Changes are kept as they're made. The order is the
+ * playlists' own, so a tab's left bar lists them so too.
+ */
+export function HomePlaylistsSettings() {
+  const group = useRef<HTMLDivElement>(null)
+  const [rows, setRows] = useState<PlaylistRow[] | null>(null)
+  /** The playlist picked up to move. */
+  const [moving, setMoving] = useState<string | null>(null)
+  const [naming, setNaming] = useState<PlaylistRow | null>(null)
+  /** A playlist's Delete pressed once: the next press deletes it. */
+  const [confirming, setConfirming] = useState<string | null>(null)
+  /** The playlist whose style drop-down is open, and where its button is in the group. */
+  const [styleMenu, setStyleMenu] = useState<{ id: string; top: number; left: number; width: number; height: number; up: boolean } | null>(null)
+  const api = window.steamtv.gamePlaylists
+  const reload = useCallback(() => api.list().then(setRows), [])
+  useEffect(() => {
+    reload()
+    // Changed elsewhere (a playlist's window under Game playlists, a game's X menu): this follows.
+    window.addEventListener(HOME_CHANGED_EVENT, reload)
+    return () => window.removeEventListener(HOME_CHANGED_EVENT, reload)
+  }, [reload])
+  const changed = (): Promise<unknown> => reload().then(homeChanged)
+
+  useEffect(() => {
+    if (!confirming) return
+    const timer = setTimeout(() => setConfirming(null), 4000)
+    return () => clearTimeout(timer)
+  }, [confirming])
+
+  // The name keeps the cursor as its row moves, and the pane follows it.
+  useLayoutEffect(() => {
+    if (!moving) return
+    const name = document.querySelector<HTMLElement>(`.customize-name[data-playlist-id="${moving}"]`)
+    if (!name) return
+    if (document.activeElement !== name) focus(name)
+    else name.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+  }, [moving, rows])
+
+  // Picked up: up and down move it (kept as it goes), B puts it down as A does.
+  useEffect(() => {
+    if (!moving || !rows) return
+    const onMove = (event: Event): void => {
+      const direction = (event as CustomEvent<Direction>).detail
+      const i = rows.findIndex((r) => r.id === moving)
+      const j = direction === 'up' ? i - 1 : direction === 'down' ? i + 1 : -1
+      if (i < 0 || j < 0 || j >= rows.length) return
+      const next = [...rows]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      setRows(next)
+      api.order(next.map((r) => r.id)).then(homeChanged)
+    }
+    const onPutDown = (): void => setMoving(null)
+    window.addEventListener(GRAB_MOVE_EVENT, onMove)
+    window.addEventListener(GRAB_CANCEL_EVENT, onPutDown)
+    return () => {
+      window.removeEventListener(GRAB_MOVE_EVENT, onMove)
+      window.removeEventListener(GRAB_CANCEL_EVENT, onPutDown)
+    }
+  }, [moving, rows])
+
+  const toggle = (p: PlaylistRow): void => {
+    const on = !p.showOn.includes('home')
+    const showOn: PlaylistPlace[] = on ? [...p.showOn, 'home'] : p.showOn.filter((place) => place !== 'home')
+    setRows((was) => was && was.map((r) => (r.id === p.id ? { ...r, showOn } : r)))
+    api.setShowOn(p.id, showOn).then(homeChanged)
+  }
+
+  const chooseStyle = (p: PlaylistRow, style: SectionStyle): void => {
+    if (style === p.homeStyle) return
+    const grid = rows?.find((r) => r.id !== p.id && isGrid(r.homeStyle))
+    api.setHomeStyle(p.id, style).then(changed)
+    if (isGrid(style)) toast(grid ? `A grid goes at the bottom: ${grid.name} is a carousel now` : 'A grid goes at the bottom')
+  }
+
+  // The drop-down hangs from its button, placed in the group (as Customize's is in its panel).
+  const openStyleMenu = (p: PlaylistRow, button: HTMLElement): void => {
+    const el = group.current
+    if (!el) return
+    const g = el.getBoundingClientRect()
+    const b = button.getBoundingClientRect()
+    // Measured as shown on the screen, the stage scaled to fit the TV: back to the group's own pixels.
+    const scale = g.width / el.offsetWidth || 1
+    setStyleMenu({
+      id: p.id,
+      top: (b.top - g.top) / scale,
+      left: (b.left - g.left) / scale,
+      width: b.width / scale,
+      height: b.height / scale,
+      up: b.bottom + STYLE_MENU_ROOM * scale > window.innerHeight
+    })
+  }
+
+  const remove = (p: PlaylistRow): void => {
+    if (confirming !== p.id) {
+      toast(`Press again to delete ${p.name}`)
+      return setConfirming(p.id)
+    }
+    setConfirming(null)
+    api.delete(p.id).then(() => {
+      toast(`Deleted ${p.name}`)
+      changed()
+    })
+  }
+
+  if (!rows?.length) return null
+  const menuFor = styleMenu && rows.find((r) => r.id === styleMenu.id)
+  return (
+    <div className="settings-group home-playlists" ref={group}>
+      <h3 className="settings-heading display">Playlists on Home</h3>
+      <p className="settings-help">
+        {moving
+          ? 'Up and down to move it, A to put it down.'
+          : 'They show on Home in this order, under everything else. A on a name picks it up to move it; a grid goes to the bottom.'}
+      </p>
+      <div className="setting-list" data-focus-memory="settings-home-playlists">
+        {rows.map((p) => {
+          const shown = p.showOn.includes('home')
+          return (
+            <div key={p.id} className={`customize-row${moving === p.id ? ' moving' : ''}${shown ? '' : ' hidden'}`}>
+              <button
+                className="customize-name display"
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                data-playlist-id={p.id}
+                aria-pressed={moving === p.id}
+                {...(moving === p.id ? { 'data-grabbed': '' } : {})}
+                onClick={() => setMoving(moving === p.id ? null : p.id)}
+              >
+                <span className="customize-grip" aria-hidden="true">
+                  ⠿
+                </span>
+                {p.name}
+                <span className="customize-count">{p.items.length}</span>
+              </button>
+              <button
+                id={`home-playlist-style-${p.id}`}
+                className={`customize-style${styleMenu?.id === p.id ? ' open' : ''}`}
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                aria-haspopup="menu"
+                aria-expanded={styleMenu?.id === p.id}
+                onClick={(e) => openStyleMenu(p, e.currentTarget)}
+              >
+                <span>{SECTION_STYLES.find((st) => st.id === p.homeStyle)?.name ?? p.homeStyle}</span>
+                <span className="side-bar-sort-arrow" aria-hidden="true" />
+              </button>
+              <button
+                className={`customize-shown${shown ? ' on' : ''}`}
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                role="switch"
+                aria-checked={shown}
+                aria-label={`${p.name} on Home: ${shown ? 'on' : 'off'}`}
+                onClick={() => toggle(p)}
+              >
+                <span className="toggle" aria-hidden="true">
+                  <span className="toggle-knob" />
+                </span>
+                {shown ? 'On' : 'Off'}
+              </button>
+              <button
+                className="customize-icon"
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                aria-label={`Rename ${p.name}`}
+                title="Rename"
+                onClick={() => setNaming(p)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />
+                </svg>
+              </button>
+              <button
+                className={`customize-icon${confirming === p.id ? ' danger' : ''}`}
+                tabIndex={-1}
+                data-focusable=""
+                data-select-sound="move"
+                aria-label={confirming === p.id ? `Press again to delete ${p.name}` : `Delete ${p.name}`}
+                title="Delete"
+                onClick={() => remove(p)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5" />
+                </svg>
+              </button>
+            </div>
+          )
+        })}
+      </div>
+      {styleMenu && menuFor && (
+        <div className={`customize-menu-anchor${styleMenu.up ? ' up' : ''}`} style={{ top: styleMenu.top, left: styleMenu.left, width: styleMenu.width, height: styleMenu.height }}>
+          <SortMenu
+            sort={menuFor.homeStyle}
+            sorts={SECTION_STYLES}
+            buttonId={`home-playlist-style-${menuFor.id}`}
+            onPick={(style) => {
+              setStyleMenu(null)
+              chooseStyle(menuFor, style as SectionStyle)
+            }}
+            onClose={() => setStyleMenu(null)}
+          />
+        </div>
+      )}
+      {naming && (
+        <OverStage>
+          <OnScreenKeyboard
+            title={`Rename ${naming.name}`}
+            initial={naming.name}
+            onDone={(text) => {
+              const name = text.trim()
+              const was = naming
+              setNaming(null)
+              if (name && name !== was.name)
+                api.rename(was.id, name).then(() => {
+                  toast(`Renamed to ${name}`)
+                  changed()
+                })
+            }}
+            onCancel={() => setNaming(null)}
+          />
+        </OverStage>
+      )}
+    </div>
+  )
+}
+
 export function GamePlaylistsSettings() {
   const [playlists, setPlaylists] = useState<PlaylistRow[] | null>(null)
   const [editing, setEditing] = useState<{ id: string | null; from: HTMLElement | null } | null>(null)
@@ -178,6 +418,9 @@ export function GamePlaylistsSettings() {
   const reload = useCallback(() => window.steamtv.gamePlaylists.list().then(setPlaylists), [])
   useEffect(() => {
     reload()
+    // Switched on or off Home, or moved, in Playlists on Home (above).
+    window.addEventListener(HOME_CHANGED_EVENT, reload)
+    return () => window.removeEventListener(HOME_CHANGED_EVENT, reload)
   }, [reload])
 
   const open = (id: string | null): void => setEditing({ id, from: document.activeElement as HTMLElement | null })
@@ -315,7 +558,6 @@ function GamePlaylistDialog({
   const toggleShowOn = (place: PlaylistPlace): void => {
     const on = !playlist.showOn.includes(place)
     const next = on ? [...playlist.showOn, place] : playlist.showOn.filter((p) => p !== place)
-    if (!next.length) return toast('It has to show somewhere: switch another on first')
     api.setShowOn(playlist.id, next).then(onChanged)
     toast(on ? `${playlist.name} shows ${onPlace(place)}` : `${playlist.name} is off ${place === 'home' ? 'Home' : `the ${playlistPlacesLabel([place])} tab`}`)
   }

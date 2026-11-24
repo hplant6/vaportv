@@ -29,7 +29,7 @@ import { TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
 import { LivingPanels, SETTINGS_PANELS } from '../components/LivingPanels'
-import { GamePlaylistsSettings } from '../components/GamePlaylists'
+import { GamePlaylistsSettings, HomePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
 import { MusicSources } from '../music/MusicSources'
@@ -698,6 +698,8 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
               ))}
           </div>
         </div>
+
+        <HomePlaylistsSettings />
 
         <GamePlaylistsSettings />
       </>

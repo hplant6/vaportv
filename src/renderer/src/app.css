@@ -2216,6 +2216,20 @@ button {
   opacity: 1;
 }
 
+/* Home's playlists: the one with the cursor goes over the rest (a Spotlight's picture reaches above it). */
+.home-playlist {
+  position: relative;
+}
+
+.home-playlist:focus-within {
+  z-index: 1;
+}
+
+/* Settings → Home's playlists: Customize's rows (below), in the pane; its style drop-down hangs from the group. */
+.settings-pane .home-playlists {
+  position: relative;
+}
+
 /* Home: always first, so it can't be picked up. */
 .tab-row.fixed {
   opacity: 0.55;

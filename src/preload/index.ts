@@ -168,6 +168,8 @@ const api: SteamTvApi = {
     toggle: (playlist, gameId) => ipcRenderer.invoke('gamePlaylists:toggle', playlist, gameId),
     rename: (playlist, name) => ipcRenderer.invoke('gamePlaylists:rename', playlist, name),
     move: (playlist, direction) => ipcRenderer.invoke('gamePlaylists:move', playlist, direction),
+    order: (ids) => ipcRenderer.invoke('gamePlaylists:order', ids),
+    setHomeStyle: (playlist, style) => ipcRenderer.invoke('gamePlaylists:homeStyle', playlist, style),
     delete: (playlist) => ipcRenderer.invoke('gamePlaylists:delete', playlist)
   },
   game: {

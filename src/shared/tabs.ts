@@ -94,6 +94,7 @@ export function playlistTakes(places: PlaylistPlace[], tab: LayoutTab | null): b
 
 /** e.g. "Home, Switch", in the bar's order. */
 export function playlistPlacesLabel(places: PlaylistPlace[]): string {
+  if (!places.length) return 'Not shown'
   return TAB_LIST.filter(({ id }) => (places as string[]).includes(id))
     .map(({ label }) => label)
     .join(', ')

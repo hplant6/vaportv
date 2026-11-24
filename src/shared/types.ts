@@ -1,3 +1,4 @@
+import type { SectionStyle } from './tabSections'
 import type { ArcadeRow } from './arcade'
 import type { Combos, Controls } from './controls'
 import type { SunTimes } from './sun'
@@ -214,8 +215,10 @@ export interface GamePlaylist {
   id: string
   name: string
   items: string[]
-  /** Where it shows, in no set order; missing (playlists made before there was a choice) is Home only. */
+  /** Where it shows, in no set order; missing (playlists made before there was a choice) is Home only; empty, nowhere. */
   showOn?: PlaylistPlace[]
+  /** How it shows on Home (Settings → Home): a carousel unless set. */
+  homeStyle?: SectionStyle
 }
 
 /** A game playlist with its games as cards (the ones vaporTV can find now). */
@@ -223,8 +226,10 @@ export interface PlaylistRow {
   id: string
   name: string
   items: RecentItem[]
-  /** Where it shows (never empty). */
+  /** Where it shows (empty: nowhere, switched off). */
   showOn: PlaylistPlace[]
+  /** How it shows on Home. */
+  homeStyle: SectionStyle
 }
 
 /** A playlist as the game menu lists it: whether this game is in it. */
@@ -1106,6 +1111,10 @@ export interface SteamTvApi {
     toggle(playlist: string, gameId: string): Promise<boolean>
     rename(playlist: string, name: string): Promise<void>
     move(playlist: string, direction: 'up' | 'down'): Promise<void>
+    /** All of them in this order (Settings → Home's list, as moved). */
+    order(ids: string[]): Promise<void>
+    /** How it shows on Home (one grid at most: another grid becomes a carousel). */
+    setHomeStyle(playlist: string, style: SectionStyle): Promise<void>
     delete(playlist: string): Promise<void>
   }
   game: {

@@ -16,6 +16,8 @@ import {
   deletePlaylist,
   forgetInPlaylists,
   movePlaylist,
+  orderPlaylists,
+  setPlaylistHomeStyle,
   placesOf,
   readPlaylists,
   renamePlaylist,
@@ -32,7 +34,7 @@ import { listen, setVoiceHints, finishListening, stopListening, type ListenOptio
 import { answerPermission, claudeBin, claudeStatus, endClaude, interruptClaude, quietClaude, sendToClaude, setClaudeListeners, setClaudeVoice } from './claude'
 import { setJapaneseVoice, setSpeechListeners } from './speech'
 import { spotlightDetails } from './spotlight'
-import { SECTION_STYLES, type TabSection } from '../shared/tabSections'
+import { SECTION_STYLES, type SectionStyle, type TabSection } from '../shared/tabSections'
 import { endTranslation, installVoice, japaneseVoiceInstalled, japaneseWav, quietTranslator, stopJapaneseVoice, saveTranslatorSettings, say, setTranslatorListeners, setTranslatorOpen, translate, translatorStatus } from './addons/translator'
 import { smartSearch } from './claudeSearch'
 import { startClaudeLogin, stopClaudeLogin } from './claudeLogin'
@@ -1144,6 +1146,8 @@ ipcMain.handle('gamePlaylists:showOn', (_event, playlist: string, showOn: Playli
 ipcMain.handle('gamePlaylists:toggle', (_event, playlist: string, gameId: string) => togglePlaylistItem(playlist, gameId))
 ipcMain.handle('gamePlaylists:rename', (_event, playlist: string, name: string) => renamePlaylist(playlist, name))
 ipcMain.handle('gamePlaylists:move', (_event, playlist: string, direction: 'up' | 'down') => movePlaylist(playlist, direction))
+ipcMain.handle('gamePlaylists:order', (_event, ids: string[]) => orderPlaylists(ids))
+ipcMain.handle('gamePlaylists:homeStyle', (_event, playlist: string, style: SectionStyle) => setPlaylistHomeStyle(playlist, style))
 ipcMain.handle('gamePlaylists:delete', (_event, playlist: string) => deletePlaylist(playlist))
 
 ipcMain.handle('game:options', async (_event, id: string): Promise<GameOptions> => {

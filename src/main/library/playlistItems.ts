@@ -14,7 +14,7 @@ import { shortcutId, shortcutItem, shortcutTabGames, steamId, steamItem } from '
  */
 export async function playlistRows(config: Config, playlists: GamePlaylist[]): Promise<PlaylistRow[]> {
   const wanted = new Set(playlists.flatMap((p) => p.items))
-  if (!wanted.size) return playlists.map((p) => ({ id: p.id, name: p.name, items: [], showOn: placesOf(p) }))
+  if (!wanted.size) return playlists.map((p) => ({ id: p.id, name: p.name, items: [], showOn: placesOf(p), homeStyle: p.homeStyle ?? 'carousel' }))
   const favorites = await readFavorites()
   const cards = new Map<string, Promise<RecentItem>>()
 
@@ -46,7 +46,8 @@ export async function playlistRows(config: Config, playlists: GamePlaylist[]): P
       id: p.id,
       name: p.name,
       items: await Promise.all(p.items.flatMap((id) => cards.get(id) ?? [])),
-      showOn: placesOf(p)
+      showOn: placesOf(p),
+      homeStyle: p.homeStyle ?? 'carousel'
     }))
   )
 }

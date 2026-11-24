@@ -1,8 +1,11 @@
-import type { HomeData } from '../../../shared/types'
+import { useState } from 'react'
+import type { HomeData, RecentItem } from '../../../shared/types'
+import { isGrid } from '../../../shared/tabSections'
 import { AppRow } from '../components/AppRow'
 import { AppTile } from '../components/AppTile'
 import { CardRow } from '../components/CardRow'
-import { CollectionGrid } from '../components/CollectionGrid'
+import { CollectionGrid, PosterGrid } from '../components/CollectionGrid'
+import { SpotlightSection } from '../components/Spotlight'
 import { ContinueWatching } from '../components/ContinueWatching'
 import { MusicRow } from '../components/MusicRow'
 import { NavBar, type Screen } from '../components/NavBar'
@@ -71,17 +74,34 @@ function FavoriteApps({ data, variant }: { data: HomeData; variant?: 'no-recents
   )
 }
 
-/** Your game playlists, a row each, in the order set in Settings → Home. */
+/**
+ * Your playlists switched on for Home, in the order set in Settings → Home, each in its style
+ * there (as a tab's sections: Spotlight, Carousel, or a grid, which goes last).
+ */
 function Playlists({ data }: { data: HomeData }) {
-  return data.playlists.map((playlist) => (
-    <CardRow
-      key={playlist.id}
-      className="playlist-row"
-      title={playlist.name}
-      items={playlist.items}
-      logos={data.platformLogos}
-      memoryKey={`playlist-${playlist.id}`}
-      hasDefault={false}
-    />
-  ))
+  // What the cursor's on (or was last on) in a Spotlight, and which playlist.
+  const [spot, setSpot] = useState<{ playlist: string; item: RecentItem } | null>(null)
+  const ordered = [...data.playlists.filter((p) => !isGrid(p.homeStyle)), ...data.playlists.filter((p) => isGrid(p.homeStyle))]
+  return ordered.map((playlist) => {
+    const shared = { title: playlist.name, items: playlist.items, logos: data.platformLogos, memoryKey: `playlist-${playlist.id}`, hasDefault: false }
+    return (
+      <div key={playlist.id} className={`home-playlist ${playlist.homeStyle}`}>
+        {playlist.homeStyle === 'spotlight' ? (
+          <SpotlightSection
+            id={`home-playlist-${playlist.id}`}
+            {...shared}
+            first={false}
+            onFocusItem={(item) => setSpot({ playlist: playlist.id, item })}
+            focused={spot?.playlist === playlist.id ? spot.item : null}
+          />
+        ) : playlist.homeStyle === 'wide' ? (
+          <CollectionGrid {...shared} />
+        ) : playlist.homeStyle === 'posters' ? (
+          <PosterGrid {...shared} />
+        ) : (
+          <CardRow className="playlist-row" {...shared} />
+        )}
+      </div>
+    )
+  })
 }
