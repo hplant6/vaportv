@@ -3,6 +3,8 @@ import type { MusicAlbum, MusicIndexStatus, MusicPlace, MusicPlaylist, MusicTags
 import { listOrder, resolveSections, type TabSection } from '../../../shared/tabSections'
 import { LibraryToolbar, type ToolbarMenu } from '../components/LibraryToolbar'
 import { MUSIC_EVENT, openMusicAt } from '../components/MusicApp'
+import { openNowPlaying } from '../music/nowPlaying'
+import { playerState, subscribe } from '../music/player'
 import { SpotlightPicture } from '../components/Spotlight'
 import { TabCustomize } from '../components/TabCustomize'
 import { useDrag } from '../input/drag'
@@ -1036,6 +1038,13 @@ function AlbumPage({ album, onPlay, onBack }: { album: MusicAlbum; onPlay: (at: 
 }
 
 /** A 2×2 of the first four different covers among songs (one cover alone fills it). */
+/** Whether the Music player has something to show in Now playing (a queue, playing or paused). */
+function useSomethingPlaying(): boolean {
+  const [on, setOn] = useState(() => playerState().at >= 0)
+  useEffect(() => subscribe((state) => setOn(state.at >= 0)), [])
+  return on
+}
+
 function Mosaic({ songs, className }: { songs: MusicTags[]; className?: string }) {
   const covers = [...new Set(songs.map((s) => s.cover).filter((c): c is string => !!c))].slice(0, 4)
   if (covers.length === 0)
@@ -1103,6 +1112,7 @@ function SongsPage({
     if (play) focus(play)
   }, [])
   const discs = new Set(songs?.map((s) => s.disc ?? 1)).size > 1
+  const playing = useSomethingPlaying()
   return (
     <div className="media-show music-page" ref={root} data-focus-trap="">
       {backdrop && <img className="media-show-backdrop music-page-backdrop" src={backdrop} alt="" />}
@@ -1121,6 +1131,12 @@ function SongsPage({
             </button>
             {extra}
             {extra2}
+            {/* Back to what's playing (its visualizer); B there comes back here. */}
+            {playing && (
+              <button className="files-action display" tabIndex={-1} data-focusable="" data-select-sound="move" onClick={(e) => openNowPlaying(e.currentTarget)}>
+                Now playing
+              </button>
+            )}
           </div>
         </div>
       </div>

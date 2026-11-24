@@ -10,6 +10,7 @@ import { Visualizer } from '../music/Visualizer'
 import { COVER_MOTIONS, VISUALIZER_POWERS } from '../music/choices'
 import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
 import { newPlaylist } from '../music/playlists'
+import { takeNowPlaying } from '../music/nowPlaying'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { OnScreenKeyboard } from './Keyboard'
@@ -64,29 +65,40 @@ function usePlayer(): PlayerState {
 
 /** Mounted once in App; shows the screen while it's open. */
 export function MusicApp() {
-  const [from, setFrom] = useState<HTMLElement | null>(null)
+  // Where it was opened from; whether Back from Now playing closes it (opened on Now playing from
+  // elsewhere: openNowPlaying); and a count of asks to show Now playing while it's already open.
+  const [open, setOpen] = useState<{ from: HTMLElement | null; closeOnBack: boolean; playing: number } | null>(null)
   useEffect(() => {
-    const onOpen = (event: Event): void => setFrom((event as CustomEvent<HTMLElement>).detail)
+    const onOpen = (event: Event): void => {
+      const from = (event as CustomEvent<HTMLElement | null>).detail
+      const nowPlaying = takeNowPlaying()
+      // Already open (a station started in its browser): it shows Now playing, and Back still goes to its browser.
+      setOpen((was) => (was ? { ...was, playing: was.playing + (nowPlaying ? 1 : 0) } : { from, closeOnBack: nowPlaying, playing: 0 }))
+    }
     window.addEventListener(MUSIC_EVENT, onOpen)
     return () => window.removeEventListener(MUSIC_EVENT, onOpen)
   }, [])
   const close = useCallback(() => {
-    setFrom((tile) => {
+    setOpen((was) => {
+      const tile = was?.from
       if (tile?.isConnected) requestAnimationFrame(() => focus(tile))
       return null
     })
   }, [])
-  return from ? <Music onClose={close} /> : null
+  return open ? <Music onClose={close} closeOnBack={open.closeOnBack} playing={open.playing} /> : null
 }
 
-function Music({ onClose }: { onClose: () => void }) {
+function Music({ onClose, closeOnBack, playing }: { onClose: () => void; closeOnBack: boolean; playing: number }) {
   const player = usePlayer()
   // Opening with music on: straight to Now playing.
   const [view, setView] = useState<'browse' | 'playing'>(() => {
     const browse = browseNext
     browseNext = false
-    return playerState().at >= 0 && !browse ? 'playing' : 'browse'
+    return playerState().at >= 0 && (closeOnBack || !browse) ? 'playing' : 'browse'
   })
+  useEffect(() => {
+    if (playing) setView('playing')
+  }, [playing])
   // Voice search here (the mic, R3, a remote's Menu): what's heard goes to the browser, from Now playing too.
   const [voice, setVoice] = useState<VoiceState | null>(null)
   useEffect(() => {
@@ -103,7 +115,8 @@ function Music({ onClose }: { onClose: () => void }) {
     }
   }, [])
   return view === 'playing' && player.at >= 0 ? (
-    <NowPlaying player={player} onBack={() => setView('browse')} />
+    // Opened on it from elsewhere (an album's page), Back goes back there; else to the browser.
+    <NowPlaying player={player} onBack={closeOnBack ? onClose : () => setView('browse')} />
   ) : (
     <Browser player={player} voice={voice} onHeard={() => setVoice(null)} onClose={onClose} onPlaying={() => setView('playing')} />
   )

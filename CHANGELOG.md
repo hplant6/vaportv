@@ -8,8 +8,15 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Added
+- **Cover** in a film's or show's details (Start on it, in the Video tab) finds it a poster: those your media server's sources have, or any picture from a web search. It's saved on your server, so its own apps show it too. For files the server couldn't identify, whose cover was a frame of the video.
+- **Settings → Home → Playlists on Home** lays out your playlists' rows on Home as a tab's Customize window does: move them (A on a name, then up and down), switch each on or off for Home, choose its style (Spotlight, Carousel or a grid, which goes at the bottom), and rename or delete it.
+- A remote's spare buttons can do more: F3 to F9 turn the sound off or on, skip back or forward a song, open Claude or Settings, or start a voice search (set them up in the remote's app).
+- **Now playing** on an album's, a playlist's or Liked songs' page, while music plays: back to its visualizer.
+
 ### Fixed
 - The selected card in a row above a **Spotlight** no longer slips under the Spotlight's picture.
+- Back from **Now playing** goes back to the album (or playlist) it was started from, rather than into a list of other albums.
 
 ## 0.18.0
 

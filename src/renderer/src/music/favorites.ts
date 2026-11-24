@@ -4,6 +4,7 @@ import { toast } from '../components/Toast'
 import { FAVORITE_EVENT } from '../input/focus'
 import { play } from '../input/sounds'
 import { dropSong, playQueue, playerState, toggleShuffle } from './player'
+import { openNowPlaying } from './nowPlaying'
 
 // Liked songs and favorite albums for every screen that shows them (the Music tab, its pages,
 // Now playing, Home's row): one copy, asked for again after each change. The Favorite button
@@ -12,8 +13,6 @@ import { dropSong, playQueue, playerState, toggleShuffle } from './player'
 
 /** Fired after a change, for screens to ask again. */
 export const MUSIC_FAVORITES_EVENT = 'steamtv:music-favorites'
-/** The Music app listens: open on Now playing over whatever's on screen (detail: where to come back to). */
-const MUSIC_EVENT = 'steamtv:music'
 
 let favorites: MusicFavorites = { songs: [], albums: [] }
 /** Songs given a thumbs down. */
@@ -102,7 +101,7 @@ export function playNow(songs: MusicTags[], from: Element | null, at = 0, shuffl
   if (!songs.length) return
   if (shuffle !== playerState().shuffle) toggleShuffle()
   playQueue(songs, shuffle ? Math.floor(Math.random() * songs.length) : at)
-  window.dispatchEvent(new CustomEvent(MUSIC_EVENT, { detail: from }))
+  openNowPlaying(from)
 }
 
 let tuning = false
@@ -118,7 +117,7 @@ export async function startRadio(song: MusicTags, from: Element | null): Promise
     if (playerState().shuffle) toggleShuffle()
     playQueue(station, 0, { seed: song })
     toast(`${song.title} radio: ${station.length} songs`)
-    if (!document.querySelector('.music-playing')) window.dispatchEvent(new CustomEvent(MUSIC_EVENT, { detail: from }))
+    if (!document.querySelector('.music-playing')) openNowPlaying(from)
   } finally {
     tuning = false
   }
