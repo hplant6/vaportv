@@ -1956,10 +1956,15 @@ button {
 /* The category on show, and the one the cursor is on: gold on an amber tint. */
 .settings-category.active,
 .settings-category:focus,
-.side-bar-item.active,
 .side-bar-item:focus {
   color: var(--color-accent);
   background: var(--color-focus-tint);
+}
+
+/* A game tab's left bar follows the section on screen: that list's name turns gold, without the
+   tint, which is only for the cursor being in the bar (so it doesn't look as if you're in it). */
+.side-bar-item.active {
+  color: var(--color-accent);
 }
 
 /* Clips the pane's own scrolling. Runs to the right edge, like the sidebar runs off the left,
