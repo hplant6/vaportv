@@ -80,7 +80,7 @@ export function SpotlightBackdrop({ item }: { item: RecentItem | null }) {
   )
 }
 
-/** The name (or logo), facts and description, over the picture. */
+/** The game's name (or logo), facts and description, over the picture. */
 function SpotlightInfo({ item }: { item: RecentItem | null }) {
   const d = useDetails(item)
   const [logoFailed, setLogoFailed] = useState<string | null>(null)
@@ -122,6 +122,8 @@ export function SpotlightSection({ id, title, items, logos, memoryKey, hasDefaul
   return (
     <section id={id} className={`spotlight${first ? ' first' : ''}`}>
       <SpotlightBackdrop item={shown} />
+      {/* The section's name heads the banner (not its row), and stays put as the game changes. */}
+      <h2 className="section-label display spotlight-label">{title}</h2>
       <SpotlightInfo item={shown} />
       <CardRow className="spotlight-row" title={title} items={items} logos={logos} memoryKey={memoryKey} hasDefault={hasDefault} onItemFocus={onFocusItem} />
     </section>

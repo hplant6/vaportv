@@ -6475,7 +6475,7 @@ button {
    only it), the words at the top, its carousel along the bottom. Isolated, so its picture's
    z-index -1 stays behind its own words and cards, not the page's. */
 .spotlight {
-  --spotlight-h: 740px;
+  --spotlight-h: 814px;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -6483,11 +6483,11 @@ button {
   height: var(--spotlight-h);
 }
 
-/* Its picture: the screen's full width (behind the left bar too: the grid starts 504 px in beside
-   it, 36 px without it, and stops 36 px short of the right), a little above and below the section,
-   with hard edges top and bottom. */
+/* Its picture: from the left bar's panel to the screen's right edge (the grid starts 504 px in;
+   the bar's see-through panel ends at 435 px, and the picture would show through it), the whole
+   width with the bar hidden; a little above and below the section, with hard edges top and bottom. */
 .spotlight .spotlight-backdrop {
-  inset: -24px -36px -16px -504px;
+  inset: -24px -36px -16px -69px;
   z-index: -1;
 }
 
@@ -6504,6 +6504,16 @@ button {
 
 .spotlight .spotlight-logo {
   max-height: 120px;
+}
+
+/* The section's name (Installed locally (12)) heads the banner, above the game's logo or name,
+   rather than over its row. */
+.spotlight-label {
+  margin: 0 0 4px;
+}
+
+.spotlight .spotlight-row .section-label {
+  display: none;
 }
 
 .spotlight .spotlight-description {
