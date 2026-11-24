@@ -56,7 +56,13 @@
   --text-clock: 56px;
 
   --shadow-card: 0 10px 37.5px 0 #000;
-  --shadow-tile-focus: 0 144px 38.4px 0 rgba(0, 0, 0, 0.49);
+  /* Cards in rows and grids (recents, wide cards, app tiles, album covers): a soft shadow at
+     rest, falling a little lower when selected. Tune them here. */
+  --tile-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.45);
+  --tile-shadow-drop: 22px;
+  --tile-shadow-blur: 40px;
+  --tile-shadow-color: rgba(0, 0, 0, 0.38);
+  --shadow-tile-focus: 0 var(--tile-shadow-drop) var(--tile-shadow-blur) 0 var(--tile-shadow-color);
 
   --card-w: 253.56px;
   --card-art-h: 348.74px;

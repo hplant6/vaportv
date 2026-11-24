@@ -590,7 +590,7 @@ button {
   width: var(--card-w);
   border-radius: var(--card-radius);
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--tile-shadow);
   /* Anchored near the top: there is only ~11px above the row but ~55px below it. */
   transform-origin: 50% 50px;
   --pivot-y: calc(50% - 50px);
@@ -780,7 +780,7 @@ button {
   height: var(--tile-h);
   border-radius: var(--tile-radius);
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--tile-shadow);
   transition:
     scale var(--dur-focus) var(--ease-focus),
     box-shadow var(--dur-focus) var(--ease-focus);
@@ -1123,7 +1123,7 @@ button {
   width: 426px;
   height: 199px;
   border-radius: var(--card-radius);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--tile-shadow);
   transition:
     scale var(--dur-focus) var(--ease-focus),
     box-shadow var(--dur-focus) var(--ease-focus);
@@ -1255,7 +1255,7 @@ button {
 .recent-card:focus,
 .wide-card:focus,
 .app-tile:focus {
-  box-shadow: calc(var(--turn-y) / 1deg * -3px) calc(144px + var(--turn-x) / 1deg * 4px) 38.4px 0 rgba(0, 0, 0, 0.49);
+  box-shadow: calc(var(--turn-y) / 1deg * -1.5px) calc(var(--tile-shadow-drop) + var(--turn-x) / 1deg * 2px) var(--tile-shadow-blur) 0 var(--tile-shadow-color);
   animation: sway-y 9s 720ms infinite, sway-x 13s 720ms infinite;
 }
 
@@ -5402,7 +5402,7 @@ button {
   height: 260px;
   border-radius: var(--card-radius);
   object-fit: cover;
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--tile-shadow);
 }
 
 .music-no-cover {
