@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { compileScene } from '../compileScene'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -159,13 +160,11 @@ async function loadModel(url: string): Promise<ArrayBuffer> {
   return crypto.subtle.decrypt({ name: 'AES-GCM', iv: data.subarray(0, 12) }, key, data.subarray(12))
 }
 
-/** The console, its base centred on the origin. Returns its size. */
-export async function buildConsole(scene: THREE.Object3D, product: Product): Promise<THREE.Vector3> {
-  const gltf = await new GLTFLoader().parseAsync(await loadModel(product.model), '')
+/** The console as loaded: its model, with the product's fixes and screen. */
+async function loadConsole(product: Product): Promise<THREE.Object3D> {
+  // The models' geometry is meshopt-compressed (scripts/private-assets.mjs), their textures WebP.
+  const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(await loadModel(product.model), '')
   const model = gltf.scene
-  const box = new THREE.Box3().setFromObject(model)
-  const centre = box.getCenter(new THREE.Vector3())
-  model.position.set(-centre.x, -box.min.y, -centre.z)
   if (product.fix) {
     model.traverse((o) => {
       const m = o as THREE.Mesh
@@ -173,8 +172,86 @@ export async function buildConsole(scene: THREE.Object3D, product: Product): Pro
     })
   }
   if (product.screen) await showScreen(model, product.screen).catch((err) => console.error(`steamtv: ${product.screen?.image}:`, err))
+  return model
+}
+
+/** Puts `model` in `scene`, its base centred on the origin. Returns its size. */
+function place(scene: THREE.Object3D, model: THREE.Object3D): THREE.Vector3 {
+  const box = new THREE.Box3().setFromObject(model)
+  const centre = box.getCenter(new THREE.Vector3())
+  model.position.set(-centre.x, -box.min.y, -centre.z)
   scene.add(model)
   return box.getSize(new THREE.Vector3())
+}
+
+/** The console, its base centred on the origin, loaded afresh (the tab backdrop's: it disposes it when it stops). Returns its size. */
+export async function buildConsole(scene: THREE.Object3D, product: Product): Promise<THREE.Vector3> {
+  return place(scene, await loadConsole(product))
+}
+
+// The turning consoles (spin.ts) keep the last few they've shown, so going back to one (the
+// More screen's tiles, the left bar after a tab change) doesn't fetch, decrypt and parse it
+// again, nor (as they share a renderer) send it to the GPU again. Each view shows a copy
+// sharing the model's geometry and textures; a model's let go of only when no view shows it.
+
+/** How many models are kept once nothing shows them. */
+const KEEP = 4
+type Kept = { model: Promise<THREE.Object3D>; users: number; used: number }
+const kept = new Map<string, Kept>()
+
+function disposeModel(model: THREE.Object3D): void {
+  model.traverse((o) => {
+    const m = o as THREE.Mesh
+    if (!m.isMesh) return
+    m.geometry.dispose()
+    for (const mat of [m.material].flat()) {
+      for (const value of Object.values(mat)) if (value instanceof THREE.Texture) value.dispose()
+      mat.dispose()
+    }
+  })
+}
+
+function trimKept(): void {
+  const idle = [...kept].filter(([, k]) => k.users === 0).sort((a, b) => a[1].used - b[1].used)
+  while (kept.size > KEEP && idle.length) {
+    const [key, k] = idle.shift()!
+    kept.delete(key)
+    void k.model.then(disposeModel, () => {})
+  }
+}
+
+/** A copy of the console (kept for next time) put in `scene` as buildConsole does; `release` when the view's done with it. */
+export async function borrowConsole(scene: THREE.Object3D, product: Product): Promise<{ size: THREE.Vector3; release: () => void }> {
+  let k = kept.get(product.model)
+  if (!k) {
+    k = { model: loadConsole(product), users: 0, used: 0 }
+    kept.set(product.model, k)
+  }
+  const entry = k
+  entry.users++
+  entry.used = performance.now()
+  let template: THREE.Object3D
+  try {
+    template = await entry.model
+  } catch (err) {
+    entry.users--
+    if (kept.get(product.model) === entry) kept.delete(product.model)
+    throw err
+  }
+  const model = template.clone()
+  const size = place(scene, model)
+  let released = false
+  return {
+    size,
+    release: () => {
+      if (released) return
+      released = true
+      scene.remove(model)
+      entry.users--
+      entry.used = performance.now()
+      trimKept()
+    }
+  }
 }
 
 /**

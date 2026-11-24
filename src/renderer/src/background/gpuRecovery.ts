@@ -40,6 +40,11 @@ function restart(why: string): void {
   }, SETTLE_MS)
 }
 
+/** For a context not on the page (the turning consoles' shared one), whose loss the page-wide listener can't hear. */
+export function reportContextLost(what: string): void {
+  restart(`${what} context lost`)
+}
+
 let started = false
 function start(): void {
   if (started) return

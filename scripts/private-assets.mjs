@@ -8,6 +8,10 @@
 // and copied to src/renderer/public/private/, which git ignores. Without them (anyone
 // else's build) vaporTV uses its free fonts, and those tabs the usual backdrop.
 //
+// The models are optimised first (optimiseModel, below): duplicate textures merged and single-colour ones made
+// plain colours, textures to WebP at their own size, geometry meshopt-compressed. A tenth to a thirtieth of the size, so they load that much sooner; the results are
+// kept in ~/.cache/vaportv/models, so it's done once per model, not every build.
+//
 // The models ship encrypted (AES-256-GCM: a 12-byte IV, then the ciphertext and its tag) as .vtm, so the build
 // doesn't hand out plain .glb files; background/product/scene.ts decrypts them. The key lives beside them in
 // ~/.config/vaportv/model-key (made here the first time), never in the repo, and electron.vite.config.ts builds
@@ -15,7 +19,7 @@
 //
 //   node scripts/private-assets.mjs     (run by npm run dev / build / dist)
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { createCipheriv, randomBytes } from 'node:crypto'
+import { createCipheriv, createHash, randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -62,11 +66,50 @@ async function modelKey() {
   return Buffer.from((await readFile(KEY_FILE, 'utf8')).trim(), 'hex')
 }
 
-async function encrypt(from, to, key) {
+async function encrypt(data, to, key) {
   const iv = randomBytes(12)
   const cipher = createCipheriv('aes-256-gcm', key, iv)
-  const body = Buffer.concat([cipher.update(await readFile(from)), cipher.final()])
+  const body = Buffer.concat([cipher.update(data), cipher.final()])
   await writeFile(to, Buffer.concat([iv, body, cipher.getAuthTag()]))
+}
+
+/** Change to optimise every model again (new settings below). */
+const OPTIMISE_VERSION = 2
+const CACHE = join(homedir(), '.cache', 'vaportv', 'models')
+
+/**
+ * `from` (a .glb) optimised: textures that are copies of another merged, and those of one colour made that
+ * colour (the Wii had 41 textures, 17 different); textures to WebP at their own resolution (normal maps at quality 95,
+ * the rest at the encoder's default), geometry meshopt-compressed with finer than default
+ * positions and normals, so curved surfaces' highlights don't band. Nothing simplified.
+ */
+async function optimiseModel(from) {
+  const source = await readFile(from)
+  const hash = createHash('sha256').update(source).update(`v${OPTIMISE_VERSION}`).digest('hex').slice(0, 16)
+  const cached = join(CACHE, `${hash}.glb`)
+  if (existsSync(cached)) return readFile(cached)
+  const [{ NodeIO }, { ALL_EXTENSIONS }, { dedup, prune, textureCompress, meshopt }, { MeshoptEncoder, MeshoptDecoder }, { default: sharp }] = await Promise.all([
+    import('@gltf-transform/core'),
+    import('@gltf-transform/extensions'),
+    import('@gltf-transform/functions'),
+    import('meshoptimizer'),
+    import('sharp')
+  ])
+  await MeshoptEncoder.ready
+  await MeshoptDecoder.ready
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder })
+  const doc = await io.readBinary(new Uint8Array(source))
+  await doc.transform(
+    dedup(),
+    prune({ keepSolidTextures: false }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^(?!normalTexture$)/ }),
+    textureCompress({ encoder: sharp, targetFormat: 'webp', slots: /^normalTexture$/, quality: 95 }),
+    meshopt({ encoder: MeshoptEncoder, level: 'medium', quantizePosition: 16, quantizeNormal: 12 })
+  )
+  const out = Buffer.from(await io.writeBinary(doc))
+  await mkdir(CACHE, { recursive: true })
+  await writeFile(cached, out)
+  return out
 }
 
 await rm(OUT, { recursive: true, force: true })
@@ -74,7 +117,7 @@ const found = ASSETS.filter((asset) => existsSync(join(SOURCE, asset.from)))
 if (found.length) await mkdir(OUT, { recursive: true })
 const key = found.some((asset) => asset.to.endsWith('.vtm')) ? await modelKey() : null
 for (const asset of found) {
-  if (asset.to.endsWith('.vtm')) await encrypt(join(SOURCE, asset.from), join(OUT, asset.to), key)
+  if (asset.to.endsWith('.vtm')) await encrypt(await optimiseModel(join(SOURCE, asset.from)), join(OUT, asset.to), key)
   else await copyFile(join(SOURCE, asset.from), join(OUT, asset.to))
 }
 // The cover sleeves: whichever are there, and a list of them for the app to choose from. Not

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTabArrangement } from '../availableTabs'
-import { ConsoleSpin, useConsoleStill, useSpinningConsoles } from '../background/ConsoleSpin'
+import { ConsoleSpin, useSpinningConsoles } from '../background/ConsoleSpin'
 import { PRODUCTS } from '../background/products'
 import { NavBar, TABS, type Screen } from '../components/NavBar'
 import { LOGOS } from '../components/SideBar'
@@ -14,34 +14,42 @@ export function pickedFromMore(screen: Screen): void {
   lastPicked = screen
 }
 
-/** The cursor must rest on a tile this long before its console starts turning (passing over them doesn't load each one). */
+/** The cursor must rest on a tile this long before its console loads (passing over them doesn't load each one). */
 const SPIN_AFTER_MS = 350
 /** One turn every this many seconds: brisker than the left bar's, as it's only while the tile's picked. */
 const TURN_SECONDS = 8
+/** How long the console takes to slide away (app.css: .more-tile-spin's transition) before it's let go. */
+const SLIDE_OUT_MS = 400
 
 /**
- * One of More's tiles: the tab's logo (or name, for those without one: Apps, Video, Music) over
- * its console, a picture of it standing as it first stands in the turning view. Under the
- * cursor, the console turns, as in the console tab's left bar.
+ * One of More's tiles: the tab's logo (or name, for those without one: Apps, Video, Music), large
+ * in the middle. Picked, the logo shrinks up to the top and the console, turning, slides up from
+ * the bottom once it's drawn; left, the console slides away and the logo comes back down.
  */
 function MoreTile({ id, label, isDefault, onOpen }: { id: Screen; label: string; isDefault: boolean; onOpen: () => void }) {
   const logo = LOGOS[id]
   const hasModel = !!PRODUCTS[id]
-  const still = useConsoleStill(id)
   const spinning = useSpinningConsoles()
   const [focused, setFocused] = useState(false)
-  const [turning, setTurning] = useState(false)
-  // The turning view has drawn its first frame: the picture under it goes.
-  const [drawn, setDrawn] = useState(false)
+  const picked = focused && hasModel && !!spinning
+  // The turning view is there (it lingers while it slides away)…
+  const [mounted, setMounted] = useState(false)
+  // …and has drawn its first frame (so, picked, it slides in; picked again before it's gone, straight back).
+  const [ready, setReady] = useState(false)
   useEffect(() => {
-    setDrawn(false)
-    if (!focused || !hasModel || !spinning) return setTurning(false)
-    const timer = setTimeout(() => setTurning(true), SPIN_AFTER_MS)
+    if (picked) {
+      const timer = setTimeout(() => setMounted(true), SPIN_AFTER_MS)
+      return () => clearTimeout(timer)
+    }
+    const timer = setTimeout(() => {
+      setMounted(false)
+      setReady(false)
+    }, SLIDE_OUT_MS)
     return () => clearTimeout(timer)
-  }, [focused, hasModel, spinning])
+  }, [picked])
   return (
     <button
-      className={`app-tile more-tile${hasModel ? ' has-model' : ''}`}
+      className={`app-tile more-tile${hasModel ? ' has-model' : ''}${picked ? ' picked' : ''}${picked && ready ? ' drawn' : ''}`}
       tabIndex={-1}
       data-focusable=""
       {...(isDefault ? { 'data-focus-default': '' } : {})}
@@ -54,8 +62,7 @@ function MoreTile({ id, label, isDefault, onOpen }: { id: Screen; label: string;
       <span className="more-tile-head">{logo ? <img className="more-tile-logo" src={logo} alt="" /> : <span className="more-tile-name display">{label}</span>}</span>
       {hasModel && (
         <span className="more-tile-console">
-          {still && <img className={`more-tile-still${turning && drawn ? ' hidden' : ''}`} src={still} alt="" />}
-          {turning && <ConsoleSpin tab={id} className="more-tile-spin" turnSeconds={TURN_SECONDS} onReady={() => setDrawn(true)} />}
+          {mounted && <ConsoleSpin tab={id} className="more-tile-spin" turnSeconds={TURN_SECONDS} onReady={() => setReady(true)} />}
         </span>
       )}
     </button>
