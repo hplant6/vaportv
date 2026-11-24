@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LIBRARY_SORTS, sortItems, type LibrarySort } from '../../../shared/librarySort'
-import { resolveSections, type TabSection } from '../../../shared/tabSections'
+import { listOrder, resolveSections, type TabSection } from '../../../shared/tabSections'
 import { hasSideBar, TAB_LIST } from '../../../shared/tabs'
 import type { CollectionRow, LibraryTab, PlaylistRow, RecentItem } from '../../../shared/types'
 import { CardRow } from '../components/CardRow'
@@ -146,10 +146,14 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
       tab?.layout ?? 'rows'
     )
     const shownSections = sections.filter((section) => !section.hidden)
-    // The bar lists the sections shown, in their order (playlists and systems under a heading).
-    const barLists: SideList[] = shownSections.map((section) => lists.find((list) => list.id === section.id)!)
-    const firstOther = barLists.findIndex((list) => list.id.startsWith('playlist:') || list.id.startsWith('row:'))
-    if (firstOther >= 0) barLists[firstOther] = { ...barLists[firstOther], section: screen === 'arcade' && !playlists.length ? 'Systems' : 'Playlists' }
+    // The bar lists the sections shown, each group together: the library (what the tab brings in
+    // under a heading of its own: From Steam, Systems), then the playlists made here, under Playlists.
+    const barLists: SideList[] = listOrder(shownSections).map((section) => lists.find((list) => list.id === section.id)!)
+    const brought = screen === 'steam' ? 'From Steam' : screen === 'arcade' ? 'Systems' : null
+    const firstBrought = barLists.findIndex((list) => list.id.startsWith('row:'))
+    if (brought && firstBrought >= 0) barLists[firstBrought] = { ...barLists[firstBrought], section: brought }
+    const firstPlaylist = barLists.findIndex((list) => list.id.startsWith('playlist:'))
+    if (firstPlaylist >= 0) barLists[firstPlaylist] = { ...barLists[firstPlaylist], section: 'Playlists' }
     const current = barLists.find((list) => list.id === selected) ?? barLists[0]
     const label = TAB_LIST.find((t) => t.id === screen)?.label ?? screen
     const select = (id: string): void => {

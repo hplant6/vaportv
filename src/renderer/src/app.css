@@ -6639,9 +6639,27 @@ button {
 }
 
 .customize-list .settings-heading {
-  margin: 18px 0 4px;
+  margin: 0;
   font-size: var(--text-label);
   opacity: 0.7;
+}
+
+/* A group's heading (Automatic, Playlists) and what's in it. */
+.customize-group {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 14px 0 2px;
+}
+
+.customize-group:first-child {
+  margin-top: 0;
+}
+
+.customize-group-note {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  opacity: 0.55;
 }
 
 .customize-row {

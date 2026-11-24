@@ -24,12 +24,37 @@ export const SECTION_STYLES: { id: SectionStyle; name: string }[] = [
 
 export const isGrid = (style: SectionStyle): boolean => style === 'posters' || style === 'wide'
 
+/**
+ * A tab's two groups. The library: lists vaporTV makes (All games, Recents, Favorites) or brings
+ * in (Steam's collections, the non-Steam games, Arcade's systems). Playlists: the ones made in
+ * vaporTV. A section moves only within its group, and the library always comes first.
+ */
+export type SectionGroup = 'library' | 'playlists'
+export const sectionGroup = (id: string): SectionGroup => (id.startsWith('playlist:') ? 'playlists' : 'library')
+
+/** The library's sections, then the playlists', each in the order they were in. */
+const grouped = (sections: TabSection[]): TabSection[] => [
+  ...sections.filter((s) => sectionGroup(s.id) === 'library'),
+  ...sections.filter((s) => sectionGroup(s.id) === 'playlists')
+]
+
+/**
+ * The order the left bar and the Customize window list them: each group together, the library
+ * first, a grid at the end of its own group (on the page it's at the very bottom).
+ */
+export function listOrder(sections: TabSection[]): TabSection[] {
+  const grid = sections.find((s) => isGrid(s.style))
+  const rest = sections.filter((s) => s !== grid)
+  const group = (g: SectionGroup): TabSection[] => [...rest.filter((s) => sectionGroup(s.id) === g), ...(grid && sectionGroup(grid.id) === g ? [grid] : [])]
+  return [...group('library'), ...group('playlists')]
+}
+
 /** The tab's old single layout (from before sections) as the main list's style. */
 function mainStyle(layout: SteamLayout): SectionStyle {
   return layout === 'spotlight' ? 'spotlight' : layout === 'grid' ? 'wide' : 'posters'
 }
 
-/** One grid at most, and it last: a later one becomes a carousel, and the grid moves to the end. */
+/** The groups in order (the library, then playlists); one grid at most, and it last: a later one becomes a carousel, and the grid moves to the end. */
 export function normalize(sections: TabSection[]): TabSection[] {
   let grid: TabSection | undefined
   const rest: TabSection[] = []
@@ -37,7 +62,7 @@ export function normalize(sections: TabSection[]): TabSection[] {
     if (isGrid(s.style) && !grid) grid = s
     else rest.push(isGrid(s.style) ? { ...s, style: 'carousel' } : s)
   }
-  return grid ? [...rest, grid] : rest
+  return grid ? [...grouped(rest), grid] : grouped(rest)
 }
 
 /**
@@ -74,12 +99,13 @@ export function setStyle(sections: TabSection[], id: string, style: SectionStyle
   return [...next.filter((s) => s.id !== id), picked]
 }
 
-/** A section moved one place up or down; the grid stays last, so nothing moves below it. */
+/** A section moved one place up or down, within its group; the grid stays last, so nothing moves below it. */
 export function moveSection(sections: TabSection[], id: string, by: -1 | 1): TabSection[] {
   const at = sections.findIndex((s) => s.id === id)
   const to = at + by
   if (at < 0 || to < 0 || to >= sections.length) return sections
   if (isGrid(sections[at].style) || isGrid(sections[to].style)) return sections
+  if (sectionGroup(sections[at].id) !== sectionGroup(sections[to].id)) return sections
   const next = [...sections]
   ;[next[at], next[to]] = [next[to], next[at]]
   return next

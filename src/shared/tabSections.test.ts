@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { moveSection, normalize, resolveSections, setHidden, setStyle, type TabSection } from './tabSections'
+import { listOrder, moveSection, normalize, resolveSections, setHidden, setStyle, type TabSection } from './tabSections'
 
 const lists = ['all', 'recent', 'favorites', 'playlist:p1']
 
@@ -61,6 +61,31 @@ describe('a tab’s sections', () => {
     expect(moveSection(sections, 'favorites', -1).map((s) => s.id)).toEqual(['favorites', 'recent', 'playlist:p1', 'all'])
     expect(moveSection(sections, 'playlist:p1', 1)).toBe(sections)
     expect(moveSection(sections, 'recent', -1)).toBe(sections)
+  })
+
+  it('keep playlists made in vaporTV after everything else, however they were saved', () => {
+    const saved: TabSection[] = [
+      { id: 'playlist:p1', style: 'spotlight' },
+      { id: 'row:steam-rpg', style: 'carousel' },
+      { id: 'recent', style: 'carousel' },
+      { id: 'all', style: 'posters' }
+    ]
+    expect(resolveSections([...lists, 'row:steam-rpg'], saved, 'rows').map((s) => s.id)).toEqual(['row:steam-rpg', 'recent', 'favorites', 'playlist:p1', 'all'])
+  })
+
+  it('move only within their group: never a playlist above the library, nor the library below a playlist', () => {
+    const sections = resolveSections(lists, [{ id: 'recent', style: 'carousel' }, { id: 'favorites', style: 'carousel' }, { id: 'playlist:p1', style: 'carousel' }, { id: 'all', style: 'posters' }], 'rows')
+    expect(moveSection(sections, 'playlist:p1', -1)).toBe(sections)
+    expect(moveSection(sections, 'favorites', 1)).toBe(sections)
+    expect(moveSection(sections, 'favorites', -1).map((s) => s.id)).toEqual(['favorites', 'recent', 'playlist:p1', 'all'])
+  })
+
+  it('list in the bar each group together, the grid at the end of its own group', () => {
+    const sections = resolveSections(lists, undefined, 'rows')
+    expect(sections.map((s) => s.id)).toEqual(['recent', 'favorites', 'playlist:p1', 'all'])
+    expect(listOrder(sections).map((s) => s.id)).toEqual(['recent', 'favorites', 'all', 'playlist:p1'])
+    const playlistGrid = setStyle(sections, 'playlist:p1', 'wide')
+    expect(listOrder(playlistGrid).map((s) => s.id)).toEqual(['recent', 'favorites', 'all', 'playlist:p1'])
   })
 
   it('keep at least one showing', () => {

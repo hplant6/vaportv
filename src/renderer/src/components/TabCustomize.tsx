@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { isGrid, moveSection, SECTION_STYLES, setHidden, setStyle, type SectionStyle, type TabSection } from '../../../shared/tabSections'
+import { isGrid, listOrder, moveSection, SECTION_STYLES, sectionGroup, setHidden, setStyle, type SectionStyle, type TabSection } from '../../../shared/tabSections'
 import type { LayoutTab, PlaylistRow } from '../../../shared/types'
 import { focus, OWN_DIRECTION_EVENT, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
 import { play } from '../input/sounds'
@@ -12,7 +12,9 @@ import { toast } from './Toast'
 // in the order they stack down the page. Each row: its name (A picks it up; up and down move it;
 // A or B puts it down), its style (a drop-down: Spotlight, Carousel or a grid), whether it shows
 // (a switch), and, for a playlist, rename and delete (icon buttons; delete asks for a second
-// press). Changes are kept as they're made.
+// press). The rows come in two groups, each moving only within itself: the lists vaporTV makes or
+// brings in (All games, Recents, Favorites, Steam's collections, Arcade's systems), then the
+// playlists made in vaporTV. Changes are kept as they're made.
 
 interface Props {
   tab: LayoutTab
@@ -25,12 +27,19 @@ interface Props {
   onClose: () => void
 }
 
+/** What the tab's first group holds, under its heading. */
+function libraryNote(tab: LayoutTab): string {
+  if (tab === 'steam') return 'Made by vaporTV, or from Steam'
+  if (tab === 'arcade') return 'Made by vaporTV, and the systems'
+  return 'Made by vaporTV'
+}
+
 /** About how tall the style drop-down is (four choices). */
 const MENU_ROOM = 320
 
 const styleName = (style: TabSection['style']): string => SECTION_STYLES.find((s) => s.id === style)?.name ?? style
 
-export function TabCustomize({ label, lists, sections, onSections, onPlaylistsChanged, onClose }: Props) {
+export function TabCustomize({ tab, label, lists, sections, onSections, onPlaylistsChanged, onClose }: Props) {
   const panel = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLDivElement>(null)
   /** The section picked up to move. */
@@ -160,14 +169,24 @@ export function TabCustomize({ label, lists, sections, onSections, onPlaylistsCh
       <div className="dialog-panel customize-panel" ref={panel} data-focus-trap="" {...(moving ? { 'data-own-directions': '' } : {})}>
         <h2 className="section-label display">Customize {label}</h2>
         <p className="settings-help">
-          {moving ? 'Up and down to move it, A to put it down.' : 'A on a name picks it up to move. The sections stack down the tab in this order; a grid goes last.'}
+          {moving ? 'Up and down to move it within its group, A to put it down.' : 'A on a name picks it up to move it within its group. The sections stack down the tab in this order; a grid goes to the bottom.'}
         </p>
         <div className="customize-list" ref={box}>
-          {sections.map((section) => {
+          {listOrder(sections).map((section, i, ordered) => {
             const list = lists.find((l) => l.id === section.id)
             if (!list) return null
+            // Each group's heading above its first row.
+            const group = sectionGroup(section.id)
+            const heading = ordered.findIndex((s) => sectionGroup(s.id) === group && lists.some((l) => l.id === s.id)) === i
+            const headingRow = heading && (
+              <div key={`heading-${group}`} className="customize-group">
+                <h3 className="settings-heading display">{group === 'library' ? 'Automatic' : 'Playlists'}</h3>
+                <span className="customize-group-note">{group === 'library' ? libraryNote(tab) : 'Made in vaporTV'}</span>
+              </div>
+            )
             const playlist = section.id.startsWith('playlist:') ? allPlaylists.find((p) => `playlist:${p.id}` === section.id) : undefined
-            return (
+            return [
+              headingRow,
               <div key={section.id} className={`customize-row${moving === section.id ? ' moving' : ''}${section.hidden ? ' hidden' : ''}`}>
                 <button
                   className="customize-name display"
@@ -252,7 +271,7 @@ export function TabCustomize({ label, lists, sections, onSections, onPlaylistsCh
                   </>
                 )}
               </div>
-            )
+            ]
           })}
         </div>
         {styleMenu &&
