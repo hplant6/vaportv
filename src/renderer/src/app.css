@@ -6775,10 +6775,15 @@ button {
   z-index: 5;
 }
 
-/* Wide enough for its longest choice on one line; above the button near the foot of the screen. */
+/* Wide enough for its longest choice on one line; above the button near the foot of the screen.
+   Solid, not see-through: the rows under it (and their drop-down arrows) would read as its own. A
+   dark brown rather than amber, so the amber of the choice the cursor's on stands out. */
 .customize-menu-anchor .side-bar-sort-menu {
   width: max-content;
   min-width: 100%;
+  background: #2a1f17;
+  border: 2px solid var(--color-panel-line);
+  backdrop-filter: none;
 }
 
 .customize-menu-anchor .side-bar-sort-option {
