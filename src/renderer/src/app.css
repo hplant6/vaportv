@@ -6545,8 +6545,10 @@ button {
 }
 
 /* A game tab's sections, stacked down the page under its toolbar (Sort, Genre). */
+/* Sort and Genre, at the right, over the sections. */
 .library-toolbar {
   display: flex;
+  justify-content: flex-end;
   gap: 16px;
   height: 55px;
   margin-bottom: 20px;
