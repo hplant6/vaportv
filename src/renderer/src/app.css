@@ -6594,13 +6594,11 @@ button {
   font-size: var(--text-body);
   letter-spacing: 0.04em;
   color: var(--color-text);
-  background: transparent;
-  border: 2px solid var(--color-panel-line);
-  opacity: 0.8;
+  /* Filled, as Sort and Genre are: amber, stronger with the cursor on it. */
+  background: rgba(238, 150, 13, 0.15);
   transition:
     background-color var(--dur-focus) var(--ease-focus),
-    color var(--dur-focus) var(--ease-focus),
-    opacity var(--dur-focus) var(--ease-focus);
+    color var(--dur-focus) var(--ease-focus);
 }
 
 .side-bar-customize svg {
@@ -6614,9 +6612,7 @@ button {
 
 .side-bar-customize:focus {
   outline: none;
-  opacity: 1;
-  color: var(--color-accent);
-  background: var(--color-focus-tint);
+  background: rgba(238, 150, 13, 0.4);
 }
 
 /* The Customize window: a row per section, its name (picked up to move), style, shown, and a playlist's actions. */
