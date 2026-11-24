@@ -6471,11 +6471,46 @@ button {
     linear-gradient(to right, rgba(11, 7, 13, 0.94) 0, rgba(11, 7, 13, 0.78) 24%, rgba(11, 7, 13, 0.3) 58%, rgba(11, 7, 13, 0) 80%);
 }
 
+/* A Spotlight section is a banner in the page, about two rows tall: its picture behind it (and
+   only it), the words at the top, its carousel along the bottom. Isolated, so its picture's
+   z-index -1 stays behind its own words and cards, not the page's. */
 .spotlight {
+  --spotlight-h: 740px;
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
-  /* Room below the row for the focused card, which grows. */
-  height: calc(var(--stage-h) - 118px - 45px - 40px);
+  height: var(--spotlight-h);
+}
+
+/* Its picture: from just past the grid's left edge to the screen's right edge, a little above and
+   below the section, fading out on every side into the page. */
+.spotlight .spotlight-backdrop {
+  inset: -28px -36px -20px -28px;
+  z-index: -1;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 9%, #000 88%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 9%, #000 82%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 9%, #000 88%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 9%, #000 82%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* Darker behind the words (left) and the row (bottom), clear in the middle and right. */
+.spotlight .spotlight-shade {
+  background:
+    linear-gradient(to top, rgba(11, 7, 13, 0.85) 0, rgba(11, 7, 13, 0.4) 40%, rgba(11, 7, 13, 0) 62%),
+    linear-gradient(to right, rgba(11, 7, 13, 0.85) 0, rgba(11, 7, 13, 0.55) 30%, rgba(11, 7, 13, 0) 62%);
+}
+
+.spotlight .spotlight-logo {
+  max-height: 120px;
+}
+
+.spotlight .spotlight-description {
+  -webkit-line-clamp: 2;
 }
 
 .spotlight-info {
@@ -6570,22 +6605,8 @@ button {
   margin-top: 48px;
 }
 
-/* The first Spotlight shares the screen with the toolbar above it; the others fill it. */
-.spotlight.first {
-  height: calc(var(--stage-h) - 118px - 45px - 40px - 75px);
-}
-
 .stack-section.empty .empty-note {
   margin: 12px 0 0;
-}
-
-/* Out of a Spotlight section, its picture fades away and the tab's own background shows. */
-.spotlight-backdrop {
-  transition: opacity 600ms var(--ease-focus);
-}
-
-.spotlight-backdrop.off {
-  opacity: 0;
 }
 
 /* The bar's Customize button, under its lists. */

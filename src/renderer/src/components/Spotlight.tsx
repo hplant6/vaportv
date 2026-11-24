@@ -3,12 +3,12 @@ import type { RecentItem, SpotlightDetails } from '../../../shared/types'
 import { CardRow } from './CardRow'
 import { backdropOf, factsOf } from './spotlightParts'
 
-// A game tab's Spotlight sections: the game the cursor's on, big. Its picture fills the screen
-// behind everything (a hero banner where there is one, else its own art, softened), with its logo
-// or name, a line of facts and its description at the top, and the section's list as one carousel
-// along the bottom; the section fills the screen when the cursor's in it. In any other section
-// the picture fades away. The details (a Steam game's hero, logo and store description) are asked
-// for once the cursor settles, and kept.
+// A game tab's Spotlight sections: a banner in the page, about two rows tall, showing the game the
+// cursor's on (or was last on; until then the section's first). Its picture (a hero banner where
+// there is one, else its own art, softened) fills the banner, fading out at its edges, with the
+// game's logo or name, a line of facts and its description at the top, and the section's list as
+// one carousel along the bottom. It scrolls with the page like any other section. The details (a
+// Steam game's hero, logo and store description) are asked for once the cursor settles, and kept.
 
 /** The cursor has to rest this long before the details are asked for (not on every card passed). */
 const SETTLE_MS = 150
@@ -47,7 +47,7 @@ interface Layer {
 
 let layerKey = 0
 
-/** The screen-filling picture: a new one fades in over the last once it's loaded, so it never flashes; none (the cursor's in another section), it fades out. */
+/** The banner's picture: a new one fades in over the last once it's loaded, so it never flashes. */
 export function SpotlightBackdrop({ item }: { item: RecentItem | null }) {
   const d = useDetails(item)
   const picture = item ? backdropOf(item, d) : null
@@ -109,7 +109,7 @@ interface Props {
   hasDefault: boolean
   /** The first section: it stays under the toolbar rather than coming to the top. */
   first: boolean
-  /** The cursor's on one of its cards: the page shows its picture (SpotlightBackdrop). */
+  /** The cursor's on one of its cards: it becomes the one shown. */
   onFocusItem: (item: RecentItem) => void
   /** The card the cursor's on, when it's in this section. */
   focused: RecentItem | null
@@ -120,7 +120,8 @@ export function SpotlightSection({ id, title, items, logos, memoryKey, hasDefaul
   // Until the cursor's in it, its first game's shown.
   const shown = focused && items.some((i) => i.id === focused.id) ? focused : (items[0] ?? null)
   return (
-    <section id={id} className={`spotlight${first ? ' first' : ''}`} data-snap-top={first ? 'first' : ''}>
+    <section id={id} className={`spotlight${first ? ' first' : ''}`}>
+      <SpotlightBackdrop item={shown} />
       <SpotlightInfo item={shown} />
       <CardRow className="spotlight-row" title={title} items={items} logos={logos} memoryKey={memoryKey} hasDefault={hasDefault} onItemFocus={onFocusItem} />
     </section>

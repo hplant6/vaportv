@@ -7,7 +7,7 @@ import { CardRow } from '../components/CardRow'
 import { CollectionGrid, PosterGrid } from '../components/CollectionGrid'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
-import { SpotlightBackdrop, SpotlightSection } from '../components/Spotlight'
+import { SpotlightSection } from '../components/Spotlight'
 import { LibraryToolbar, type ToolbarMenu } from '../components/LibraryToolbar'
 import { TabCustomize } from '../components/TabCustomize'
 import { toast } from '../components/Toast'
@@ -59,10 +59,8 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
   const open = useSideBarOpen(screen, bar)
   const [selected, setSelected] = useState(() => remembered().lists[screen] ?? 'all')
   const [sort, setSort] = useState<LibrarySort>(() => (remembered().sorts[screen] as LibrarySort | undefined) ?? 'title')
-  /** The card the cursor's on in a Spotlight section, and which section. */
+  /** The card the cursor's on (or was last on) in a Spotlight section, and which section. */
   const [spot, setSpot] = useState<{ section: string; item: RecentItem } | null>(null)
-  /** The cursor's been in a section that isn't a Spotlight: the first section's picture no longer stands in. */
-  const [leftSpotlight, setLeftSpotlight] = useState(false)
   const [genre, setGenre] = useState(() => remembered().genres[screen] ?? ALL_GENRES)
   /** The tab's sections as saved (undefined: never changed, so from its old layout). */
   const [savedSections, setSavedSections] = useState<TabSection[] | undefined>(undefined)
@@ -163,14 +161,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
         saved.lists[screen] = id
       })
     }
-    // The picture behind it all: the game the cursor's on in a Spotlight section, or (before the
-    // cursor's been in one) the first section's first game, when that's a Spotlight.
-    const firstSection = shownSections[0]
-    const backdrop = spot
-      ? spot.item
-      : firstSection?.style === 'spotlight' && !leftSpotlight
-        ? (lists.find((list) => list.id === firstSection.id)?.items[0] ?? null)
-        : null
     const genres = [...new Set(rowItems('all').map((item) => item.genre).filter((g): g is string => !!g))].sort((a, b) => a.localeCompare(b))
     const menus: ToolbarMenu[] = [
       {
@@ -204,7 +194,6 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
     ]
     return (
       <div className={`page side-layout stacked${open ? '' : ' closed'}`}>
-        <SpotlightBackdrop item={backdrop} />
         <NavBar active={screen} onNavigate={onNavigate} />
         <SideBar
           tab={screen}
@@ -230,14 +219,8 @@ export function Library({ screen, load, empty, onFavorite, logos, onNavigate }: 
               const title = `${list.name} (${list.items.length})`
               const memoryKey = `side-grid:${screen}:${list.id}`
               const isDefault = index === 0
-              // The cursor in this section: the bar follows it, and the picture is this section's (or none).
-              const follow = (): void => {
-                select(list.id)
-                if (section.style !== 'spotlight') {
-                  setSpot(null)
-                  setLeftSpotlight(true)
-                }
-              }
+              // The cursor in this section: the bar follows it.
+              const follow = (): void => select(list.id)
               if (!list.items.length)
                 return (
                   <section key={list.id} id={sectionId(list.id)} className="stack-section empty">
