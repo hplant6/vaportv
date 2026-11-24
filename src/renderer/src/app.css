@@ -5867,9 +5867,10 @@ button {
   --card-art-h: var(--card-w);
 }
 
-/* The albums' grid, as the game grids: only the covers; the name and artist slide up over the
-   foot of the one the cursor rests on (as the Video tab's posters' bar). */
-.album-grid .album-card .recent-footer {
+/* The Music tab's covers (its carousels, its banner's row and its grids), as the game grids: only
+   the covers; the name and artist slide up over the foot of the one the cursor rests on (as the
+   Video tab's posters' bar). */
+.music-tab .album-card .recent-footer {
   position: absolute;
   z-index: 2;
   left: 0;
@@ -5880,12 +5881,12 @@ button {
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.album-grid .album-card:focus .recent-footer {
+.music-tab .album-card:focus .recent-footer {
   transform: none;
   transition: transform 650ms 750ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.album-grid .album-card {
+.music-tab .album-card {
   position: relative;
 }
 
