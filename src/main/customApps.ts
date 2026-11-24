@@ -36,8 +36,8 @@ export function customAppItems(config: Config): AppItem[] {
   return customApps(config).map((app) => ({ id: app.id, name: app.name, tile: app.tile ?? '' }))
 }
 
-/** The translator's tile: one of the extras, so not in the public build. */
-const EXTRA_APPS: AppItem[] = EXTRAS ? [{ id: 'translator', name: 'Translate', tile: '' }] : []
+/** The translator's tile, Japan's flag (it translates between English and Japanese): one of the extras, so not in the public build. */
+const EXTRA_APPS: AppItem[] = EXTRAS ? [{ id: 'translator', name: 'Translate', tile: 'fixtures/tiles/translator.png' }] : []
 
 /** Every app tile: the built-in ones, then your own. */
 export const appCatalog = (config: Config): AppItem[] => [...home.apps, ...home.moreApps, ...EXTRA_APPS, ...customAppItems(config)]

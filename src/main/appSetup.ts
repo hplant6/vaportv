@@ -40,7 +40,7 @@ type Recipe =
   | { kind: 'flatpak'; flatpak: string; program: string; args?: string[]; controller?: boolean }
   /** Comes with EmuDeck. */
   | { kind: 'emudeck' }
-  /** Part of vaporTV itself (the Files and Claude apps). */
+  /** Part of vaporTV itself (the Files, Claude and Translate apps). */
   | { kind: 'builtin' }
 
 const RECIPES: Record<string, Recipe> = {
@@ -66,7 +66,9 @@ const RECIPES: Record<string, Recipe> = {
   kodi: { kind: 'flatpak', flatpak: 'tv.kodi.Kodi', program: 'Kodi' },
   esde: { kind: 'emudeck' },
   files: { kind: 'builtin' },
-  claude: { kind: 'builtin' }
+  claude: { kind: 'builtin' },
+  // Translate (an extra: its tile's only in builds with them, customApps.ts).
+  translator: { kind: 'builtin' }
 }
 
 /**

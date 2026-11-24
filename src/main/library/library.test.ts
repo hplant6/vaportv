@@ -821,6 +821,8 @@ describe('app setup', () => {
     expect(appState('netflix', false)).toEqual({ ready: false, setup: 'web' })
     expect(appState('esde', false)).toEqual({ ready: false, setup: 'emudeck' })
     expect(appState('someone-elses', false)).toEqual({ ready: false, setup: 'shortcut' })
+    // vaporTV's own apps open as they are: no Steam shortcut to ask for.
+    for (const own of ['files', 'claude', 'translator']) expect(appState(own, false)).toEqual({ ready: true })
     expect(webShortcuts(['netflix', 'youtube'])).toEqual([
       {
         name: 'Netflix',
