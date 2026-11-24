@@ -8,15 +8,12 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
-### Added
-- Claude app: talk to it in Japanese. It hears English or Japanese by itself (a second speech model, about 490 MB, downloads the first time), answers Japanese in a Japanese voice, and can translate back and forth between two people at the TV.
-
-### Changed
-- Claude app: a pause no longer ends what you're saying. It listens until you press the button to send.
-
 ## 0.18.0
 
 ### Added
+- Settings, the console tabs' left bar and pop-up windows feel solid: the panel you're in tips in 3D toward the item you're on, its near edge catching the light and the far side falling into shade, and springs back flat when you leave it.
+- **More** shows each tab's logo large on its tile. Pick one and the logo rises to the top as its console slides up from below, turning.
+- Claude app: talk to it in Japanese. It hears English or Japanese by itself (a second speech model, about 490 MB, downloads the first time), answers Japanese in a Japanese voice, and can translate back and forth between two people at the TV.
 - **Settings → General → Updates → Apps and system** updates the box's other software from the TV, no Desktop Mode needed: the apps and runtimes Discover would offer (Chrome, Kodi, the emulators and the rest). It shows what has an update waiting; press A to update them all. Apps that are open get the new version next time you open them. SteamOS itself is still updated in Steam's Settings → System.
 - **Now playing** has a visualizer beside the album cover: a neon **Orb** or a glowing **Wave** of the music, or **None**. Choose in Settings → Music.
 - **Recently added** in the Music tab's bar: the albums you added most recently.
@@ -36,6 +33,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 - An album played from **Music** that ended, or was paused by opening an app, left the background music silent until you pressed Stop. It comes back when the album ends, and the album carries on when you come back from an app.
 
 ### Changed
+- The turning consoles (the left bar's, and More's) appear much sooner, and straight away when you come back to one. The console models are a fraction of their old size, so vaporTV's download is smaller too.
+- Game cards' shadows are softer, and the selected card's no longer drops far below it (where the next row cut it off).
+- Claude app: a pause no longer ends what you're saying. It listens until you press the button to send.
 - The music row under the top bar has Previous, Stop and Next as icons in a pill sitting between the bar's lines, beside the time, in place of the Stop and Skip words. Previous is new.
 - **Apps** has its own backdrop: a TV on a walnut stand showing the vaporTV logo, with a figure holding a controller beside it. It turns on its tile in More too. **Video** keeps the pile of VHS tapes.
 
