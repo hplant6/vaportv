@@ -1846,11 +1846,26 @@ button {
   background: rgba(0, 0, 0, 0.8);
 }
 
-/* The panels: a faint warm tint, no shadow. */
+/* The panels: a faint warm tint, no shadow (LivingPanels lights and shadows them, when it can). */
 .settings-sidebar,
 .settings-pane .settings-group {
   background: var(--color-panel);
   border-radius: 18px;
+}
+
+/* While LivingPanels draws them (moving, lit, shadowed) on its canvas, they lose their own. */
+.living-panels {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  pointer-events: none;
+}
+
+.settings.living .settings-sidebar,
+.settings.living .settings-pane .settings-group {
+  background: transparent;
 }
 
 /* Runs off the left edge, so only its right corners show; its list sits against the right. */
@@ -3618,8 +3633,7 @@ button {
    corners show, from just under the top bar to near the bottom of the screen. Darker than
    Settings' (its options read over a bright backdrop), and darker again while the cursor's
    in it. It slides out with the bar. */
-.side-bar::before {
-  content: '';
+.side-bar-panel {
   position: absolute;
   z-index: -1;
   left: -135px;
@@ -3633,8 +3647,45 @@ button {
   transition: background-color var(--dur-focus) var(--ease-focus);
 }
 
-.side-bar:focus-within::before {
+.side-bar:focus-within .side-bar-panel {
   background: rgba(16, 12, 9, 0.72);
+}
+
+/* While LivingPanels draws it (its colours are in LivingPanels.tsx), only its blur stays, turned with the drawing. */
+.side-bar.living .side-bar-panel {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.side-bar.living .living-blur {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  transform-origin: 0 0;
+}
+
+/* Over the panel, under the bar's options. */
+.side-bar > .living-panels {
+  z-index: -1;
+}
+
+/* Modals (DialogPanels): the drawing and its blur go over the dim, under the panel's content. */
+.dialog-backdrop > .living-panels,
+.dialog-backdrop > .living-blur-layer {
+  z-index: -1;
+}
+
+.living-blur-layer {
+  position: absolute;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.dialog-backdrop.living .dialog-panel {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 /* The games over the bar, so a selected card in the first column grows over it rather than

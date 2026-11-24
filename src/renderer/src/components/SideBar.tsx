@@ -3,6 +3,7 @@ import { LIBRARY_SORTS } from '../../../shared/librarySort'
 import type { RecentItem } from '../../../shared/types'
 import { ConsoleSpin } from '../background/ConsoleSpin'
 import { focus, TRAP_CLOSE_EVENT } from '../input/focus'
+import { LivingPanels, SIDE_BAR_PANELS } from './LivingPanels'
 
 /** Each console's logo (white, from the ES-DE Alpha theme's media), by tab id (the More screen's tiles use them too). */
 export const LOGOS = Object.fromEntries(
@@ -127,6 +128,11 @@ export function SideBar({
   return (
     // One column for up and down: Sort and the lists (the grid beside it is another).
     <aside className="side-bar" aria-hidden={!open} data-nav-scope="">
+      {/* Its panel, drawn (moving, lit) by LivingPanels; the blur inside is turned with it. */}
+      <div className="side-bar-panel">
+        <div className="living-blur" />
+      </div>
+      <LivingPanels panels={SIDE_BAR_PANELS} />
       <h1 className="side-bar-title display">{logoUrl ? <img className="side-bar-logo" src={logoUrl} alt={title} /> : title}</h1>
       {/* Hidden, the bar doesn't draw it. */}
       {spinning && <ConsoleSpin tab={tab} />}

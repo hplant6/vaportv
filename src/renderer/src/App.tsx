@@ -55,6 +55,7 @@ import { More, pickedFromMore } from './screens/More'
 import { STAGE_W, stageHeight } from './stage'
 import { setCurrentScreen } from './currentScreen'
 import { hasSideBar } from '../../shared/tabs'
+import { DialogPanels } from './components/LivingPanels'
 
 /** Recents also reload whenever the window regains focus, e.g. on returning from a game. */
 const HOME_REFRESH = 5 * 60 * 1000
@@ -281,6 +282,8 @@ export function App() {
 
   return (
     <div className="stage" style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, ['--stage-h' as string]: `${fit.height}px` }}>
+      {/* Every modal's panel drawn in 3D, as Settings' and the tabs' are. */}
+      <DialogPanels />
       <Fragment key={gpuGeneration}>
         {product && webgl ? (
           <ProductBackground key={screen} product={product} quality={productQuality} onUnavailable={productUnavailable} />

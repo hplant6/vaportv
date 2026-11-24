@@ -28,6 +28,7 @@ import { OnScreenKeyboard } from '../components/Keyboard'
 import { TrackLine } from '../components/TrackLine'
 import { toast } from '../components/Toast'
 import { AberrationLogo } from '../components/AberrationLogo'
+import { LivingPanels, SETTINGS_PANELS } from '../components/LivingPanels'
 import { GamePlaylistsSettings } from '../components/GamePlaylists'
 import { ChevronIcon, NextIcon, PlayIcon, PreviousIcon, StopIcon } from '../components/icons'
 import { ActionRow, OverStage } from '../components/GooglePhotos'
@@ -1303,6 +1304,7 @@ export function Settings({ onNavigate }: { onNavigate: (screen: Screen) => void 
       <NavBar active="settings" onNavigate={onNavigate} />
 
       <section className="settings">
+        <LivingPanels panels={SETTINGS_PANELS} />
         <div className="settings-sidebar">
           <AberrationLogo className="settings-logo" />
           <h2 className="settings-title display">Settings</h2>
