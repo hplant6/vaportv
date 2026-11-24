@@ -2,8 +2,9 @@ import type { ButtonIconName } from '../../shared/buttonIcons'
 
 // What the mpv player's on-screen controls do, apart from drawing them (playerOsd.ts) and from mpv
 // (externalPlayer.ts): the same controls as the page's player (MediaPlayer.tsx). The bar has two
-// rows the cursor moves between: the seek bar, where it starts (A plays or pauses, D-pad left and
-// right scrub), and, D-pad down, the buttons (stop, back 10, play/pause, on 10, audio & subtitles).
+// rows the cursor moves between: the buttons, where it starts (stop, back 10, play/pause, on 10,
+// audio & subtitles; D-pad left and right move along them), and, D-pad up, the seek bar (A plays
+// or pauses, left and right scrub; down goes back to the buttons).
 // The triggers skip back or on 10 seconds, Y opens Audio & subtitles, B closes that or stops.
 // Pure: `now` comes in, and what mpv should do comes back as commands.
 
@@ -96,7 +97,7 @@ export function initialState(title: string, subtitle: string, now: number): Play
     aid: null,
     sid: null,
     barUntil: now + BAR_MS,
-    row: 'seek',
+    row: 'buttons',
     button: 'playPause',
     menu: null,
     scrub: null,
@@ -191,14 +192,14 @@ export function handle(state: PlayerState, input: PlayerInput, now: number): [Pl
       }
       case 'select': {
         const picked = rows[row]
-        const closed = { ...state, menu: null, row: 'seek' as const }
+        const closed = { ...state, menu: null, row: 'buttons' as const, button: 'tracks' as const }
         if (!picked) return [closed, []]
         if (column === 'audio') return [{ ...closed, aid: picked.id }, picked.id === state.aid ? [] : [{ audio: picked.id! }]]
         return [{ ...closed, sid: picked.id }, picked.id === state.sid ? [] : [{ subtitle: picked.id }]]
       }
       case 'back':
       case 'tracks':
-        return [{ ...state, menu: null, row: 'seek' }, []]
+        return [{ ...state, menu: null, row: 'buttons', button: 'tracks' }, []]
       case 'stop':
         return [state, [{ stop: true }]]
       case 'playPause':
@@ -225,18 +226,21 @@ export function handle(state: PlayerState, input: PlayerInput, now: number): [Pl
     case 'playPause':
       return press(state, 'playPause', now)
     case 'select':
-      if (state.row === 'buttons' && !hidden) return press(state, state.button, now)
-      return press({ ...state, row: 'seek' }, 'playPause', now)
+      // With the bar hidden, A plays or pauses (and shows the bar, on play/pause).
+      if (hidden) return press({ ...state, row: 'buttons', button: 'playPause' }, 'playPause', now)
+      if (state.row === 'buttons') return press(state, state.button, now)
+      return press(state, 'playPause', now)
     case 'up':
     case 'down':
-      // The first press with the bar hidden only shows it.
-      if (hidden) return [showBar({ ...state, row: 'seek' }, now), []]
-      if (state.row === 'buttons') return [showBar(input === 'up' ? { ...state, row: 'seek' } : state, now), []]
-      if (input === 'down') return [showBar({ ...state, row: 'buttons', button: 'playPause' }, now), []]
-      return [showBar(state, now), []]
+      // The first press with the bar hidden shows it: up on the seek bar, down on the buttons.
+      if (hidden) return [showBar(input === 'up' ? { ...state, row: 'seek' } : { ...state, row: 'buttons', button: 'playPause' }, now), []]
+      if (input === 'up') return [showBar({ ...state, row: 'seek' }, now), []]
+      return [showBar(state.row === 'seek' ? { ...state, row: 'buttons', button: 'playPause' } : state, now), []]
     case 'left':
     case 'right': {
-      if (state.row === 'buttons' && !hidden) {
+      // The first press with the bar hidden shows it, the cursor on play/pause.
+      if (hidden) return [showBar({ ...state, row: 'buttons', button: 'playPause' }, now), []]
+      if (state.row === 'buttons') {
         const buttons = buttonsOf(state)
         const next = buttons[buttons.indexOf(state.button) + (input === 'right' ? 1 : -1)]
         return [showBar(next ? { ...state, button: next } : state, now), []]
@@ -254,7 +258,7 @@ export function handle(state: PlayerState, input: PlayerInput, now: number): [Pl
 
 /**
  * Time passing: a scrub that's settled jumps, the bar hides when its time's up (the cursor
- * going back to the seek bar, so A and the D-pad do what they did), and notes expire.
+ * going back to play/pause, where the next press finds it), and notes expire.
  */
 export function tick(state: PlayerState, now: number): [PlayerState, PlayerCommand[]] {
   let next = state
@@ -263,7 +267,8 @@ export function tick(state: PlayerState, now: number): [PlayerState, PlayerComma
     commands.push({ seek: next.scrub.to })
     next = { ...showBar(next, now), position: next.scrub.to, scrub: null }
   }
-  if (next.row === 'buttons' && !next.paused && !next.menu && now >= next.barUntil) next = { ...next, row: 'seek' }
+  if ((next.row !== 'buttons' || next.button !== 'playPause') && !next.paused && !next.menu && !next.scrub && now >= next.barUntil)
+    next = { ...next, row: 'buttons', button: 'playPause' }
   if (next.keysShown && !barShown(next, now)) next = { ...next, keysShown: false }
   if (next.skipped && now >= next.skipped.until) next = { ...next, skipped: null }
   if (next.note && now >= next.note.until) next = { ...next, note: null }

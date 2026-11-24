@@ -31,8 +31,10 @@ describe('player controls', () => {
     expect(commands).toEqual([])
   })
 
-  it('scrubs with the D-pad and jumps once the presses stop', () => {
-    let [state] = handle(playing(), 'right', 100)
+  it('scrubs with the D-pad on the seek bar (up from the buttons) and jumps once the presses stop', () => {
+    let [state] = handle(playing(), 'up', 50)
+    expect(state.row).toBe('seek')
+    ;[state] = handle(state, 'right', 100)
     // A two-hour film: 1/120th is 60 s a press.
     expect(state.scrub?.to).toBe(660)
     ;[state] = handle(state, 'right', 300)
@@ -50,8 +52,14 @@ describe('player controls', () => {
     expect(state.skipped?.by).toBe(20)
   })
 
-  it('down goes to the buttons; left and right step along them', () => {
-    let [state] = handle(playing(), 'down', 100)
+  it('starts on the buttons: left and right step along them, up goes to the seek bar and down comes back', () => {
+    let [state] = handle(playing(), 'left', 100)
+    expect(state.row).toBe('buttons')
+    expect(state.scrub).toBeNull()
+    expect(state.button).toBe('back')
+    ;[state] = handle(state, 'up', 120)
+    expect(state.row).toBe('seek')
+    ;[state] = handle(state, 'down', 140)
     expect(state.row).toBe('buttons')
     expect(state.button).toBe('playPause')
     ;[state] = handle(state, 'left', 200)
@@ -60,11 +68,24 @@ describe('player controls', () => {
     expect(commands).toEqual([{ seek: 590 }])
   })
 
-  it('a first up or down with the bar hidden only shows it', () => {
-    const hidden = playing({ barUntil: 0 })
-    const [state] = handle(hidden, 'down', 10_000)
-    expect(state.row).toBe('seek')
-    expect(state.barUntil).toBeGreaterThan(10_000)
+  it('a first press with the bar hidden only shows it: on the buttons, or the seek bar for up', () => {
+    const hidden = playing({ barUntil: 0, row: 'seek', button: 'tracks' })
+    for (const input of ['down', 'left', 'right'] as const) {
+      const [state, commands] = handle(hidden, input, 10_000)
+      expect(state.row).toBe('buttons')
+      expect(state.button).toBe('playPause')
+      expect(state.scrub).toBeNull()
+      expect(commands).toEqual([])
+      expect(state.barUntil).toBeGreaterThan(10_000)
+    }
+    expect(handle(hidden, 'up', 10_000)[0].row).toBe('seek')
+  })
+
+  it('goes back to play/pause on the buttons once the bar hides', () => {
+    const [state] = handle(playing(), 'up', 100)
+    const [later] = tick(state, 100_000)
+    expect(later.row).toBe('buttons')
+    expect(later.button).toBe('playPause')
   })
 
   it('picks subtitles in the menu, Off included', () => {

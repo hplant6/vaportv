@@ -4,6 +4,7 @@ import { loadConfig, saveConfig, type Config, type MediaAccount } from '../confi
 import type { MusicTags, MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
 import { playInMpv, type PlayerHooks } from './externalPlayer'
+import { loadTrackMemory, recall, remember, saveTrackMemory } from './trackMemory'
 import { mediaKey, parseMediaKey } from '../../shared/mediaKey'
 
 // Media servers for Home's Continue watching: every server signed in to (Emby and Jellyfin
@@ -228,6 +229,15 @@ export async function playExternal(
   const a = await account(source)
   const dev = await device()
   const info = await mediaBrowser.nativePlayback(a, base(a), itemId, dev, version())
+  // The audio and subtitles picked last time (for this film, or this show), over the server's picks.
+  const memoryKey = `${source}:${info.seriesId ?? itemId}`
+  let memory = await loadTrackMemory()
+  const recalled = recall(memory, memoryKey, info.audioStreams, info.subtitleStreams)
+  if (recalled.audio !== undefined || recalled.subtitle !== undefined) hooks.log(`player: remembered tracks: audio ${recalled.audio ?? '-'}, subtitles ${recalled.subtitle ?? '-'}`)
+  const onTracks = (audio: number | undefined, subtitle: number | undefined): void => {
+    memory = remember(memory, memoryKey, info.audioStreams, info.subtitleStreams, audio, subtitle, Date.now())
+    saveTrackMemory(memory).catch((err) => hooks.log(`player: couldn't save the tracks picked: ${err}`))
+  }
   const send = (event: 'start' | 'progress' | 'stop', at: number, paused: boolean): void => {
     mediaBrowser.report(a, event, info, at, paused, dev, version()).catch((err) => hooks.log(`player: media report ${event} failed: ${err}`))
   }
@@ -240,10 +250,10 @@ export async function playExternal(
       durationSeconds: info.durationSeconds,
       audioStreams: info.audioStreams,
       subtitleStreams: info.subtitleStreams,
-      audio: info.audio,
-      subtitleTrack: info.subtitleIndex
+      audio: recalled.audio ?? info.audio,
+      subtitleTrack: recalled.subtitle ?? info.subtitleIndex
     },
-    { ...hooks, onPosition: send }
+    { ...hooks, onPosition: send, onTracks }
   )
   return stoppedAt !== null
 }

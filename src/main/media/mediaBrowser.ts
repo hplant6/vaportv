@@ -529,6 +529,8 @@ export interface NativeTrack {
   /** Emby's stream index. */
   index: number
   name: string
+  /** Its language, as the server codes it ("eng"). */
+  language?: string
   /** A subtitle that's a file beside the video (mpv loads it from here); unset, it's in the video. */
   url?: string
 }
@@ -560,7 +562,7 @@ export async function nativePlayback(
   itemId: string,
   device: string,
   version: string
-): Promise<Omit<MediaPlayback, 'source' | 'audioTracks' | 'subtitleTracks' | 'subtitleUrl'> & { audioStreams: NativeTrack[]; subtitleStreams: NativeTrack[] }> {
+): Promise<Omit<MediaPlayback, 'source' | 'audioTracks' | 'subtitleTracks' | 'subtitleUrl'> & { audioStreams: NativeTrack[]; subtitleStreams: NativeTrack[]; seriesId?: string }> {
   const root = `${account.url}${prefix(account.kind)}`
   const headers = authHeaders(account.kind, device, version, account.token)
   const item = await request<Item>(`${root}${userItem(account, itemId)}`, { headers })
@@ -596,10 +598,16 @@ export async function nativePlayback(
     durationSeconds: item.RunTimeTicks ? item.RunTimeTicks / TICKS : undefined,
     audio,
     subtitleIndex: subtitle,
-    audioStreams: streams.filter((s) => s.Type === 'Audio').map((s, i) => ({ index: s.Index, name: trackName(s, `Track ${i + 1}`) })),
+    seriesId: item.SeriesId,
+    audioStreams: streams.filter((s) => s.Type === 'Audio').map((s, i) => ({ index: s.Index, name: trackName(s, `Track ${i + 1}`), ...(s.Language ? { language: s.Language } : {}) })),
     subtitleStreams: streams
       .filter((s) => s.Type === 'Subtitle')
-      .map((s, i) => ({ index: s.Index, name: trackName(s, `Subtitles ${i + 1}`), ...(s.IsExternal ? { url: subtitleFile(s) } : {}) }))
+      .map((s, i) => ({
+        index: s.Index,
+        name: trackName(s, `Subtitles ${i + 1}`),
+        ...(s.Language ? { language: s.Language } : {}),
+        ...(s.IsExternal ? { url: subtitleFile(s) } : {})
+      }))
   }
 }
 

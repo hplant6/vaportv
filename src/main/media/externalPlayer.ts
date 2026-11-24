@@ -88,6 +88,8 @@ export interface PlayerHooks {
   combos?: Combos
   log: (line: string) => void
   report?: (line: string) => void
+  /** Audio or subtitles picked in the menu: what's playing now (the server's stream indexes; subtitle -1 off; unset where it can't be told). */
+  onTracks?: (audio: number | undefined, subtitle: number | undefined) => void
 }
 
 /** vaporTV's fonts, copied where mpv's sandbox can read them; the families' names for the drawing. */
@@ -185,8 +187,8 @@ export function shortcutList(controls: Controls, family: ControllerFamily, combo
   }
   return [
     { icons: [button(controls.select)], what: 'Play / pause' },
-    { icons: [{ name: 'dpad_leftright' }], what: 'Scrub (on the seek bar)' },
-    { icons: [{ name: 'dpad_all' }], what: 'Down to these buttons, up to the seek bar' },
+    { icons: [{ name: 'dpad_leftright' }], what: 'Move along these buttons, or scrub on the seek bar' },
+    { icons: [{ name: 'dpad_all' }], what: 'Up to the seek bar, down to these buttons' },
     { icons: [button(controls.sideBar), button(controls.controlsGuide)], what: '10 seconds back / on' },
     { icons: [button(controls.favorite)], what: 'Audio & subtitles' },
     { icons: [button(controls.back)], what: 'Stop' },
@@ -299,6 +301,9 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
   let lastReport = 0
   let shown = ''
   let tracksPicked = false
+  /** mpv's track ids → the server's stream indexes (where the two lists line up). */
+  let audioToServer = new Map<number, number>()
+  let subtitleToServer = new Map<number, number>()
   let stopPads = (): void => undefined
   let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -322,8 +327,12 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
       } else if ('pause' in c) {
         ipc.send('set_property', 'pause', c.pause)
         if (started) hooks.onPosition('progress', state.position, c.pause)
-      } else if ('audio' in c) ipc.send('set_property', 'aid', c.audio)
-      else if ('subtitle' in c) ipc.send('set_property', 'sid', c.subtitle ?? 'no')
+      } else if ('audio' in c || 'subtitle' in c) {
+        if ('audio' in c) ipc.send('set_property', 'aid', c.audio)
+        else ipc.send('set_property', 'sid', c.subtitle ?? 'no')
+        // Remembered for next time, as the server knows them.
+        hooks.onTracks?.(state.aid === null ? undefined : audioToServer.get(state.aid), state.sid === null ? -1 : subtitleToServer.get(state.sid))
+      }
       else if ('stop' in c) ipc.send('quit')
     }
   }
@@ -395,6 +404,8 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
         if (!Array.isArray(data)) break
         const matched = matchTracks(data as MpvTrack[], play)
         state = { ...state, audio: matched.audio, subtitles: matched.subtitles }
+        audioToServer = new Map([...matched.audioIndex].map(([server, mpv]) => [mpv, server]))
+        subtitleToServer = new Map([...matched.subtitleIndex].map(([server, mpv]) => [mpv, server]))
         // Once the file's open: the server's picks (the user's language preferences), where they can be matched.
         if (!tracksPicked && (matched.audio.length || matched.subtitles.length)) {
           tracksPicked = true
