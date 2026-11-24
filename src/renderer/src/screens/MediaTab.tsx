@@ -1,20 +1,28 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
 import type { MediaItem, MediaLibrary, MediaLists, MediaPage, MediaSort, PlaylistRow } from '../../../shared/types'
+import { listOrder, resolveSections, type TabSection } from '../../../shared/tabSections'
 import { MEDIA_CHANGED_EVENT, MEDIA_WATCHED_EVENT, WatchCard } from '../components/ContinueWatching'
+import { LibraryToolbar, type ToolbarMenu } from '../components/LibraryToolbar'
 import { MEDIA_SHOW_EVENT, MediaPoster } from '../components/MediaPoster'
+import { MediaRow } from '../components/MediaRow'
 import { MediaShowPage } from '../components/MediaShowPage'
+import { MediaSpotlightSection } from '../components/MediaSpotlight'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
+import { TabCustomize } from '../components/TabCustomize'
 import { focus, focusContentDefault } from '../input/focus'
 import { HOME_CHANGED_EVENT } from './Settings'
 import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
-// The Media tab: the console tabs' left bar and grid, filled from every media server signed in
-// to (Emby, Jellyfin). Its top lists come first: Continue watching and Next up as wide stills,
-// Recently added and Favorites as posters; then each server's libraries, a page at a time as
-// the cursor nears the end, sorted and filtered by the server. A plays a film or episode from
-// where it was left, in vaporTV's player; a show opens its seasons. The bar turns the pile of
-// VHS tapes Apps shows.
+// The Video tab, laid out as the game tabs are: its lists stacked down the page as sections, each
+// in the style chosen in its Customize window (Spotlight, Carousel or a grid), filled from every
+// media server signed in to (Emby, Jellyfin). The lists in two groups: what the servers give
+// (Continue watching and Next up as wide stills, Recently added, Favorites, then each server's
+// libraries, under Libraries), then the playlists made in vaporTV. A library comes a page at a
+// time as the cursor nears the end of its row or grid, sorted and filtered by the server. The
+// toolbar's Sort and Show (all, or unwatched only) apply to Favorites and the libraries. A plays
+// a film or episode from where it was left, in vaporTV's player; a show opens its seasons. The
+// bar turns the pile of VHS tapes Apps shows.
 
 const SCREEN = 'media'
 /** A library's titles come this many at a time; the next page is asked for two rows (of four) from the end. */
@@ -57,6 +65,15 @@ interface MediaList extends SideList<MediaItem> {
 
 const libraryListId = (lib: MediaLibrary): string => `lib:${lib.source}:${lib.id}`
 
+/** A section's element id, for the bar to jump to. */
+const sectionId = (listId: string): string => `section-${listId.replace(/[^A-Za-z0-9_-]/g, '_')}`
+
+/** The toolbar's Show: everything, or only what's not been watched. */
+const SHOW_OPTIONS = [
+  { id: 'all', name: 'All' },
+  { id: UNWATCHED, name: 'Unwatched only' }
+]
+
 export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const [lists, setLists] = useState<MediaLists | null>(null)
   const [libraries, setLibraries] = useState<MediaLibrary[]>([])
@@ -66,6 +83,16 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [selected, setSelected] = useState(() => remembered().lists[SCREEN] ?? 'continue')
   const [sort, setSort] = useState<MediaSort>(() => (remembered().sorts[SCREEN] as MediaSort | undefined) ?? 'name')
   const [unwatched, setUnwatched] = useState(() => (remembered().filters[SCREEN] ?? []).includes(UNWATCHED))
+  /** The tab's sections as saved in Customize (undefined: never changed). */
+  const [savedSections, setSavedSections] = useState<TabSection[] | undefined>(undefined)
+  const [customizing, setCustomizing] = useState(false)
+  /** The bar's cursor on a list: the page scrolls to its section. */
+  const [jump, setJump] = useState<{ id: string; n: number } | undefined>(undefined)
+  /** What the cursor's on (or was last on) in a Spotlight section, and which section. */
+  const [spot, setSpot] = useState<{ section: string; item: MediaItem } | null>(null)
+  useEffect(() => {
+    window.steamtv.tabSections.get(SCREEN).then(setSavedSections)
+  }, [])
 
   // Asked on opening, on coming back to vaporTV, after watching something, and after a sign-in.
   useEffect(() => {
@@ -184,16 +211,8 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       wide: false,
       empty: unwatched ? 'You’ve watched all your favorites.' : 'Films and shows you mark as favorites show up here.'
     },
-    ...playlists.map((p, i) => ({
-      id: `playlist:${p.id}`,
-      name: p.name,
-      // Its films, shows and episodes in the order you put them (a game in it shows on Home, not here).
-      items: p.items.flatMap((item) => (item.media ? [item.media] : [])),
-      wide: false,
-      empty: 'Press X on a film, show or episode to put it in this playlist.',
-      ...(i === 0 ? { section: 'Playlists' } : {})
-    })),
-    ...libraries.map((lib, i) => {
+    // Each server's library (the bar heads them Libraries), then the playlists made here (Playlists).
+    ...libraries.map((lib) => {
       const page = pages[pageKey(lib)]
       return {
         id: libraryListId(lib),
@@ -202,12 +221,32 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
         count: page?.total,
         wide: false,
         library: lib,
-        empty: !page ? 'Loading…' : unwatched ? 'You’ve watched everything here.' : 'Nothing in this library yet.',
-        ...(i === 0 ? { section: 'Libraries' } : {})
+        empty: !page ? 'Loading…' : unwatched ? 'You’ve watched everything here.' : 'Nothing in this library yet.'
       }
-    })
+    }),
+    ...playlists.map((p) => ({
+      id: `playlist:${p.id}`,
+      name: p.name,
+      // Its films, shows and episodes in the order you put them (a game in it shows on Home, not here).
+      items: p.items.flatMap((item) => (item.media ? [item.media] : [])),
+      wide: false,
+      empty: 'Press X on a film, show or episode to put it in this playlist.'
+    }))
   ]
-  const current = all.find((list) => list.id === selected) ?? all[0]
+  const sections = resolveSections(
+    all.map((list) => list.id),
+    savedSections,
+    'rows'
+  )
+  const shownSections = sections.filter((section) => !section.hidden)
+  // The bar lists the sections shown, each group together: what the servers give (the libraries
+  // under Libraries), then the playlists made here, under Playlists.
+  const barLists: MediaList[] = listOrder(shownSections).map((section) => all.find((list) => list.id === section.id)!)
+  const firstLibrary = barLists.findIndex((list) => list.library)
+  if (firstLibrary >= 0) barLists[firstLibrary] = { ...barLists[firstLibrary], section: 'Libraries' }
+  const firstPlaylist = barLists.findIndex((list) => list.id.startsWith('playlist:'))
+  if (firstPlaylist >= 0) barLists[firstPlaylist] = { ...barLists[firstPlaylist], section: 'Playlists' }
+  const current = barLists.find((list) => list.id === selected) ?? barLists[0]
   const select = (id: string): void => {
     if (id === selected) return
     setSelected(id)
@@ -215,70 +254,144 @@ export function MediaTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       saved.lists[SCREEN] = id
     })
   }
-  const count = current.count ?? current.items.length
-  const title = `${open ? '' : 'Video · '}${current.name} (${count.toLocaleString()})`
-
+  const countOf = (list: MediaList): number => list.count ?? list.items.length
   // Near the end of what's loaded of a library: the next page.
-  const onGridFocus = (event: FocusEvent<HTMLDivElement>): void => {
-    const lib = current.library
-    const index = Number((event.target as HTMLElement).dataset.index)
-    if (!lib || Number.isNaN(index)) return
-    if (index >= current.items.length - NEAR_END && current.items.length < count) loadPage(lib, current.items.length)
+  const more = (list: MediaList) => (): void => {
+    if (list.library && list.items.length < countOf(list)) loadPage(list.library, list.items.length)
   }
+  const onGridFocus =
+    (list: MediaList) =>
+    (event: FocusEvent<HTMLDivElement>): void => {
+      const index = Number((event.target as HTMLElement).dataset.index)
+      if (!Number.isNaN(index) && index >= list.items.length - NEAR_END) more(list)()
+    }
+
+  const menus: ToolbarMenu[] = [
+    {
+      id: 'sort',
+      label: 'Sort by',
+      value: sort,
+      options: MEDIA_SORTS,
+      onPick: (next) => {
+        setSort(next as MediaSort)
+        remember((saved) => {
+          saved.sorts[SCREEN] = next
+        })
+      }
+    },
+    {
+      id: 'show',
+      label: 'Show',
+      value: unwatched ? UNWATCHED : 'all',
+      options: SHOW_OPTIONS,
+      onPick: (next) => {
+        const only = next === UNWATCHED
+        setUnwatched(only)
+        remember((saved) => {
+          saved.filters[SCREEN] = only ? [UNWATCHED] : []
+        })
+      }
+    }
+  ]
 
   return (
-    <div className={`page side-layout${open ? '' : ' closed'}`}>
+    <div className={`page side-layout stacked${open ? '' : ' closed'}`}>
       <NavBar active="media" onNavigate={onNavigate} />
       <SideBar
         tab={SCREEN}
         title="Video"
-        lists={all}
-        selected={current.id}
+        lists={barLists}
+        selected={current?.id ?? ''}
         open={open}
-        sort={sort}
-        sorts={MEDIA_SORTS}
-        switches={[{ id: UNWATCHED, name: 'Show unwatched only', on: unwatched }]}
-        onSwitch={() => {
-          setUnwatched((was) => {
-            remember((saved) => {
-              saved.filters[SCREEN] = was ? [] : [UNWATCHED]
-            })
-            return !was
-          })
+        onSelect={(id) => {
+          select(id)
+          setJump((was) => ({ id: sectionId(id), n: (was?.n ?? 0) + 1 }))
         }}
-        onSort={(next) => {
-          setSort(next as MediaSort)
-          remember((saved) => {
-            saved.sorts[SCREEN] = next
-          })
-        }}
-        onSelect={select}
+        targetOf={(id) => `#${sectionId(id)} [data-focusable]`}
+        onCustomize={() => setCustomizing(true)}
       />
       <div className="page-viewport">
-        {/* Keyed by list, so a new list starts at its top. */}
-        <SideGrid key={current.id} backTo={open ? `#${sideListId(current.id)}` : undefined}>
-          <section className="collection-grid">
-            <h2 className="section-label display">{title}</h2>
-            {!loaded ? (
-              <p className="empty-note">Asking your media servers…</p>
-            ) : current.items.length === 0 ? (
-              <p className="empty-note">{current.empty}</p>
-            ) : current.wide ? (
-              <div className="wide-grid" data-focus-memory={`media:${current.id}`}>
-                {current.items.map((item, index) => (
-                  <WatchCard key={`${item.source}:${item.id}`} item={item} isDefault={index === 0} barOnHold />
-                ))}
-              </div>
-            ) : (
-              <div className="poster-grid" data-focus-memory={`media:${current.id}:${view}`} onFocus={onGridFocus}>
-                {current.items.map((item, index) => (
-                  <MediaPoster key={`${item.source}:${item.id}`} item={item} index={index} isDefault={index === 0} barOnHold />
-                ))}
-              </div>
-            )}
-          </section>
+        <SideGrid backTo={open && current ? `#${sideListId(current.id)}` : undefined} jump={jump}>
+          <LibraryToolbar menus={menus} />
+          {!loaded ? (
+            <p className="empty-note">Asking your media servers…</p>
+          ) : (
+            shownSections.map((section, index) => {
+              const list = all.find((l) => l.id === section.id)!
+              const title = `${list.name} (${countOf(list).toLocaleString()})`
+              const memoryKey = `media:${list.id}:${view}`
+              const isDefault = index === 0
+              // The cursor in this section: the bar follows it.
+              const follow = (): void => select(list.id)
+              if (!list.items.length)
+                return (
+                  <section key={list.id} id={sectionId(list.id)} className="stack-section empty">
+                    <h2 className="section-label display">{title}</h2>
+                    <p className="empty-note">{list.empty}</p>
+                  </section>
+                )
+              return (
+                <div key={list.id} className={`stack-section ${section.style}`} onFocusCapture={follow}>
+                  {section.style === 'spotlight' ? (
+                    <MediaSpotlightSection
+                      id={sectionId(list.id)}
+                      title={title}
+                      items={list.items}
+                      wide={list.wide}
+                      memoryKey={memoryKey}
+                      hasDefault={isDefault}
+                      onFocusItem={(item) => setSpot({ section: list.id, item })}
+                      focused={spot?.section === list.id ? spot.item : null}
+                      onNearEnd={more(list)}
+                    />
+                  ) : section.style === 'carousel' ? (
+                    <div id={sectionId(list.id)}>
+                      <MediaRow title={title} items={list.items} wide={list.wide} memoryKey={memoryKey} hasDefault={isDefault} onNearEnd={more(list)} />
+                    </div>
+                  ) : (
+                    // A grid: stills for the wide lists, posters for the rest.
+                    <section id={sectionId(list.id)} className="collection-grid">
+                      <h2 className="section-label display">{title}</h2>
+                      {list.wide ? (
+                        <div className="wide-grid" data-focus-memory={memoryKey}>
+                          {list.items.map((item, i) => (
+                            <WatchCard key={`${item.source}:${item.id}`} item={item} isDefault={isDefault && i === 0} barOnHold />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="poster-grid" data-focus-memory={memoryKey} onFocus={onGridFocus(list)}>
+                          {list.items.map((item, i) => (
+                            <MediaPoster key={`${item.source}:${item.id}`} item={item} index={i} isDefault={isDefault && i === 0} barOnHold />
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
+                </div>
+              )
+            })
+          )}
         </SideGrid>
       </div>
+      {customizing && (
+        <TabCustomize
+          tab={SCREEN}
+          label="Video"
+          lists={all}
+          sections={sections}
+          onSections={(next) => {
+            setSavedSections(next)
+            void window.steamtv.tabSections.set(SCREEN, next)
+          }}
+          onPlaylistsChanged={() =>
+            window.steamtv.gamePlaylists
+              .forTab(SCREEN)
+              .then(setPlaylists)
+              .catch(() => undefined)
+          }
+          onClose={() => setCustomizing(false)}
+        />
+      )}
       {showing && <MediaShowPage source={showing.source} id={showing.id} title={showing.title} onBack={closeShow} />}
     </div>
   )

@@ -47,13 +47,16 @@ interface Layer {
 
 let layerKey = 0
 
-/** The banner's picture: a new one fades in over the last once it's loaded, so it never flashes. */
+/** The banner's picture for a game: its hero, else its own art softened. */
 export function SpotlightBackdrop({ item }: { item: RecentItem | null }) {
   const d = useDetails(item)
   const picture = item ? backdropOf(item, d) : null
+  return <SpotlightPicture url={picture?.url} soft={picture?.soft ?? false} />
+}
+
+/** A banner's picture (a game's, or the Video tab's): a new one fades in over the last once it's loaded, so it never flashes. */
+export function SpotlightPicture({ url, soft }: { url: string | undefined; soft: boolean }) {
   const [layers, setLayers] = useState<Layer[]>([])
-  const url = picture?.url
-  const soft = picture?.soft ?? false
   useEffect(() => {
     if (!url) return
     let live = true
@@ -71,7 +74,7 @@ export function SpotlightBackdrop({ item }: { item: RecentItem | null }) {
     }
   }, [url, soft])
   return (
-    <div className={`spotlight-backdrop${item ? '' : ' off'}`} aria-hidden="true">
+    <div className="spotlight-backdrop" aria-hidden="true">
       {layers.map((layer) => (
         <div key={layer.key} className={`spotlight-picture${layer.soft ? ' soft' : ''}`} style={{ backgroundImage: `url("${layer.url}")` }} />
       ))}

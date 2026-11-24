@@ -3902,6 +3902,13 @@ button {
   scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08);
 }
 
+/* The Video tab's carousels (MediaRow.tsx): a wide card grows from near its top, as the game
+   cards do, so a selected one doesn't rise over its row's name. */
+.media-row .watch-card {
+  transform-origin: 50% 40px;
+  --pivot-y: calc(50% - 40px);
+}
+
 /* ── Continue watching (Home; ContinueWatching.tsx) ──
    Part-watched films and episodes from the media servers as 16:9 wide cards: the name and how much is left
    over a fade at the bottom, and a gold line for how far in. */

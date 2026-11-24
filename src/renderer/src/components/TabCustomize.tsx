@@ -19,8 +19,8 @@ import { toast } from './Toast'
 interface Props {
   tab: LayoutTab
   label: string
-  /** Every list the tab has, shown or not. */
-  lists: SideList[]
+  /** Every list the tab has, shown or not (games, or the Video tab's films and shows). */
+  lists: SideList<unknown>[]
   sections: TabSection[]
   onSections: (sections: TabSection[]) => void
   onPlaylistsChanged: () => void
@@ -31,6 +31,7 @@ interface Props {
 function libraryNote(tab: LayoutTab): string {
   if (tab === 'steam') return 'Made by vaporTV, or from Steam'
   if (tab === 'arcade') return 'Made by vaporTV, and the systems'
+  if (tab === 'media') return 'From your media servers'
   return 'Made by vaporTV'
 }
 
