@@ -290,6 +290,12 @@ const api: SteamTvApi = {
     tabOptions: () => ipcRenderer.invoke('music:tabOptions'),
     setTabOption: (key, on) => ipcRenderer.invoke('music:setTabOption', key, on),
     setHidden: (id, hidden) => ipcRenderer.invoke('music:setHidden', id, hidden),
+    artistPhotos: (names) => ipcRenderer.invoke('music:artistPhotos', names),
+    onArtistPhoto: (callback) => {
+      const listener = (_event: unknown, name: string, url: string): void => callback(name, url)
+      ipcRenderer.on('music:artist-photo', listener)
+      return () => void ipcRenderer.removeListener('music:artist-photo', listener)
+    },
     claudeReady: () => ipcRenderer.invoke('music:claudeReady'),
     songs: (paths) => ipcRenderer.invoke('music:songs', paths),
     loudness: (path) => ipcRenderer.invoke('music:loudness', path),

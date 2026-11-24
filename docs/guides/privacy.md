@@ -10,6 +10,7 @@ What vaporTV sends over the internet, what it keeps on the box, and how to clear
 | Your location, if you haven't chosen one | ipwho.is | Your internet address, which it turns into a rough location (usually your town) |
 | Choosing a place in Settings | Open-Meteo | The name you type |
 | Game art | SteamGridDB, the libretro thumbnail library, and Brave or DuckDuckGo image search when you search for art | The game's name, plus your API key for SteamGridDB or Brave if you added one |
+| Artists' photos on the Music tab | Deezer | Each artist's name |
 | Updates | GitHub | A check for a newer release; GitHub sees your internet address, as any website does |
 | Voice search | Hugging Face, once | The speech model downloads the first time. What you say is turned into words on the box. Without Claude Code, those words go nowhere |
 | Voice search, with Claude Code | Anthropic, through Claude Code | The words voice search heard, and the names of your games and apps (with their console, or "app") |
@@ -58,7 +59,7 @@ All of it is in your home folder. Only your account can read the settings, the n
 - `~/.config/steamtv/rclone.conf`: network share sign-ins (the computer, the share, your user name and password). The password is scrambled, not encrypted, so treat the file like the password itself.
 - `~/.config/steamtv`: your music's liked songs, favourite albums and thumbs down (`music-favorites.json`), your music playlists (`music-playlists.json`), and which drives and shares are in your library (`music-sources.json`).
 - `~/.local/share/steamtv`: play history (`history.json`), playtime (`playtime.json`), favourites (`favorites.json`), game playlists (`playlists.json`), the speech model and Claude's voice (`voice`), the network share helper (`rclone`), and photos the screensaver downloaded.
-- `~/.cache/steamtv`: downloaded game art, the weather, the music library's index of every song (`music-index.json`) and its covers (`music-covers`), the background station (`background-station.json`), the last lists sent to Claude (`claude-search.txt`, `claude-music.txt` and `claude-music-songs.txt`), and the log of this run and the two before (`input.log`, `input.log.1`, `input.log.2`), which starts over each time vaporTV opens.
+- `~/.cache/steamtv`: downloaded game art, the weather, the music library's index of every song (`music-index.json`) and its covers (`music-covers`), artists' photos (`artist-photos`), the background station (`background-station.json`), the last lists sent to Claude (`claude-search.txt`, `claude-music.txt` and `claude-music-songs.txt`), and the log of this run and the two before (`input.log`, `input.log.1`, `input.log.2`), which starts over each time vaporTV opens.
 - `~/Music`: songs sent from your phone (`From your phone`) and playlists saved as files (`Playlists`). Network shares appear under `~/Network` while they're mounted: those are the other computer's files, read-only.
 - Claude Code keeps its own files in `~/.claude`: its sign-in, and a record of each Claude app conversation (`~/.claude/projects`).
 - Streaming apps keep your sign-ins in Chrome, as a website would. Sign out inside each app to remove them.

@@ -5890,6 +5890,13 @@ button {
   position: relative;
 }
 
+/* Artists, on the tab, as square as the albums (their photo, or an album's cover), not a disc. */
+.music-tab .artist-card .recent-art {
+  border-radius: 0;
+  margin: 0;
+  height: var(--card-art-h);
+}
+
 /* An album hidden from the tab, shown (Customize → Show hidden albums): faded. */
 .album-card.hidden-album {
   opacity: 0.4;
@@ -6638,6 +6645,12 @@ button {
   -webkit-line-clamp: 3;
   overflow: hidden;
   animation: spotlight-text-in 450ms var(--ease-focus) both;
+}
+
+/* A carousel beside the left bar is cut off at its own left edge as it scrolls, short of the bar
+   (the focused card grows a little past it, and freely up, down and to the right). */
+.side-grid .card-row {
+  clip-path: inset(-160px -40px -160px -28px);
 }
 
 .spotlight-row {

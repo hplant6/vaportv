@@ -90,6 +90,7 @@ import { getLocation, locationSettings, searchPlaces, setPlace, setTemperatureUn
 import { emulatorIcons } from './emulatorIcons'
 import { BUILT_IN_PLAYLIST_IDS, currentMusic, loudnessGain, importMusic, musicChoices, musicFolder, musicTracks, PLAYLIST, playlists, SHUFFLE, trackUrl } from './music'
 import { browseFiles, openFile, pasteFile, wasOpened } from './browse'
+import { ARTIST_PHOTOS, artistPhotos } from './artistPhotos'
 import { browseMusic, copyMusic, excludedPlaces, readTags, includePlace, MUSIC_COVERS, musicPlaces, musicFolders, musicTags, searchMusic, warmMusicIndex } from './musicLibrary'
 import { askMusic, claudePlaylist, musicRadio } from './claudeMusic'
 import { backgroundSongs } from './backgroundMusic'
@@ -876,6 +877,10 @@ ipcMain.handle('music:indexStatus', () => musicIndexStatus())
 ipcMain.handle('music:favorites', () => musicFavorites())
 ipcMain.handle('music:toggleSong', (_event, path: string) => toggleFavoriteSong(String(path)))
 ipcMain.handle('music:toggleAlbum', (_event, id: string) => toggleFavoriteAlbum(String(id)))
+// Artists' photos for the Music tab: the ones known now, and each found later as it arrives.
+ipcMain.handle('music:artistPhotos', (_event, names: string[]) =>
+  artistPhotos(Array.isArray(names) ? names.map(String) : [], (name, url) => win?.webContents.send('music:artist-photo', name, url))
+)
 // The Music tab's Customize choices, and the albums hidden from it.
 ipcMain.handle('music:tabOptions', async () => {
   const config = await loadConfig()
@@ -1371,7 +1376,7 @@ app.whenReady().then(async () => {
   // PS3 games' own icons are the fallback when SteamGridDB has no wide art.
   const ps3 = await ps3Folders(config)
   // Local files the page may load: game art, the background-music folder and screensaver photos.
-  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, MUSIC_COVERS, ...screensaverFolders(config)], wasOpened)
+  handleArtScheme(() => [join(root, 'appcache'), join(root, 'userdata'), ART_CACHE, CUSTOM_TILES, ps3.hdd0, ps3.discs, musicFolder(config), INTRO_FOLDER, BACKDROP_FOLDER, MUSIC_COVERS, ARTIST_PHOTOS, ...screensaverFolders(config)], wasOpened)
   media.handleMediaScheme()
   if (setupMode) return createWindow()
   if (EXTRAS) startDriveSync()

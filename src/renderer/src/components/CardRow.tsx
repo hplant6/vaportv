@@ -30,8 +30,8 @@ interface Props {
 export function CardRow({ title, items, logos, memoryKey, hasDefault, note, className = '', onItemFocus }: Props) {
   const [offset, setOffset] = useState(0)
   const track = useRef<HTMLDivElement>(null)
-  // Narrower beside a tab's left bar (the Spotlight layout): as wide as the row's own box there.
-  const viewportW = (): number => (className.includes('spotlight-row') ? (track.current?.parentElement?.clientWidth ?? VIEWPORT_W) : VIEWPORT_W)
+  // Beside a tab's left bar (its sections), as wide as the row's own box there; elsewhere (Home) the screen's.
+  const viewportW = (): number => (track.current?.closest('.side-grid') ? track.current.parentElement?.clientWidth || VIEWPORT_W : VIEWPORT_W)
   const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - viewportW()))
   useScrollTilt(track, 'x', offset, '--row-tilt')
 

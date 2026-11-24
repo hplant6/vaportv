@@ -1217,6 +1217,9 @@ export interface SteamTvApi {
     setTabOption(key: 'sleeves' | 'showHidden', on: boolean): Promise<void>
     /** Keeps an album off the Music tab, or brings it back. */
     setHidden(id: string, hidden: boolean): Promise<void>
+    /** Artists' photos known now (name → URL); the rest are looked up (Deezer) and arrive through onArtistPhoto. */
+    artistPhotos(names: string[]): Promise<Record<string, string>>
+    onArtistPhoto(callback: (name: string, url: string) => void): () => void
     /** Thumbs down on a song (or back up): never on radio again, and Claude hears it; true if disliked now. */
     toggleDislike(path: string): Promise<boolean>
     /** Paths given a thumbs down. */

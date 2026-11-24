@@ -107,7 +107,7 @@ type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Art
 interface MusicList extends SideList<Card> {}
 
 /** How the cards look, from the tab's Customize window: sleeves to wrap albums in ([] for none), and which albums are hidden (faded when shown). */
-const MusicCardContext = createContext<{ sleeves: string[]; hidden: Set<string> }>({ sleeves: [], hidden: new Set() })
+const MusicCardContext = createContext<{ sleeves: string[]; hidden: Set<string>; photos: Record<string, string> }>({ sleeves: [], hidden: new Set(), photos: {} })
 
 /** A section's element id, for the bar to jump to. */
 const sectionId = (listId: string): string => `music-section-${listId.replace(/[^A-Za-z0-9_-]/g, '_')}`
@@ -371,7 +371,15 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
     window.addEventListener(ALBUM_MENU_EVENT, onMenu)
     return () => window.removeEventListener(ALBUM_MENU_EVENT, onMenu)
   }, [albums])
-  const cardLook = useMemo(() => ({ sleeves: tabOptions.sleeves ? sleeveNames : [], hidden: tabOptions.hidden }), [tabOptions, sleeveNames])
+  // Artists' photos (Deezer, cached): the ones known at once, then each as it's found.
+  const [photos, setPhotos] = useState<Record<string, string>>({})
+  const artistNames = useMemo(() => artists.map((a) => a.name).join('\n'), [artists])
+  useEffect(() => {
+    if (!artistNames) return
+    void window.steamtv.music.artistPhotos(artistNames.split('\n')).then((got) => setPhotos((was) => ({ ...was, ...got })))
+  }, [artistNames])
+  useEffect(() => window.steamtv.music.onArtistPhoto((name, url) => setPhotos((was) => ({ ...was, [name]: url }))), [])
+  const cardLook = useMemo(() => ({ sleeves: tabOptions.sleeves ? sleeveNames : [], hidden: tabOptions.hidden, photos }), [tabOptions, sleeveNames, photos])
 
   const playAlbum = (a: MusicAlbum, from: HTMLElement | null, at = 0, shuffle = false): void => {
     setPlayed(markAlbumPlayed(a.id))
@@ -658,7 +666,7 @@ function MusicCard({
     card.kind === 'album'
       ? [card.album.id, card.album.title, [card.album.artist, card.album.included ? 'Included with vaporTV' : card.album.year].filter(Boolean).join(' · '), card.album.cover]
       : card.kind === 'artist'
-        ? [`artist:${card.artist.name}`, card.artist.name, `${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`, card.artist.albums.find((a) => a.cover)?.cover]
+        ? [`artist:${card.artist.name}`, card.artist.name, `${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`, look.photos[card.artist.name] ?? card.artist.albums.find((a) => a.cover)?.cover]
         : [`place:${card.place.path}`, card.place.name, card.place.kind === 'network' ? 'Network share' : card.place.kind === 'drive' ? 'Drive' : 'Folder', undefined]
   return (
     <button
@@ -758,10 +766,10 @@ function MusicCardRow({
   )
 }
 
-/** A card's picture for the Spotlight banner (softened: covers are small and square). */
-function cardCover(card: Card): string | undefined {
+/** A card's picture for the Spotlight banner (softened: covers are small and square); an artist's photo where there is one. */
+function cardCover(card: Card, photos: Record<string, string>): string | undefined {
   if (card.kind === 'album') return card.album.cover
-  if (card.kind === 'artist') return card.artist.albums.find((a) => a.cover)?.cover
+  if (card.kind === 'artist') return photos[card.artist.name] ?? card.artist.albums.find((a) => a.cover)?.cover
   if (card.kind === 'liked') return card.songs.find((s) => s.cover)?.cover
   if (card.kind === 'playlist') return card.playlist.songs.find((s) => s.cover)?.cover
   return undefined
@@ -802,9 +810,10 @@ function MusicSpotlightSection({
 }) {
   const shown = focused && cards.some((c) => cardKey(c) === cardKey(focused)) ? focused : (cards[0] ?? null)
   const words = shown ? cardWords(shown) : null
+  const { photos } = useContext(MusicCardContext)
   return (
     <section id={id} className="spotlight">
-      <SpotlightPicture url={shown ? cardCover(shown) : undefined} soft />
+      <SpotlightPicture url={shown ? cardCover(shown, photos) : undefined} soft />
       <h2 className="section-label display spotlight-label">{title}</h2>
       {shown && words ? (
         <div className="spotlight-info" key={cardKey(shown)}>
