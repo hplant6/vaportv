@@ -6616,8 +6616,12 @@ button {
   margin: 12px 0 0;
 }
 
-/* The bar's Customize button, under its lists. */
+/* The bar's Customize button, under its lists, set apart by a line: no fill until the cursor's on
+   it. The line is as far above it (26 px) as the bar's panel runs on below it, so the fill sits
+   evenly between the two. */
 .side-bar-customize {
+  position: relative;
+  margin-top: 26px;
   flex: none;
   display: flex;
   align-items: center;
@@ -6629,11 +6633,21 @@ button {
   font-size: var(--text-body);
   letter-spacing: 0.04em;
   color: var(--color-text);
-  /* Filled, as Sort and Genre are: amber, stronger with the cursor on it. */
-  background: rgba(238, 150, 13, 0.15);
+  background: transparent;
   transition:
     background-color var(--dur-focus) var(--ease-focus),
     color var(--dur-focus) var(--ease-focus);
+}
+
+.side-bar-customize::before {
+  content: '';
+  position: absolute;
+  top: -26px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-panel-line);
+  pointer-events: none;
 }
 
 .side-bar-customize svg {
