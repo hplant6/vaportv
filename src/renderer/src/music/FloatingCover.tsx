@@ -131,6 +131,12 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
     const drift = { x: wander(), y: wander(), turn: wander(), tip: wander(), roll: wander() }
     const pose = { x: spring(), y: spring(), turn: spring(), tip: spring(), roll: spring() }
     let seenBeats = 0
+    // The quick parts of the dance (the bass's swell, a kick's lift, the colour swing's roll),
+    // eased rather than followed frame by frame: they read the music's every flicker, and drawn
+    // raw they made the cover chatter. The kick comes in over ~60 ms rather than at once.
+    let bassEased = 0
+    let kickEased = 0
+    let hueEased = 0
     let sincePose = 0
     let idleFor = POSE_IDLE
     let frame = 0
@@ -156,6 +162,10 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
       const playing = playingRef.current
       const levels = musicLevels(now, playing)
       const { bass, kick, energy, hue } = levels
+      const ease = (was: number, to: number, seconds: number): number => was + (to - was) * (1 - Math.exp(-dt / seconds))
+      bassEased = ease(bassEased, bass, 0.12)
+      kickEased = ease(kickEased, kick, kick > kickEased ? 0.06 : 0.18)
+      hueEased = ease(hueEased, hue, 0.15)
       // Paused: the drift slows to a near stop where it is, and it keeps its pose.
       t += dt * (playing ? 0.6 + energy * 0.8 : 0.1)
       if (playing) {
@@ -170,17 +180,17 @@ export function FloatingCover({ cover, playing, motion = 'lots' }: { cover?: str
       else if (box.current) {
         const sway = 0.5 + energy * 0.8
         const x = pose.x.value + drift.x(t * 0.5) * 10 * sway
-        // On a kick it lifts at once, falling back as the kick fades.
-        const y = pose.y.value + drift.y(t * 0.55) * 8 * sway - kick * 14
+        // On a kick it lifts, falling back as the kick fades.
+        const y = pose.y.value + drift.y(t * 0.55) * 8 * sway - kickEased * 9
         const turn = pose.turn.value + drift.turn(t * 0.45) * 5 * sway
         const tip = pose.tip.value + drift.tip(t * 0.5) * 4 * sway
         // Rolling with the visualizer's colour swing, which is thrown one way then the other on the kicks.
-        const roll = pose.roll.value + drift.roll(t * 0.4) * 1.5 * sway + hue * 4
-        const size = 1 + bass * 0.025 + kick * 0.04
+        const roll = pose.roll.value + drift.roll(t * 0.4) * 1.5 * sway + hueEased * 4
+        const size = 1 + bassEased * 0.02 + kickEased * 0.03
         // A little: the same dance, smaller.
         box.current.style.transform = `translate(${(x * m).toFixed(2)}px, ${(y * m).toFixed(2)}px) rotateY(${(turn * m).toFixed(2)}deg) rotateX(${(tip * m).toFixed(2)}deg) rotateZ(${(roll * m).toFixed(2)}deg) scale(${(1 + (size - 1) * m).toFixed(4)})`
       }
-      if (glow.current) glow.current.style.opacity = (0.35 + bass * 0.35 + kick * 0.3).toFixed(3)
+      if (glow.current) glow.current.style.opacity = (0.35 + bassEased * 0.35 + kickEased * 0.3).toFixed(3)
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
