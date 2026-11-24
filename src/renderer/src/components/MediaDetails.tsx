@@ -8,6 +8,7 @@ import { focus, MEDIA_DETAILS_EVENT, MEDIA_FAVORITE_EVENT, MEDIA_PLAYLIST_EVENT 
 import { play } from '../input/sounds'
 import { MEDIA_CHANGED_EVENT, MEDIA_PLAY_EVENT } from './ContinueWatching'
 import { GamePanel, row, useCloseKeys, type Fact } from './GameDialog'
+import { MediaCover } from './MediaCover'
 import { NewPlaylistButtons, NewPlaylistKeyboard, PlaylistChoices, usePlaylistCount } from './GamePlaylists'
 import { MEDIA_SHOW_EVENT } from './MediaPoster'
 import { toast } from './Toast'
@@ -92,8 +93,8 @@ export function MediaDetailsHost() {
   )
 }
 
-/** The panel's steps: its details (Start), its playlists (X, or Playlists in the details), naming a new one. */
-type Step = 'menu' | 'playlists' | 'newPlaylist'
+/** The panel's steps: its details (Start), its playlists (X, or Playlists in the details), naming a new one, its cover. */
+type Step = 'menu' | 'playlists' | 'newPlaylist' | 'cover'
 
 function MediaDetails({ source, id, start, onClose }: { source: string; id: string; start: Step; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null)
@@ -105,7 +106,8 @@ function MediaDetails({ source, id, start, onClose }: { source: string; id: stri
   const inPlaylists = usePlaylistCount(key, step)
   // B on Playlists goes back to the details when it came from them; opened with X, it closes.
   const backToMenu = useCallback(() => setStep('menu'), [])
-  useCloseKeys(onClose, step === 'playlists' && start === 'menu' ? backToMenu : undefined, step === 'newPlaylist')
+  // The cover picker keeps B for itself (back from its web search, then to the details).
+  useCloseKeys(onClose, step === 'playlists' && start === 'menu' ? backToMenu : undefined, step === 'newPlaylist' || step === 'cover')
 
   useEffect(() => {
     window.steamtv.media
@@ -134,6 +136,26 @@ function MediaDetails({ source, id, start, onClose }: { source: string; id: stri
   )
 
   if (!item) return <GamePanel panel={panel} title="Loading…" heading="Details" />
+  if (step === 'cover')
+    return (
+      <MediaCover
+        item={item}
+        source={source}
+        onBack={backToMenu}
+        onDone={() => {
+          // Its new poster has a new address: asked for again, and put where it shows.
+          window.steamtv.media
+            .details(source, id)
+            .then((fresh) => {
+              setItem(fresh)
+              changed(source, id, { cover: fresh.cover, wide: fresh.wide })
+            })
+            .catch(() => undefined)
+          toast(`New cover for ${item.title}`)
+          setStep('menu')
+        }}
+      />
+    )
   if (step === 'newPlaylist')
     return <NewPlaylistKeyboard gameId={key} gameTitle={item.title} place={newPlace} onDone={(made) => (made ? onClose() : setStep('playlists'))} />
   if (step === 'playlists')
@@ -221,6 +243,8 @@ function MediaDetails({ source, id, start, onClose }: { source: string; id: stri
         inPlaylists === null ? '' : inPlaylists ? `In ${inPlaylists === 1 ? '1 playlist' : `${inPlaylists} playlists`}` : 'Add it to one · X on it does this too',
         () => setStep('playlists')
       )}
+      {/* An episode shows its show's poster: the show's own details change that. */}
+      {item.kind !== 'episode' && row('Cover', item.cover ? 'Pick another poster' : 'Find a poster for it', () => setStep('cover'))}
     </GamePanel>
   )
 }

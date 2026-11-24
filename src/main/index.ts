@@ -1124,6 +1124,8 @@ ipcMain.handle('media:episodes', (_event, source: string, seriesId: string, seas
 ipcMain.handle('media:libraryPage', (_event, library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number) =>
   media.libraryPage(library, sort, unwatched, start, limit)
 )
+ipcMain.handle('media:coverChoices', (_event, source: string, id: string) => media.coverChoices(source, id))
+ipcMain.handle('media:setCover', (_event, source: string, id: string, pick: { url: string; thumb?: string; provider?: string }) => media.setCover(source, id, pick))
 ipcMain.handle('media:playback', (_event, source: string, itemId: string, choice?: MediaChoice, codecs?: string[]) => media.playback(source, itemId, choice, codecs))
 ipcMain.handle('media:playExternal', async (_event, source: string, itemId: string, fromStart?: boolean) =>
   media.playExternal(source, itemId, !!fromStart, { controls: resolveControls((await loadConfig()).controls), combos: resolveCombos((await loadConfig()).combos), log: logInput })

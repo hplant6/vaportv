@@ -302,6 +302,43 @@ export async function setFavorite(account: MediaAccount, id: string, on: boolean
   return reply?.IsFavorite ?? on
 }
 
+/** A poster the server's metadata sources (TheMovieDb, Fanart.tv…) have for an item. */
+export interface RemoteCover {
+  url: string
+  thumb: string
+  provider: string
+  width?: number
+  height?: number
+}
+
+/** The posters the server's metadata sources offer for an item, their best first (none, for one they couldn't identify). */
+export async function remoteCovers(account: MediaAccount, itemId: string, device: string, version: string): Promise<RemoteCover[]> {
+  const params = new URLSearchParams({ Type: 'Primary', IncludeAllLanguages: 'true', Limit: '40' })
+  const reply = await request<{ Images?: { Url: string; ThumbnailUrl?: string; ProviderName: string; Width?: number; Height?: number }[] }>(
+    `${account.url}${prefix(account.kind)}/Items/${itemId}/RemoteImages?${params}`,
+    { headers: authHeaders(account.kind, device, version, account.token) }
+  )
+  return (reply?.Images ?? []).map((i) => ({ url: i.Url, thumb: i.ThumbnailUrl || i.Url, provider: i.ProviderName, width: i.Width, height: i.Height }))
+}
+
+/** Makes one of remoteCovers' posters the item's, the server fetching it (needs an account that may change metadata). */
+export async function chooseRemoteCover(account: MediaAccount, itemId: string, cover: { url: string; provider: string }, device: string, version: string): Promise<void> {
+  const params = new URLSearchParams({ Type: 'Primary', ImageUrl: cover.url, ProviderName: cover.provider })
+  await request(`${account.url}${prefix(account.kind)}/Items/${itemId}/RemoteImages/Download?${params}`, {
+    method: 'POST',
+    headers: authHeaders(account.kind, device, version, account.token)
+  })
+}
+
+/** Makes `image` (a PNG) the item's poster on the server: sent as base64, as both servers take it. */
+export async function uploadCover(account: MediaAccount, itemId: string, image: Buffer, device: string, version: string): Promise<void> {
+  await request(`${account.url}${prefix(account.kind)}/Items/${itemId}/Images/Primary`, {
+    method: 'POST',
+    headers: { ...authHeaders(account.kind, device, version, account.token), 'Content-Type': 'image/png' },
+    body: image.toString('base64')
+  })
+}
+
 /** Watched (POST) or not (DELETE); on a show or season, the server marks every episode. */
 export async function setWatched(account: MediaAccount, id: string, on: boolean, device: string, version: string): Promise<void> {
   const path = account.kind === 'jellyfin' ? `/UserPlayedItems/${id}?userId=${account.userId}` : `/Users/${account.userId}/PlayedItems/${id}`

@@ -139,6 +139,15 @@ export interface MediaLibrary {
 export type MediaSort = 'name' | 'added' | 'released' | 'played' | 'rating'
 
 /** A page of a library: its titles from `start`, and how many there are in all. */
+/** A poster a media server's metadata sources offer, with a preview (a data URL) to choose it by. */
+export interface MediaCoverChoice {
+  url: string
+  thumb: string
+  provider: string
+  width?: number
+  height?: number
+}
+
 export interface MediaPage {
   items: MediaItem[]
   total: number
@@ -1072,6 +1081,10 @@ export interface SteamTvApi {
     episodes(source: string, seriesId: string, seasonId: string): Promise<MediaItem[]>
     /** A page of a library, sorted and (unwatched) filtered by the server. */
     libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 'type'>, sort: MediaSort, unwatched: boolean, start: number, limit: number): Promise<MediaPage>
+    /** The posters its server's metadata sources have for a film or show (none for one they couldn't identify). */
+    coverChoices(source: string, id: string): Promise<MediaCoverChoice[]>
+    /** Makes a picture its poster on the server: a coverChoices one (with its provider), or any from the web. */
+    setCover(source: string, id: string, pick: { url: string; thumb?: string; provider?: string }): Promise<void>
     /** `codecs`: what the player can decode beyond H.264 ('hevc'), so the server needn't convert it. */
     playback(source: string, itemId: string, choice?: MediaChoice, codecs?: string[]): Promise<MediaPlayback>
     /** Plays it in mpv, over vaporTV; true once it's been watched and closed, false if mpv couldn't run (play it in the page then). */

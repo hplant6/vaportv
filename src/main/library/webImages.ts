@@ -64,6 +64,15 @@ export async function webCover(url: string): Promise<Buffer> {
   return coverCrop(image, width, height).toPNG()
 }
 
+/** A small preview of a picture as a data URL, for pictures from sites the page may not load (TheMovieDb's, for one). */
+export async function previewOf(url: string, height = 300): Promise<string> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000), headers: { 'User-Agent': 'Mozilla/5.0' } })
+  if (!res.ok) throw new Error(`${res.status}`)
+  const image = nativeImage.createFromBuffer(Buffer.from(await res.arrayBuffer()))
+  if (image.isEmpty()) throw new Error('unreadable')
+  return `data:image/jpeg;base64,${image.resize({ height, quality: 'good' }).toJPEG(80).toString('base64')}`
+}
+
 function coverCrop(image: Electron.NativeImage, width: number, height: number): Electron.NativeImage {
   const ratio = COVER.width / COVER.height
   const crop =

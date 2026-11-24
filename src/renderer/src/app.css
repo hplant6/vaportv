@@ -2460,6 +2460,7 @@ button {
 
 
 .artwork-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2493,6 +2494,8 @@ button {
 }
 
 .artwork-covers {
+  /* Its pictures' offsetTop counts from it, so keeping the cursor's in view scrolls it by the right amount. */
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, 160px);
   justify-content: center;

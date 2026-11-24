@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { app, net, protocol } from 'electron'
 import { loadConfig, saveConfig, type Config, type MediaAccount } from '../config'
-import type { MusicTags, MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
+import type { MediaCoverChoice, MusicTags, MediaAccountInfo, MediaChoice, MediaItem, MediaLibrary, MediaLists, MediaPage, MediaPlayback, MediaServer, MediaShow, MediaSort } from '../../shared/types'
 import * as mediaBrowser from './mediaBrowser'
+import { previewOf, webCover } from '../library/webImages'
 import { playInMpv, type PlayerHooks } from './externalPlayer'
 import { loadTrackMemory, recall, remember, saveTrackMemory } from './trackMemory'
 import { mediaKey, parseMediaKey } from '../../shared/mediaKey'
@@ -160,6 +161,36 @@ export async function libraryPage(library: Pick<MediaLibrary, 'source' | 'id' | 
   // Its type picks what the grid lists (films, or shows rather than every episode).
   const page = await mediaBrowser.libraryPage(a, base(a), library, sort, unwatched, start, limit, await device(), version())
   return { items: page.items.map((item) => ({ ...item, source: library.source })), total: page.total }
+}
+
+/**
+ * The posters its server's metadata sources have for an item, each with a preview the page can
+ * show (their sites are outside what it may load). A preview that can't be had leaves its poster out.
+ */
+export async function coverChoices(source: string, id: string): Promise<MediaCoverChoice[]> {
+  const a = await account(source)
+  const found = (await mediaBrowser.remoteCovers(a, id, await device(), version())).slice(0, 30)
+  const shown = await Promise.all(
+    found.map((c): Promise<MediaCoverChoice | null> =>
+      previewOf(c.thumb).then(
+        (preview) => ({ url: c.url, thumb: preview, provider: c.provider, width: c.width, height: c.height }),
+        () => null
+      )
+    )
+  )
+  return shown.filter((c) => c !== null)
+}
+
+/**
+ * Makes a picture an item's poster on its server: one of coverChoices' (`provider`: the server
+ * fetches it), or any picture from the web (cropped to a poster here and sent up).
+ */
+export async function setCover(source: string, id: string, pick: { url: string; thumb?: string; provider?: string }): Promise<void> {
+  const a = await account(source)
+  if (pick.provider) return mediaBrowser.chooseRemoteCover(a, id, { url: pick.url, provider: pick.provider }, await device(), version())
+  // Some sites refuse to hand pictures to anything but their own pages: the search's preview will do.
+  const png = await webCover(pick.url).catch((err) => (pick.thumb && pick.thumb !== pick.url ? webCover(pick.thumb) : Promise.reject(err)))
+  await mediaBrowser.uploadCover(a, id, png, await device(), version())
 }
 
 /** A show's page, from its own server. */
