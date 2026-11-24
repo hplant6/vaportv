@@ -6483,19 +6483,16 @@ button {
   height: var(--spotlight-h);
 }
 
-/* Its picture: from just past the grid's left edge to the screen's right edge, a little above and
-   below the section, fading out on every side into the page. */
+/* Its picture: the screen's full width (behind the left bar too: the grid starts 504 px in beside
+   it, 36 px without it, and stops 36 px short of the right), a little above and below the section,
+   with hard edges top and bottom. */
 .spotlight .spotlight-backdrop {
-  inset: -28px -36px -20px -28px;
+  inset: -24px -36px -16px -504px;
   z-index: -1;
-  -webkit-mask-image:
-    linear-gradient(to right, transparent 0, #000 9%, #000 88%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 9%, #000 82%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to right, transparent 0, #000 9%, #000 88%, transparent 100%),
-    linear-gradient(to bottom, transparent 0, #000 9%, #000 82%, transparent 100%);
-  mask-composite: intersect;
+}
+
+.side-layout.closed .spotlight .spotlight-backdrop {
+  left: -36px;
 }
 
 /* Darker behind the words (left) and the row (bottom), clear in the middle and right. */
