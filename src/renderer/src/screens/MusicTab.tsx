@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MusicAlbum, MusicIndexStatus, MusicPlace, MusicPlaylist, MusicTags } from '../../../shared/types'
+import { listOrder, resolveSections, type TabSection } from '../../../shared/tabSections'
+import { LibraryToolbar, type ToolbarMenu } from '../components/LibraryToolbar'
 import { MUSIC_EVENT, openMusicAt } from '../components/MusicApp'
+import { SpotlightPicture } from '../components/Spotlight'
+import { TabCustomize } from '../components/TabCustomize'
+import { useDrag } from '../input/drag'
+import { useScrollTilt } from '../scrollTilt'
 import { NavBar, type Screen } from '../components/NavBar'
 import { SideBar, sideListId, type SideList } from '../components/SideBar'
 import { focus, focusContentDefault, GRAB_CANCEL_EVENT, GRAB_MOVE_EVENT, trap, TRAP_CLOSE_EVENT, type Direction } from '../input/focus'
@@ -14,13 +20,16 @@ import { OnScreenKeyboard } from '../components/Keyboard'
 import { toast } from '../components/Toast'
 import { remember, remembered, SideGrid, useSideBarOpen } from './sideLayout'
 
-// The Music tab: the console tabs' left bar and grid, filled from the music index
-// (musicIndex.ts: every song's tags, across ~/Music, drives and shares). The bar turns Henry's
-// turntable; its lists are Recently played, Recently added, Favorites (Liked songs, then albums), Playlists,
-// Albums, Artists and Folders; Genre (a drop-down under Sort) narrows the albums and artists, and
-// Folders (the places, opening the folder browser). A on an album opens its page (Play all,
-// Shuffle, its songs), which plays straight from the index; playing opens Now playing. Voice
-// search here (R3, a remote's Menu) asks Claude for music.
+// The Music tab, laid out as the game and Video tabs are: its lists stacked down the page as
+// sections, each in the style chosen in its Customize window (Spotlight, Carousel or a grid),
+// filled from the music index (musicIndex.ts: every song's tags, across ~/Music, drives and
+// shares). The lists: Recently played, Recently added, Favorites (Liked songs, then albums),
+// Albums (the grid, at the bottom, unless changed), Artists and Folders (the places, opening the
+// folder browser); then the Playlists made in vaporTV, as one section of them. The toolbar's Sort
+// orders the albums and Genre narrows them all. The bar's Add music opens the music sources over
+// the tab. The bar turns Henry's turntable. A on an album opens its page (Play all, Shuffle, its
+// songs), which plays straight from the index; playing opens Now playing. Voice search here (R3,
+// a remote's Menu) asks Claude for music.
 
 const SCREEN = 'music'
 
@@ -93,6 +102,30 @@ type Card = { kind: 'album'; album: MusicAlbum } | { kind: 'artist'; artist: Art
 
 interface MusicList extends SideList<Card> {}
 
+/** A section's element id, for the bar to jump to. */
+const sectionId = (listId: string): string => `music-section-${listId.replace(/[^A-Za-z0-9_-]/g, '_')}`
+
+/** Until Customize changes it: the albums as the grid, at the bottom; the rest as carousels. */
+const DEFAULT_SECTIONS: TabSection[] = [
+  { id: 'recent-played', style: 'carousel' },
+  { id: 'recent-added', style: 'carousel' },
+  { id: 'favorites', style: 'carousel' },
+  { id: 'artists', style: 'carousel' },
+  { id: 'folders', style: 'carousel' },
+  { id: 'playlists', style: 'carousel' },
+  { id: 'albums', style: 'posters' }
+]
+
+/** A card's key among its neighbours. */
+function cardKey(card: Card): string {
+  if (card.kind === 'add') return 'add'
+  if (card.kind === 'liked') return 'liked'
+  if (card.kind === 'playlist') return card.playlist.id
+  if (card.kind === 'album') return card.album.id
+  if (card.kind === 'artist') return `artist:${card.artist.name}`
+  return `place:${card.place.path}`
+}
+
 export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
   const open = useSideBarOpen(SCREEN)
   const [albums, setAlbums] = useState<MusicAlbum[] | null>(null)
@@ -109,6 +142,18 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   const [playlistOpen, setPlaylistOpen] = useState<{ id: string; from: HTMLElement | null } | null>(null)
   const favorites = useMusicFavorites()
   const playlists = useMusicPlaylists()
+  /** The tab's sections as saved in Customize (undefined: never changed). */
+  const [savedSections, setSavedSections] = useState<TabSection[] | undefined>(undefined)
+  const [customizing, setCustomizing] = useState(false)
+  /** The bar's cursor on a list: the page scrolls to its section. */
+  const [jump, setJump] = useState<{ id: string; n: number } | undefined>(undefined)
+  /** The card the cursor's on (or was last on) in a Spotlight section, and which section. */
+  const [spot, setSpot] = useState<{ section: string; card: Card } | null>(null)
+  /** Add music's page over the tab, and where to put the cursor back. */
+  const [sources, setSources] = useState<{ from: HTMLElement | null } | null>(null)
+  useEffect(() => {
+    window.steamtv.tabSections.get(SCREEN).then(setSavedSections)
+  }, [])
 
   // The albums, and again as the index's scan reads more (not more than every few seconds).
   useEffect(() => {
@@ -219,12 +264,6 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       empty: 'Press Y on an album to make it a favorite, or on a song (or in Now playing) to like it.'
     },
     {
-      id: 'playlists',
-      name: 'Playlists',
-      items: playlists.map((p) => ({ kind: 'playlist' as const, playlist: p })),
-      empty: 'Save a radio station (its list in Now playing), add songs from their menus, or ask Claude: “make me a playlist of rainy-day jazz”.'
-    },
-    {
       id: 'albums',
       name: 'Albums',
       // Only the included albums so far: a card at the end to add your own.
@@ -236,13 +275,24 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       id: 'folders',
       name: 'Folders',
       items: places.map((p) => ({ kind: 'place', place: p })),
-      empty: 'No music folders yet.',
-      section: 'Browse'
+      empty: 'No music folders yet.'
     },
-    // Music sources: the same screen as Settings → Music's.
-    { id: 'sources', name: '＋ Add music', items: [], empty: '', noCount: true }
+    {
+      id: 'playlists',
+      name: 'Playlists',
+      items: playlists.map((p) => ({ kind: 'playlist' as const, playlist: p })),
+      empty: 'Save a radio station (its list in Now playing), add songs from their menus, or ask Claude: “make me a playlist of rainy-day jazz”.'
+    },
   ]
-  const current = all.find((l) => l.id === selected) ?? all[0]
+  const sections = resolveSections(
+    all.map((list) => list.id),
+    savedSections ?? DEFAULT_SECTIONS,
+    'rows'
+  )
+  const shownSections = sections.filter((section) => !section.hidden)
+  // The bar lists the sections shown, the library first, then Playlists.
+  const barLists: MusicList[] = listOrder(shownSections).map((section) => all.find((list) => list.id === section.id)!)
+  const current = barLists.find((l) => l.id === selected) ?? barLists[0]
   const select = (id: string): void => {
     if (id === selected) return
     setSelected(id)
@@ -250,7 +300,35 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
       saved.lists[SCREEN] = id
     })
   }
-  const title = current.id === 'sources' ? 'Add music' : `${open ? '' : 'Music · '}${current.name}${genreOn && current.id !== 'folders' ? ` · ${genreName}` : ''} (${current.items.length.toLocaleString()})`
+  const titleOf = (list: MusicList): string => `${list.name}${genreOn && list.id !== 'folders' && list.id !== 'playlists' ? ` · ${genreName}` : ''} (${list.items.length.toLocaleString()})`
+  const openSources = (from: HTMLElement | null): void => setSources({ from })
+
+  const menus: ToolbarMenu[] = [
+    {
+      id: 'sort',
+      label: 'Sort by',
+      value: sort,
+      options: MUSIC_SORTS,
+      onPick: (next) => {
+        setSort(next as MusicSort)
+        remember((saved) => {
+          saved.sorts[SCREEN] = next
+        })
+      }
+    },
+    {
+      id: 'genre',
+      label: 'Genre',
+      value: genreOn ? genre : ALL_GENRES,
+      options: [{ id: ALL_GENRES, name: 'All' }, ...genres.map((g) => ({ id: g.key, name: `${g.name} (${g.count})` }))],
+      onPick: (next) => {
+        setGenre(next)
+        remember((saved) => {
+          saved.filters[SCREEN] = next === ALL_GENRES ? [] : [`genre:${next}`]
+        })
+      }
+    }
+  ]
 
   const playAlbum = (a: MusicAlbum, from: HTMLElement | null, at = 0, shuffle = false): void => {
     setPlayed(markAlbumPlayed(a.id))
@@ -258,13 +336,8 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   const openCard = (card: Card, el: HTMLElement): void => {
-    if (card.kind === 'add') {
-      select('sources')
-      setTimeout(() => {
-        const first = document.querySelector<HTMLElement>('.side-grid .music-sources [data-focusable]')
-        if (first) focus(first)
-      })
-    } else if (card.kind === 'liked') setLikedOpen(el)
+    if (card.kind === 'add') openSources(el)
+    else if (card.kind === 'liked') setLikedOpen(el)
     else if (card.kind === 'playlist') setPlaylistOpen({ id: card.playlist.id, from: el })
     else if (card.kind === 'album') setAlbum({ album: card.album, from: el })
     else if (card.kind === 'artist') setArtist({ artist: card.artist, from: el })
@@ -275,55 +348,96 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
   }
 
   return (
-    <div className={`page side-layout music-tab${open ? '' : ' closed'}`}>
+    <div className={`page side-layout stacked music-tab${open ? '' : ' closed'}`}>
       <NavBar active="music" onNavigate={onNavigate} />
       <SideBar
         tab={SCREEN}
         title="Music"
-        lists={all}
-        selected={current.id}
+        lists={barLists}
+        selected={current?.id ?? ''}
         open={open}
-        sort={sort}
-        sorts={MUSIC_SORTS}
-        onSort={(next) => {
-          setSort(next as MusicSort)
-          remember((saved) => {
-            saved.sorts[SCREEN] = next
-          })
+        onSelect={(id) => {
+          select(id)
+          setJump((was) => ({ id: sectionId(id), n: (was?.n ?? 0) + 1 }))
         }}
-        menus={[
-          {
-            id: 'genre',
-            label: 'Genre',
-            value: genreOn ? genre : ALL_GENRES,
-            options: [{ id: ALL_GENRES, name: 'All' }, ...genres.map((g) => ({ id: g.key, name: `${g.name} (${g.count})` }))],
-            onPick: (next) => {
-              setGenre(next)
-              remember((saved) => {
-                saved.filters[SCREEN] = next === ALL_GENRES ? [] : [`genre:${next}`]
-              })
-            }
-          }
-        ]}
-        onSelect={select}
+        targetOf={(id) => `#${sectionId(id)} [data-focusable]`}
+        actions={[{ id: 'sources', label: 'Add music', onClick: () => openSources(document.activeElement as HTMLElement | null) }]}
+        onCustomize={() => setCustomizing(true)}
       />
       <div className="page-viewport">
-        <SideGrid key={current.id} backTo={open ? `#${sideListId(current.id)}` : undefined}>
-          <section className="collection-grid">
-            <h2 className="section-label display">{title}</h2>
-            {reading && <p className="music-tab-reading">{reading}</p>}
-            {current.id === 'sources' ? (
-              <MusicSources />
-            ) : !loaded ? (
-              <p className="empty-note">Looking for your music…</p>
-            ) : current.items.length === 0 ? (
-              <p className="empty-note">{current.empty}</p>
-            ) : (
-              <CardGrid cards={current.items} memory={`music:${current.id}:${sort}`} favorites={favorites.albumIds} onOpen={openCard} />
-            )}
-          </section>
+        <SideGrid backTo={open && current ? `#${sideListId(current.id)}` : undefined} jump={jump}>
+          <LibraryToolbar menus={menus} />
+          {reading && <p className="music-tab-reading">{reading}</p>}
+          {!loaded ? (
+            <p className="empty-note">Looking for your music…</p>
+          ) : (
+            shownSections.map((section, index) => {
+              const list = all.find((l) => l.id === section.id)!
+              const title = titleOf(list)
+              const memoryKey = `music:${list.id}:${sort}`
+              const isDefault = index === 0
+              // The cursor in this section: the bar follows it.
+              const follow = (): void => select(list.id)
+              if (!list.items.length)
+                return (
+                  <section key={list.id} id={sectionId(list.id)} className="stack-section empty">
+                    <h2 className="section-label display">{title}</h2>
+                    <p className="empty-note">{list.empty}</p>
+                  </section>
+                )
+              return (
+                <div key={list.id} className={`stack-section ${section.style}`} onFocusCapture={follow}>
+                  {section.style === 'spotlight' ? (
+                    <MusicSpotlightSection
+                      id={sectionId(list.id)}
+                      title={title}
+                      cards={list.items}
+                      memoryKey={memoryKey}
+                      hasDefault={isDefault}
+                      favorites={favorites.albumIds}
+                      onOpen={openCard}
+                      onFocusCard={(card) => setSpot({ section: list.id, card })}
+                      focused={spot?.section === list.id ? spot.card : null}
+                    />
+                  ) : section.style === 'carousel' ? (
+                    <div id={sectionId(list.id)}>
+                      <MusicCardRow title={title} cards={list.items} memoryKey={memoryKey} hasDefault={isDefault} favorites={favorites.albumIds} onOpen={openCard} />
+                    </div>
+                  ) : (
+                    <section id={sectionId(list.id)} className="collection-grid">
+                      <h2 className="section-label display">{title}</h2>
+                      <CardGrid cards={list.items} memory={memoryKey} hasDefault={isDefault} favorites={favorites.albumIds} onOpen={openCard} />
+                    </section>
+                  )}
+                </div>
+              )
+            })
+          )}
         </SideGrid>
       </div>
+      {customizing && (
+        <TabCustomize
+          tab={SCREEN}
+          label="Music"
+          lists={all}
+          sections={sections}
+          onSections={(next) => {
+            setSavedSections(next)
+            void window.steamtv.tabSections.set(SCREEN, next)
+          }}
+          onPlaylistsChanged={() => void reloadPlaylists()}
+          onClose={() => setCustomizing(false)}
+        />
+      )}
+      {sources && (
+        <SourcesPage
+          onBack={() => {
+            const from = sources.from
+            setSources(null)
+            if (from?.isConnected) setTimeout(() => focus(from))
+          }}
+        />
+      )}
       {artist && (
         <ArtistPage
           artist={artist.artist}
@@ -379,106 +493,269 @@ export function MusicTab({ onNavigate }: { onNavigate: (screen: Screen) => void 
 }
 
 /** Square covers, as many across as fit; their names under them. */
-function CardGrid({ cards, memory, favorites, onOpen }: { cards: Card[]; memory: string; favorites?: Set<string>; onOpen: (card: Card, el: HTMLElement) => void }) {
+function CardGrid({ cards, memory, hasDefault = true, favorites, onOpen }: { cards: Card[]; memory: string; hasDefault?: boolean; favorites?: Set<string>; onOpen: (card: Card, el: HTMLElement) => void }) {
   return (
     <div className="album-grid" data-focus-memory={memory}>
-      {cards.map((card, index) => {
-        if (card.kind === 'add') {
-          return (
-            <button key="add" className="recent-card album-card add-music-card" tabIndex={-1} data-focusable="" data-select-sound="move" data-index={index} aria-label="Add your music" onClick={(event) => onOpen(card, event.currentTarget)}>
-              <div className="recent-art">
-                <span className="recent-no-art display">
-                  <span className="add-music-plus" aria-hidden="true">
-                    ＋
-                  </span>
-                </span>
-              </div>
-              <div className="recent-footer">
-                <div className="recent-text">
-                  <div className="recent-title">Add your music</div>
-                  <div className="recent-date">From a drive, a share, or this TV</div>
-                </div>
-              </div>
-            </button>
-          )
-        }
-        if (card.kind === 'liked' || card.kind === 'playlist') {
-          const songs = card.kind === 'liked' ? card.songs : card.playlist.songs
-          const name = card.kind === 'liked' ? 'Liked songs' : card.playlist.name
-          return (
-            <button
-              key={card.kind === 'liked' ? 'liked' : card.playlist.id}
-              className={`recent-card album-card liked-card${card.kind === 'playlist' ? ' playlist-card' : ''}`}
-              tabIndex={-1}
-              data-focusable=""
-              data-select-sound="move"
-              data-index={index}
-              {...(index === 0 ? { 'data-focus-default': '' } : {})}
-              aria-label={`${name}, ${songs.length} songs`}
-              onClick={(event) => onOpen(card, event.currentTarget)}
-            >
-              <div className="recent-art">
-                <Mosaic songs={songs} />
-                {card.kind === 'liked' && (
-                  <span className="liked-heart" aria-hidden="true">
-                    ♥
-                  </span>
-                )}
-              </div>
-              <div className="recent-footer">
-                <div className="recent-text">
-                  <div className="recent-title">{name}</div>
-                  <div className="recent-date">
-                    {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-                  </div>
-                </div>
-              </div>
-            </button>
-          )
-        }
-        const [key, title, sub, cover] =
-          card.kind === 'album'
-            ? [card.album.id, card.album.title, [card.album.artist, card.album.included ? 'Included with vaporTV' : card.album.year].filter(Boolean).join(' · '), card.album.cover]
-            : card.kind === 'artist'
-              ? [`artist:${card.artist.name}`, card.artist.name, `${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`, card.artist.albums.find((a) => a.cover)?.cover]
-              : [`place:${card.place.path}`, card.place.name, card.place.kind === 'network' ? 'Network share' : card.place.kind === 'drive' ? 'Drive' : 'Folder', undefined]
-        return (
-          <button
-            key={key}
-            className={`recent-card album-card${card.kind === 'artist' ? ' artist-card' : ''}`}
-            tabIndex={-1}
-            data-focusable=""
-            data-select-sound="move"
-            data-index={index}
-            {...(index === 0 ? { 'data-focus-default': '' } : {})}
-            aria-label={sub ? `${title}, ${sub}` : title}
-            // The Favorite button on an album (music/favorites.ts).
-            {...(card.kind === 'album' ? { 'data-album-id': card.album.id, 'data-title': card.album.title } : {})}
-            onClick={(event) => onOpen(card, event.currentTarget)}
-          >
-            {card.kind === 'album' && favorites?.has(card.album.id) && (
-              <span className="favorite-star" aria-label="Favourite">
-                ★
-              </span>
-            )}
-            <div className="recent-art">
-              {cover ? (
-                <img src={cover} alt="" loading="lazy" />
-              ) : (
-                <span className="recent-no-art display">
-                  <span className="no-art-band">{card.kind === 'place' ? '♪' : title}</span>
-                </span>
-              )}
+      {cards.map((card, index) => (
+        <MusicCard key={cardKey(card)} card={card} index={index} isDefault={hasDefault && index === 0} favorites={favorites} onOpen={onOpen} />
+      ))}
+    </div>
+  )
+}
+
+/** One card: an album, artist or folder (its cover), Liked songs or a playlist (a mosaic of covers), or the add-your-music card. */
+function MusicCard({
+  card,
+  index,
+  isDefault,
+  favorites,
+  onOpen,
+  onFocus
+}: {
+  card: Card
+  index: number
+  isDefault: boolean
+  favorites?: Set<string>
+  onOpen: (card: Card, el: HTMLElement) => void
+  onFocus?: () => void
+}) {
+  if (card.kind === 'add') {
+    return (
+      <button key="add" className="recent-card album-card add-music-card" tabIndex={-1} data-focusable="" data-select-sound="move" data-index={index} aria-label="Add your music" onFocus={onFocus}
+    onClick={(event) => onOpen(card, event.currentTarget)}>
+        <div className="recent-art">
+          <span className="recent-no-art display">
+            <span className="add-music-plus" aria-hidden="true">
+              ＋
+            </span>
+          </span>
+        </div>
+        <div className="recent-footer">
+          <div className="recent-text">
+            <div className="recent-title">Add your music</div>
+            <div className="recent-date">From a drive, a share, or this TV</div>
+          </div>
+        </div>
+      </button>
+    )
+  }
+  if (card.kind === 'liked' || card.kind === 'playlist') {
+    const songs = card.kind === 'liked' ? card.songs : card.playlist.songs
+    const name = card.kind === 'liked' ? 'Liked songs' : card.playlist.name
+    return (
+      <button
+        key={card.kind === 'liked' ? 'liked' : card.playlist.id}
+        className={`recent-card album-card liked-card${card.kind === 'playlist' ? ' playlist-card' : ''}`}
+        tabIndex={-1}
+        data-focusable=""
+        data-select-sound="move"
+        data-index={index}
+        {...(isDefault ? { 'data-focus-default': '' } : {})}
+        aria-label={`${name}, ${songs.length} songs`}
+        onFocus={onFocus}
+    onClick={(event) => onOpen(card, event.currentTarget)}
+      >
+        <div className="recent-art">
+          <Mosaic songs={songs} />
+          {card.kind === 'liked' && (
+            <span className="liked-heart" aria-hidden="true">
+              ♥
+            </span>
+          )}
+        </div>
+        <div className="recent-footer">
+          <div className="recent-text">
+            <div className="recent-title">{name}</div>
+            <div className="recent-date">
+              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
             </div>
-            <div className="recent-footer">
-              <div className="recent-text">
-                <div className="recent-title">{title}</div>
-                <div className="recent-date">{sub}</div>
-              </div>
-            </div>
-          </button>
-        )
-      })}
+          </div>
+        </div>
+      </button>
+    )
+  }
+  const [key, title, sub, cover] =
+    card.kind === 'album'
+      ? [card.album.id, card.album.title, [card.album.artist, card.album.included ? 'Included with vaporTV' : card.album.year].filter(Boolean).join(' · '), card.album.cover]
+      : card.kind === 'artist'
+        ? [`artist:${card.artist.name}`, card.artist.name, `${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`, card.artist.albums.find((a) => a.cover)?.cover]
+        : [`place:${card.place.path}`, card.place.name, card.place.kind === 'network' ? 'Network share' : card.place.kind === 'drive' ? 'Drive' : 'Folder', undefined]
+  return (
+    <button
+      key={key}
+      className={`recent-card album-card${card.kind === 'artist' ? ' artist-card' : ''}`}
+      tabIndex={-1}
+      data-focusable=""
+      data-select-sound="move"
+      data-index={index}
+      {...(isDefault ? { 'data-focus-default': '' } : {})}
+      aria-label={sub ? `${title}, ${sub}` : title}
+      // The Favorite button on an album (music/favorites.ts).
+      {...(card.kind === 'album' ? { 'data-album-id': card.album.id, 'data-title': card.album.title } : {})}
+      onFocus={onFocus}
+    onClick={(event) => onOpen(card, event.currentTarget)}
+    >
+      {card.kind === 'album' && favorites?.has(card.album.id) && (
+        <span className="favorite-star" aria-label="Favourite">
+          ★
+        </span>
+      )}
+      <div className="recent-art">
+        {cover ? (
+          <img src={cover} alt="" loading="lazy" />
+        ) : (
+          <span className="recent-no-art display">
+            <span className="no-art-band">{card.kind === 'place' ? '♪' : title}</span>
+          </span>
+        )}
+      </div>
+      <div className="recent-footer">
+        <div className="recent-text">
+          <div className="recent-title">{title}</div>
+          <div className="recent-date">{sub}</div>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// Mirrors --card-w, --card-gap and --focus-scale in the CSS.
+const MUSIC_CARD_W = 253.56
+const MUSIC_CARD_GAP = 36
+const MUSIC_FOCUS_SCALE = 1.2
+
+/** A carousel of cards, as wide as its own box beside the bar. */
+function MusicCardRow({
+  title,
+  cards,
+  memoryKey,
+  hasDefault,
+  favorites,
+  onOpen,
+  className = '',
+  onFocusCard
+}: {
+  title: string
+  cards: Card[]
+  memoryKey: string
+  hasDefault: boolean
+  favorites?: Set<string>
+  onOpen: (card: Card, el: HTMLElement) => void
+  className?: string
+  onFocusCard?: (card: Card) => void
+}) {
+  const [offset, setOffset] = useState(0)
+  const track = useRef<HTMLDivElement>(null)
+  const viewportW = (): number => track.current?.parentElement?.clientWidth ?? 1380
+  const drag = useDrag('x', offset, setOffset, () => Math.max(0, (track.current?.scrollWidth ?? 0) - viewportW()))
+  useScrollTilt(track, 'x', offset, '--row-tilt')
+  const reveal = (index: number): void => {
+    const left = index * (MUSIC_CARD_W + MUSIC_CARD_GAP)
+    const grow = (MUSIC_CARD_W * (MUSIC_FOCUS_SCALE - 1)) / 2
+    setOffset((prev) => Math.max(0, Math.min(left - grow, Math.max(prev, left + MUSIC_CARD_W + grow - viewportW()))))
+  }
+  return (
+    <section className={`card-row music-card-row ${className}`}>
+      <h2 className="section-label display">{title}</h2>
+      <div ref={track} className={`recents-track${drag.dragging ? ' dragging' : ''}`} data-focus-memory={memoryKey} style={{ transform: `translateX(${-offset}px)` }} {...drag.handlers}>
+        {cards.map((card, index) => (
+          <MusicCard
+            key={cardKey(card)}
+            card={card}
+            index={index}
+            isDefault={hasDefault && index === 0}
+            favorites={favorites}
+            onOpen={onOpen}
+            onFocus={() => {
+              reveal(index)
+              onFocusCard?.(card)
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** A card's picture for the Spotlight banner (softened: covers are small and square). */
+function cardCover(card: Card): string | undefined {
+  if (card.kind === 'album') return card.album.cover
+  if (card.kind === 'artist') return card.artist.albums.find((a) => a.cover)?.cover
+  if (card.kind === 'liked') return card.songs.find((s) => s.cover)?.cover
+  if (card.kind === 'playlist') return card.playlist.songs.find((s) => s.cover)?.cover
+  return undefined
+}
+
+/** A card's name and its line of facts, for the Spotlight banner. */
+function cardWords(card: Card): { name: string; facts: string[] } {
+  const songs = (n: number): string => `${n} ${n === 1 ? 'song' : 'songs'}`
+  if (card.kind === 'album') return { name: card.album.title, facts: [card.album.artist, card.album.year, card.album.genre, card.album.included ? 'Included with vaporTV' : undefined].filter((f): f is string => !!f).map(String) }
+  if (card.kind === 'artist') return { name: card.artist.name, facts: [`${card.artist.albums.length} ${card.artist.albums.length === 1 ? 'album' : 'albums'}`] }
+  if (card.kind === 'liked') return { name: 'Liked songs', facts: [songs(card.songs.length)] }
+  if (card.kind === 'playlist') return { name: card.playlist.name, facts: [songs(card.playlist.songs.length)] }
+  if (card.kind === 'place') return { name: card.place.name, facts: [card.place.kind === 'network' ? 'Network share' : card.place.kind === 'drive' ? 'Drive' : 'Folder'] }
+  return { name: 'Add your music', facts: ['From a drive, a share, or this TV'] }
+}
+
+/** A Spotlight section, as the game and Video tabs': the card the cursor's on (else the first), its cover behind the banner, its name and facts, the section's row along the bottom. */
+function MusicSpotlightSection({
+  id,
+  title,
+  cards,
+  memoryKey,
+  hasDefault,
+  favorites,
+  onOpen,
+  onFocusCard,
+  focused
+}: {
+  id: string
+  title: string
+  cards: Card[]
+  memoryKey: string
+  hasDefault: boolean
+  favorites?: Set<string>
+  onOpen: (card: Card, el: HTMLElement) => void
+  onFocusCard: (card: Card) => void
+  focused: Card | null
+}) {
+  const shown = focused && cards.some((c) => cardKey(c) === cardKey(focused)) ? focused : (cards[0] ?? null)
+  const words = shown ? cardWords(shown) : null
+  return (
+    <section id={id} className="spotlight">
+      <SpotlightPicture url={shown ? cardCover(shown) : undefined} soft />
+      <h2 className="section-label display spotlight-label">{title}</h2>
+      {shown && words ? (
+        <div className="spotlight-info" key={cardKey(shown)}>
+          <h2 className="spotlight-title display">{words.name}</h2>
+          <p className="spotlight-facts">{words.facts.join('  ·  ')}</p>
+        </div>
+      ) : (
+        <div className="spotlight-info" />
+      )}
+      <MusicCardRow className="spotlight-row" title={title} cards={cards} memoryKey={memoryKey} hasDefault={hasDefault} favorites={favorites} onOpen={onOpen} onFocusCard={onFocusCard} />
+    </section>
+  )
+}
+
+/** Add music over the tab: the music sources (folders, drives, shares), as Settings → Music has them. */
+function SourcesPage({ onBack }: { onBack: () => void }) {
+  const root = useRef<HTMLDivElement>(null)
+  useBack(root, onBack)
+  useEffect(() => {
+    const first = root.current?.querySelector<HTMLElement>('[data-focusable]')
+    if (first) focus(first)
+  }, [])
+  return (
+    <div className="media-show music-page" ref={root} data-focus-trap="">
+      <div className="page-viewport">
+        <div className="page-scroll">
+          <div className="media-show-content">
+            <h1 className="media-show-title display">Add music</h1>
+            <MusicSources />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

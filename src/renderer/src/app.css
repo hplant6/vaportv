@@ -5862,6 +5862,11 @@ button {
 
 /* ── Music tab ─────────────────────────────────────────── */
 
+/* Its carousels: square covers, as its grids have. (Not .music-row: that's a song's row, 84 px tall.) */
+.music-card-row {
+  --card-art-h: var(--card-w);
+}
+
 /* Albums (and artists, places): square covers, as many across as fit; four beside the bar, as Media's posters. */
 .album-grid {
   margin-top: 16px;
@@ -6603,8 +6608,10 @@ button {
   margin-bottom: 20px;
 }
 
+/* At least 320 px, wider for a long choice (Music's "Sort by: Recently played"), never cut short. */
 .library-toolbar .library-toolbar-menu {
-  width: 320px;
+  width: auto;
+  min-width: 320px;
 }
 
 .library-toolbar .side-bar-sort-menu {
@@ -6623,12 +6630,32 @@ button {
   margin: 12px 0 0;
 }
 
-/* The bar's Customize button, under its lists, set apart by a line: no fill until the cursor's on
-   it. The line is as far above it (26 px) as the bar's panel runs on below it, so the fill sits
-   evenly between the two. */
+/* The bar's buttons under its lists (Customize; Music's Add music), set apart by a line. The line
+   is as far above them (26 px) as the bar's panel runs on below them, so a selected one's fill
+   sits evenly between the two. */
+.side-bar-actions {
+  position: relative;
+  flex: none;
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-bar-actions::before {
+  content: '';
+  position: absolute;
+  top: -26px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-panel-line);
+  pointer-events: none;
+}
+
+/* Each: no fill until the cursor's on it. */
 .side-bar-customize {
   position: relative;
-  margin-top: 26px;
   flex: none;
   display: flex;
   align-items: center;
@@ -6646,16 +6673,6 @@ button {
     color var(--dur-focus) var(--ease-focus);
 }
 
-.side-bar-customize::before {
-  content: '';
-  position: absolute;
-  top: -26px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--color-panel-line);
-  pointer-events: none;
-}
 
 .side-bar-customize svg {
   width: 26px;

@@ -61,7 +61,8 @@ export function SideBar({
   onSort,
   onSelect,
   targetOf,
-  onCustomize
+  onCustomize,
+  actions = []
 }: {
   /** The tab's id, for its console's logo. */
   tab: string
@@ -87,6 +88,8 @@ export function SideBar({
   targetOf?: (listId: string) => string
   /** The Customize button at the bottom of the lists (a game tab's sections and playlists). */
   onCustomize?: () => void
+  /** Other buttons there, above Customize (Music's Add music), opening something over the tab. */
+  actions?: { id: string; label: string; onClick: () => void }[]
   onSelect: (id: string) => void
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -237,22 +240,42 @@ export function SideBar({
           </button>
         ])}
       </div>
-      {onCustomize && (
-        <button
-          className="side-bar-customize display"
-          tabIndex={-1}
-          {...(open ? { 'data-focusable': '' } : {})}
-          data-select-sound="move"
-          data-nav-right={SIDE_GRID_CARDS}
-          onClick={onCustomize}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
-            <circle cx="16" cy="7" r="2" />
-            <circle cx="10" cy="17" r="2" />
-          </svg>
-          Customize
-        </button>
+      {(onCustomize || actions.length > 0) && (
+        <div className="side-bar-actions">
+          {actions.map((a) => (
+            <button
+              key={a.id}
+              className="side-bar-customize display"
+              tabIndex={-1}
+              {...(open ? { 'data-focusable': '' } : {})}
+              data-select-sound="move"
+              data-nav-right={SIDE_GRID_CARDS}
+              onClick={a.onClick}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {a.label}
+            </button>
+          ))}
+          {onCustomize && (
+            <button
+              className="side-bar-customize display"
+              tabIndex={-1}
+              {...(open ? { 'data-focusable': '' } : {})}
+              data-select-sound="move"
+              data-nav-right={SIDE_GRID_CARDS}
+              onClick={onCustomize}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+                <circle cx="16" cy="7" r="2" />
+                <circle cx="10" cy="17" r="2" />
+              </svg>
+              Customize
+            </button>
+          )}
+        </div>
       )}
     </aside>
   )

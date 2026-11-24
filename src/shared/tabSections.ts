@@ -27,10 +27,10 @@ export const isGrid = (style: SectionStyle): boolean => style === 'posters' || s
 /**
  * A tab's two groups. The library: lists vaporTV makes (All games, Recents, Favorites) or brings
  * in (Steam's collections, the non-Steam games, Arcade's systems). Playlists: the ones made in
- * vaporTV. A section moves only within its group, and the library always comes first.
+ * vaporTV (each its own list, or Music's one Playlists list of them all). A section moves only within its group, and the library always comes first.
  */
 export type SectionGroup = 'library' | 'playlists'
-export const sectionGroup = (id: string): SectionGroup => (id.startsWith('playlist:') ? 'playlists' : 'library')
+export const sectionGroup = (id: string): SectionGroup => (id.startsWith('playlist:') || id === 'playlists' ? 'playlists' : 'library')
 
 /** The library's sections, then the playlists', each in the order they were in. */
 const grouped = (sections: TabSection[]): TabSection[] => [

@@ -88,6 +88,11 @@ describe('a tab’s sections', () => {
     expect(listOrder(playlistGrid).map((s) => s.id)).toEqual(['recent', 'favorites', 'all', 'playlist:p1'])
   })
 
+  it('count Music’s one Playlists section with the playlists, after the library', () => {
+    const music = ['recent-played', 'playlists', 'albums', 'artists']
+    expect(resolveSections(music, [{ id: 'playlists', style: 'carousel' }, { id: 'artists', style: 'carousel' }], 'rows').map((s) => s.id)).toEqual(['artists', 'recent-played', 'albums', 'playlists'])
+  })
+
   it('keep at least one showing', () => {
     let sections: TabSection[] | null = [
       { id: 'all', style: 'spotlight' },

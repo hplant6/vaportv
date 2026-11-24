@@ -32,6 +32,7 @@ function libraryNote(tab: LayoutTab): string {
   if (tab === 'steam') return 'Made by vaporTV, or from Steam'
   if (tab === 'arcade') return 'Made by vaporTV, and the systems'
   if (tab === 'media') return 'From your media servers'
+  if (tab === 'music') return 'From your music'
   return 'Made by vaporTV'
 }
 
