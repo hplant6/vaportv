@@ -143,11 +143,22 @@ export function TabCustomize({ tab, label, lists, sections, onSections, onPlayli
 
   // The drop-down hangs from its button, placed in the panel (the list scrolls, and would cut it off).
   const openStyleMenu = (section: TabSection, button: HTMLElement): void => {
-    const p = panel.current?.getBoundingClientRect()
+    const el = panel.current
+    if (!el) return
+    const p = el.getBoundingClientRect()
     const b = button.getBoundingClientRect()
-    if (!p) return
+    // The screen's measured as shown, but the app is laid out at 1080p and scaled up to fit the TV
+    // (App's stage, ×2 on a 4K screen): back to the panel's own pixels, or the menu lands twice as far.
+    const scale = p.width / el.offsetWidth || 1
     // Upward when there isn't room for its four choices below.
-    setStyleMenu({ id: section.id, top: b.top - p.top, left: b.left - p.left, width: b.width, height: b.height, up: b.bottom + MENU_ROOM > window.innerHeight })
+    setStyleMenu({
+      id: section.id,
+      top: (b.top - p.top) / scale,
+      left: (b.left - p.left) / scale,
+      width: b.width / scale,
+      height: b.height / scale,
+      up: b.bottom + MENU_ROOM * scale > window.innerHeight
+    })
   }
 
   const remove = (playlist: PlaylistRow): void => {
