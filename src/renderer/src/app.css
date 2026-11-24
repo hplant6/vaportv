@@ -6730,6 +6730,16 @@ button {
   scrollbar-width: none;
 }
 
+/* The section with the cursor goes over the others: its selected card grows past its edges, and
+   the next one down would cover it (a Spotlight's picture reaches 24 px above its section). */
+.stack-section {
+  position: relative;
+}
+
+.stack-section:focus-within {
+  z-index: 1;
+}
+
 .stack-section + .stack-section {
   margin-top: 48px;
 }

@@ -8,6 +8,9 @@ groups of `- ` points. Collect changes under `## Unreleased` until then.
 
 ## Unreleased
 
+### Fixed
+- The selected card in a row above a **Spotlight** no longer slips under the Spotlight's picture.
+
 ## 0.18.0
 
 ### Added
