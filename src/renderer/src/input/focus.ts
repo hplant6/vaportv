@@ -156,6 +156,10 @@ export function move(direction: Direction, source: InputSource): void {
   if (!from) return focusDefault()
 
   const candidates = [...(trap() ?? document).querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el !== from)
+  // With a menu open (a focus trap: a drop-down, a window), a way out named by the page around it
+  // (a grid's data-nav-left-out into the left bar, say) doesn't count: only what's inside the
+  // menu. Left in a drop-down whose choices run up and down goes nowhere, and it stays open.
+  const within = (el: HTMLElement | null | undefined): HTMLElement | null => (el && (!open || open.contains(el)) ? el : null)
   const rect = from.getBoundingClientRect()
   // An element can name where a direction goes (data-nav-right=".selector"), e.g. a
   // Settings category into its pane, whose first row may not line up with it. A
@@ -179,7 +183,7 @@ export function move(direction: Direction, source: InputSource): void {
   const edge = !named ? from.parentElement?.closest<HTMLElement>(`[data-nav-${direction}-out]`) : null
   if (edge && (direction === 'left' || direction === 'right')) {
     const inside = horizontal(rect, candidates.filter((el) => edge.contains(el)), direction === 'right' ? 1 : -1)
-    const out = inside ? null : namedTarget(edge.dataset[outKey] ?? '', rect, direction)
+    const out = inside ? null : within(namedTarget(edge.dataset[outKey] ?? '', rect, direction))
     if (out) {
       focus(out)
       play('move')
@@ -187,7 +191,7 @@ export function move(direction: Direction, source: InputSource): void {
     }
   }
   let target =
-    (named ? namedTarget(named, rect, direction) : null) ??
+    (named ? within(namedTarget(named, rect, direction)) : null) ??
     (direction === 'left' || direction === 'right'
       ? horizontal(rect, candidates, direction === 'right' ? 1 : -1)
       : upDown(direction === 'down' ? 1 : -1))
