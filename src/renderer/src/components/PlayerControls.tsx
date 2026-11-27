@@ -60,12 +60,15 @@ export function PlayerButton({
   pressed,
   disabled = false,
   buttonRef,
+  busy = false,
   onClick,
   children
 }: {
   label: string
   big?: boolean
   pressed?: boolean
+  /** Working on it (the radio while Claude picks): a turning arc in place of its icon. */
+  busy?: boolean
   /** Shown dimmed and skipped by the cursor (the first file has no previous). */
   disabled?: boolean
   buttonRef?: Ref<HTMLButtonElement>
@@ -75,7 +78,7 @@ export function PlayerButton({
   return (
     <button
       ref={buttonRef}
-      className={`media-button${big ? ' big' : ''}${disabled ? ' disabled' : ''}`}
+      className={`media-button${big ? ' big' : ''}${disabled ? ' disabled' : ''}${busy ? ' busy' : ''}`}
       tabIndex={-1}
       {...(disabled ? { 'aria-disabled': true } : { 'data-focusable': '' })}
       data-select-sound="move"
@@ -84,7 +87,7 @@ export function PlayerButton({
       onClick={disabled ? undefined : onClick}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        {children}
+        {busy ? <path d="M12 3a9 9 0 1 1-9 9" /> : children}
       </svg>
       <span className="media-button-label">{label}</span>
     </button>

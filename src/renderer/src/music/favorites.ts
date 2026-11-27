@@ -105,20 +105,45 @@ export function playNow(songs: MusicTags[], from: Element | null, at = 0, shuffl
 }
 
 let tuning = false
+const tuningListeners = new Set<(on: boolean) => void>()
+function setTuning(on: boolean): void {
+  tuning = on
+  for (const listener of tuningListeners) listener(on)
+}
+
+/** Whether Claude is picking a station's songs (the radio button turns while it does). */
+export function useTuning(): boolean {
+  const [on, setOn] = useState(tuning)
+  useEffect(() => {
+    tuningListeners.add(setOn)
+    return () => {
+      tuningListeners.delete(setOn)
+    }
+  }, [])
+  return on
+}
+
 /** A radio station from a song (Claude picks what sounds like it), played in its order; Now playing opens unless it's already up. */
 export async function startRadio(song: MusicTags, from: Element | null): Promise<void> {
   if (tuning) return
-  tuning = true
-  toast(`Asking Claude for a station like ${song.title}…`)
+  setTuning(true)
+  window.steamtv.logInput(`radio: asking Claude for songs like ${song.title}`)
   try {
     const station = await window.steamtv.music.radio(song.path)
-    if (!station?.length) return toast(`Claude couldn't make a station from ${song.title}`)
+    if (!station?.length) {
+      window.steamtv.logInput('radio: Claude found nothing')
+      return toast(`Claude couldn't make a station from ${song.title}`)
+    }
+    window.steamtv.logInput(`radio: ${station.length} songs`)
     // The station's own order (already mixed), from its first song: the one it started from.
     if (playerState().shuffle) toggleShuffle()
     playQueue(station, 0, { seed: song })
-    toast(`${song.title} radio: ${station.length} songs`)
+    toast(`${song.title} radio: ${station.length} songs. The radio button again lists them`)
     if (!document.querySelector('.music-playing')) openNowPlaying(from)
+  } catch (err) {
+    window.steamtv.logInput(`radio: failed: ${err instanceof Error ? err.message : String(err)}`)
+    toast(`Claude couldn't make a station from ${song.title}`)
   } finally {
-    tuning = false
+    setTuning(false)
   }
 }

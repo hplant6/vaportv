@@ -8,11 +8,12 @@ import { cycleRepeat, current, next, playAt, playerState, playQueue, previous, s
 import { FloatingCover } from '../music/FloatingCover'
 import { Visualizer } from '../music/Visualizer'
 import { COVER_MOTIONS, VISUALIZER_POWERS } from '../music/choices'
-import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites } from '../music/favorites'
+import { isLiked, startRadio, toggleDisliked, toggleLiked, useClaudeReady, useMusicFavorites, useTuning } from '../music/favorites'
 import { newPlaylist } from '../music/playlists'
 import { takeNowPlaying } from '../music/nowPlaying'
 import { ButtonIcon, DpadIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
+import { toast } from './Toast'
 import { OnScreenKeyboard } from './Keyboard'
 import { ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
 import { SortMenu } from './SideBar'
@@ -928,6 +929,7 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
     if (!player.station) setStationOpen(false)
   }, [player.station])
   const claudeReady = useClaudeReady()
+  const tuning = useTuning()
   const like = useCallback((): void => {
     const now = current()
     if (now) void toggleLiked(now.path, now.title)
@@ -1151,11 +1153,19 @@ function NowPlaying({ player, onBack }: { player: PlayerState; onBack: () => voi
               )}
               {claudeReady && song && (
                 <PlayerButton
-                  label={player.station ? `${player.station.seed.title} radio: its songs` : `Radio: songs like ${song.title} (Claude picks them)`}
+                  label={
+                    tuning
+                      ? 'Claude is picking the songs…'
+                      : player.station
+                        ? `${player.station.seed.title} radio: its songs`
+                        : `Radio: songs like ${song.title} (Claude picks them)`
+                  }
                   pressed={!!player.station}
+                  busy={tuning}
                   onClick={() => {
                     showBar()
-                    if (player.station) setStationOpen(true)
+                    if (tuning) toast('Claude is still picking the songs')
+                    else if (player.station) setStationOpen(true)
                     else void startRadio(song, null)
                   }}
                 >

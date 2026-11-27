@@ -130,9 +130,12 @@ export async function askMusic(heard: string): Promise<MusicAnswer | null> {
   return { albums: unique, songs: songs.slice(0, MOST_SONGS), action: answer.action }
 }
 
-/** A radio station holds about this many songs, at most this many from any one album. */
-const RADIO_SONGS = 60
-const RADIO_PER_ALBUM = 3
+/** A radio station's songs, the one it started from included. */
+const RADIO_SONGS = 30
+/** Songs Claude chooses a station's from: its genre's first, then the nearest others, up to this many. */
+const RADIO_CHOICE = 400
+/** At most this many from one album, unless its genre has too few albums to fill the station otherwise. */
+const RADIO_PER_ALBUM = 4
 
 /** Shuffled in place (Fisher–Yates). */
 function shuffle<T>(list: T[]): T[] {
@@ -143,41 +146,133 @@ function shuffle<T>(list: T[]): T[] {
   return list
 }
 
+const JAPANESE = /[\u3040-\u30ff\u4e00-\u9fff]/
+const JAPANESE_GENRE = /\b(j[- ]?pop|j[- ]?rock|city pop|japanese|anime|enka|kayou?kyoku)\b/i
+
+/** A genre's words, lower case ("Jazz-Funk" → jazz, funk), for families: Jazz, Jazz-Funk and Funk share one. */
+function genreWords(genre: string | undefined): Set<string> {
+  return new Set((genre ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && w !== 'music' && w !== 'unknown'))
+}
+
+/** Whether a song or album is Japanese: its words in Japanese script, or a Japanese genre. */
+function japanese(texts: (string | undefined)[], genre: string | undefined): boolean {
+  return texts.some((t) => t && JAPANESE.test(t)) || JAPANESE_GENRE.test(genre ?? '')
+}
+
 /**
- * Radio from a song, as Google Play Music's was: Claude picks the albums in the library that
- * sound like it (the same prompt and library as spoken requests, so its cache serves both), and
- * the station is the song, then a few songs from each of those albums, shuffled. Null without
- * Claude Code, before the index has albums, or if Claude fails or finds nothing.
+ * A station's albums, nearest first: its very genre, then its family (a genre sharing a word with
+ * it; for a Japanese song, the other Japanese albums), both marked `same`, then the rest; each by
+ * how near its year is to the song's. Albums vaporTV includes (Ambient, Retro) aren't yours, so aren't in it.
+ */
+export function radioAlbums(seed: Pick<MusicTags, 'title' | 'artist' | 'album' | 'year' | 'genre'>, albums: MusicAlbum[]): { album: MusicAlbum; same: boolean }[] {
+  const words = genreWords(seed.genre)
+  const seedJapanese = japanese([seed.title, seed.artist, seed.album], seed.genre)
+  const year = Number(seed.year) || 0
+  const exact = (seed.genre ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+  // 2: its very genre; 1: the same family (a genre sharing a word with it), or Japanese with Japanese; 0: the rest.
+  const kind = (a: MusicAlbum): number => {
+    const isJapanese = japanese([a.title, a.artist], a.genre)
+    // Japanese goes with Japanese (whatever its genre says), and the rest keep apart from it.
+    if (seedJapanese !== isJapanese) return 0
+    const theirs = (a.genre ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+    if (exact && theirs === exact) return 2
+    if (seedJapanese || [...words].some((w) => genreWords(a.genre).has(w))) return 1
+    return 0
+  }
+  const distance = (a: MusicAlbum): number => (year && a.year ? Math.abs(a.year - year) : 50)
+  return albums
+    .filter((a) => !a.included)
+    .map((album) => ({ album, tier: kind(album), d: distance(album) + Math.random() }))
+    .sort((x, y) => y.tier - x.tier || x.d - y.d)
+    .map(({ album, tier }) => ({ album, same: tier > 0 }))
+}
+
+const RADIO_INSTRUCTIONS = `You are making a radio station for vaporTV's Music app from one song. Below are songs from the person's library; those marked * are of the song's own kind (its genre or the same family, or Japanese with Japanese).
+- Choose the songs closest to it in style, mood and era. Take them from the * songs first: only if there aren't enough of those, add unmarked ones, the nearest in style.
+- Spread across artists and albums: no more than four from any one album unless the * songs come from too few albums to fill the station otherwise.
+- Put them in a good listening order, the closest first.
+- Reply with JSON only, nothing else: {"picks": [line numbers in playing order]}
+
+Songs (line number, then "Artist — Title (Album, year, genre)"):
+`
+
+/**
+ * Radio from a song: 30 songs of its own kind (its genre, or Japanese with Japanese), from about its
+ * time and style, the song first. vaporTV narrows the library to its kind and nearest years; Claude
+ * picks the songs from those (and only goes further afield when its kind runs short). Without
+ * Claude, or if it fails, the same narrowing picks them at random. Null before the index has
+ * albums, or with nothing to play.
  */
 export async function musicRadio(path: string): Promise<MusicTags[] | null> {
-  const bin = claudeBin()
-  if (!bin) return null
   const seed = indexedSong(path) ?? (await readTags(path).catch(() => null))
   const albums = (await libraryAlbums()).slice(0, MOST_ALBUMS)
   if (!seed || !albums.length) return null
-  await writePrompt(albums.map(albumLine))
-  const facts = [seed.album && `from ${seed.album}`, seed.year, seed.genre].filter(Boolean).join(', ')
-  // What they've liked and given a thumbs down: Claude leans toward the one and away from the other.
-  const taste = await musicTaste()
-  const request = [
-    `Make a radio station from the song "${seed.title}"${seed.artist ? ` by ${seed.artist}` : ''}${facts ? ` (${facts})` : ''}: pick 15 to 25 albums in the library that sound like it (similar artists, era, style and mood), best first, the song's own album included if it's there. Action: shuffle.`,
-    taste.liked.length ? `Songs the listener liked (lean toward their sound): ${taste.liked.join('; ')}.` : '',
-    taste.disliked.length ? `Songs the listener gave a thumbs down (avoid albums that sound like these, and these artists unless the song is theirs): ${taste.disliked.join('; ')}.` : ''
-  ]
-    .filter(Boolean)
-    .join('\n')
-  const reply = await ask(bin, request)
-  const answer = reply === null ? null : readAnswer(reply, albums.length)
-  if (!answer?.picks.length) return null
-  const picked: MusicTags[] = []
-  for (const n of answer.picks) {
-    const songs: MusicTags[] = []
-    // Never a song given a thumbs down.
-    for (const s of await albumSongs(albums[n].id)) if (s.path !== seed.path && !(await isDisliked(s))) songs.push(s)
-    picked.push(...shuffle(songs).slice(0, RADIO_PER_ALBUM))
+
+  // The songs to choose from: the song's kind first (all of it), then the nearest others, to RADIO_CHOICE.
+  const choice: { song: MusicTags; same: boolean }[] = []
+  for (const { album, same } of radioAlbums(seed, albums)) {
+    if (choice.length >= RADIO_CHOICE) break
+    for (const s of await albumSongs(album.id)) if (s.path !== seed.path && !(await isDisliked(s))) choice.push({ song: s, same })
   }
-  return [seed, ...shuffle(picked).slice(0, RADIO_SONGS - 1)]
+  if (!choice.length) return null
+  const sameCount = choice.filter((c) => c.same).length
+
+  const bin = claudeBin()
+  if (bin) {
+    const line = ({ song: s, same }: { song: MusicTags; same: boolean }, i: number): string =>
+      `${i} ${same ? '* ' : ''}${s.artist ? `${s.artist} — ` : ''}${s.title} (${[s.album, s.year, s.genre].filter(Boolean).join(', ')})`.replace(/\s+/g, ' ')
+    await mkdir(dirname(RADIO_FILE), { recursive: true })
+    await writeFile(RADIO_FILE, RADIO_INSTRUCTIONS + choice.map(line).join('\n') + '\n')
+    const facts = [seed.album && `from ${seed.album}`, seed.year, seed.genre].filter(Boolean).join(', ')
+    // What they've liked and given a thumbs down: Claude leans toward the one and away from the other.
+    const taste = await musicTaste()
+    const request = [
+      `Make a radio station of ${RADIO_SONGS - 1} songs from "${seed.title}"${seed.artist ? ` by ${seed.artist}` : ''}${facts ? ` (${facts})` : ''}. There are ${sameCount} songs of its kind (marked *).`,
+      taste.liked.length ? `Songs the listener liked (lean toward their sound): ${taste.liked.join('; ')}.` : '',
+      taste.disliked.length ? `Songs the listener gave a thumbs down (avoid songs that sound like these): ${taste.disliked.join('; ')}.` : ''
+    ]
+      .filter(Boolean)
+      .join('\n')
+    const reply = await ask(bin, request, RADIO_FILE)
+    if (reply !== null) {
+      try {
+        const json = JSON.parse(reply.slice(reply.indexOf('{'), reply.lastIndexOf('}') + 1)) as { picks?: unknown }
+        const picks = Array.isArray(json.picks) ? [...new Set(json.picks.map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n < choice.length))] : []
+        if (picks.length) return [seed, ...fillRadio(picks.map((n) => choice[n].song), choice)]
+      } catch {
+        // Not JSON: chosen without Claude, below.
+      }
+    }
+  }
+  return [seed, ...fillRadio([], choice)]
 }
+
+/** A station's songs after the first: `picked` (Claude's), then, short of RADIO_SONGS, its kind's others at random, then the nearest others. */
+function fillRadio(picked: MusicTags[], choice: { song: MusicTags; same: boolean }[]): MusicTags[] {
+  const out = [...picked].slice(0, RADIO_SONGS - 1)
+  const have = new Set(out.map((s) => s.path))
+  const perAlbum = new Map<string, number>()
+  for (const s of out) perAlbum.set(s.album ?? '', (perAlbum.get(s.album ?? '') ?? 0) + 1)
+  const add = (pool: MusicTags[], limit: number): void => {
+    for (const s of pool) {
+      if (out.length >= RADIO_SONGS - 1) return
+      const n = perAlbum.get(s.album ?? '') ?? 0
+      if (have.has(s.path) || n >= limit) continue
+      out.push(s)
+      have.add(s.path)
+      perAlbum.set(s.album ?? '', n + 1)
+    }
+  }
+  const same = shuffle(choice.filter((c) => c.same).map((c) => c.song))
+  add(same, RADIO_PER_ALBUM)
+  // Its kind from too few albums for four each: more from each, before going further afield.
+  add(same, Infinity)
+  add(choice.filter((c) => !c.same).map((c) => c.song), RADIO_PER_ALBUM)
+  return out
+}
+
+/** A station's prompt: the songs it's chosen from, one numbered line each. */
+const RADIO_FILE = join(homedir(), '.cache', 'steamtv', 'claude-music-radio.txt')
 
 /** The second step's prompt: the chosen albums' songs, one numbered line each. */
 const SONGS_FILE = join(homedir(), '.cache', 'steamtv', 'claude-music-songs.txt')

@@ -6216,6 +6216,17 @@ button {
 }
 
 /* A radio station's songs, over Now playing on the right: the one playing marked, a thumbs down beside each. */
+/* A player button working on it (the radio while Claude picks): its arc turns. */
+.media-button.busy svg {
+  animation: media-button-busy 900ms linear infinite;
+}
+
+@keyframes media-button-busy {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .station-panel {
   position: absolute;
   top: 60px;
