@@ -7,6 +7,7 @@ import { play } from '../input/sounds'
 import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { useSoundHold } from '../soundHold'
 
 // The translator (an extra, not in the public build): an English ⇄ Japanese conversation
 // between two people on the sofa. Choose who starts; it calls them by name and listens; what
@@ -56,6 +57,8 @@ export function TranslatorApp() {
 }
 
 function Translator({ onClose }: { onClose: () => void }) {
+  // Music well down, a film paused, while it's open.
+  useSoundHold()
   const root = useRef<HTMLDivElement>(null)
   const log = useRef<HTMLDivElement>(null)
   const talkButton = useRef<HTMLButtonElement>(null)

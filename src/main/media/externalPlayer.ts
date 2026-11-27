@@ -210,6 +210,12 @@ function padInput(controls: Controls, button: number): PlayerInput | null {
  * Plays it in mpv until it's closed. Resolves with where it stopped, or null if mpv couldn't be
  * run or didn't play anything (so the caller can play it in the page instead).
  */
+/** Pauses the film or show playing in mpv, if one is (the Claude and Translate apps opening). */
+let pausePlaying: (() => void) | null = null
+export function pauseExternal(): void {
+  pausePlaying?.()
+}
+
 export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise<number | null> {
   const { log } = hooks
   let fonts: OsdFonts
@@ -453,7 +459,9 @@ export async function playInMpv(play: ExternalPlay, hooks: PlayerHooks): Promise
     log
   )
 
+  pausePlaying = () => run([{ pause: true }])
   const code = await exited
+  pausePlaying = null
   stopPads()
   clearTimeout(timer)
   ipc.close()

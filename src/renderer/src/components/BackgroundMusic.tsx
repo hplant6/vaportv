@@ -7,6 +7,7 @@ import { toast } from './Toast'
 import { isFront, onFrontChange } from '../front'
 import { registerDiagnostics } from '../diagnostics'
 import { trail } from '../trail'
+import { heldFactor, SOUND_HOLD_EVENT } from '../soundHold'
 
 /** Settings fires this after changing a track or volume. */
 export const MUSIC_CHANGED_EVENT = 'steamtv:music-changed'
@@ -157,8 +158,10 @@ function Layer({ kind }: { kind: MusicKind }) {
     const onPlay = (): void => publish(kind, { playing: true })
     const onPause = (): void => publish(kind, { playing: false })
 
-    const fadeTo = (volume: number, then?: () => void, ms = FADE_MS): void => {
+    const fadeTo = (to: number, then?: () => void, ms = FADE_MS): void => {
       clearInterval(fade)
+      // Well down while Claude or Translate is open (soundHold.ts).
+      const volume = to * heldFactor()
       const step = (volume - el.volume) / (ms / 50)
       fade = setInterval(() => {
         const next = el.volume + step
@@ -279,6 +282,11 @@ function Layer({ kind }: { kind: MusicKind }) {
       if (!el.paused) trail(`music ${kind}: pausing (vaporTV behind something)`)
       fadeTo(0, () => el.pause())
     }
+    // Claude or Translate opening or closing: down to a murmur, or back up (only if it's sounding).
+    const onSoundHold = (): void => {
+      if (!el.paused) fadeTo(target.current)
+    }
+    window.addEventListener(SOUND_HOLD_EVENT, onSoundHold)
     const onSoundToggled = (): void => (soundOff ? fadeTo(0, () => el.pause(), HOLD_FADE_MS) : start())
     // Counted: the Music app can hold it while a video or Claude holds it too, and it comes back once all let go.
     let holders = 0
@@ -338,6 +346,7 @@ function Layer({ kind }: { kind: MusicKind }) {
     window.addEventListener(MUSIC_HOLD_EVENT, onHold)
     window.addEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)
     return () => {
+      window.removeEventListener(SOUND_HOLD_EVENT, onSoundHold)
       if (kind === 'music') musicLayer = null
       window.removeEventListener(MUSIC_HOLD_EVENT, onHold)
       window.removeEventListener(SOUND_TOGGLED_EVENT, onSoundToggled)

@@ -3,6 +3,7 @@ import { MUSIC_HOLD_EVENT } from '../components/MusicPreview'
 import { onFrontChange } from '../front'
 import { registerDiagnostics } from '../diagnostics'
 import { trail } from '../trail'
+import { heldFactor, SOUND_HOLD_EVENT } from '../soundHold'
 
 // The Music app's player: one audio element for the whole of vaporTV, so a queue keeps playing
 // when the Music screen closes. It holds the background music while there's a queue, plays
@@ -58,6 +59,28 @@ registerDiagnostics('music.player', () => ({
 }))
 let context: AudioContext | null = null
 let analyser: AnalyserNode | null = null
+/** After the analyser (the visualizer sees the song at full strength): turned down while Claude or Translate is open. */
+let level: GainNode | null = null
+
+// Claude or Translate open: the song goes well down (soundHold.ts), and back up as it closes. Through
+// the Web Audio graph once the visualizer has made it; until then, the element's own volume.
+let ramp: ReturnType<typeof setInterval> | undefined
+function applyHold(): void {
+  const to = heldFactor()
+  clearInterval(ramp)
+  if (level && context) {
+    level.gain.setTargetAtTime(to, context.currentTime, 0.15)
+    return
+  }
+  const step = (to - audio.volume) / 10
+  ramp = setInterval(() => {
+    if (Math.abs(to - audio.volume) <= Math.abs(step) || step === 0) {
+      audio.volume = to
+      clearInterval(ramp)
+    } else audio.volume = Math.max(0, Math.min(1, audio.volume + step))
+  }, 40)
+}
+window.addEventListener(SOUND_HOLD_EVENT, applyHold)
 
 function set(next: Partial<PlayerState>): void {
   state = { ...state, ...next }
@@ -86,8 +109,14 @@ export function musicAnalyser(): AnalyserNode | null {
       analyser = context.createAnalyser()
       analyser.fftSize = 1024
       analyser.smoothingTimeConstant = 0.6
+      level = context.createGain()
+      level.gain.value = heldFactor()
+      // The element at full volume from here on: the gain node turns it down instead.
+      clearInterval(ramp)
+      audio.volume = 1
       source.connect(analyser)
-      analyser.connect(context.destination)
+      analyser.connect(level)
+      level.connect(context.destination)
     } catch (err) {
       console.error('steamtv: music analyser:', err)
       return null

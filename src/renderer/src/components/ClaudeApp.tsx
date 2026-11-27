@@ -9,6 +9,7 @@ import { ButtonIcon, useControllerFamily } from './ButtonIcon'
 import { errorText } from './GooglePhotos'
 import { Spinner } from './LaunchOverlay'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
+import { useSoundHold } from '../soundHold'
 
 // The Claude app (its tile is in Apps): a spoken conversation with Claude Code. It listens,
 // Claude answers aloud and in large type, then it listens again, until nothing is said. A
@@ -61,6 +62,8 @@ export function ClaudeApp() {
 }
 
 function Conversation({ onClose }: { onClose: () => void }) {
+  // Music well down, a film paused, while it's open.
+  useSoundHold()
   const root = useRef<HTMLDivElement>(null)
   const log = useRef<HTMLDivElement>(null)
   const talkButton = useRef<HTMLButtonElement>(null)

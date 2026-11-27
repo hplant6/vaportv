@@ -11,6 +11,7 @@ import { Spinner } from './LaunchOverlay'
 import { MUSIC_HOLD_EVENT } from './MusicPreview'
 import { ICONS, PlayerButton, ShortcutsPanel, stepAlong } from './PlayerControls'
 import { toast } from './Toast'
+import { SOUND_HOLD_EVENT } from '../soundHold'
 
 // Plays a film or episode from a media server (Emby, Jellyfin) full screen, from where it was
 // left: straight from the file when Chromium can, or as HLS the server converts (hls.js). A pauses, left and right skip
@@ -308,11 +309,18 @@ function MediaPlayer({ source, itemId, fromStart, onClose }: { source: string; i
     keepAwake(holder, !paused)
     return () => keepAwake(holder, false)
   }, [paused])
-  // A game or app coming to the front pauses it.
+  // A game or app coming to the front pauses it; so does Claude or Translate opening (soundHold.ts).
   useEffect(() => {
     const onBlur = (): void => video.current?.pause()
+    const onSoundHold = (event: Event): void => {
+      if ((event as CustomEvent<boolean>).detail) video.current?.pause()
+    }
     window.addEventListener('blur', onBlur)
-    return () => window.removeEventListener('blur', onBlur)
+    window.addEventListener(SOUND_HOLD_EVENT, onSoundHold)
+    return () => {
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener(SOUND_HOLD_EVENT, onSoundHold)
+    }
   }, [])
 
   // On the seek bar, D-pad left/right scrub and down goes to the buttons; on the buttons, left and

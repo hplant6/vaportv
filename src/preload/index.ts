@@ -156,6 +156,7 @@ const api: SteamTvApi = {
     setCover: (source, id, pick) => ipcRenderer.invoke('media:setCover', source, id, pick),
     libraryPage: (library, sort, unwatched, start, limit) => ipcRenderer.invoke('media:libraryPage', library, sort, unwatched, start, limit),
     playback: (source, itemId, choice, codecs) => ipcRenderer.invoke('media:playback', source, itemId, choice, codecs),
+    pauseExternal: () => ipcRenderer.invoke('media:pauseExternal'),
     playExternal: (source, itemId, fromStart) => ipcRenderer.invoke('media:playExternal', source, itemId, fromStart),
     report: (event, playback, positionSeconds, paused) => ipcRenderer.invoke('media:report', event, playback, positionSeconds, paused)
   },

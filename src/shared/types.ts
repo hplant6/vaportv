@@ -1093,6 +1093,8 @@ export interface SteamTvApi {
     /** `codecs`: what the player can decode beyond H.264 ('hevc'), so the server needn't convert it. */
     playback(source: string, itemId: string, choice?: MediaChoice, codecs?: string[]): Promise<MediaPlayback>
     /** Plays it in mpv, over vaporTV; true once it's been watched and closed, false if mpv couldn't run (play it in the page then). */
+    /** Pauses the film or show playing in mpv, if one is. */
+    pauseExternal(): Promise<void>
     playExternal(source: string, itemId: string, fromStart?: boolean): Promise<boolean>
     report(event: 'start' | 'progress' | 'stop', playback: MediaPlayback, positionSeconds: number, paused: boolean): Promise<void>
   }
